@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: default
+  labels:
+    service: classzz
+    version: 0.14.2
+  name: classzz
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: classzz
+    spec:
+      containers:
+      - env:
+        - name: BCHD_RPC_USER
+          valueFrom:
+            secretKeyRef:
+              name: classzz
+              key: rpcuser
+        - name: BCHD_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: classzz
+              key: rpcpass
+        image: zquestz/classzz:latest
+        command: ["classzz"]
+        args: ["-u", "$(BCHD_RPC_USER)", "-P", "$(BCHD_RPC_PASSWORD)", "--addrindex", "--txindex", "-b", "/data", "-C", "/data/classzz.conf"]
+        name: classzz
+        volumeMounts:
+          - mountPath: /data
+            name: classzz-data
+        resources:
+          requests:
+            memory: "3Gi"
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 600
+      volumes:
+        - name: classzz-data
+          gcePersistentDisk:
+            pdName: classzz-data
+            fsType: ext4
