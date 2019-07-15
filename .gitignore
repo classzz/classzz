@@ -1,9 +1,6 @@
 # Temp files
 *~
 
-# Binaries
-czzd
-czzctl
 
 # Databases
 czzd.db
