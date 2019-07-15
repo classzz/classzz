@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/czzec"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/czzutil"
 	"golang.org/x/crypto/ripemd160"
 )
 

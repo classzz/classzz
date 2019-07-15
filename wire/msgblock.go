@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 )
 
 // defaultTransactionAlloc is the default size used for the backing array

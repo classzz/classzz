@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/btcjson"
+	"github.com/classzz/classzz/btcjson"
 )
 
 // TestHelpReflectInternals ensures the various help functions which deal with

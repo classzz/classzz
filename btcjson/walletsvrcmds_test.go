@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/btcjson"
+	"github.com/classzz/classzz/btcjson"
 )
 
 // TestWalletSvrCmds tests all of the wallet server commands marshal and

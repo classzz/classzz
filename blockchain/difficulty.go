@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 )
 
 var (

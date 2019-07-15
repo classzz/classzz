@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/czzutil"
 )
 
 // BenchmarkBlockHeader benchmarks how long it takes to load the mainnet genesis

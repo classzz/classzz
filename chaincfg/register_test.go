@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/bourbaki-czz/classzz/chaincfg"
+	. "github.com/classzz/classzz/chaincfg"
 )
 
 // Define some of the required parameters for a user-registered

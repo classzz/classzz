@@ -3,7 +3,7 @@ chaincfg
 
 [![Build Status](https://travis-ci.org/bourbaki-czz/classzz.png?branch=master)](https://travis-ci.org/bourbaki-czz/classzz)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/bourbaki-czz/classzz/chaincfg)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/classzz/classzz/chaincfg)
 
 Package chaincfg defines chain configuration parameters for the three standard
 Bitcoin networks and provides the ability for callers to define their own custom
@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bourbaki-czz/czzutil"
-	"github.com/bourbaki-czz/classzz/chaincfg"
+	"github.com/classzz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
 )
 
 var testnet = flag.Bool("testnet", false, "operate on the testnet Bitcoin network")
@@ -56,7 +56,7 @@ func main() {
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/bourbaki-czz/classzz/chaincfg
+$ go get -u github.com/classzz/classzz/chaincfg
 ```
 
 ## License

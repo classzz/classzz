@@ -7,7 +7,7 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg"
 )
 
 // TestNotifications ensures that notification callbacks are fired on events.

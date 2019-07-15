@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/bourbaki-czz/classzz/btcjson"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/btcjson"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/czzutil"
 )
 
 // FutureGenerateResult is a future promise to deliver the result of a

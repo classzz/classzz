@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/czzutil"
 )
 
 // mustParseShortForm parses the passed short form script and returns the

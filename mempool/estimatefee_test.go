@@ -9,10 +9,10 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/mining"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/mining"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // newTestFeeEstimator creates a feeEstimator with some different parameters

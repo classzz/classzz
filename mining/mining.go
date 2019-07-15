@@ -11,12 +11,12 @@ import (
 
 	"sort"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 const (
@@ -33,9 +33,9 @@ const (
 	// generated via classzz.
 	CoinbaseFlags = "/classzz/"
 
-	CoinPool1 = ""
+	CoinPool1 = "cz79vvfjzucamkve8mtcp396pmt5gagt2vfr7528qh"
 
-	CoinPool2 = ""
+	CoinPool2 = "cqntkfjt93rrnmd49vu57ar079l3srasusswzhagx4"
 )
 
 // TxDesc is a descriptor about a transaction in a transaction source along with

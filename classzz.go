@@ -15,11 +15,11 @@ import (
 	"runtime/debug"
 	"runtime/pprof"
 
-	"github.com/bourbaki-czz/classzz/blockchain/indexers"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/classzz/limits"
-	"github.com/bourbaki-czz/classzz/version"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/blockchain/indexers"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/limits"
+	"github.com/classzz/classzz/version"
+	"github.com/classzz/classzz/wire"
 )
 
 const (

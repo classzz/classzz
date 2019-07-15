@@ -7,13 +7,13 @@ package main
 import (
 	"sync/atomic"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/mempool"
-	"github.com/bourbaki-czz/classzz/netsync"
-	"github.com/bourbaki-czz/classzz/peer"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/mempool"
+	"github.com/classzz/classzz/netsync"
+	"github.com/classzz/classzz/peer"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // rpcPeer provides a peer for use with the RPC server and implements the

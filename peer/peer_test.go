@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/peer"
-	"github.com/bourbaki-czz/classzz/wire"
 	"github.com/btcsuite/go-socks/socks"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/peer"
+	"github.com/classzz/classzz/wire"
 )
 
 // fixedExcessiveBlockSize should not be the default -we want to ensure it will work in all cases

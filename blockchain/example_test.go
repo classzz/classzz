@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/database"
-	_ "github.com/bourbaki-czz/classzz/database/ffldb"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/database"
+	_ "github.com/classzz/classzz/database/ffldb"
+	"github.com/classzz/czzutil"
 )
 
 // This example demonstrates how to create a new chain instance and use

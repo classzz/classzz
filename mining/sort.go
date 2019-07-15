@@ -1,6 +1,6 @@
 package mining
 
-import "github.com/bourbaki-czz/czzutil"
+import "github.com/classzz/czzutil"
 
 // TxSorter implements sort.Interface to allow a slice of block headers to
 // be sorted by timestamp.

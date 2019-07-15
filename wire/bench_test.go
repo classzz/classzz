@@ -13,7 +13,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 )
 
 // genesisCoinbaseTx is the coinbase transaction for the genesis blocks for

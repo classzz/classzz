@@ -8,8 +8,8 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/czzec"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/czzec"
 )
 
 // genRandomSig returns a random message, a signature of the message under the

@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/wire"
 )
 
 // testNoncePrng provides a deterministic prng for the nonce in generated fake

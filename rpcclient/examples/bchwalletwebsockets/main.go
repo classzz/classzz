@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/rpcclient"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/rpcclient"
+	"github.com/classzz/czzutil"
 	"github.com/davecgh/go-spew/spew"
 )
 

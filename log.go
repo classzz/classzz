@@ -7,23 +7,23 @@ package main
 
 import (
 	"fmt"
-	"github.com/bourbaki-czz/classzz/czzrpc"
+	"github.com/classzz/classzz/czzrpc"
 	"os"
 	"path/filepath"
 
-	"github.com/bourbaki-czz/classzz/addrmgr"
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/blockchain/indexers"
-	"github.com/bourbaki-czz/classzz/connmgr"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/classzz/mempool"
-	"github.com/bourbaki-czz/classzz/mining"
-	"github.com/bourbaki-czz/classzz/mining/cpuminer"
-	"github.com/bourbaki-czz/classzz/netsync"
-	"github.com/bourbaki-czz/classzz/peer"
-	"github.com/bourbaki-czz/classzz/txscript"
+	"github.com/classzz/classzz/addrmgr"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/blockchain/indexers"
+	"github.com/classzz/classzz/connmgr"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/mempool"
+	"github.com/classzz/classzz/mining"
+	"github.com/classzz/classzz/mining/cpuminer"
+	"github.com/classzz/classzz/netsync"
+	"github.com/classzz/classzz/peer"
+	"github.com/classzz/classzz/txscript"
 
-	"github.com/bourbaki-czz/czzlog"
+	"github.com/classzz/czzlog"
 	"github.com/jrick/logrotate/rotator"
 )
 

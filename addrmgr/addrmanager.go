@@ -23,8 +23,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/wire"
 )
 
 // AddrManager provides a concurrency safe address manager for caching potential

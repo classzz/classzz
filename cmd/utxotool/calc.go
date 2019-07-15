@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/czzec"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/wire"
 	"io"
 )
 

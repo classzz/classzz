@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/database"
-	_ "github.com/bourbaki-czz/classzz/database/ffldb"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/database"
+	_ "github.com/classzz/classzz/database/ffldb"
+	"github.com/classzz/classzz/wire"
 )
 
 // fixedExcessiveBlockSize should not be the default -we want to ensure it will work in all cases

@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"time"
 
-	rpc "github.com/bourbaki-czz/classzz/rpcclient"
-	"github.com/bourbaki-czz/czzutil"
+	rpc "github.com/classzz/classzz/rpcclient"
+	"github.com/classzz/czzutil"
 )
 
 // nodeConfig contains all the args, and data required to launch a classzz process

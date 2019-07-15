@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // txValidateItem holds a transaction along with which input to validate.

@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/blockchain/indexers"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/classzz/limits"
-	"github.com/bourbaki-czz/czzlog"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/blockchain/indexers"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/limits"
+	"github.com/classzz/czzlog"
 )
 
 const (

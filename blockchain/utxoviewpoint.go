@@ -7,10 +7,10 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // UtxoViewpoint represents a view into the set of unspent transaction outputs

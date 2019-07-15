@@ -3,7 +3,7 @@ indexers
 
 [![Build Status](https://travis-ci.org/bourbaki-czz/classzz.png?branch=master)](https://travis-ci.org/bourbaki-czz/classzz)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://godoc.org/github.com/bourbaki-czz/classzz/blockchain/indexers?status.png)](http://godoc.org/github.com/bourbaki-czz/classzz/blockchain/indexers)
+[![GoDoc](https://godoc.org/github.com/classzz/classzz/blockchain/indexers?status.png)](http://godoc.org/github.com/classzz/classzz/blockchain/indexers)
 
 Package indexers implements optional block chain indexes.
 
@@ -23,7 +23,7 @@ via an RPC interface.
 ## Installation
 
 ```bash
-$ go get -u github.com/bourbaki-czz/classzz/blockchain/indexers
+$ go get -u github.com/classzz/classzz/blockchain/indexers
 ```
 
 ## License

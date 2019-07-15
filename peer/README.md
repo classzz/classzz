@@ -3,7 +3,7 @@ peer
 
 [![Build Status](https://travis-ci.org/bourbaki-czz/classzz.png?branch=master)](https://travis-ci.org/bourbaki-czz/classzz)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/bourbaki-czz/classzz/peer)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/classzz/classzz/peer)
 
 Package peer provides a common base for creating and managing bitcoin cash 
 network peers.
@@ -58,12 +58,12 @@ A quick overview of the major features peer provides are as follows:
 ## Installation and Updating
 
 ```bash
-$ go get -u github.com/bourbaki-czz/classzz/peer
+$ go get -u github.com/classzz/classzz/peer
 ```
 
 ## Examples
 
-* [New Outbound Peer Example](https://godoc.org/github.com/bourbaki-czz/classzz/peer#example-package--NewOutboundPeer)  
+* [New Outbound Peer Example](https://godoc.org/github.com/classzz/classzz/peer#example-package--NewOutboundPeer)  
   Demonstrates the basic process for initializing and creating an outbound peer.
   Peers negotiate by exchanging version and verack messages.  For demonstration,
   a simple handler for the version message is attached to the peer.

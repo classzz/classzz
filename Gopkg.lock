@@ -87,7 +87,7 @@
 [[projects]]
   branch = "master"
   digest = "1:b1053b781e9090dab5d3e916eb04c8d85b63a7f6911007c2cd1dd82fb22f7f6a"
-  name = "github.com/bourbaki-czz/czzlog"
+  name = "github.com/classzz/czzlog"
   packages = ["."]
   pruneopts = "UT"
   revision = "b4f036f92fa66c88eec458f4531ff14ff87704d6"
@@ -95,7 +95,7 @@
 [[projects]]
   branch = "master"
   digest = "1:a2f081ebc2b87c6b83d6a1791a077a4204ce98d23053e33cafc70d3f6a372465"
-  name = "github.com/bourbaki-czz/czzutil"
+  name = "github.com/classzz/czzutil"
   packages = [
     ".",
     "base58",
@@ -311,13 +311,13 @@
     "github.com/btcsuite/winsvc/svc",
     "github.com/davecgh/go-spew/spew",
     "github.com/dchest/siphash",
-    "github.com/bourbaki-czz/czzlog",
-    "github.com/bourbaki-czz/czzutil",
-    "github.com/bourbaki-czz/czzutil/bloom",
-    "github.com/bourbaki-czz/czzutil/gcs",
-    "github.com/bourbaki-czz/czzutil/gcs/builder",
-    "github.com/bourbaki-czz/czzutil/hdkeychain",
-    "github.com/bourbaki-czz/czzutil/merkleblock",
+    "github.com/classzz/czzlog",
+    "github.com/classzz/czzutil",
+    "github.com/classzz/czzutil/bloom",
+    "github.com/classzz/czzutil/gcs",
+    "github.com/classzz/czzutil/gcs/builder",
+    "github.com/classzz/czzutil/hdkeychain",
+    "github.com/classzz/czzutil/merkleblock",
     "github.com/golang/protobuf/proto",
     "github.com/improbable-eng/grpc-web/go/grpcweb",
     "github.com/jessevdk/go-flags",

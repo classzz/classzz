@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/blockchain/fullblocktests"
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/database"
-	_ "github.com/bourbaki-czz/classzz/database/ffldb"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/blockchain/fullblocktests"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/database"
+	_ "github.com/classzz/classzz/database/ffldb"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 const (

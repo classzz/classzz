@@ -8,8 +8,8 @@
 package database
 
 import (
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/czzutil"
 )
 
 // Cursor represents a cursor over key/value pairs and nested buckets of a

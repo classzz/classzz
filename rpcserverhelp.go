@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bourbaki-czz/classzz/btcjson"
+	"github.com/classzz/classzz/btcjson"
 )
 
 // helpDescsEnUS defines the English descriptions used for the help strings.

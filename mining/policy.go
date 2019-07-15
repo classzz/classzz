@@ -5,9 +5,9 @@
 package mining
 
 import (
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 const (

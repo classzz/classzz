@@ -7,7 +7,7 @@ package database
 import (
 	"fmt"
 
-	"github.com/bourbaki-czz/czzlog"
+	"github.com/classzz/czzlog"
 )
 
 // Driver defines a structure for backend drivers to use when they registered

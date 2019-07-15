@@ -25,8 +25,8 @@
 //          "fmt"
 //          "log"
 //
-//          "github.com/bourbaki-czz/czzutil"
-//          "github.com/bourbaki-czz/classzz/chaincfg"
+//          "github.com/classzz/czzutil"
+//          "github.com/classzz/classzz/chaincfg"
 //  )
 //
 //  var testnet = flag.Bool("testnet", false, "operate on the testnet Bitcoin network")

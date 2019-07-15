@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/rpcclient"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/rpcclient"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 func main() {

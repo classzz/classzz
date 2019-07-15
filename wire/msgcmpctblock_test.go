@@ -2,7 +2,7 @@ package wire
 
 import (
 	"bytes"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"

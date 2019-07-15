@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzlog"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzlog"
 )
 
 const (

@@ -3,7 +3,7 @@ rpcclient
 
 [![Build Status](https://travis-ci.org/bourbaki-czz/classzz.png?branch=master)](https://travis-ci.org/bourbaki-czz/classzz)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/bourbaki-czz/classzz/rpcclient)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/classzz/classzz/rpcclient)
 
 rpcclient implements a Websocket-enabled Bitcoin JSON-RPC client package written
 in [Go](http://golang.org/).  It provides a robust and easy to use client for
@@ -18,16 +18,16 @@ implement and the API is not stable yet.
 
 ## Documentation
 
-* [API Reference](http://godoc.org/github.com/bourbaki-czz/classzz/rpcclient)
-* [classzz Websockets Example](https://github.com/bourbaki-czz/classzz/tree/master/rpcclient/examples/classzzwebsockets)
+* [API Reference](http://godoc.org/github.com/classzz/classzz/rpcclient)
+* [classzz Websockets Example](https://github.com/classzz/classzz/tree/master/rpcclient/examples/classzzwebsockets)
   Connects to a classzz RPC server using TLS-secured websockets, registers for
   block connected and block disconnected notifications, and gets the current
   block count
-* [czzwallet Websockets Example](https://github.com/bourbaki-czz/classzz/tree/master/rpcclient/examples/czzwalletwebsockets)
+* [czzwallet Websockets Example](https://github.com/classzz/classzz/tree/master/rpcclient/examples/czzwalletwebsockets)
   Connects to a czzwallet RPC server using TLS-secured websockets, registers for
   notifications about changes to account balances, and gets a list of unspent
   transaction outputs (utxos) the wallet can sign
-* [Bitcoin Core HTTP POST Example](https://github.com/bourbaki-czz/classzz/tree/master/rpcclient/examples/bitcoincorehttp)
+* [Bitcoin Core HTTP POST Example](https://github.com/classzz/classzz/tree/master/rpcclient/examples/bitcoincorehttp)
   Connects to a bitcoin core RPC server using HTTP POST mode with TLS disabled
   and gets the current block count
 
@@ -47,7 +47,7 @@ implement and the API is not stable yet.
 ## Installation
 
 ```bash
-$ go get -u github.com/bourbaki-czz/classzz/rpcclient
+$ go get -u github.com/classzz/classzz/rpcclient
 ```
 
 ## License

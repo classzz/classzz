@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/wire"
 )
 
 // mruInventoryMap provides a concurrency safe map that is limited to a maximum

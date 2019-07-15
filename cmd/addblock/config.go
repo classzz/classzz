@@ -9,11 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/database"
-	_ "github.com/bourbaki-czz/classzz/database/ffldb"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/database"
+	_ "github.com/classzz/classzz/database/ffldb"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 	flags "github.com/jessevdk/go-flags"
 )
 

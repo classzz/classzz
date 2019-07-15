@@ -11,13 +11,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/mempool"
-	"github.com/bourbaki-czz/classzz/peer"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/mempool"
+	"github.com/classzz/classzz/peer"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // fixedExcessiveBlockSize should not be the default -we want to ensure it will work in all cases

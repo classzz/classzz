@@ -5,7 +5,7 @@
 package consensus
 
 import (
-	"github.com/bourbaki-czz/czzlog"
+	"github.com/classzz/czzlog"
 )
 
 // log is a logger that is initialized with no output filters.  This

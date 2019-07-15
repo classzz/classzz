@@ -16,9 +16,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/mining"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/mining"
+	"github.com/classzz/czzutil"
 )
 
 // TODO incorporate Alex Morcos' modifications to Gavin's initial model

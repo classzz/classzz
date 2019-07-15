@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/txscript"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/czzutil"
 )
 
 // CheckpointConfirmations is the number of blocks before the end of the current

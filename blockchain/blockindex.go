@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/wire"
 )
 
 // blockStatus is a bit field representing the validation state of the block.

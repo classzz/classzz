@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/database"
-	_ "github.com/bourbaki-czz/classzz/database/ffldb"
-	"github.com/bourbaki-czz/classzz/wire"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/database"
+	_ "github.com/classzz/classzz/database/ffldb"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 )
 
 // This example demonstrates creating a new database.
@@ -22,8 +22,8 @@ func ExampleCreate() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/bourbaki-czz/classzz/database"
-	// 	_ "github.com/bourbaki-czz/classzz/database/ffldb"
+	// 	"github.com/classzz/classzz/database"
+	// 	_ "github.com/classzz/classzz/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.
@@ -48,8 +48,8 @@ func Example_basicUsage() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/bourbaki-czz/classzz/database"
-	// 	_ "github.com/bourbaki-czz/classzz/database/ffldb"
+	// 	"github.com/classzz/classzz/database"
+	// 	_ "github.com/classzz/classzz/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.
@@ -114,8 +114,8 @@ func Example_blockStorageAndRetrieval() {
 	// This example assumes the ffldb driver is imported.
 	//
 	// import (
-	// 	"github.com/bourbaki-czz/classzz/database"
-	// 	_ "github.com/bourbaki-czz/classzz/database/ffldb"
+	// 	"github.com/classzz/classzz/database"
+	// 	_ "github.com/classzz/classzz/database/ffldb"
 	// )
 
 	// Create a database and schedule it to be closed and removed on exit.

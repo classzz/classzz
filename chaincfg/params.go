@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/wire"
 )
 
 // These variables are the chain proof-of-work limit parameters for each default
@@ -265,7 +265,7 @@ var MainNetParams = Params{
 	CashAddressPrefix: "classzz", // always class-zz for mainnet
 
 	// Address encoding magics
-	LegacyPubKeyHashAddrID: 0x00, // starts with c
+	LegacyPubKeyHashAddrID: 0x00, // starts with 1
 	LegacyScriptHashAddrID: 0x05, // starts with 3
 	PrivateKeyID:           0x80, // starts with 5 (uncompressed) or K (compressed)
 

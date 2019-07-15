@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/database"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/database"
 )
 
 // blockRegionCmd defines the configuration options for the fetchblockregion

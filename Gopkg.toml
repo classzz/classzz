@@ -50,11 +50,11 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/bourbaki-czz/czzlog"
+  name = "github.com/classzz/czzlog"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/bourbaki-czz/czzutil"
+  name = "github.com/classzz/czzutil"
 
 [[constraint]]
   branch = "master"

@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/czzec"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/classzz/wire"
 
 	"github.com/btcsuite/go-socks/socks"
 	"github.com/zquestz/grab"

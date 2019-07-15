@@ -5,8 +5,8 @@
 package blockchain
 
 import (
-	"github.com/bourbaki-czz/classzz/czzec"
-	"github.com/bourbaki-czz/classzz/txscript"
+	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/classzz/txscript"
 )
 
 // -----------------------------------------------------------------------------

@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/blockchain"
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/integration/rpctest"
+	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/integration/rpctest"
 )
 
 const (

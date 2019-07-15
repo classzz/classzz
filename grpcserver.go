@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/bourbaki-czz/classzz/czzrpc"
+	"github.com/classzz/classzz/czzrpc"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

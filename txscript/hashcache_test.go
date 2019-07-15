@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/wire"
 	"github.com/davecgh/go-spew/spew"
 )
 

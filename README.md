@@ -1,9 +1,9 @@
 classzz
 ====
 [![Build Status](https://travis-ci.org/bourbaki-czz/classzz.png?branch=master)](https://travis-ci.org/bourbaki-czz/classzz)
-[![Go Report Card](https://goreportcard.com/badge/github.com/bourbaki-czz/classzz)](https://goreportcard.com/report/github.com/bourbaki-czz/classzz)
+[![Go Report Card](https://goreportcard.com/badge/github.com/classzz/classzz)](https://goreportcard.com/report/github.com/classzz/classzz)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/bourbaki-czz/classzz)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/classzz/classzz)
 
 classzz is an alternative full node bitcoin cash implementation written in Go (golang).
 
@@ -12,7 +12,7 @@ and reliable blockchain server which makes it a suitable backend to serve blockc
 or to power your local wallet.
 
 classzz does not include any wallet functionality by design as it makes the codebase more modular and easy to maintain. 
-The [czzwallet](https://github.com/bourbaki-czz/czzwallet) is a separate application that provides a secure Bitcoin Cash wallet 
+The [czzwallet](https://github.com/classzz/czzwallet) is a separate application that provides a secure Bitcoin Cash wallet 
 that communicates with your running classzz instance via the API.
 
 ## Table of Contents
@@ -34,7 +34,7 @@ that communicates with your running classzz instance via the API.
 
 ### Install Pre-built Packages
 
-The easiest way to run the server is to download a pre-built binary. You can find binaries of our latest release for each operating system at the [releases page](https://github.com/bourbaki-czz/classzz/releases).
+The easiest way to run the server is to download a pre-built binary. You can find binaries of our latest release for each operating system at the [releases page](https://github.com/classzz/classzz/releases).
 
 ### Build from Source
 
@@ -46,7 +46,7 @@ If you prefer to install from source do the following:
 - Run the following commands to obtain btcd, all dependencies, and install it:
 
 ```bash
-go get github.com/bourbaki-czz/classzz
+go get github.com/classzz/classzz
 ```
 
 This will download and compile `classzz` and put it in your path.
@@ -67,7 +67,7 @@ To start classzz with default options just run:
 ```
 
 You'll find a large number of runtime options with the help flag. All of them can also be set in a config file.
-See the [sample config file](https://github.com/bourbaki-czz/classzz/blob/master/sample-classzz.conf) for an example of how to use it.
+See the [sample config file](https://github.com/classzz/classzz/blob/master/sample-classzz.conf) for an example of how to use it.
 
 ```bash
 ./classzz --help
@@ -82,7 +82,7 @@ You can use the common json RPC interface through the `czzctl` command:
 ```
 
 Classzz separates the node and the wallet. Commands for the wallet will work when you are also running
-[czzwallet](https://github.com/bourbaki-czz/czzwallet):
+[czzwallet](https://github.com/classzz/czzwallet):
 
 ```bash
 ./czzctl -u username -P password --wallet getnewaddress
@@ -114,11 +114,11 @@ docker exec <container> czzctl <command>
 
 ## Documentation
 
-The documentation is a work-in-progress.  It is located in the [docs](https://github.com/bourbaki-czz/classzz/tree/master/docs) folder.
+The documentation is a work-in-progress.  It is located in the [docs](https://github.com/classzz/classzz/tree/master/docs) folder.
 
 ## Contributing
 
-Contributions are definitely welcome! Please read the contributing [guidelines](https://github.com/bourbaki-czz/classzz/blob/master/docs/code_contribution_guidelines.md) before starting.
+Contributions are definitely welcome! Please read the contributing [guidelines](https://github.com/classzz/classzz/blob/master/docs/code_contribution_guidelines.md) before starting.
 
 ## Security Disclosures
 

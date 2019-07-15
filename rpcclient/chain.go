@@ -10,9 +10,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/bourbaki-czz/classzz/btcjson"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/btcjson"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/wire"
 )
 
 // FutureGetBestBlockHashResult is a future promise to deliver the result of a

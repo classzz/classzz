@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/bourbaki-czz/classzz/chaincfg"
-	"github.com/bourbaki-czz/classzz/czzec"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/czzutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"

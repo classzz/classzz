@@ -27,12 +27,12 @@
 
 classzz is an alternative full node bourbaki-czz implementation written in Go (golang).
 
-This project is a port of the [classzz](https://github.com/bourbaki-czz/classzz) codebase to bourbaki-czz. It provides a high powered
+This project is a port of the [classzz](https://github.com/classzz/classzz) codebase to bourbaki-czz. It provides a high powered
 and reliable blockchain server which makes it a suitable backend to serve blockchain data to lite clients and block explorers
 or to power your local wallet.
 
 classzz does not include any wallet functionality by design as it makes the codebase more modular and easy to maintain. 
-The [czzwallet](https://github.com/bourbaki-czz/czzwallet) is a separate application that provides a secure bourbaki-czz wallet 
+The [czzwallet](https://github.com/classzz/czzwallet) is a separate application that provides a secure bourbaki-czz wallet 
 that communicates with your running classzz instance via the API.
 
 <a name="GettingStarted" />
@@ -43,7 +43,7 @@ that communicates with your running classzz instance via the API.
 
 **2.1 Installation**
 
-The easiest way to run the server is to download a pre-built binary. You can find binaries of our latest release for each operating system at the [releases page](https://github.com/bourbaki-czz/classzz/releases).
+The easiest way to run the server is to download a pre-built binary. You can find binaries of our latest release for each operating system at the [releases page](https://github.com/classzz/classzz/releases).
 
 <a name="WindowsInstallation" />
 
@@ -57,14 +57,14 @@ If you prefer to install from source do the following:
 - Run the following commands to obtain classzz, all dependencies, and install it:
 
 ```bash
-$ go get github.com/bourbaki-czz/classzz
+$ go get github.com/classzz/classzz
 ```
 
 This will download and compile `classzz` and put it in your path.
 
 **2.2 Configuration**
 
-classzz has a number of [configuration](http://godoc.org/github.com/bourbaki-czz/classzz)
+classzz has a number of [configuration](http://godoc.org/github.com/classzz/classzz)
 options, which can be viewed by running: `$ classzz --help`.
 
 <a name="BchctlConfig" />
@@ -149,23 +149,23 @@ configuration necessary, however, there is an optional method to use a
 
 **3.1.1 bootstrap.dat**
 
-* [Using bootstrap.dat](https://github.com/bourbaki-czz/classzz/tree/master/docs/using_bootstrap_dat.md)
+* [Using bootstrap.dat](https://github.com/classzz/classzz/tree/master/docs/using_bootstrap_dat.md)
 
 <a name="NetworkConfig" />
 
 **3.1.2 Network Configuration**
 
-* [What Ports Are Used by Default?](https://github.com/bourbaki-czz/classzz/tree/master/docs/default_ports.md)
-* [How To Listen on Specific Interfaces](https://github.com/bourbaki-czz/classzz/tree/master/docs/configure_peer_server_listen_interfaces.md)
-* [How To Configure RPC Server to Listen on Specific Interfaces](https://github.com/bourbaki-czz/classzz/tree/master/docs/configure_rpc_server_listen_interfaces.md)
-* [Configuring classzz with Tor](https://github.com/bourbaki-czz/classzz/tree/master/docs/configuring_tor.md)
+* [What Ports Are Used by Default?](https://github.com/classzz/classzz/tree/master/docs/default_ports.md)
+* [How To Listen on Specific Interfaces](https://github.com/classzz/classzz/tree/master/docs/configure_peer_server_listen_interfaces.md)
+* [How To Configure RPC Server to Listen on Specific Interfaces](https://github.com/classzz/classzz/tree/master/docs/configure_rpc_server_listen_interfaces.md)
+* [Configuring classzz with Tor](https://github.com/classzz/classzz/tree/master/docs/configuring_tor.md)
 
 <a name="Wallet" />
 
 **3.1 Wallet**
 
 classzz was intentionally developed without an integrated wallet for security
-reasons.  Please see [czzwallet](https://github.com/bourbaki-czz/czzwallet) for more
+reasons.  Please see [czzwallet](https://github.com/classzz/czzwallet) for more
 information.
 
 <a name="DeveloperResources" />
@@ -174,42 +174,42 @@ information.
 
 <a name="ContributionGuidelines" />
 
-* [Code Contribution Guidelines](https://github.com/bourbaki-czz/classzz/tree/master/docs/code_contribution_guidelines.md)
+* [Code Contribution Guidelines](https://github.com/classzz/classzz/tree/master/docs/code_contribution_guidelines.md)
 
 <a name="JSONRPCReference" />
 
-* [JSON-RPC Reference](https://github.com/bourbaki-czz/classzz/tree/master/docs/json_rpc_api.md)
-    * [RPC Examples](https://github.com/bourbaki-czz/classzz/tree/master/docs/json_rpc_api.md#ExampleCode)
+* [JSON-RPC Reference](https://github.com/classzz/classzz/tree/master/docs/json_rpc_api.md)
+    * [RPC Examples](https://github.com/classzz/classzz/tree/master/docs/json_rpc_api.md#ExampleCode)
 
 <a name="GoPackages" />
 
 * The bourbaki-czz related Go Packages:
-    * [pcclient](https://github.com/bourbaki-czz/classzz/tree/master/rpcclient) - Implements a
+    * [pcclient](https://github.com/classzz/classzz/tree/master/rpcclient) - Implements a
       robust and easy to use Websocket-enabled Bitcoin JSON-RPC client
-    * [btcjson](https://github.com/bourbaki-czz/classzz/tree/master/btcjson) - Provides an extensive API
+    * [btcjson](https://github.com/classzz/classzz/tree/master/btcjson) - Provides an extensive API
       for the underlying JSON-RPC command and return values
-    * [wire](https://github.com/bourbaki-czz/classzz/tree/master/wire) - Implements the
+    * [wire](https://github.com/classzz/classzz/tree/master/wire) - Implements the
       CZZ wire protocol
-    * [peer](https://github.com/bourbaki-czz/classzz/tree/master/peer) -
+    * [peer](https://github.com/classzz/classzz/tree/master/peer) -
       Provides a common base for creating and managing Bitcoin network peers.
-    * [blockchain](https://github.com/bourbaki-czz/classzz/tree/master/blockchain) -
+    * [blockchain](https://github.com/classzz/classzz/tree/master/blockchain) -
       Implements Czz block handling and chain selection rules
-    * [blockchain/fullblocktests](https://github.com/bourbaki-czz/classzz/tree/master/blockchain/fullblocktests) -
+    * [blockchain/fullblocktests](https://github.com/classzz/classzz/tree/master/blockchain/fullblocktests) -
       Provides a set of block tests for testing the consensus validation rules
-    * [txscript](https://github.com/bourbaki-czz/classzz/tree/master/txscript) -
+    * [txscript](https://github.com/classzz/classzz/tree/master/txscript) -
       Implements the Czz transaction scripting language
-    * [czzec](https://github.com/bourbaki-czz/classzz/tree/master/czzec) - Implements
+    * [czzec](https://github.com/classzz/classzz/tree/master/czzec) - Implements
       support for the elliptic curve cryptographic functions needed for the
       Bitcoin scripts
-    * [database](https://github.com/bourbaki-czz/classzz/tree/master/database) -
+    * [database](https://github.com/classzz/classzz/tree/master/database) -
       Provides a database interface for the Czz block chain
-    * [mempool](https://github.com/bourbaki-czz/classzz/tree/master/mempool) -
+    * [mempool](https://github.com/classzz/classzz/tree/master/mempool) -
       Package mempool provides a policy-enforced pool of unmined czz
       transactions.
-    * [czzutil](https://github.com/bourbaki-czz/czzutil) - Provides Czz-specific
+    * [czzutil](https://github.com/classzz/czzutil) - Provides Czz-specific
       convenience functions and types
-    * [chainhash](https://github.com/bourbaki-czz/classzz/tree/master/chaincfg/chainhash) -
+    * [chainhash](https://github.com/classzz/classzz/tree/master/chaincfg/chainhash) -
       Provides a generic hash type and associated functions that allows the
       specific hash algorithm to be abstracted.
-    * [connmgr](https://github.com/bourbaki-czz/classzz/tree/master/connmgr) -
+    * [connmgr](https://github.com/classzz/classzz/tree/master/connmgr) -
       Package connmgr implements a generic Czz network connection manager.

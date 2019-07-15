@@ -7,7 +7,7 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 )
 
 // ThresholdState define the various threshold states used when voting on

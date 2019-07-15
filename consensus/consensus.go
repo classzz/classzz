@@ -4,7 +4,7 @@ package consensus
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"golang.org/x/crypto/sha3"
 	"hash"
 	"math/big"

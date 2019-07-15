@@ -8,8 +8,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/bourbaki-czz/classzz/addrmgr"
-	"github.com/bourbaki-czz/classzz/wire"
+	"github.com/classzz/classzz/addrmgr"
+	"github.com/classzz/classzz/wire"
 )
 
 // TestIPTypes ensures the various functions which determine the type of an IP

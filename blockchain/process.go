@@ -7,9 +7,9 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/bourbaki-czz/classzz/chaincfg/chainhash"
-	"github.com/bourbaki-czz/classzz/database"
-	"github.com/bourbaki-czz/czzutil"
+	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/database"
+	"github.com/classzz/czzutil"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
