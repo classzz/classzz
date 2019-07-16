@@ -361,6 +361,7 @@ type LegacyAddressScriptHash struct {
 // NewLegacyAddressScriptHash returns a new LegacyAddressScriptHash.
 func NewLegacyAddressScriptHash(serializedScript []byte, net *chaincfg.Params) (*LegacyAddressScriptHash, error) {
 	scriptHash := Hash160(serializedScript)
+
 	return newLegacyAddressScriptHashFromHash(scriptHash, net.LegacyScriptHashAddrID)
 }
 
@@ -380,7 +381,6 @@ func newLegacyAddressScriptHashFromHash(scriptHash []byte, netID byte) (*LegacyA
 	if len(scriptHash) != ripemd160.Size {
 		return nil, errors.New("scriptHash must be 20 bytes")
 	}
-
 	addr := &LegacyAddressScriptHash{netID: netID}
 	copy(addr.hash[:], scriptHash)
 	return addr, nil
@@ -589,9 +589,9 @@ func checkDecodeCashAddress(input string) (result []byte, prefix string, t Addre
 		return data, prefix, AddrTypePayToPubKeyHash, errors.New("incorrect data length")
 	}
 	switch data[0] {
-	case 0x00:
+	case 0xc0:
 		t = AddrTypePayToPubKeyHash
-	case 0x08:
+	case 0x10:
 		t = AddrTypePayToScriptHash
 	}
 	return data[1:21], prefix, t, nil
@@ -604,11 +604,11 @@ type AddressType int
 const (
 	// AddrTypePayToPubKeyHash is the numeric identifier for
 	// a cashaddr PayToPubkeyHash address
-	AddrTypePayToPubKeyHash AddressType = 0
+	AddrTypePayToPubKeyHash AddressType = 24
 
 	// AddrTypePayToScriptHash is the numeric identifier for
 	// a cashaddr PayToPubkeyHash address
-	AddrTypePayToScriptHash AddressType = 1
+	AddrTypePayToScriptHash AddressType = 2
 )
 
 // Charset is the base32 character set for the cashaddr.
