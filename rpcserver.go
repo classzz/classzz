@@ -4048,6 +4048,9 @@ func (s *rpcServer) decrementClients() {
 // of the server (true) or whether the user is limited (false). The second is
 // always false if the first is.
 func (s *rpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error) {
+	if big.NewInt(0).SetBytes(s.authsha[:]).Uint64() == 0 {
+		return true, false, nil
+	}
 	authhdr := r.Header["Authorization"]
 	if len(authhdr) <= 0 {
 		if require {
@@ -4058,9 +4061,7 @@ func (s *rpcServer) checkAuth(r *http.Request, require bool) (bool, bool, error)
 
 		return false, false, nil
 	}
-
 	authsha := sha256.Sum256([]byte(authhdr[0]))
-
 	// Check for limited auth first as in environments with limited users, those
 	// are probably expected to have a higher volume of calls
 	limitcmp := subtle.ConstantTimeCompare(authsha[:], s.limitauthsha[:])
@@ -4329,12 +4330,12 @@ func (s *rpcServer) Start() {
 		// Keep track of the number of connected clients.
 		s.incrementClients()
 		defer s.decrementClients()
+
 		_, isAdmin, err := s.checkAuth(r, true)
 		if err != nil {
 			jsonAuthFail(w)
 			return
 		}
-
 		// Read and respond to the request.
 		s.jsonRPCRead(w, r, isAdmin)
 	})

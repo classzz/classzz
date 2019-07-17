@@ -797,10 +797,10 @@ func loadConfig() (*config, []string, error) {
 	}
 
 	// The RPC server is disabled if no username or password is provided.
-	if (cfg.RPCUser == "" || cfg.RPCPass == "") &&
-		(cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
-		cfg.DisableRPC = true
-	}
+	// (cfg.RPCUser == "" || cfg.RPCPass == "")
+	//if (cfg.RPCLimitUser == "" || cfg.RPCLimitPass == "") {
+	//	cfg.DisableRPC = true
+	//}
 
 	if cfg.DisableRPC {
 		czzdLog.Infof("RPC service is disabled")
@@ -968,6 +968,7 @@ func loadConfig() (*config, []string, error) {
 		allowedTLSListeners := map[string]struct{}{
 			"localhost": {},
 			"127.0.0.1": {},
+			"0.0.0.0":   {},
 			"::1":       {},
 		}
 		for _, addr := range cfg.RPCListeners {
