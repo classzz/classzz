@@ -2294,7 +2294,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	blockTemplate := s.gbtWorkState.template
 
 	if blockTemplate == nil || (s.cfg.Chain.BestSnapshot().Hash == blockTemplate.Block.BlockHash() && s.cfg.Chain.BestSnapshot().Height == blockTemplate.Height) {
-		s.gbtWorkState.updateBlockTemplate(s, true)
+		s.gbtWorkState.updateBlockTemplate(s, false)
 		blockTemplate = s.gbtWorkState.template
 	}
 
