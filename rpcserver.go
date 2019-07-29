@@ -577,6 +577,7 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 		switch addr.(type) {
 		case *czzutil.AddressPubKeyHash:
 		case *czzutil.AddressScriptHash:
+		case *czzutil.LegacyAddressPubKeyHash:
 		default:
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCInvalidAddressOrKey,
