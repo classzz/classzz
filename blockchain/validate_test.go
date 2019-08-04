@@ -405,7 +405,7 @@ func newTestBlock(base, tip *wire.MsgBlock, coinbaseSigOps, tx1SigOps, tx2SigOps
 
 	// make a new valid block with duplicate transactions of the base block
 	dup := wire.NewMsgBlock(wire.NewBlockHeader(
-		1, &prevHash, &prevMRoot, easyBits, 2))
+		1, &prevHash, &prevMRoot, &wire.EmptyCIDRoot, easyBits, 2))
 	dup.Header.Timestamp = tip.Header.Timestamp.Add(time.Second)
 	for i, tx := range base.Transactions {
 		err := dup.AddTransaction(tx.Copy())
