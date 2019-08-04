@@ -55,6 +55,7 @@ const (
 	ScriptHashTy                     // Pay to script hash.
 	MultiSigTy                       // Multi signature.
 	NullDataTy                       // Empty data-only (provably prunable).
+	EntangleTy						 // 
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -66,6 +67,7 @@ var scriptClassToName = []string{
 	ScriptHashTy:  "scripthash",
 	MultiSigTy:    "multisig",
 	NullDataTy:    "nulldata",
+	EntangleTy:	   "EntangleTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -146,6 +148,9 @@ func isNullData(pops []parsedOpcode) bool {
 	if l < 1 || pops[0].opcode.value != OP_RETURN {
 		return false
 	}
+	if l >= 2 && pops[1].opcode.value == OP_UNKNOWN193 {
+		return false
+	}
 
 	scriptLen := 1
 	for _, pop := range pops[1:] {
@@ -168,6 +173,13 @@ func isNullData(pops []parsedOpcode) bool {
 	return scriptLen <= MaxDataCarrierSize
 }
 
+func isEntangleTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN193 
+}
+
 // scriptType returns the type of the script being inspected from the known
 // standard types.
 func typeOfScript(pops []parsedOpcode) ScriptClass {
@@ -181,6 +193,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return MultiSigTy
 	} else if isNullData(pops) {
 		return NullDataTy
+	} else if isEntangleTy(pops) {
+		return EntangleTy
 	}
 	return NonStandardTy
 }
@@ -223,6 +237,8 @@ func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
 		// for the extra push that is required to compensate.
 		return asSmallInt(pops[0].opcode) + 1
 
+	case EntangleTy:
+		fallthrough
 	case NullDataTy:
 		fallthrough
 	default:
@@ -402,7 +418,16 @@ func PayToAddrScript(addr czzutil.Address) ([]byte, error) {
 		"address type %T", addr)
 	return nil, scriptError(ErrUnsupportedAddress, str)
 }
-
+// OP_RETURN AND OP_UNKNOWN193 
+func EntangleScript(height uint64,tx []byte) ([]byte,error) {
+	if len(tx) + 8 > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(tx), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).
+	AddInt64(int64(height)).AddData(tx).Script()
+}
 // NullDataScript creates a provably-prunable script containing OP_RETURN
 // followed by the passed data.  An Error with the error code ErrTooMuchNullData
 // will be returned if the length of the passed data exceeds MaxDataCarrierSize.
