@@ -7,16 +7,14 @@ package mining
 import (
 	"container/heap"
 	"fmt"
-	"time"
-
-	"sort"
-
 	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"sort"
+	"time"
 )
 
 const (
@@ -32,10 +30,6 @@ const (
 	// and is used to monitor BIP16 support as well as blocks that are
 	// generated via classzz.
 	CoinbaseFlags = "/classzz/"
-
-	CoinPool1 = "cz79vvfjzucamkve8mtcp396pmt5gagt2vfr7528qh"
-
-	CoinPool2 = "cqntkfjt93rrnmd49vu57ar079l3srasusswzhagx4"
 )
 
 // TxDesc is a descriptor about a transaction in a transaction source along with
@@ -263,15 +257,16 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	var pkScript1 []byte
 	var pkScript2 []byte
 
+	CoinPool1 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	CoinPool2 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}
+
 	var err error
-	addr1, err := czzutil.DecodeAddress(CoinPool1, params)
-	pkScript1, err = txscript.PayToAddrScript(addr1)
+	pkScript1, err = txscript.PayToPubKeyHashScript(CoinPool1)
 	if err != nil {
 		return nil, err
 	}
 
-	addr2, err := czzutil.DecodeAddress(CoinPool2, params)
-	pkScript2, err = txscript.PayToAddrScript(addr2)
+	pkScript2, err = txscript.PayToPubKeyHashScript(CoinPool2)
 	if err != nil {
 		return nil, err
 	}
@@ -304,15 +299,18 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	//Calculation incentive
 	reward := blockchain.CalcBlockSubsidy(nextBlockHeight, params)
 
-	// Calculate 10% of the reward.
-	reward1 := reward / 10
+	// reward2 = reward * 19%
+	reward1 := reward * 19 / 100
+
+	// Calculate 1% of the reward.
+	reward2 := reward / 100
 
 	// Calculate 1 -20% = 80% of the reward. Coinbase
-	reward2 := reward - reward1*2
+	reward3 := reward - reward1 - reward2
 
 	// Coinbase reward
 	tx.AddTxOut(&wire.TxOut{
-		Value:    reward2,
+		Value:    reward3,
 		PkScript: pkScript,
 	})
 
@@ -324,7 +322,7 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 
 	// CoinPool2 reward
 	tx.AddTxOut(&wire.TxOut{
-		Value:    reward1,
+		Value:    reward2,
 		PkScript: pkScript2,
 	})
 
@@ -835,6 +833,7 @@ mempoolLoop:
 		Version:    nextBlockVersion,
 		PrevBlock:  best.Hash,
 		MerkleRoot: *merkles[len(merkles)-1],
+		CIDRoot:    chainhash.Hash{},
 		Timestamp:  ts,
 		Bits:       reqDifficulty,
 	}

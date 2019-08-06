@@ -39,7 +39,7 @@ const (
 	// while they are actively searching for a solution.  This is done to
 	// reduce the amount of syncs between the workers that must be done to
 	// keep track of the hashes per second.
-	hashUpdateSecs = 15
+	hashUpdateSecs = 30
 )
 
 var (
@@ -321,7 +321,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	lastTxUpdate := m.g.TxSource().LastUpdated()
 	hashesCompleted := uint64(0)
 
-	fmt.Println("miner block", "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
+	fmt.Println("miner block", "hash", param.Info.HeadHash.String(), "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
 
 	for {
 		select {
@@ -349,10 +349,12 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 			}
 
 			m.g.UpdateBlockTime(msgBlock)
+			param.Info.HeadHash = header.BlockHashNoNonce()
 
 		default:
 			// Non-blocking select to fall through
 		}
+
 		header.Nonce, found = consensus.MineBlock(&param)
 		hashesCompleted += param.Loops
 		if found {
@@ -360,6 +362,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 			return true
 		}
 		param.Begin += param.Loops
+
 	}
 	return false
 }

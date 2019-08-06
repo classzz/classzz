@@ -354,8 +354,8 @@ func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags Behavio
 			HeadHash: hash,
 			Target:   target,
 		}
-		fmt.Println("val", hash.String())
-		fmt.Println("target", target.String())
+		//fmt.Println("val", hash.String())
+		//fmt.Println("target", target)
 
 		if err := consensus.VerifyBlockSeal(param, header.Nonce); err != nil {
 			str := fmt.Sprintf("block hash of %064x is higher than "+

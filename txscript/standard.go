@@ -346,6 +346,10 @@ func payToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
 		Script()
 }
 
+func PayToPubKeyHashScript(pubKeyHash []byte) ([]byte, error) {
+	return payToPubKeyHashScript(pubKeyHash)
+}
+
 // payToScriptHashScript creates a new script to pay a transaction output to a
 // script hash. It is expected that the input is a valid hash.
 func payToScriptHashScript(scriptHash []byte) ([]byte, error) {
