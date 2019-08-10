@@ -418,16 +418,12 @@ func PayToAddrScript(addr czzutil.Address) ([]byte, error) {
 		"address type %T", addr)
 	return nil, scriptError(ErrUnsupportedAddress, str)
 }
-// OP_RETURN AND OP_UNKNOWN193 
-func EntangleScript(height uint64,tx []byte) ([]byte,error) {
-	if len(tx) + 8 > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(tx), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).
-	AddInt64(int64(height)).AddData(tx).Script()
+
+// EntangleScript impl in
+func EntangleScript(data []byte) ([]byte, error) {
+	return NullDataScript(data)
 }
+
 // NullDataScript creates a provably-prunable script containing OP_RETURN
 // followed by the passed data.  An Error with the error code ErrTooMuchNullData
 // will be returned if the length of the passed data exceeds MaxDataCarrierSize.
