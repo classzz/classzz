@@ -38,6 +38,7 @@ type EntangleTxInfo struct {
 
 type EntangleVerify interface {
 	VerifyTx(chainType uint8, Height uint64, txID []byte) error
+	GetPubByteFromTx(chainType uint8, txID []byte) (error,[]byte)
 }
 
 func (info *EntangleTxInfo) Serialize() []byte {
@@ -182,6 +183,11 @@ func VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleInfo, validator Entang
 	return nil
 }
 
-func MakePolymerTx(tx *wire.MsgTx) {
-	
+func MakeMegerTx(tx *wire.MsgTx) {
+	/*
+		1. get utxo from pool 
+		2. make the pool address reward
+		3. make coin base reward
+		4. make entangle reward(make entangle txid and output index as input's outPoint)
+	*/
 }
