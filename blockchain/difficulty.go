@@ -260,7 +260,7 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 
 	// 1 - ((timestamp - parent.timestamp) // 30
 	x.Sub(bigTime, bigParentTime)
-	log.Info("Difficulty ", "timestamp - parent.timestamp", x)
+	//log.Info("Difficulty ", "number", lastNode.height)
 	x.Div(x, big30)
 	x.Sub(bigOne, x)
 
@@ -288,8 +288,6 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 	if newTarget.Cmp(b.chainParams.PowLimit) > 0 {
 		newTarget.Set(b.chainParams.PowLimit)
 	}
-
-	log.Info("Difficulty ", "lastNode_work", difficulty, "now_work", newDifficulty)
 	return BigToCompact(newTarget), nil
 }
 
