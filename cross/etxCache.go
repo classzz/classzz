@@ -1,7 +1,5 @@
 package cross
 
-// "fmt"
-
 type CacheEntangleInfo struct {
 }
 

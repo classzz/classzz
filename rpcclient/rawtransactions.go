@@ -97,13 +97,13 @@ func (r FutureGetRawTransactionResult) Receive() (*czzutil.Tx, error) {
 // the returned instance.
 //
 // See GetRawTransaction for the blocking version and more details.
-func (c *Client) GetRawTransactionAsync(txHash *chainhash.Hash) FutureGetRawTransactionResult {
-	hash := ""
-	if txHash != nil {
-		hash = txHash.String()
-	}
+func (c *Client) GetRawTransactionAsync(txHash string) FutureGetRawTransactionResult {
+	//hash := ""
+	//if txHash != nil {
+	//	hash = txHash.String()
+	//}
 
-	cmd := btcjson.NewGetRawTransactionCmd(hash, btcjson.Int(0))
+	cmd := btcjson.NewGetRawTransactionCmd(txHash, btcjson.Int(0))
 	return c.sendCmd(cmd)
 }
 
@@ -111,7 +111,7 @@ func (c *Client) GetRawTransactionAsync(txHash *chainhash.Hash) FutureGetRawTran
 //
 // See GetRawTransactionVerbose to obtain additional information about the
 // transaction.
-func (c *Client) GetRawTransaction(txHash *chainhash.Hash) (*czzutil.Tx, error) {
+func (c *Client) GetRawTransaction(txHash string) (*czzutil.Tx, error) {
 	return c.GetRawTransactionAsync(txHash).Receive()
 }
 
