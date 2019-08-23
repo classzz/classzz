@@ -36,11 +36,6 @@ type EntangleTxInfo struct {
 	ExtTxHash []byte
 }
 
-type EntangleVerify interface {
-	VerifyTx(chainType uint8, txID []byte, Height uint64, Index uint32, Amount *big.Int) error
-	GetPubByteFromTx(chainType uint8, txID []byte) (error, []byte)
-}
-
 func (info *EntangleTxInfo) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
@@ -53,7 +48,6 @@ func (info *EntangleTxInfo) Serialize() []byte {
 
 	buf.Write(b1)
 	buf.Write(info.ExtTxHash)
-
 	return buf.Bytes()
 }
 
@@ -77,18 +71,6 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if int(uint32(l)) != n {
 		panic("b0 not equal n")
 	}
-	info.Amount.SetBytes(b0)
-	info.ExtTxHash = make([]byte, int(infoFixed[info.ExTxType]))
-	n2, _ := buf.Read(info.ExtTxHash)
-
-	if len(info.ExtTxHash) != n2 {
-		panic("len(info.ExtTxHash) not equal n2")
-	}
-
-	// if len(info.ExtTxHash) != int(infoFixed[info.ExTxType]) {
-	// 	e := fmt.Sprintf("lenght not match,[request:%v,exist:%v]", infoFixed[info.ExTxType], len(info.ExtTxHash))
-	// 	return errors.New(e)
-	// }
 	return nil
 }
 
@@ -150,4 +132,5 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 		txIn.SignatureScript = sigScript
 	}
 
-	return 
+	return nil
+}

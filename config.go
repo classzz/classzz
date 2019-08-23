@@ -188,6 +188,7 @@ type config struct {
 	GrpcAuthToken           string        `long:"grpcauthtoken" description:"An authentication token for the gRPC API to authenticate clients"`
 	DBCacheSize             uint64        `long:"dbcachesize" description:"The maximum size in MiB of the database cache"`
 	DBFlushInterval         uint32        `long:"dbflushinterval" description:"The number of seconds between database flushes"`
+	DogeCoinRPC             []string      `long:"dogecoinrpc" description:"The number of seconds between database flushes"`
 	lookup                  func(string) ([]net.IP, error)
 	oniondial               func(string, string, time.Duration) (net.Conn, error)
 	dial                    func(string, string, time.Duration) (net.Conn, error)
@@ -945,6 +946,27 @@ func loadConfig() (*config, []string, error) {
 		fmt.Fprintln(os.Stderr, err)
 		fmt.Fprintln(os.Stderr, usageMessage)
 		return nil, nil, err
+	}
+
+	// Check mining addresses are valid and saved parsed versions.
+	cfg.miningAddrs = make([]czzutil.Address, 0, len(cfg.MiningAddrs))
+	for _, strAddr := range cfg.MiningAddrs {
+		addr, err := czzutil.DecodeAddress(strAddr, activeNetParams.Params)
+		if err != nil {
+			str := "%s: mining address '%s' failed to decode: %v"
+			err := fmt.Errorf(str, funcName, strAddr, err)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, err
+		}
+		if !addr.IsForNet(activeNetParams.Params) {
+			str := "%s: mining address '%s' is on the wrong network"
+			err := fmt.Errorf(str, funcName, strAddr)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, usageMessage)
+			return nil, nil, err
+		}
+		cfg.miningAddrs = append(cfg.miningAddrs, addr)
 	}
 
 	// Add default port to all listener addresses if needed and remove

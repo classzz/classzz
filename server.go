@@ -3134,6 +3134,7 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		FastSync:           cfg.FastSync,
 		FastSyncDataDir:    cfg.DataDir,
 		Proxy:              cfg.Proxy,
+		DogeCoinRPC:        cfg.DogeCoinRPC,
 	})
 	if err != nil {
 		return nil, err

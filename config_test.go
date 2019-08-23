@@ -93,11 +93,13 @@ func TestCreateDefaultConfigFile(t *testing.T) {
 func TestGenesisAdderss(t *testing.T) {
 
 	key, err := czzec.NewPrivateKey(czzec.S256())
+	wif, err := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
 	if err != nil {
 		t.Errorf("failed to make privKey for : %v", err)
 		return
 	}
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
+	fmt.Println("wif:", wif.String())
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
 

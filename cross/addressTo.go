@@ -3,7 +3,6 @@ package cross
 import (
 	"crypto/ecdsa"
 	"errors"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/czzutil"

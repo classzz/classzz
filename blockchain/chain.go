@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"container/list"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"math"
 	"sync"
 	"time"
@@ -225,6 +226,9 @@ type BlockChain struct {
 	// fastSyncDone chan is used to signal that the UTXO set download has
 	// finished.
 	fastSyncDone chan struct{}
+
+	//
+	entangleVerify *cross.EntangleVerify
 }
 
 // HaveBlock returns whether or not the chain instance has the block represented
@@ -2183,6 +2187,8 @@ type Config struct {
 	// Proxy is ip:port of an optional socks5 proxy to use when downloading
 	// the UTXO set in fast sync mode.
 	Proxy string
+
+	DogeCoinRPC []string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2219,6 +2225,10 @@ func New(config *Config) (*BlockChain, error) {
 		}
 	}
 
+	entangleVerify := &cross.EntangleVerify{
+		DogeCoinRPC: config.DogeCoinRPC,
+	}
+
 	params := config.ChainParams
 	targetTimespan := int64(params.TargetTimespan / time.Second)
 	adjustmentFactor := params.RetargetAdjustmentFactor
@@ -2244,6 +2254,7 @@ func New(config *Config) (*BlockChain, error) {
 		pruneDepth:          config.PruneDepth,
 		fastSyncDataDir:     config.FastSyncDataDir,
 		fastSyncDone:        make(chan struct{}),
+		entangleVerify:      entangleVerify,
 	}
 
 	// Initialize the chain state from the passed database.  When the db

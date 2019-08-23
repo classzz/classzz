@@ -3,7 +3,6 @@ package cross
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-
 	"github.com/classzz/classzz/czzec"
 )
 
