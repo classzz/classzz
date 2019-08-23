@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
-	"github.com/classzz/czzutil"
-	"log"
 	"math/big"
 )
 
@@ -55,7 +53,7 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleI
 	return nil
 }
 
-func  (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32, height uint64, amount *big.Int) error {
+func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32, height uint64, amount *big.Int) error {
 	switch ExTxType {
 	case ExpandedTxEntangle_Doge:
 		return ev.verifyDogeTx(ExtTxHash, Vout, amount)
@@ -63,7 +61,7 @@ func  (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, V
 	return nil
 }
 
-func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount czzutil.Amount) error {
+func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int) error {
 
 	connCfg := &rpcclient.ConnConfig{
 		Host:       "localhost:8334",
@@ -86,7 +84,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount czz
 		if len(tx.MsgTx().TxOut) < int(Vout) {
 			return errors.New("doge TxOut index err")
 		}
-		if tx.MsgTx().TxOut[Vout].Value != int64(Amount) {
+		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
 			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return errors.New(e)
 		}

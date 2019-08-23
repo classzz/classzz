@@ -134,3 +134,28 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 
 	return nil
 }
+
+func IsEntangleTx(tx *wire.MsgTx) (bool, map[uint32]*EntangleTxInfo) {
+	// make sure at least one txout in OUTPUT
+	einfo := make(map[uint32]*EntangleTxInfo)
+	for i, v := range tx.TxOut {
+		info := &EntangleTxInfo{}
+		if err := info.Parse(v.PkScript); err == nil {
+			einfo[uint32(i)] = info
+		}
+	}
+	return len(einfo) > 0, einfo
+}
+
+func GetPoolAmount() int64 {
+	return 0
+}
+
+func MakeMegerTx(tx *wire.MsgTx) {
+	/*
+		1. get utxo from pool
+		2. make the pool address reward
+		3. make coin base reward
+		4. make entangle reward(make entangle txid and output index as input's outPoint)
+	*/
+}
