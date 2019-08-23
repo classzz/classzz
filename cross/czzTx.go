@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
+	"math/big"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
@@ -30,27 +30,35 @@ var (
 
 type EntangleTxInfo struct {
 	ExTxType  ExpandedTxType
+	Index     uint32
+	Height    uint64
+	Amount    *big.Int
 	ExtTxHash []byte
-	Vout      uint64
 }
 
 type EntangleVerify interface {
-	VerifyTx(chainType uint8, txID []byte, vout uint64) error
+	VerifyTx(chainType uint8, txID []byte, Height uint64, Index uint32, Amount *big.Int) error
 	GetPubByteFromTx(chainType uint8, txID []byte) (error, []byte)
 }
 
 func (info *EntangleTxInfo) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
-	b0 := byte(info.ExTxType)
-	buf.WriteByte(b0)
-	binary.Write(buf, binary.LittleEndian, info.Vout)
+	buf.WriteByte(byte(info.ExTxType))
+	binary.Write(buf, binary.LittleEndian, info.Index)
+	binary.Write(buf, binary.LittleEndian, info.Height)
+	b1 := info.Amount.Bytes()
+	len := uint8(len(b1))
+	buf.WriteByte(byte(len))
+
+	buf.Write(b1)
 	buf.Write(info.ExtTxHash)
+
 	return buf.Bytes()
 }
 
 func (info *EntangleTxInfo) Parse(data []byte) error {
-	if len(data) <= 5 {
+	if len(data) <= 14 {
 		return errors.New("wrong lenght!")
 	}
 	info.ExTxType = ExpandedTxType(uint8(data[0]))
@@ -60,13 +68,27 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	default:
 		return errors.New("Parse failed,not entangle tx")
 	}
-	buf := bytes.NewBuffer(data[1:5])
-	binary.Read(buf, binary.LittleEndian, &info.Vout)
-	info.ExtTxHash = data[5:]
-	if len(info.ExtTxHash) != int(infoFixed[info.ExTxType]) {
-		e := fmt.Sprintf("lenght not match,[request:%v,exist:%v]", infoFixed[info.ExTxType], len(info.ExtTxHash))
-		return errors.New(e)
+	buf := bytes.NewBuffer(data[1:])
+	binary.Read(buf, binary.LittleEndian, &info.Index)
+	binary.Read(buf, binary.LittleEndian, &info.Height)
+	l, _ := buf.ReadByte()
+	b0 := make([]byte, int(uint32(l)))
+	n, _ := buf.Read(b0)
+	if int(uint32(l)) != n {
+		panic("b0 not equal n")
 	}
+	info.Amount.SetBytes(b0)
+	info.ExtTxHash = make([]byte, int(infoFixed[info.ExTxType]))
+	n2, _ := buf.Read(info.ExtTxHash)
+
+	if len(info.ExtTxHash) != n2 {
+		panic("len(info.ExtTxHash) not equal n2")
+	}
+
+	// if len(info.ExtTxHash) != int(infoFixed[info.ExTxType]) {
+	// 	e := fmt.Sprintf("lenght not match,[request:%v,exist:%v]", infoFixed[info.ExTxType], len(info.ExtTxHash))
+	// 	return errors.New(e)
+	// }
 	return nil
 }
 
@@ -128,30 +150,4 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 		txIn.SignatureScript = sigScript
 	}
 
-	return nil
-}
-
-func IsEntangleTx(tx *wire.MsgTx) (bool, map[uint32]*EntangleTxInfo) {
-	// make sure at least one txout in OUTPUT
-	einfo := make(map[uint32]*EntangleTxInfo)
-	for i, v := range tx.TxOut {
-		info := &EntangleTxInfo{}
-		if err := info.Parse(v.PkScript); err == nil {
-			einfo[uint32(i)] = info
-		}
-	}
-	return len(einfo) > 0, einfo
-}
-
-func GetPoolAmount() int64 {
-	return 0
-}
-
-func MakeMegerTx(tx *wire.MsgTx) {
-	/*
-		1. get utxo from pool
-		2. make the pool address reward
-		3. make coin base reward
-		4. make entangle reward(make entangle txid and output index as input's outPoint)
-	*/
-}
+	return 

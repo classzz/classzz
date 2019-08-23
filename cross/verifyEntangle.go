@@ -3,9 +3,11 @@ package cross
 import (
 	"errors"
 	"fmt"
+	"log"
+	"math/big"
+
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
-	"log"
 )
 
 const (
@@ -34,8 +36,8 @@ func VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleInfo) error {
 	}
 
 	for _, v := range einfo {
-		if err := verifyTx(v.ExTxType, v.ExtTxHash, v.Vout); err != nil {
-			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Vout)
+		if err := verifyTx(v.ExTxType, v.ExtTxHash, v.Index, v.Height, v.Amount); err != nil {
+			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Index)
 			return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 		}
 	}
@@ -49,7 +51,7 @@ func VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleInfo) error {
 	return nil
 }
 
-func verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint64) error {
+func verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32, height uint64, amount *big.Int) error {
 	switch ExTxType {
 	case ExpandedTxEntangle_Doge:
 		return verifyDogeTx(ExtTxHash, Vout)
@@ -57,7 +59,7 @@ func verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint64) error {
 	return nil
 }
 
-func verifyDogeTx(ExtTxHash []byte, Vout uint64) error {
+func verifyDogeTx(ExtTxHash []byte, Vout uint32) error {
 
 	connCfg := &rpcclient.ConnConfig{
 		Host:       "localhost:8334",
@@ -74,8 +76,4 @@ func verifyDogeTx(ExtTxHash []byte, Vout uint64) error {
 	defer client.Shutdown()
 
 	// Get the current block count.
-	tx, err := client.GetRawTransaction("c6c28ffee56883a8ce71d60d059d245a28a9e3a3d7948c9d1482e4cbffaa8d75")
-	fmt.Println(tx.Hash())
-
-	return nil
-}
+	tx, err := client.GetRawTransaction("c6c28ffee56883a8ce71d60d059d245a28a9e3a
