@@ -7,14 +7,17 @@ package mining
 import (
 	"container/heap"
 	"fmt"
+	"math/big"
+	"sort"
+	"time"
+
 	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"sort"
-	"time"
 )
 
 const (
@@ -937,3 +940,20 @@ func (g *BlkTmplGenerator) BestSnapshot() *blockchain.BestState {
 func (g *BlkTmplGenerator) TxSource() TxSource {
 	return g.txSource
 }
+
+func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
+	m := view.Entries()
+	l := len(m)
+	items := &cross.PoolAddrItem{
+		POut:   make([]*wire.OutPoint, 0),
+		Script: make([][]byte, 0),
+		Amount: make([]*big.Int, 0),
+	}
+	for k, v := range m {
+		items.POut = append(items.POut, &k)
+		items.Script = append(items.Script, v.PkScript())
+		items.Amount = append(items.Amount, new(big.Int).SetInt64(v.Amount()))
+	}
+	return items
+}
+
