@@ -34,6 +34,12 @@ type EntangleItem struct {
 	Addr  czzutil.Address
 }
 
+type PoolAddrItem struct {
+	POut   []*wire.OutPoint
+	Script [][]byte
+	Amount []*big.Int
+}
+
 type EntangleTxInfo struct {
 	ExTxType  ExpandedTxType
 	Index     uint32
@@ -195,25 +201,23 @@ MakeMegerTx
 				entangle txoutn
 			   '''''''''''''''
 */
-func MakeMegerTx(tx *wire.MsgTx, poolOut []*wire.OutPoint, script [][]byte, amount []*big.Int, items []*EntangleItem) error {
-	/*
-		1. get utxo from pool
-		2. make the pool address reward
-		3. make coin base reward
-		4. make entangle reward(make entangle txid and output index as input's outPoint)
-	*/
+func MakeMegerTx(tx *wire.MsgTx, pool *PoolAddrItem, amount []*big.Int, items []*EntangleItem) error {
+
+	if pool == nil || len(pool.POut) == 0 {
+		return nil
+	}
 	// make sure have enough Value to exchange
 	poolIn1 := &wire.TxIn{
-		PreviousOutPoint: *poolOut[0],
-		SignatureScript:  script[0],
+		PreviousOutPoint: *pool.POut[0],
+		SignatureScript:  pool.Script[0],
 		Sequence:         wire.MaxTxInSequenceNum,
 	}
 	poolIn2 := &wire.TxIn{
-		PreviousOutPoint: *poolOut[1],
-		SignatureScript:  script[1],
+		PreviousOutPoint: *pool.POut[1],
+		SignatureScript:  pool.Script[1],
 		Sequence:         wire.MaxTxInSequenceNum,
 	}
-	reserve1, reserve2 := amount[0].Int64()+tx.TxOut[1].Value, amount[1].Int64()
+	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
