@@ -28,6 +28,12 @@ var (
 	}
 )
 
+type EntangleItem struct {
+	EType ExpandedTxType
+	Value *big.Int
+	Addr  czzutil.Address
+}
+
 type EntangleTxInfo struct {
 	ExTxType  ExpandedTxType
 	Index     uint32
@@ -163,11 +169,91 @@ func GetPoolAmount() int64 {
 	return 0
 }
 
-func MakeMegerTx(tx *wire.MsgTx) {
+/*
+MakeMegerTx
+	tx (coinbase tx):
+		in:
+		1 empty hash of coinbase txin
+		2 pooladdr1 of txin
+		3 pooladdr2 of txin
+			''''''''''''''''
+			entangle tx1
+				  .
+				  .
+				  .
+			entangle txn
+			''''''''''''''''
+		out:
+			1. coinbase txout
+			2. pooladdr1 txout
+			3. pooladdr2 txout
+			   '''''''''''''''
+				entangle txout1
+						.
+						.
+						.
+				entangle txoutn
+			   '''''''''''''''
+*/
+func MakeMegerTx(tx *wire.MsgTx, poolOut []*wire.OutPoint, script [][]byte, amount []*big.Int, items []*EntangleItem) error {
 	/*
 		1. get utxo from pool
 		2. make the pool address reward
 		3. make coin base reward
 		4. make entangle reward(make entangle txid and output index as input's outPoint)
 	*/
+	// make sure have enough Value to exchange
+	poolIn1 := &wire.TxIn{
+		PreviousOutPoint: *poolOut[0],
+		SignatureScript:  script[0],
+		Sequence:         wire.MaxTxInSequenceNum,
+	}
+	poolIn2 := &wire.TxIn{
+		PreviousOutPoint: *poolOut[1],
+		SignatureScript:  script[1],
+		Sequence:         wire.MaxTxInSequenceNum,
+	}
+	reserve1, reserve2 := amount[0].Int64()+tx.TxOut[1].Value, amount[1].Int64()
+	updateTxOutValue(tx.TxOut[2], reserve2)
+	// merge pool tx
+	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
+	for i, v := range tx.TxIn {
+		if i > 2 {
+			calcExchange(items[i-2], &reserve1)
+			pkScript, err := txscript.PayToAddrScript(items[i-2].Addr)
+			if err != nil {
+				return err
+			}
+			out := &wire.TxOut{
+				Value:    items[i-2].Value.Int64(),
+				PkScript: pkScript,
+			}
+			tx.AddTxOut(out)
+		}
+	}
+
+	tx.TxOut[1].Value = reserve1
+	return nil
 }
+
+func updateTxOutValue(out *wire.TxOut, value int64) error {
+	out.Value += value
+	return nil
+}
+
+func calcExchange(item *EntangleItem, reserve *int64) {
+	if item.EType == ExpandedTxEntangle_Doge {
+		item.Value = new(big.Int).SetInt64(int64(toDoge(item.Value).Int64() / 25))
+	} else if item.EType == ExpandedTxEntangle_Ltc {
+		item.Value = new(big.Int).SetInt64(int64(toLtc(item.Value).Int64() / 5))
+	}
+	*reserve = *reserve - item.Value.Int64()
+}
+
+func toDoge(v *big.Int) *big.Int {
+	return new(big.Int).Set(v)
+}
+func toLtc(v *big.Int) *big.Int {
+	return new(big.Int).Set(v)
+}
+

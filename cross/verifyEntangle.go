@@ -3,9 +3,10 @@ package cross
 import (
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
-	"math/big"
 )
 
 const (
@@ -29,9 +30,9 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleI
 		return errors.New("not entangle tx")
 	}
 	amount := int64(0)
-	for i, _ := range einfo {
+	for i, v := range einfo {
 		if ok := cache.TxExist(v); !ok {
-			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Vout)
+			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
 			return errors.New("txid has already entangle:" + errStr)
 		}
 		amount += tx.TxOut[i].Value
@@ -91,4 +92,3 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	}
 
 	return nil
-}
