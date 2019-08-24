@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/txscript"
 	"sync"
-
+	"errors"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/wire"
@@ -842,4 +842,43 @@ func (s *utxoCache) InitConsistentState(tip *blockNode, fastSync bool, interrupt
 	log.Debug("UTXO state reconstruction done")
 
 	return nil
+}
+func (s *utxoCache) FetchPoolAddrView(outs []*wire.OutPoint) (*UtxoViewpoint, error) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	view := NewUtxoViewpoint()
+	viewEntries := view.Entries()
+
+	for _, out := range outs {
+		entry, err := s.getEntry(*out)
+		if err != nil {
+			return nil, err
+		}
+		viewEntries[*out] = entry.Clone()
+	}
+
+	return view, nil
+}
+
+func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*UtxoViewpoint, error) {
+
+	block, err := b.BlockByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+	if block.Height() != height {
+		return nil, errors.New("the height not match")
+	}
+	tx, err1 := block.Tx(0)
+	if err1 != nil {
+		return nil, err1
+	}
+	if len(tx.MsgTx().TxIn) != 3 {
+		return nil, nil
+	}
+	outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
+	b.chainLock.RLock()
+	defer b.chainLock.RUnlock()
+	return b.utxoCache.FetchPoolAddrView(outs)
 }
