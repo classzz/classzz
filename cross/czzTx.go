@@ -71,6 +71,18 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if int(uint32(l)) != n {
 		panic("b0 not equal n")
 	}
+	info.Amount.SetBytes(b0)
+	info.ExtTxHash = make([]byte, int(infoFixed[info.ExTxType]))
+	n2, _ := buf.Read(info.ExtTxHash)
+
+	if len(info.ExtTxHash) != n2 {
+		panic("len(info.ExtTxHash) not equal n2")
+	}
+
+	// if len(info.ExtTxHash) != int(infoFixed[info.ExTxType]) {
+	// 	e := fmt.Sprintf("lenght not match,[request:%v,exist:%v]", infoFixed[info.ExTxType], len(info.ExtTxHash))
+	// 	return errors.New(e)
+	// }
 	return nil
 }
 

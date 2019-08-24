@@ -30,10 +30,10 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleI
 	}
 	amount := int64(0)
 	for i, _ := range einfo {
-		//if ok := cache.TxExist(v); !ok {
-		//	errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Vout)
-		//	return errors.New("txid has already entangle:" + errStr)
-		//}
+		if ok := cache.TxExist(v); !ok {
+			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Vout)
+			return errors.New("txid has already entangle:" + errStr)
+		}
 		amount += tx.TxOut[i].Value
 	}
 
