@@ -92,3 +92,4 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	}
 
 	return nil
+}
