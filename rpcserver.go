@@ -2304,6 +2304,10 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		Target: hex.EncodeToString(blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes()),
 	}
 
+	for i := 0; i < 64-len(ret.Target); i++ {
+		ret.Target = "0" + ret.Target
+	}
+
 	return ret, nil
 }
 
