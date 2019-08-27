@@ -63,14 +63,14 @@ gofmt -s -w bindata.go
 To start classzz with default options just run:
 
 ```bash
-./classzz
+./czzd
 ```
 
 You'll find a large number of runtime options with the help flag. All of them can also be set in a config file.
 See the [sample config file](https://github.com/classzz/classzz/blob/master/sample-classzz.conf) for an example of how to use it.
 
 ```bash
-./classzz --help
+./czzd --help
 ```
 
 You can use the common json RPC interface through the `czzctl` command:
@@ -88,30 +88,6 @@ Classzz separates the node and the wallet. Commands for the wallet will work whe
 ./czzctl -u username -P password --wallet getnewaddress
 ```
 
-## Docker
-
-Building and running `classzz` in docker is quite painless. To build the image:
-
-```
-docker build . -t classzz
-```
-
-To run the image:
-
-```
-docker run classzz
-```
-
-To run `czzctl` and connect to your `classzz` instance:
-
-```
-# Find the running classzz container.
-docker ps
-
-# Exec czzctl.
-docker exec <container> czzctl <command>
-```
-
 ## Documentation
 
 The documentation is a work-in-progress.  It is located in the [docs](https://github.com/classzz/classzz/tree/master/docs) folder.
@@ -120,15 +96,6 @@ The documentation is a work-in-progress.  It is located in the [docs](https://gi
 
 Contributions are definitely welcome! Please read the contributing [guidelines](https://github.com/classzz/classzz/blob/master/docs/code_contribution_guidelines.md) before starting.
 
-## Security Disclosures
-
-To report security issues please contact:
-
-Chris Pacia (ctpacia@gmail.com) - GPG Fingerprint: 0150 2502 DD3A 928D CE52 8CB9 B895 6DBF EE7C 105C
-
-or
-
-Josh Ellithorpe (quest@mac.com) - GPG Fingerprint: B6DE 3514 E07E 30BB 5F40  8D74 E49B 7E00 0022 8DDD 
 
 ## License
 

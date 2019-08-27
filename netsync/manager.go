@@ -52,6 +52,8 @@ const (
 	// syncPeerTickerInterval is how often we check the current
 	// syncPeer. Set to 30 seconds.
 	syncPeerTickerInterval = 30 * time.Second
+
+	checkProofOfWorkNum = 100
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -694,8 +696,25 @@ func (sm *SyncManager) current() bool {
 	return true
 }
 
+func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
+
+	rand.Seed(time.Now().UnixNano())
+	index := rand.Intn(len(bmsgs))
+	block := bmsgs[index].block
+	powLimit := sm.chainParams.PowLimit
+
+	err := blockchain.CheckProofOfWork(block, powLimit)
+	if err != nil {
+		return
+	}
+
+	for _, bmsg := range bmsgs {
+		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
+	}
+}
+
 // handleBlockMsg handles block messages from all peers.
-func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
+func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.BehaviorFlags) {
 	peer := bmsg.peer
 	state, exists := sm.peerStates[peer]
 	if !exists {
@@ -727,7 +746,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg) {
 	// since it is needed to verify the next round of headers links
 	// properly.
 	isCheckpointBlock := false
-	behaviorFlags := blockchain.BFNone
+	//behaviorFlags := blockchain.BFNone
 	if sm.headersFirstMode {
 		firstNodeEl := sm.headerList.Front()
 		if firstNodeEl != nil {
@@ -1368,12 +1387,21 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 func (sm *SyncManager) blockHandler() {
 	ticker := time.NewTicker(syncPeerTickerInterval)
 	defer ticker.Stop()
+	ticker1 := time.NewTicker(1 * time.Second)
+	defer ticker1.Stop()
+
+	var bmsgs []*blockMsg
 
 out:
 	for {
 		select {
 		case <-ticker.C:
 			sm.handleCheckSyncPeer()
+		case <-ticker1.C:
+			if len(bmsgs) > 0 {
+				sm.handleBlocksMsg(bmsgs)
+				bmsgs = []*blockMsg{}
+			}
 		case m := <-sm.msgChan:
 			switch msg := m.(type) {
 			case *newPeerMsg:
@@ -1389,7 +1417,17 @@ out:
 				}
 
 			case *blockMsg:
-				sm.handleBlockMsg(msg)
+
+				if int64(sm.SyncHeight())-int64(sm.syncPeer.LastBlock()) < int64(checkProofOfWorkNum) {
+					sm.handleBlockMsg(msg, blockchain.BFNone)
+					bmsgs = []*blockMsg{}
+				} else {
+					bmsgs = append(bmsgs, msg)
+					if len(bmsgs) == checkProofOfWorkNum {
+						sm.handleBlocksMsg(bmsgs)
+						bmsgs = []*blockMsg{}
+					}
+				}
 				if msg.reply != nil {
 					msg.reply <- struct{}{}
 				}
