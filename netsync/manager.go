@@ -1418,7 +1418,11 @@ out:
 
 			case *blockMsg:
 
-				if int64(sm.SyncHeight())-int64(sm.syncPeer.LastBlock()) < int64(checkProofOfWorkNum) {
+				if sm.syncPeer == nil {
+					sm.handleBlockMsg(msg, blockchain.BFNone)
+					bmsgs = []*blockMsg{}
+
+				} else if int64(sm.SyncHeight())-int64(sm.syncPeer.LastBlock()) < int64(checkProofOfWorkNum) {
 					sm.handleBlockMsg(msg, blockchain.BFNone)
 					bmsgs = []*blockMsg{}
 				} else {
