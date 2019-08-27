@@ -175,6 +175,7 @@ func GetPoolAmount() int64 {
 	return 0
 }
 
+
 /*
 MakeMegerTx
 	tx (coinbase tx):
@@ -182,13 +183,6 @@ MakeMegerTx
 		1 empty hash of coinbase txin
 		2 pooladdr1 of txin
 		3 pooladdr2 of txin
-			''''''''''''''''
-			entangle tx1
-				  .
-				  .
-				  .
-			entangle txn
-			''''''''''''''''
 		out:
 			1. coinbase txout
 			2. pooladdr1 txout
@@ -221,19 +215,17 @@ func MakeMegerTx(tx *wire.MsgTx, pool *PoolAddrItem, amount []*big.Int, items []
 	updateTxOutValue(tx.TxOut[2], reserve2)
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
-	for i, v := range tx.TxIn {
-		if i > 2 {
-			calcExchange(items[i-2], &reserve1)
-			pkScript, err := txscript.PayToAddrScript(items[i-2].Addr)
-			if err != nil {
-				return err
-			}
-			out := &wire.TxOut{
-				Value:    items[i-2].Value.Int64(),
-				PkScript: pkScript,
-			}
-			tx.AddTxOut(out)
+	for i := range items {
+		calcExchange(items[i], &reserve1)
+		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
+		if err != nil {
+			return err
 		}
+		out := &wire.TxOut{
+			Value:    items[i].Value.Int64(),
+			PkScript: pkScript,
+		}
+		tx.AddTxOut(out)
 	}
 
 	tx.TxOut[1].Value = reserve1
