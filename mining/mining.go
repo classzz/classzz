@@ -943,7 +943,7 @@ func (g *BlkTmplGenerator) TxSource() TxSource {
 
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	m := view.Entries()
-	l := len(m)
+	// l := len(m)
 	items := &cross.PoolAddrItem{
 		POut:   make([]*wire.OutPoint, 0),
 		Script: make([][]byte, 0),
@@ -956,4 +956,23 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
+
+func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash]czzutil.Address) []*cross.EntangleItem {
+	items := make([]*cross.EntangleItem,0)
+	for _,v := range txs {
+		is,infos := cross.IsEntangleTx(v.MsgTx())
+		if is {
+			for _,out := range infos {
+				item := &cross.EntangleItem{
+					EType:		out.ExTxType,
+					Value:		new(big.Int).Set(out.Amount),
+				}
+				item.Addr,_ = addrs[*v.Hash()]
+				items = append(items,item)
+			}
+		}		
+	}
+	return items
+}
+
 
