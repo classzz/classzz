@@ -25,18 +25,18 @@ type Hash64 [HashLen]byte
 
 // HashA return
 func (hash *Hash64) ReverseBytes() []byte {
-	for i := 0; i < HashLen/2; i++ {
-		hash[i], hash[HashLen-1-i] = hash[HashLen-1-i], hash[i]
-	}
+	//for i := 0; i < HashLen/2; i++ {
+	//	hash[i], hash[HashLen-1-i] = hash[HashLen-1-i], hash[i]
+	//}
 	return hash[:]
 }
 
 // String returns the Hash as the hexadecimal string of the byte-reversed
 // hash.
 func (hash Hash) String() string {
-	for i := 0; i < HashSize/2; i++ {
-		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
-	}
+	//for i := 0; i < HashSize/2; i++ {
+	//	hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
+	//}
 	return hex.EncodeToString(hash[:])
 }
 
