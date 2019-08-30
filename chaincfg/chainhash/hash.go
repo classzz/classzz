@@ -167,8 +167,12 @@ func Decode(dst *Hash, src string) error {
 
 	// Reverse copy from the temporary hash to destination.  Because the
 	// temporary was zeroed, the written result will be correctly padded.
-	for i, b := range reversedHash[:HashSize/2] {
-		dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
+	//for i, b := range reversedHash[:HashSize/2] {
+	//	dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
+	//}
+
+	for i, _ := range reversedHash {
+		dst[i] = reversedHash[i]
 	}
 
 	return nil
