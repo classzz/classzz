@@ -65,6 +65,19 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 	return nil
 }
 
+// SetBytes sets the bytes which represent the hash.  An error is returned if
+// the number of bytes passed in is not HashSize.
+func (hash *Hash64) SetBytes(newHash []byte) error {
+	nhlen := len(newHash)
+	if nhlen != HashLen {
+		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
+			HashLen)
+	}
+	copy(hash[:], newHash)
+
+	return nil
+}
+
 // IsEqual returns true if target is the same as hash.
 func (hash *Hash) IsEqual(target *Hash) bool {
 	if hash == nil && target == nil {
