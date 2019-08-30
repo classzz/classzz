@@ -2299,9 +2299,9 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	var target chainhash.Hash64
-	target.SetBytes(blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
-
+	var target chainhash.Hash
+	err := target.SetBytes(blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
+	fmt.Println("err", err)
 	//?
 	HashByte := blockTemplate.Block.Header.BlockHashNoNonce()
 
