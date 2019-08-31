@@ -33,6 +33,11 @@ type EntangleItem struct {
 	Value *big.Int
 	Addr  czzutil.Address
 }
+type TuplePubIndex struct {
+	EType 		ExpandedTxType
+	Index 		uint32
+	Pub 		[]byte
+}
 
 type PoolAddrItem struct {
 	POut   []*wire.OutPoint

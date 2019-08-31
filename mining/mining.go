@@ -544,7 +544,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleAddress := make(map[chainhash.Hash]czzutil.Address)
+	entangleAddress := make(map[chainhash.Hash][]*tmpAddressPair)
 
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
@@ -760,6 +760,14 @@ mempoolLoop:
 			logSkippedDeps(tx, deps)
 			continue
 		}
+		err1,obj := toAddressFromEntangle(tx)
+		if err1 != nil {
+			log.Tracef("Skipping tx %s due to error in "+
+				"toAddressFromEntangle: %v", tx.Hash(), err)
+			logSkippedDeps(tx, deps)
+			continue
+		}
+		entangleAddress[*tx.Hash()] = obj
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
 			txscript.StandardVerifyFlags, g.sigCache,
 			g.hashCache)
@@ -971,17 +979,30 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	return items
 }
 
-func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash]czzutil.Address) []*cross.EntangleItem {
+type tmpAddressPair struct {
+	index		uint32
+	address		czzutil.Address
+}
+
+func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash][]*tmpAddressPair) []*cross.EntangleItem {
 	items := make([]*cross.EntangleItem,0)
 	for _,v := range txs {
 		is,infos := cross.IsEntangleTx(v.MsgTx())
 		if is {
-			for _,out := range infos {
+			for i,out := range infos {
 				item := &cross.EntangleItem{
 					EType:		out.ExTxType,
 					Value:		new(big.Int).Set(out.Amount),
+					Addr:		nil,
 				}
-				item.Addr,_ = addrs[*v.Hash()]
+				pairs,ok := addrs[*v.Hash()]
+				if ok {
+					for _,vv := range pairs {
+						if i == vv.index {
+							item.Addr = vv.address
+						}
+					}
+				}
 				items = append(items,item)
 			}
 		}		
@@ -989,4 +1010,36 @@ func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash]czzutil.Address)
 	return items
 }
 
+func toAddressFromEntangle(tx *czzutil.Tx) (error,[]*tmpAddressPair) {
+	// txhash := tx.Hash()
+	is,_ := cross.IsEntangleTx(tx.MsgTx())
+	if is {
+		// verify the entangle tx 
+		/*
+		pairs := make([]*tmpAddressPair,0)
+		err, tt := VerifyEntangleTx(tx,nil)
+		if err != nil {
+			return err,nil
+		}
+		for _,v := range tt {
+			pub,err1 := cross.RecoverPublicFromBytes(tt.Pub,tt.EType)
+			if err1 != nil {
+				return err1,nil
+			}
+			err2,addr := cross.MakeAddress(pub)
+			if err2 != nil {
+				return err2,nil
+			}
+			pairs = append(pairs,&tmpAddressPair{
+				index:		v.Index,
+				address:	addr,
+			})
+		}
+		
+		return nil,pairs
+		*/
+	}
+
+	return nil,nil
+}
 
