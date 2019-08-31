@@ -831,7 +831,7 @@ mempoolLoop:
 	// make entangle tx if it exist
 	eItems := toEntangleItems(blockTxns,entangleAddress)
 	poolItem := toPoolAddrItems(nil)
-	err = cross.MakeMergeTx(coinbase.MsgTx(),&poolItem,eItems)
+	err = cross.MakeMergeTx(coinbaseTx.MsgTx(),poolItem,eItems)
 	if err != nil {
 		return nil, err
 	}
@@ -950,18 +950,19 @@ func (g *BlkTmplGenerator) TxSource() TxSource {
 }
 
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
-	m := view.Entries()
-	// l := len(m)
 	items := &cross.PoolAddrItem{
 		POut:   make([]*wire.OutPoint, 0),
 		Script: make([][]byte, 0),
 		Amount: make([]*big.Int, 0),
 	}
-	for k, v := range m {
-		items.POut = append(items.POut, &k)
-		items.Script = append(items.Script, v.PkScript())
-		items.Amount = append(items.Amount, new(big.Int).SetInt64(v.Amount()))
-	}
+	if view != nil {
+		m := view.Entries()
+		for k, v := range m {
+			items.POut = append(items.POut, &k)
+			items.Script = append(items.Script, v.PkScript())
+			items.Amount = append(items.Amount, new(big.Int).SetInt64(v.Amount()))
+		}	
+	} 
 	return items
 }
 
