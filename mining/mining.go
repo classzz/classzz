@@ -829,8 +829,13 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 	
 	// make entangle tx if it exist
+	cHash,cheight := best.Hash,best.Height
+	lView,lerr := g.chain.FetchPoolUtxoView(&cHash,cheight)
+	if lerr != nil {
+		return nil, err
+	}
 	eItems := toEntangleItems(blockTxns,entangleAddress)
-	poolItem := toPoolAddrItems(nil)
+	poolItem := toPoolAddrItems(lView)
 	err = cross.MakeMergeTx(coinbaseTx.MsgTx(),poolItem,eItems)
 	if err != nil {
 		return nil, err
