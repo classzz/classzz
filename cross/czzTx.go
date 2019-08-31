@@ -195,7 +195,7 @@ MakeMegerTx
 				entangle txoutn
 			   '''''''''''''''
 */
-func MakeMegerTx(tx *wire.MsgTx, pool *PoolAddrItem, amount []*big.Int, items []*EntangleItem) error {
+func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem,items []*EntangleItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -219,7 +219,7 @@ func MakeMegerTx(tx *wire.MsgTx, pool *PoolAddrItem, amount []*big.Int, items []
 		calcExchange(items[i], &reserve1)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
-			return err
+			return errors.New("Make Meger tx failed,err: " + err.Error())
 		}
 		out := &wire.TxOut{
 			Value:    items[i].Value.Int64(),

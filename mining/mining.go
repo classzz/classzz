@@ -544,6 +544,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
+	entangleAddress := make(map[chainhash.Hash]czzutil.Address)
 
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
@@ -826,7 +827,14 @@ mempoolLoop:
 
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
-
+	
+	// make entangle tx if it exist
+	eItems := toEntangleItems(blockTxns,entangleAddress)
+	poolItem := toPoolAddrItems(nil)
+	err = cross.MakeMergeTx(coinbase.MsgTx(),&poolItem,eItems)
+	if err != nil {
+		return nil, err
+	}
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
