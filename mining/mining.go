@@ -760,7 +760,7 @@ mempoolLoop:
 			logSkippedDeps(tx, deps)
 			continue
 		}
-		err1,obj := toAddressFromEntangle(tx)
+		err1,obj := toAddressFromEntangle(tx,g.chain.GetEntangleVerify())
 		if err1 != nil {
 			log.Tracef("Skipping tx %s due to error in "+
 				"toAddressFromEntangle: %v", tx.Hash(), err)
@@ -1010,23 +1010,23 @@ func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash][]*tmpAddressPai
 	return items
 }
 
-func toAddressFromEntangle(tx *czzutil.Tx) (error,[]*tmpAddressPair) {
+func toAddressFromEntangle(tx *czzutil.Tx,ev *cross.EntangleVerify) (error,[]*tmpAddressPair) {
 	// txhash := tx.Hash()
 	is,_ := cross.IsEntangleTx(tx.MsgTx())
 	if is {
 		// verify the entangle tx 
-		/*
+		
 		pairs := make([]*tmpAddressPair,0)
-		err, tt := VerifyEntangleTx(tx,nil)
+		err, tt := ev.VerifyEntangleTx(tx.MsgTx(),nil)
 		if err != nil {
 			return err,nil
 		}
 		for _,v := range tt {
-			pub,err1 := cross.RecoverPublicFromBytes(tt.Pub,tt.EType)
+			pub,err1 := cross.RecoverPublicFromBytes(v.Pub,v.EType)
 			if err1 != nil {
 				return err1,nil
 			}
-			err2,addr := cross.MakeAddress(pub)
+			err2,addr := cross.MakeAddress(*pub)
 			if err2 != nil {
 				return err2,nil
 			}
@@ -1036,8 +1036,7 @@ func toAddressFromEntangle(tx *czzutil.Tx) (error,[]*tmpAddressPair) {
 			})
 		}
 		
-		return nil,pairs
-		*/
+		return nil,pairs		
 	}
 
 	return nil,nil

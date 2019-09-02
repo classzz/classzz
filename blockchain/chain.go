@@ -2358,3 +2358,7 @@ func (b *BlockChain) FlushCachedState(mode FlushMode) error {
 	defer b.chainLock.Unlock()
 	return b.utxoCache.Flush(mode, b.stateSnapshot)
 }
+
+func (b *BlockChain) GetEntangleVerify() *cross.EntangleVerify {
+	return b.entangleVerify
+}
