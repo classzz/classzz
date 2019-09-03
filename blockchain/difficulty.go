@@ -260,7 +260,6 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 
 	// 1 - ((timestamp - parent.timestamp) // 30
 	x.Sub(bigTime, bigParentTime)
-	//log.Info("Difficulty ", "number", lastNode.height)
 	x.Div(x, big30)
 	x.Sub(bigOne, x)
 
@@ -279,6 +278,7 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 	y.Mul(difficulty, x)
 	x.Div(y, DifficultyBoundDivisor)
 	newDifficulty := new(big.Int).Add(difficulty, x)
+	//log.Info("Difficulty ", "number", lastNode.height, "difficulty", lastNode.workSum, "newDifficulty", newDifficulty)
 
 	e := new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil)
 	nt := new(big.Int).Sub(e, newDifficulty)

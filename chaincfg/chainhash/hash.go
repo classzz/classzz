@@ -25,18 +25,18 @@ type Hash64 [HashLen]byte
 
 // HashA return
 func (hash *Hash64) ReverseBytes() []byte {
-	for i := 0; i < HashLen/2; i++ {
-		hash[i], hash[HashLen-1-i] = hash[HashLen-1-i], hash[i]
-	}
+	//for i := 0; i < HashLen/2; i++ {
+	//	hash[i], hash[HashLen-1-i] = hash[HashLen-1-i], hash[i]
+	//}
 	return hash[:]
 }
 
 // String returns the Hash as the hexadecimal string of the byte-reversed
 // hash.
 func (hash Hash) String() string {
-	for i := 0; i < HashSize/2; i++ {
-		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
-	}
+	//for i := 0; i < HashSize/2; i++ {
+	//	hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
+	//}
 	return hex.EncodeToString(hash[:])
 }
 
@@ -59,6 +59,19 @@ func (hash *Hash) SetBytes(newHash []byte) error {
 	if nhlen != HashSize {
 		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
 			HashSize)
+	}
+	copy(hash[:], newHash)
+
+	return nil
+}
+
+// SetBytes sets the bytes which represent the hash.  An error is returned if
+// the number of bytes passed in is not HashSize.
+func (hash *Hash64) SetBytes(newHash []byte) error {
+	nhlen := len(newHash)
+	if nhlen != HashLen {
+		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
+			HashLen)
 	}
 	copy(hash[:], newHash)
 
@@ -154,8 +167,12 @@ func Decode(dst *Hash, src string) error {
 
 	// Reverse copy from the temporary hash to destination.  Because the
 	// temporary was zeroed, the written result will be correctly padded.
-	for i, b := range reversedHash[:HashSize/2] {
-		dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
+	//for i, b := range reversedHash[:HashSize/2] {
+	//	dst[i], dst[HashSize-1-i] = reversedHash[HashSize-1-i], b
+	//}
+
+	for i, _ := range reversedHash {
+		dst[i] = reversedHash[i]
 	}
 
 	return nil

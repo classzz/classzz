@@ -2299,9 +2299,11 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
+	target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
+
 	ret := &btcjson.GetWorkResult{
 		Hash:   blockTemplate.Block.Header.BlockHashNoNonce().String(),
-		Target: hex.EncodeToString(blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes()),
+		Target: target,
 	}
 
 	return ret, nil
