@@ -103,7 +103,7 @@ func isNullOutpoint(outpoint *wire.OutPoint) bool {
 // transaction as opposed to a higher level util transaction.
 func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 	// A coin base must only have one transaction input.
-	if len(msgTx.TxIn) != 3 {
+	if len(msgTx.TxIn) != 1 {
 		return false
 	}
 

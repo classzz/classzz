@@ -1540,8 +1540,9 @@ func (state *gbtWorkState) updateBlockTemplate(s *rpcServer, useCoinbaseValue bo
 		// full coinbase as opposed to only the pertinent details needed
 		// to create their own coinbase.
 		var payAddr czzutil.Address
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		if !useCoinbaseValue {
-			payAddr = cfg.miningAddrs[rand.Intn(len(cfg.miningAddrs))]
+			payAddr = cfg.miningAddrs[r.Intn(len(cfg.miningAddrs))]
 		}
 
 		// Create a new block template that has a coinbase which anyone
