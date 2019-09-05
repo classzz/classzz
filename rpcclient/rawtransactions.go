@@ -250,12 +250,31 @@ func (c *Client) CreateRawTransactionAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
+// CreateRawTransactionAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See CreateRawTransaction for the blocking version and more details.
+func (c *Client) CreateRawEntangleTransactionAsync(inputs []btcjson.TransactionInput,
+	entangleOuts []btcjson.EntangleOut, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewCreateRawEntangleTransactionCmd(inputs, entangleOuts, lockTime)
+	return c.sendCmd(cmd)
+}
+
 // CreateRawTransaction returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,
 	amounts map[czzutil.Address]czzutil.Amount, lockTime *int64) (*wire.MsgTx, error) {
 
 	return c.CreateRawTransactionAsync(inputs, amounts, lockTime).Receive()
+}
+
+// CreateRawTransaction returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) CreateRawEntangleTransaction(inputs []btcjson.TransactionInput,
+	entangleOuts []btcjson.EntangleOut, lockTime *int64) (*wire.MsgTx, error) {
+
+	return c.CreateRawEntangleTransactionAsync(inputs, entangleOuts, lockTime).Receive()
 }
 
 // FutureSendRawTransactionResult is a future promise to deliver the result

@@ -8,9 +8,10 @@
 package btcjson
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-
 	"github.com/classzz/classzz/wire"
 )
 
@@ -56,8 +57,38 @@ type TransactionInput struct {
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawTransactionCmd struct {
 	Inputs   []TransactionInput
-	Amounts  map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"` // In BTC
+	Amounts  map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime *int64
+}
+
+type EntangleOut struct {
+	ExTxType  uint8  `json:"extxtype"`
+	Index     uint32 `json:"index"`
+	Height    uint64 `json:"height"`
+	Amount    uint64 `json:"amount"`
+	ExtTxHash string `json:"exttxhash"`
+}
+
+func (info *EntangleOut) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	buf.WriteByte(byte(info.ExTxType))
+	binary.Write(buf, binary.LittleEndian, info.Index)
+	binary.Write(buf, binary.LittleEndian, info.Height)
+	b1 := info.Amount
+	buf.WriteByte(byte(b1))
+
+	//buf.Write(b1)
+	ExtTxHash := []byte(info.ExtTxHash)
+	buf.Write(ExtTxHash)
+	return buf.Bytes()
+}
+
+// CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
+type CreateRawEntangleTransactionCmd struct {
+	Inputs       []TransactionInput
+	EntangleOuts []EntangleOut
+	LockTime     *int64
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
@@ -71,6 +102,19 @@ func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]fl
 		Inputs:   inputs,
 		Amounts:  amounts,
 		LockTime: lockTime,
+	}
+}
+
+// NewCreateRawTransactionCmd returns a new instance which can be used to issue
+// a createrawtransaction JSON-RPC command.
+//
+// Amounts are in BTC.
+func NewCreateRawEntangleTransactionCmd(inputs []TransactionInput, entangleOuts []EntangleOut,
+	lockTime *int64) *CreateRawEntangleTransactionCmd {
+	return &CreateRawEntangleTransactionCmd{
+		Inputs:       inputs,
+		EntangleOuts: entangleOuts,
+		LockTime:     lockTime,
 	}
 }
 
@@ -792,6 +836,7 @@ func init() {
 
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
+	MustRegisterCmd("createrawentangletransaction", (*CreateRawEntangleTransactionCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)

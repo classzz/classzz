@@ -98,11 +98,9 @@ func TestGenesisAdderss(t *testing.T) {
 		t.Errorf("failed to make privKey for : %v", err)
 		return
 	}
-	wif, err := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
 
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
-	fmt.Println("wif:", wif.String())
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
 

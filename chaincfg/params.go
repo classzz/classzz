@@ -233,7 +233,7 @@ var MainNetParams = Params{
 	GenesisHash:  &genesisHash,
 
 	PowLimit:     mainPowLimit,
-	PowLimitBits: 0x1e100000,
+	PowLimitBits: 0x1e10624d,
 
 	CoinbaseMaturity:         14,
 	SubsidyReductionInterval: 1000000,

@@ -131,58 +131,59 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":               handleAddNode,
-	"createrawtransaction":  handleCreateRawTransaction,
-	"debuglevel":            handleDebugLevel,
-	"decoderawtransaction":  handleDecodeRawTransaction,
-	"decodescript":          handleDecodeScript,
-	"estimatefee":           handleEstimateFee,
-	"generate":              handleGenerate,
-	"getaddednodeinfo":      handleGetAddedNodeInfo,
-	"getbestblock":          handleGetBestBlock,
-	"getbestblockhash":      handleGetBestBlockHash,
-	"getblock":              handleGetBlock,
-	"getblockchaininfo":     handleGetBlockChainInfo,
-	"getblockcount":         handleGetBlockCount,
-	"getblockhash":          handleGetBlockHash,
-	"getblockheader":        handleGetBlockHeader,
-	"getblocktemplate":      handleGetBlockTemplate,
-	"getcfilter":            handleGetCFilter,
-	"getcfilterheader":      handleGetCFilterHeader,
-	"getconnectioncount":    handleGetConnectionCount,
-	"getcurrentnet":         handleGetCurrentNet,
-	"getdifficulty":         handleGetDifficulty,
-	"getgenerate":           handleGetGenerate,
-	"gethashespersec":       handleGetHashesPerSec,
-	"getheaders":            handleGetHeaders,
-	"getinfo":               handleGetInfo,
-	"getwork":               handleGetWork,
-	"getmempoolinfo":        handleGetMempoolInfo,
-	"getmininginfo":         handleGetMiningInfo,
-	"getnettotals":          handleGetNetTotals,
-	"getnetworkhashps":      handleGetNetworkHashPS,
-	"getpeerinfo":           handleGetPeerInfo,
-	"getrawmempool":         handleGetRawMempool,
-	"getrawtransaction":     handleGetRawTransaction,
-	"gettxout":              handleGetTxOut,
-	"gettxoutproof":         handleGetTxOutProof,
-	"help":                  handleHelp,
-	"invalidateblock":       handleInvalidateBlock,
-	"node":                  handleNode,
-	"ping":                  handlePing,
-	"reconsiderblock":       handleReconsiderBlock,
-	"searchrawtransactions": handleSearchRawTransactions,
-	"sendrawtransaction":    handleSendRawTransaction,
-	"setgenerate":           handleSetGenerate,
-	"stop":                  handleStop,
-	"submitblock":           handleSubmitBlock,
-	"submitwork":            handleSubmitWork,
-	"uptime":                handleUptime,
-	"validateaddress":       handleValidateAddress,
-	"verifychain":           handleVerifyChain,
-	"verifymessage":         handleVerifyMessage,
-	"verifytxoutproof":      handleVerifyTxOutProof,
-	"version":               handleVersion,
+	"addnode":                      handleAddNode,
+	"createrawtransaction":         handleCreateRawTransaction,
+	"createrawentangletransaction": handleCreateRawEntangleTransaction,
+	"debuglevel":                   handleDebugLevel,
+	"decoderawtransaction":         handleDecodeRawTransaction,
+	"decodescript":                 handleDecodeScript,
+	"estimatefee":                  handleEstimateFee,
+	"generate":                     handleGenerate,
+	"getaddednodeinfo":             handleGetAddedNodeInfo,
+	"getbestblock":                 handleGetBestBlock,
+	"getbestblockhash":             handleGetBestBlockHash,
+	"getblock":                     handleGetBlock,
+	"getblockchaininfo":            handleGetBlockChainInfo,
+	"getblockcount":                handleGetBlockCount,
+	"getblockhash":                 handleGetBlockHash,
+	"getblockheader":               handleGetBlockHeader,
+	"getblocktemplate":             handleGetBlockTemplate,
+	"getcfilter":                   handleGetCFilter,
+	"getcfilterheader":             handleGetCFilterHeader,
+	"getconnectioncount":           handleGetConnectionCount,
+	"getcurrentnet":                handleGetCurrentNet,
+	"getdifficulty":                handleGetDifficulty,
+	"getgenerate":                  handleGetGenerate,
+	"gethashespersec":              handleGetHashesPerSec,
+	"getheaders":                   handleGetHeaders,
+	"getinfo":                      handleGetInfo,
+	"getwork":                      handleGetWork,
+	"getmempoolinfo":               handleGetMempoolInfo,
+	"getmininginfo":                handleGetMiningInfo,
+	"getnettotals":                 handleGetNetTotals,
+	"getnetworkhashps":             handleGetNetworkHashPS,
+	"getpeerinfo":                  handleGetPeerInfo,
+	"getrawmempool":                handleGetRawMempool,
+	"getrawtransaction":            handleGetRawTransaction,
+	"gettxout":                     handleGetTxOut,
+	"gettxoutproof":                handleGetTxOutProof,
+	"help":                         handleHelp,
+	"invalidateblock":              handleInvalidateBlock,
+	"node":                         handleNode,
+	"ping":                         handlePing,
+	"reconsiderblock":              handleReconsiderBlock,
+	"searchrawtransactions":        handleSearchRawTransactions,
+	"sendrawtransaction":           handleSendRawTransaction,
+	"setgenerate":                  handleSetGenerate,
+	"stop":                         handleStop,
+	"submitblock":                  handleSubmitBlock,
+	"submitwork":                   handleSubmitWork,
+	"uptime":                       handleUptime,
+	"validateaddress":              handleValidateAddress,
+	"verifychain":                  handleVerifyChain,
+	"verifymessage":                handleVerifyMessage,
+	"verifytxoutproof":             handleVerifyTxOutProof,
+	"version":                      handleVersion,
 }
 
 // list of commands that we recognize, but for which classzz has no support because
@@ -258,37 +259,38 @@ var rpcLimited = map[string]struct{}{
 	"help": {},
 
 	// HTTP/S-only commands
-	"createrawtransaction":  {},
-	"decoderawtransaction":  {},
-	"decodescript":          {},
-	"estimatefee":           {},
-	"getbestblock":          {},
-	"getbestblockhash":      {},
-	"getblock":              {},
-	"getblockcount":         {},
-	"getblockhash":          {},
-	"getblockheader":        {},
-	"getcfilter":            {},
-	"getcfilterheader":      {},
-	"getcurrentnet":         {},
-	"getdifficulty":         {},
-	"getheaders":            {},
-	"getinfo":               {},
-	"getnettotals":          {},
-	"getnetworkhashps":      {},
-	"getrawmempool":         {},
-	"getrawtransaction":     {},
-	"gettxout":              {},
-	"gettxoutproof":         {},
-	"searchrawtransactions": {},
-	"sendrawtransaction":    {},
-	"submitblock":           {},
-	"submitwork":            {},
-	"uptime":                {},
-	"validateaddress":       {},
-	"verifymessage":         {},
-	"verifytxoutproof":      {},
-	"version":               {},
+	"createrawtransaction":         {},
+	"createrawentangletransaction": {},
+	"decoderawtransaction":         {},
+	"decodescript":                 {},
+	"estimatefee":                  {},
+	"getbestblock":                 {},
+	"getbestblockhash":             {},
+	"getblock":                     {},
+	"getblockcount":                {},
+	"getblockhash":                 {},
+	"getblockheader":               {},
+	"getcfilter":                   {},
+	"getcfilterheader":             {},
+	"getcurrentnet":                {},
+	"getdifficulty":                {},
+	"getheaders":                   {},
+	"getinfo":                      {},
+	"getnettotals":                 {},
+	"getnetworkhashps":             {},
+	"getrawmempool":                {},
+	"getrawtransaction":            {},
+	"gettxout":                     {},
+	"gettxoutproof":                {},
+	"searchrawtransactions":        {},
+	"sendrawtransaction":           {},
+	"submitblock":                  {},
+	"submitwork":                   {},
+	"uptime":                       {},
+	"validateaddress":              {},
+	"verifymessage":                {},
+	"verifytxoutproof":             {},
+	"version":                      {},
 }
 
 // builderScript is a convenience function which is used for hard-coded scripts
@@ -608,6 +610,64 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 
 		txOut := wire.NewTxOut(int64(satoshi), pkScript)
 		mtx.AddTxOut(txOut)
+	}
+
+	// Set the Locktime, if given.
+	if c.LockTime != nil {
+		mtx.LockTime = uint32(*c.LockTime)
+	}
+
+	// Return the serialized and hex-encoded transaction.  Note that this
+	// is intentionally not directly returning because the first return
+	// value is a string and it would result in returning an empty string to
+	// the client instead of nothing (nil) in the case of an error.
+	mtxHex, err := messageToHex(mtx)
+	if err != nil {
+		return nil, err
+	}
+	return mtxHex, nil
+}
+
+// handleCreateRawTransaction handles createrawtransaction commands.
+func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.CreateRawEntangleTransactionCmd)
+
+	// Validate the locktime, if given.
+	if c.LockTime != nil &&
+		(*c.LockTime < 0 || *c.LockTime > int64(wire.MaxTxInSequenceNum)) {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "Locktime out of range",
+		}
+	}
+
+	// Add all transaction inputs to a new transaction after performing
+	// some validity checks.
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	for _, input := range c.Inputs {
+		txHash, err := chainhash.NewHashFromStr(input.Txid)
+		if err != nil {
+			return nil, rpcDecodeHexError(input.Txid)
+		}
+
+		prevOut := wire.NewOutPoint(txHash, input.Vout)
+		txIn := wire.NewTxIn(prevOut, []byte{})
+		if c.LockTime != nil && *c.LockTime != 0 {
+			txIn.Sequence = wire.MaxTxInSequenceNum - 1
+		}
+		mtx.AddTxIn(txIn)
+	}
+
+	for _, entangle := range c.EntangleOuts {
+		scriptInfo, err := txscript.EntangleScript(entangle.Serialize())
+		if err != nil {
+			return nil, err
+		}
+
+		mtx.AddTxOut(&wire.TxOut{
+			Value:    0,
+			PkScript: scriptInfo,
+		})
 	}
 
 	// Set the Locktime, if given.
