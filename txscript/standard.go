@@ -55,7 +55,7 @@ const (
 	ScriptHashTy                     // Pay to script hash.
 	MultiSigTy                       // Multi signature.
 	NullDataTy                       // Empty data-only (provably prunable).
-	EntangleTy						 // 
+	EntangleTy                       //
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -67,7 +67,7 @@ var scriptClassToName = []string{
 	ScriptHashTy:  "scripthash",
 	MultiSigTy:    "multisig",
 	NullDataTy:    "nulldata",
-	EntangleTy:	   "EntangleTy",
+	EntangleTy:    "EntangleTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -177,7 +177,7 @@ func isEntangleTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN193 
+		pops[1].opcode.value == OP_UNKNOWN193
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -425,7 +425,12 @@ func PayToAddrScript(addr czzutil.Address) ([]byte, error) {
 
 // EntangleScript impl in
 func EntangleScript(data []byte) ([]byte, error) {
-	return NullDataScript(data)
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
 }
 
 // NullDataScript creates a provably-prunable script containing OP_RETURN
