@@ -987,8 +987,8 @@ type tmpAddressPair struct {
 func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash][]*tmpAddressPair) []*cross.EntangleItem {
 	items := make([]*cross.EntangleItem,0)
 	for _,v := range txs {
-		is,infos := cross.IsEntangleTx(v.MsgTx())
-		if is {
+		err,infos := cross.IsEntangleTx(v.MsgTx())
+		if err == nil {
 			for i,out := range infos {
 				item := &cross.EntangleItem{
 					EType:		out.ExTxType,
@@ -1012,8 +1012,8 @@ func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash][]*tmpAddressPai
 
 func toAddressFromEntangle(tx *czzutil.Tx,ev *cross.EntangleVerify) (error,[]*tmpAddressPair) {
 	// txhash := tx.Hash()
-	is,_ := cross.IsEntangleTx(tx.MsgTx())
-	if is {
+	err,_ := cross.IsEntangleTx(tx.MsgTx())
+	if err == nil {
 		// verify the entangle tx 
 		
 		pairs := make([]*tmpAddressPair,0)

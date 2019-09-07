@@ -164,16 +164,22 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 	return nil
 }
 
-func IsEntangleTx(tx *wire.MsgTx) (bool, map[uint32]*EntangleTxInfo) {
+func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	// make sure at least one txout in OUTPUT
 	einfo := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info := &EntangleTxInfo{}
 		if err := info.Parse(v.PkScript); err == nil {
+			if v.Value != 0 {
+				return errors.New("the output value must be 0 in entangle tx."),nil
+			} 
 			einfo[uint32(i)] = info
 		}
 	}
-	return len(einfo) > 0, einfo
+	if len(einfo) > 0 {
+		return nil, einfo
+	}
+	return errors.New("no entangle info in transcation"), nil
 }
 
 func GetPoolAmount() int64 {
