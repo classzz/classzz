@@ -24,7 +24,7 @@ var (
 
 	// mainPowLimit is the highest proof of work value a Bitcoin block can
 	// have for the main network.  It is the value 2^224 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 236), bigOne)
+	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 246), bigOne)
 
 	// regressionPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the regression test network.  It is the value 2^255 - 1.
@@ -221,21 +221,17 @@ type Params struct {
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "18883",
-	DNSSeeds: []DNSSeed{
-		{"3.15.206.33", true},
-		{"18.222.100.56", true},
-		{"3.15.206.49", true},
-	},
+	DefaultPort: "19526",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
 	GenesisBlock: &genesisBlock,
 	GenesisHash:  &genesisHash,
 
 	PowLimit:     mainPowLimit,
-	PowLimitBits: 0x1e10624d,
+	PowLimitBits: 0x2000ffff,
 
-	CoinbaseMaturity:         14,
+	CoinbaseMaturity:         2,
 	SubsidyReductionInterval: 1000000,
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
