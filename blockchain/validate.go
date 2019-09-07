@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"errors"
 	"time"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -16,6 +17,7 @@ import (
 	"github.com/classzz/classzz/consensus"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/czzutil"
 )
 
@@ -319,6 +321,37 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 		}
 	}
 
+	return nil
+}
+
+func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
+	// tmp the cache is nil
+	err,_ := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx(),nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
+	curHeight := int64(0)
+	for _,tx := range block.Transactions() {
+		err,items := cross.IsEntangleTx(tx.MsgTx())
+		if err == nil {
+			max := int64(0)
+			for _,ii := range items {
+				if max < int64(ii.Height) {
+					max = int64(ii.Height)
+				}
+			}
+			if curHeight > max {
+				return errors.New("unordered entangle tx in the block")
+			}
+			err := b.checkEntangleTx(tx)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
