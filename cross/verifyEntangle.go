@@ -55,11 +55,11 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleI
 	}
 
 	// find the pool addrees
-	reserve := GetPoolAmount()
-	if amount >= reserve {
-		e := fmt.Sprintf("amount not enough,[request:%v,reserve:%v]", amount, reserve)
-		return errors.New(e),nil
-	}
+	// reserve := GetPoolAmount()
+	// if amount >= reserve {
+	// 	e := fmt.Sprintf("amount not enough,[request:%v,reserve:%v]", amount, reserve)
+	// 	return errors.New(e),nil
+	// }
 	return nil,pairs
 }
 
