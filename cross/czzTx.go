@@ -36,17 +36,17 @@ type EntangleItem struct {
 
 func (ii *EntangleItem) Clone() *EntangleItem {
 	item := &EntangleItem{
-		EType:		ii.EType,
-		Value:		new(big.Int).Set(ii.Value),
-		Addr:		ii.Addr,
+		EType: ii.EType,
+		Value: new(big.Int).Set(ii.Value),
+		Addr:  ii.Addr,
 	}
 	return item
 }
 
 type TuplePubIndex struct {
-	EType 		ExpandedTxType
-	Index 		uint32
-	Pub 		[]byte
+	EType ExpandedTxType
+	Index uint32
+	Pub   []byte
 }
 
 type PoolAddrItem struct {
@@ -82,7 +82,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if len(data) <= 14 {
 		return errors.New("wrong lenght!")
 	}
-	info.ExTxType = ExpandedTxType(uint8(data[0]))
+	info.ExTxType = ExpandedTxType(data[0])
 	switch info.ExTxType {
 	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc:
 		break
@@ -98,7 +98,9 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if int(uint32(l)) != n {
 		panic("b0 not equal n")
 	}
-	info.Amount.SetBytes(b0)
+	amount := big.NewInt(0)
+	amount.SetBytes(b0)
+	info.Amount = amount
 	info.ExtTxHash = make([]byte, int(infoFixed[info.ExTxType]))
 	n2, _ := buf.Read(info.ExtTxHash)
 
@@ -179,10 +181,10 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	einfo := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info := &EntangleTxInfo{}
-		if err := info.Parse(v.PkScript[2:]); err == nil {
+		if err := info.Parse(v.PkScript[4:]); err == nil {
 			if v.Value != 0 {
-				return errors.New("the output value must be 0 in entangle tx."),nil
-			} 
+				return errors.New("the output value must be 0 in entangle tx."), nil
+			}
 			einfo[uint32(i)] = info
 		}
 	}
@@ -192,6 +194,9 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	return errors.New("no entangle info in transcation"), nil
 }
 
+func GetPoolAmount() int64 {
+	return 0
+}
 
 /*
 MakeMegerTx
@@ -212,7 +217,7 @@ MakeMegerTx
 				entangle txoutn
 			   '''''''''''''''
 */
-func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem,items []*EntangleItem) error {
+func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -230,9 +235,9 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem,items []*EntangleItem) error
 	}
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := enoughAmount(reserve1,items);!ok {
+	if ok := enoughAmount(reserve1, items); !ok {
 		return errors.New("not enough amount to be entangle...")
-	} 
+	}
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 	for i := range items {
@@ -275,8 +280,8 @@ func toLtc(v *big.Int) *big.Int {
 
 func enoughAmount(reserve int64, items []*EntangleItem) bool {
 	amount := reserve
-	for _,v := range items {
-		calcExchange(v.Clone(),&amount)
+	for _, v := range items {
+		calcExchange(v.Clone(), &amount)
 	}
 	return amount > 0
-} 
+}
