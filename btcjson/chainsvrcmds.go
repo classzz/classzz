@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
+	"math/big"
 )
 
 // AddNodeSubCmd defines the type used in the addnode JSON-RPC command for the
@@ -62,23 +63,24 @@ type CreateRawTransactionCmd struct {
 }
 
 type EntangleOut struct {
-	ExTxType  uint8  `json:"extxtype"`
-	Index     uint32 `json:"index"`
-	Height    uint64 `json:"height"`
-	Amount    uint64 `json:"amount"`
-	ExtTxHash string `json:"exttxhash"`
+	ExTxType  uint8    `json:"extxtype"`
+	Index     uint32   `json:"index"`
+	Height    uint64   `json:"height"`
+	Amount    *big.Int `json:"amount"`
+	ExtTxHash string   `json:"exttxhash"`
 }
 
 func (info *EntangleOut) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
-	buf.WriteByte(byte(info.ExTxType))
+	buf.WriteByte(info.ExTxType)
 	binary.Write(buf, binary.LittleEndian, info.Index)
 	binary.Write(buf, binary.LittleEndian, info.Height)
-	b1 := info.Amount
-	buf.WriteByte(byte(b1))
+	b1 := info.Amount.Bytes()
+	len := uint8(len(b1))
+	buf.WriteByte(len)
 
-	//buf.Write(b1)
+	buf.Write(b1)
 	ExtTxHash := []byte(info.ExtTxHash)
 	buf.Write(ExtTxHash)
 	return buf.Bytes()
