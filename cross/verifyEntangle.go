@@ -14,6 +14,9 @@ const (
 	dogePoolPub = ""
 	ltcPoolPub  = ""
 )
+var (
+	ErrHeightTooClose 	= 	errors.New("the block heigth to close for entangling")
+)
 
 type EntangleVerify struct {
 	DogeCoinRPC []string
