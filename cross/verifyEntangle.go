@@ -3,6 +3,7 @@ package cross
 import (
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/txscript"
 	"math/big"
 
 	"github.com/classzz/classzz/rpcclient"
@@ -16,6 +17,13 @@ const (
 
 type EntangleVerify struct {
 	DogeCoinRPC []string
+}
+
+func NewEntangleVerify() *EntangleVerify {
+
+	entangleVerify := &EntangleVerify{}
+
+	return entangleVerify
 }
 
 func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleInfo) (error, []*TuplePubIndex) {
@@ -101,7 +109,11 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return errors.New(e), nil
 		}
+		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
+			e := fmt.Sprintf("doge PkScript err ")
+			return errors.New(e), nil
+		}
+		pk := tx.MsgTx().TxOut[Vout].PkScript[6:26]
+		return nil, pk
 	}
-
-	return nil, nil
 }

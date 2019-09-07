@@ -189,6 +189,8 @@ type config struct {
 	DBCacheSize             uint64        `long:"dbcachesize" description:"The maximum size in MiB of the database cache"`
 	DBFlushInterval         uint32        `long:"dbflushinterval" description:"The number of seconds between database flushes"`
 	DogeCoinRPC             []string      `long:"dogecoinrpc" description:"The number of seconds between database flushes"`
+	DogeCoinRPCUser         string        `long:"dogecoinrpcuser" description:"The number of seconds between database flushes"`
+	DogeCoinRPCPass         string        `long:"dogecoinrpcpass" description:"The number of seconds between database flushes"`
 	lookup                  func(string) ([]net.IP, error)
 	oniondial               func(string, string, time.Duration) (net.Conn, error)
 	dial                    func(string, string, time.Duration) (net.Conn, error)
