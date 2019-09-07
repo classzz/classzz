@@ -210,6 +210,14 @@ func GetScriptClass(script []byte) ScriptClass {
 	return typeOfScript(pops)
 }
 
+func IsEntangleTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isEntangleTy(pops)
+}
+
 // expectedInputs returns the number of arguments required by a script.
 // If the script is of unknown type such that the number can not be determined
 // then -1 is returned. We are an internal function and thus assume that class

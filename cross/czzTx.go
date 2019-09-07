@@ -192,10 +192,6 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	return errors.New("no entangle info in transcation"), nil
 }
 
-func GetPoolAmount() int64 {
-	return 0
-}
-
 
 /*
 MakeMegerTx

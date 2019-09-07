@@ -178,6 +178,9 @@ func addTxOuts(view utxoView, tx *czzutil.Tx, blockHeight int32, overwrite bool)
 		if txscript.IsUnspendable(txOut.PkScript) {
 			continue
 		}
+		if txscript.IsEntangleTy(txOut.PkScript) {
+			continue
+		}
 
 		// Create a new entry from the output.
 		entry := &UtxoEntry{
