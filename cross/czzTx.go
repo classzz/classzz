@@ -23,8 +23,8 @@ const (
 
 var (
 	infoFixed = map[ExpandedTxType]uint32{
-		ExpandedTxEntangle_Doge: 32,
-		ExpandedTxEntangle_Ltc:  32,
+		ExpandedTxEntangle_Doge: 64,
+		ExpandedTxEntangle_Ltc:  64,
 	}
 )
 

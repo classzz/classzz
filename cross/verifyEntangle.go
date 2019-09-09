@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/txscript"
 	"math/big"
+	"math/rand"
 
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
@@ -14,12 +15,13 @@ const (
 	dogePoolPub = ""
 	ltcPoolPub  = ""
 )
+
 var (
-	ErrHeightTooClose 	= 	errors.New("the block heigth to close for entangling")
+	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
 )
 
 type EntangleVerify struct {
-	DogeCoinRPC []string
+	DogeCoinRPC []*rpcclient.Client
 }
 
 func NewEntangleVerify() *EntangleVerify {
@@ -85,23 +87,12 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 
 func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int) (error, []byte) {
 
-	connCfg := &rpcclient.ConnConfig{
-		Host:       "localhost:8334",
-		Endpoint:   "ws",
-		User:       "root",
-		Pass:       "admin",
-		DisableTLS: true,
-	}
-
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client, err := rpcclient.New(connCfg, nil)
-	if err != nil {
-		return err, nil
-	}
-	defer client.Shutdown()
+	client := ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 
 	// Get the current block count.
+	fmt.Println("tran: ", string(ExtTxHash))
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
 		return err, nil
 	} else {
@@ -116,7 +107,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			e := fmt.Sprintf("doge PkScript err ")
 			return errors.New(e), nil
 		}
-		pk := tx.MsgTx().TxOut[Vout].PkScript[6:26]
+		pk := tx.MsgTx().TxOut[Vout].PkScript[2:22]
 		return nil, pk
 	}
 }
