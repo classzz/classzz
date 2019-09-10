@@ -235,7 +235,7 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 	}
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := enoughAmount(reserve1, items); !ok {
+	if ok := EnoughAmount(reserve1, items); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
 	// merge pool tx
@@ -278,10 +278,11 @@ func toLtc(v *big.Int) *big.Int {
 	return new(big.Int).Set(v)
 }
 
-func enoughAmount(reserve int64, items []*EntangleItem) bool {
+func EnoughAmount(reserve int64, items []*EntangleItem) bool {
 	amount := reserve
 	for _, v := range items {
 		calcExchange(v.Clone(), &amount)
 	}
 	return amount > 0
 }
+
