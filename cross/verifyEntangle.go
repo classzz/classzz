@@ -107,7 +107,13 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			e := fmt.Sprintf("doge PkScript err ")
 			return errors.New(e), nil
 		}
-		pk := tx.MsgTx().TxOut[Vout].PkScript[2:22]
-		return nil, pk
+
+		//pk := tx.MsgTx().TxOut[Vout].PkScript[2:22]
+		if pk, err := txscript.ComputePkScript(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
+			e := fmt.Sprintf("doge PkScript err %s", err)
+			return errors.New(e), nil
+		} else {
+			return nil, pk.Script()
+		}
 	}
 }
