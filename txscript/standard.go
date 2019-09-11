@@ -441,6 +441,16 @@ func EntangleScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
 }
 
+// KeepedAmountScript impl in
+func KeepedAmountScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN194).AddData(data).Script()
+}
+
 // NullDataScript creates a provably-prunable script containing OP_RETURN
 // followed by the passed data.  An Error with the error code ErrTooMuchNullData
 // will be returned if the length of the passed data exceeds MaxDataCarrierSize.

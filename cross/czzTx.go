@@ -114,6 +114,55 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	// }
 	return nil
 }
+type KeepedItem struct {
+	ExTxType  ExpandedTxType
+	Amount    *big.Int
+}
+type KeepedAmount struct {
+	Count 	byte
+	Items 	[]KeepedItem
+}
+func (info *KeepedAmount) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	buf.WriteByte(info.Count)
+	for _,v :=range info.Items {
+		buf.WriteByte(byte(v.ExTxType))
+		b1 := v.Amount.Bytes()
+		len := uint8(len(b1))
+		buf.WriteByte(byte(len))
+		buf.Write(b1)
+	}
+	return buf.Bytes()
+}
+
+func (info *KeepedAmount) Parse(data []byte) error {
+	info.Count = data[0]
+	buf := bytes.NewBuffer(data[1:])
+
+	for i:=0;i<int(info.Count);i++ {
+		itype,_ := buf.ReadByte()
+		l,_ := buf.ReadByte()
+		b0 := make([]byte, int(uint32(l)))
+		_, _ = buf.Read(b0)
+		item := KeepedItem{
+			ExTxType:	ExpandedTxType(itype),
+			Amount:		new(big.Int).SetBytes(b0),
+		}
+		info.Items = append(info.Items,item)
+	}
+	return nil
+}
+func (info *KeepedAmount) add(item KeepedItem) {
+	for _,v := range info.Items {
+		if v.ExTxType == item.ExTxType {
+			v.Amount.Add(v.Amount,item.Amount)
+			return 
+		}
+	}
+	info.Count++
+	info.Items = append(info.Items,item)
+}
 
 func MakeEntangleTx(params *chaincfg.Params, inputs []*wire.TxIn, feeRate, inAmount czzutil.Amount,
 	changeAddr czzutil.Address, info *EntangleTxInfo) (*wire.MsgTx, error) {
@@ -238,6 +287,12 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 	if ok := EnoughAmount(reserve1, items); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
+	// add keeped Amount txout 
+	tx.AddTxOut(&wire.TxOut{
+		Value:	0,
+		PkScript: nil,
+	})
+	keepInfo := KeepedAmount{Items:[]KeepedItem{}}
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 	for i := range items {
@@ -250,9 +305,13 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 			Value:    items[i].Value.Int64(),
 			PkScript: pkScript,
 		}
+		keepInfo.add(KeepedItem{
+			ExTxType: 	items[i].EType,
+			Amount:		new(big.Int).Set(items[i].Value),
+		})
 		tx.AddTxOut(out)
 	}
-
+	keepEntangleAmount(&keepInfo,tx)
 	tx.TxOut[1].Value = reserve1
 	return nil
 }
@@ -262,13 +321,19 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 	return nil
 }
 
-func calcExchange(item *EntangleItem, reserve *int64) {
+func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
+	
 	if item.EType == ExpandedTxEntangle_Doge {
 		item.Value = new(big.Int).SetInt64(int64(toDoge(item.Value).Int64() / 25))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
 		item.Value = new(big.Int).SetInt64(int64(toLtc(item.Value).Int64() / 5))
 	}
 	*reserve = *reserve - item.Value.Int64()
+	kk := KeepedItem{
+		ExTxType: item.EType,
+		Amount:		new(big.Int).Set(item.Value),
+	}
+	return kk
 }
 
 func toDoge(v *big.Int) *big.Int {
@@ -286,3 +351,17 @@ func EnoughAmount(reserve int64, items []*EntangleItem) bool {
 	return amount > 0
 }
 
+func keepEntangleAmount(info *KeepedAmount,tx *wire.MsgTx) error {
+	
+	scriptInfo, err := txscript.KeepedAmountScript(info.Serialize())
+	if err != nil {
+		return err
+	}
+	txout := &wire.TxOut {
+		Value:    0,
+		PkScript: scriptInfo,
+	}
+	tx.TxOut[3] = txout
+	return nil
+}
+ 
