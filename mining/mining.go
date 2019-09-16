@@ -777,11 +777,11 @@ mempoolLoop:
 		}
 		if isEntangleTx {
 			eItems := toEntangleItems(blockTxns, entangleAddress)
-			if ok := overEntangleAmount(poolItem, eItems); ok {
+			if ok := overEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems); ok {
 				isOver = true
 				continue
 			}
-			err1, obj := toAddressFromEntangle(tx, g.chain.GetEntangleVerify())
+			obj, err1 := toAddressFromEntangle(tx, g.chain.GetEntangleVerify())
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err)
@@ -1027,7 +1027,7 @@ func toEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*tmpAddressPa
 	return items
 }
 
-func toAddressFromEntangle(tx *czzutil.Tx, ev *cross.EntangleVerify) (error, []*tmpAddressPair) {
+func toAddressFromEntangle(tx *czzutil.Tx, ev *cross.EntangleVerify) ([]*tmpAddressPair, error) {
 	// txhash := tx.Hash()
 	err, _ := cross.IsEntangleTx(tx.MsgTx())
 	if err == nil {
@@ -1036,16 +1036,16 @@ func toAddressFromEntangle(tx *czzutil.Tx, ev *cross.EntangleVerify) (error, []*
 		pairs := make([]*tmpAddressPair, 0)
 		err, tt := ev.VerifyEntangleTx(tx.MsgTx(), nil)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		for _, v := range tt {
 			pub, err1 := cross.RecoverPublicFromBytes(v.Pub, v.EType)
 			if err1 != nil {
-				return err1, nil
+				return nil, err1
 			}
 			err2, addr := cross.MakeAddress(*pub)
 			if err2 != nil {
-				return err2, nil
+				return nil, err2
 			}
 			pairs = append(pairs, &tmpAddressPair{
 				index:   v.Index,
@@ -1053,15 +1053,16 @@ func toAddressFromEntangle(tx *czzutil.Tx, ev *cross.EntangleVerify) (error, []*
 			})
 		}
 
-		return nil, pairs
+		return pairs, nil
 	}
 
 	return nil, nil
 }
-func overEntangleAmount(pool *cross.PoolAddrItem, items []*cross.EntangleItem) bool {
+func overEntangleAmount(tx *wire.MsgTx, pool *cross.PoolAddrItem, items []*cross.EntangleItem) bool {
 	if items == nil || len(items) == 0 {
 		return false
 	}
-	return false
+	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
+	return !cross.EnoughAmount(all, items)
 }
 
