@@ -114,19 +114,21 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	// }
 	return nil
 }
+
 type KeepedItem struct {
-	ExTxType  ExpandedTxType
-	Amount    *big.Int
+	ExTxType ExpandedTxType
+	Amount   *big.Int
 }
 type KeepedAmount struct {
-	Count 	byte
-	Items 	[]KeepedItem
+	Count byte
+	Items []KeepedItem
 }
+
 func (info *KeepedAmount) Serialize() []byte {
 	buf := new(bytes.Buffer)
 
 	buf.WriteByte(info.Count)
-	for _,v :=range info.Items {
+	for _, v := range info.Items {
 		buf.WriteByte(byte(v.ExTxType))
 		b1 := v.Amount.Bytes()
 		len := uint8(len(b1))
@@ -140,28 +142,28 @@ func (info *KeepedAmount) Parse(data []byte) error {
 	info.Count = data[0]
 	buf := bytes.NewBuffer(data[1:])
 
-	for i:=0;i<int(info.Count);i++ {
-		itype,_ := buf.ReadByte()
-		l,_ := buf.ReadByte()
+	for i := 0; i < int(info.Count); i++ {
+		itype, _ := buf.ReadByte()
+		l, _ := buf.ReadByte()
 		b0 := make([]byte, int(uint32(l)))
 		_, _ = buf.Read(b0)
 		item := KeepedItem{
-			ExTxType:	ExpandedTxType(itype),
-			Amount:		new(big.Int).SetBytes(b0),
+			ExTxType: ExpandedTxType(itype),
+			Amount:   new(big.Int).SetBytes(b0),
 		}
-		info.Items = append(info.Items,item)
+		info.Items = append(info.Items, item)
 	}
 	return nil
 }
 func (info *KeepedAmount) add(item KeepedItem) {
-	for _,v := range info.Items {
+	for _, v := range info.Items {
 		if v.ExTxType == item.ExTxType {
-			v.Amount.Add(v.Amount,item.Amount)
-			return 
+			v.Amount.Add(v.Amount, item.Amount)
+			return
 		}
 	}
 	info.Count++
-	info.Items = append(info.Items,item)
+	info.Items = append(info.Items, item)
 }
 
 func MakeEntangleTx(params *chaincfg.Params, inputs []*wire.TxIn, feeRate, inAmount czzutil.Amount,
@@ -287,12 +289,12 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 	if ok := EnoughAmount(reserve1, items); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
-	// add keeped Amount txout 
+	// add keeped Amount txout
 	tx.AddTxOut(&wire.TxOut{
-		Value:	0,
+		Value:    0,
 		PkScript: nil,
 	})
-	keepInfo := KeepedAmount{Items:[]KeepedItem{}}
+	keepInfo := KeepedAmount{Items: []KeepedItem{}}
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 	for i := range items {
@@ -306,12 +308,12 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 			PkScript: pkScript,
 		}
 		keepInfo.add(KeepedItem{
-			ExTxType: 	items[i].EType,
-			Amount:		new(big.Int).Set(items[i].Value),
+			ExTxType: items[i].EType,
+			Amount:   new(big.Int).Set(items[i].Value),
 		})
 		tx.AddTxOut(out)
 	}
-	keepEntangleAmount(&keepInfo,tx)
+	keepEntangleAmount(&keepInfo, tx)
 	tx.TxOut[1].Value = reserve1
 	return nil
 }
@@ -322,7 +324,7 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 }
 
 func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
-	
+
 	if item.EType == ExpandedTxEntangle_Doge {
 		item.Value = new(big.Int).SetInt64(int64(toDoge(item.Value).Int64() / 25))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
@@ -331,7 +333,7 @@ func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
 	*reserve = *reserve - item.Value.Int64()
 	kk := KeepedItem{
 		ExTxType: item.EType,
-		Amount:		new(big.Int).Set(item.Value),
+		Amount:   new(big.Int).Set(item.Value),
 	}
 	return kk
 }
@@ -351,17 +353,75 @@ func EnoughAmount(reserve int64, items []*EntangleItem) bool {
 	return amount > 0
 }
 
-func keepEntangleAmount(info *KeepedAmount,tx *wire.MsgTx) error {
-	
+func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
+
 	scriptInfo, err := txscript.KeepedAmountScript(info.Serialize())
 	if err != nil {
 		return err
 	}
-	txout := &wire.TxOut {
+	txout := &wire.TxOut{
 		Value:    0,
 		PkScript: scriptInfo,
 	}
 	tx.TxOut[3] = txout
 	return nil
 }
- 
+
+func calcModeForDoge(entangled, needed int64) int64 {
+	if needed <= 0 {
+		return 0
+	}
+	var kk, rate int64 = 0, 25
+	rate = rate + int64(entangled/int64(12500000))
+	p := entangled % int64(12500000)
+
+	// ignore remainder
+	if (int64(12500000) - p) >= needed {
+		kk = int64(needed / rate)
+	} else {
+		v1 := int64(12500000) - p
+		v2 := needed - p
+		kk = int64(v1 / rate)
+		rate += 1
+		kk = kk + int64(v2/rate)
+	}
+	return kk
+}
+
+func calcModeForLtc(entangled, needed int64) int64 {
+	if needed <= 0 {
+		return 0
+	}
+	var ret int64 = 0
+	rate := big.NewFloat(0.0008)
+	base := big.NewFloat(0.0001)
+
+	fixed := int64(1150)
+	divisor := entangled / fixed
+	remainder := entangled % fixed
+
+	base1 := base.Mul(base, big.NewFloat(float64(divisor)))
+	rate = rate.Add(rate, base1)
+
+	if fixed-remainder >= needed {
+		f1 := big.NewFloat(float64(needed))
+		f1 = f1.Quo(f1, rate)
+		ret = toCzz(f1).Int64()
+	} else {
+		v1 := fixed - remainder
+		v2 := needed - remainder
+		f1, f2 := big.NewFloat(float64(v1)), big.NewFloat(float64(v2))
+		f1 = f1.Quo(f1, rate)
+		rate = rate.Add(rate, base)
+		f2 = f2.Quo(f2, rate)
+		ret = toCzz(f1).Int64() + toCzz(f2).Int64()
+	}
+	return ret
+}
+func toCzz(val *big.Float) *big.Int {
+	base := new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	val = val.Mul(val, big.NewFloat(float64(base.Int64())))
+	ii, _ := val.Int64()
+	return big.NewInt(ii)
+}
+
