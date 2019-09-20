@@ -1034,7 +1034,7 @@ func toAddressFromEntangle(tx *czzutil.Tx, ev *cross.EntangleVerify) ([]*tmpAddr
 		// verify the entangle tx
 
 		pairs := make([]*tmpAddressPair, 0)
-		err, tt := ev.VerifyEntangleTx(tx.MsgTx(), nil)
+		err, tt := ev.VerifyEntangleTx(tx.MsgTx())
 		if err != nil {
 			return nil, err
 		}
@@ -1065,4 +1065,3 @@ func overEntangleAmount(tx *wire.MsgTx, pool *cross.PoolAddrItem, items []*cross
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !cross.EnoughAmount(all, items)
 }
-

@@ -7,6 +7,7 @@ package indexers
 import (
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 
 	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg/chainhash"
@@ -36,6 +37,8 @@ var (
 	// errNoBlockIDEntry is an error that indicates a requested entry does
 	// not exist in the block ID index.
 	errNoBlockIDEntry = errors.New("no entry in the block ID index")
+
+	entangleBucketKey = []byte("entangle-tx")
 )
 
 // -----------------------------------------------------------------------------
@@ -182,6 +185,19 @@ func dbPutTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash, serializedData 
 	return txIndex.Put(txHash[:], serializedData)
 }
 
+func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+	txIndex := dbTx.Metadata().Bucket(entangleBucketKey)
+	_, einfo := cross.IsEntangleTx(tx.MsgTx())
+	for _, v := range einfo {
+		ExTxType := byte(v.ExTxType)
+		key := append(v.ExtTxHash, ExTxType)
+		if err := txIndex.Put(key, v.Serialize()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // dbFetchTxIndexEntry uses an existing database transaction to fetch the block
 // region for the provided transaction hash from the transaction index.  When
 // there is no entry for the provided hash, nil will be returned for the both
@@ -244,6 +260,11 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 		endOffset := offset + txEntrySize
 		err := dbPutTxIndexEntry(dbTx, tx.Hash(),
 			serializedValues[offset:endOffset:endOffset])
+		if err != nil {
+			return err
+		}
+		// Entangle
+		err = dbPutEntangleTxIndexEntry(dbTx, tx)
 		if err != nil {
 			return err
 		}
@@ -388,7 +409,11 @@ func (idx *TxIndex) Create(dbTx database.Tx) error {
 	if _, err := meta.CreateBucket(hashByIDIndexBucketName); err != nil {
 		return err
 	}
+	if _, err := meta.CreateBucket(entangleBucketKey); err != nil {
+		return err
+	}
 	_, err := meta.CreateBucket(txIndexKey)
+
 	return err
 }
 

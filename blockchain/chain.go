@@ -2256,8 +2256,13 @@ func New(config *Config) (*BlockChain, error) {
 		dogeclients = append(dogeclients, client)
 	}
 
+	cacheEntangleInfo := &cross.CacheEntangleInfo{
+		DB: config.DB,
+	}
+
 	entangleVerify := &cross.EntangleVerify{
 		DogeCoinRPC: dogeclients,
+		Cache:       cacheEntangleInfo,
 	}
 
 	params := config.ChainParams

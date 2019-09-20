@@ -1,6 +1,7 @@
 package cross
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/txscript"
@@ -11,27 +12,23 @@ import (
 	"github.com/classzz/classzz/wire"
 )
 
-const (
-	dogePoolPub = ""
-	ltcPoolPub  = ""
+var (
+	dogePoolPub = []byte{1, 2}
+	ltcPoolPub  = []byte{1, 2}
+
+	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
 )
 
-var (
-	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
+const (
+	dogeMaturity = 14
 )
 
 type EntangleVerify struct {
 	DogeCoinRPC []*rpcclient.Client
+	Cache       *CacheEntangleInfo
 }
 
-func NewEntangleVerify() *EntangleVerify {
-
-	entangleVerify := &EntangleVerify{}
-
-	return entangleVerify
-}
-
-func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleInfo) (error, []*TuplePubIndex) {
+func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) (error, []*TuplePubIndex) {
 	/*
 		1. check entangle tx struct
 		2. check the repeat tx
@@ -44,9 +41,9 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx, cache *CacheEntangleI
 	}
 	pairs := make([]*TuplePubIndex, 0)
 	amount := int64(0)
-	if cache != nil {
+	if ev.Cache != nil {
 		for i, v := range einfo {
-			if ok := cache.TxExist(v); !ok {
+			if ok := ev.Cache.FetchEntangleUtxoView(v); !ok {
 				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
 				return errors.New("txid has already entangle:" + errStr), nil
 			}
@@ -80,12 +77,12 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 	height uint64, amount *big.Int) (error, []byte) {
 	switch ExTxType {
 	case ExpandedTxEntangle_Doge:
-		return ev.verifyDogeTx(ExtTxHash, Vout, amount)
+		return ev.verifyDogeTx(ExtTxHash, Vout, amount, height)
 	}
 	return nil, nil
 }
 
-func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int) (error, []byte) {
+func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) (error, []byte) {
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
@@ -108,12 +105,28 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return errors.New(e), nil
 		}
 
-		//pk := tx.MsgTx().TxOut[Vout].PkScript[2:22]
+		pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
+		if !bytes.Equal(pool, dogePoolPub) {
+			e := fmt.Sprintf("doge dogePoolPub err")
+			return errors.New(e), nil
+		}
+
 		if pk, err := txscript.ComputePkScript(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
 			e := fmt.Sprintf("doge PkScript err %s", err)
 			return errors.New(e), nil
 		} else {
-			return nil, pk.Script()
+
+			if count, err := client.GetBlockCount(); err != nil {
+				return err, nil
+			} else {
+				if count-int64(height) > dogeMaturity {
+					return nil, pk.Script()[2:22]
+				} else {
+					e := fmt.Sprintf("dogeMaturity err ")
+					return errors.New(e), nil
+				}
+
+			}
 		}
 	}
 }

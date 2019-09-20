@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"github.com/dchest/siphash"
 	"math"
 	"sync"
@@ -63,6 +64,8 @@ type Config struct {
 	// FetchUtxoView defines the function to use to fetch unspent
 	// transaction output information.
 	FetchUtxoView func(*czzutil.Tx) (*blockchain.UtxoViewpoint, error)
+
+	FetchEntangleUtxoView func(info *cross.EntangleTxInfo) bool
 
 	// BestHeight defines the function to use to access the block height of
 	// the current best chain.
@@ -169,6 +172,7 @@ type TxPool struct {
 	mtx           sync.RWMutex
 	cfg           Config
 	pool          map[chainhash.Hash]*TxDesc
+	entanglepool  map[string]*TxDesc
 	orphans       map[chainhash.Hash]*orphanTx
 	orphansByPrev map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx
 	outpoints     map[wire.OutPoint]*czzutil.Tx
@@ -538,6 +542,16 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 	}
 
 	mp.pool[*tx.Hash()] = txD
+
+	_, einfo := cross.IsEntangleTx(tx.MsgTx())
+
+	for _, v := range einfo {
+
+		ExTxType := byte(v.ExTxType)
+		key := append(v.ExtTxHash, ExTxType)
+		mp.entanglepool[string(key)] = txD
+	}
+
 	for _, txIn := range tx.MsgTx().TxIn {
 		mp.outpoints[txIn.PreviousOutPoint] = tx
 	}
@@ -629,6 +643,31 @@ func (mp *TxPool) fetchInputUtxos(tx *czzutil.Tx) (*blockchain.UtxoViewpoint, er
 	}
 
 	return utxoView, nil
+}
+
+func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (bool, error) {
+
+	ok, einfo := cross.IsEntangleTx(tx.MsgTx())
+	if ok != nil {
+		return true, errors.New("not entangle tx")
+	}
+
+	for _, v := range einfo {
+		ExTxType := byte(v.ExTxType)
+		key := append(v.ExtTxHash, ExTxType)
+
+		if _, exists := mp.entanglepool[string(key)]; exists {
+			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+			return true, errors.New("txid has already entangle:" + errStr)
+		}
+
+		if ok := mp.cfg.FetchEntangleUtxoView(v); ok {
+			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+			return true, errors.New("txid has already entangle:" + errStr)
+		}
+	}
+
+	return false, nil
 }
 
 // FetchTransaction returns the requested transaction from the transaction pool.
@@ -764,6 +803,11 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		if cerr, ok := err.(blockchain.RuleError); ok {
 			return nil, nil, chainRuleError(cerr)
 		}
+		return nil, nil, err
+	}
+
+	_, err = mp.fetchEntangleUtxos(tx)
+	if err != nil {
 		return nil, nil, err
 	}
 

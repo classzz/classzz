@@ -39,7 +39,7 @@ const (
 	// while they are actively searching for a solution.  This is done to
 	// reduce the amount of syncs between the workers that must be done to
 	// keep track of the hashes per second.
-	hashUpdateSecs = 60
+	hashUpdateSecs = 2
 )
 
 var (
