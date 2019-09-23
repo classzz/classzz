@@ -351,9 +351,9 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
 
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = new(big.Int).SetInt64(int64(toDoge(item.Value).Int64() / 25))
+		item.Value = new(big.Int).SetInt64(calcModeForDoge(*reserve,item.Value.Int64()))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = new(big.Int).SetInt64(int64(toLtc(item.Value).Int64() / 5))
+		item.Value = new(big.Int).SetInt64(calcModeForLtc(*reserve,item.Value.Int64()))
 	}
 	*reserve = *reserve - item.Value.Int64()
 	kk := KeepedItem{
@@ -449,4 +449,5 @@ func toCzz(val *big.Float) *big.Int {
 	ii, _ := val.Int64()
 	return big.NewInt(ii)
 }
+
 
