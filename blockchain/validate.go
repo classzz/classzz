@@ -354,6 +354,10 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	}
 	return nil
 }
+func (b *BlockChain) CheckTxSequence(block *czzutil.Block) error {
+	txs := block.Transactions()
+	return cross.VerifyTxsSequence(txs)
+}
 
 // checkProofOfWork ensures the block header bits which indicate the target
 // difficulty is in min/max range and that the block hash is less than the
@@ -1274,3 +1278,4 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	newNode := newBlockNode(&header, tip)
 	return b.checkConnectBlock(newNode, block, view, nil)
 }
+

@@ -202,6 +202,9 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	if err := b.CheckBlockEntangle(block); err != nil {
 		return false,false,err
 	}
+	if err := b.CheckTxSequence(block); err != nil {
+		return false,false,err
+	}
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
 	isMainChain, err := b.maybeAcceptBlock(block, flags)
@@ -221,3 +224,4 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 
 	return isMainChain, false, nil
 }
+

@@ -167,6 +167,20 @@ func txPQByFee(pq *txPriorityQueue, i, j int) bool {
 	return pq.items[i].feePerKB > pq.items[j].feePerKB
 }
 
+func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
+	// Using > here so that pop gives the highest fee item as opposed
+	// to the lowest.  Sort by fee first, then priority.
+	if pq.items[i].feePerKB == pq.items[j].feePerKB {
+		e1,i1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx()) 
+		e2,i2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx()) 
+		if e1 == nil && e2 == nil {
+			return cross.GetMaxHeight(i1) > cross.GetMaxHeight(i2)
+		} 
+		return pq.items[i].priority > pq.items[j].priority
+	}
+	return pq.items[i].feePerKB > pq.items[j].feePerKB
+}
+
 // newTxPriorityQueue returns a new transaction priority queue that reserves the
 // passed amount of space for the elements.  The new priority queue uses either
 // the txPQByPriority or the txPQByFee compare function depending on the
@@ -178,7 +192,7 @@ func newTxPriorityQueue(reserve int, sortByFee bool) *txPriorityQueue {
 		items: make([]*txPrioItem, 0, reserve),
 	}
 	if sortByFee {
-		pq.SetLessFunc(txPQByFee)
+		pq.SetLessFunc(txPQByFeeAndHeight)
 	} else {
 		pq.SetLessFunc(txPQByPriority)
 	}
@@ -1065,3 +1079,4 @@ func overEntangleAmount(tx *wire.MsgTx, pool *cross.PoolAddrItem, items []*cross
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !cross.EnoughAmount(all, items)
 }
+

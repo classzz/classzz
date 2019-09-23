@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"math/big"
+	"fmt"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
@@ -245,6 +246,30 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	return errors.New("no entangle info in transcation"), nil
 }
 
+func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
+	h := uint64(0)
+	for _, v := range items {
+		if h < v.Height {
+			h = v.Height
+		}
+	}
+	return h
+}
+func VerifyTxsSequence(txs []*czzutil.Tx) error {
+	mix := uint64(0)
+	for i, v := range txs {
+		e, ii := IsEntangleTx(v.MsgTx())
+		if e == nil {
+			h := GetMaxHeight(ii)
+			if mix > h {
+				return errors.New(fmt.Sprint("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]",i-1,mix,i,h))
+			} else {
+				mix = h
+			}
+		}
+	}
+	return nil
+}
 func GetPoolAmount() int64 {
 	return 0
 }
