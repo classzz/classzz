@@ -262,7 +262,7 @@ func VerifyTxsSequence(txs []*czzutil.Tx) error {
 		if e == nil {
 			h := GetMaxHeight(ii)
 			if mix > h {
-				return errors.New(fmt.Sprint("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]",i-1,mix,i,h))
+				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]",i-1,mix,i,h))
 			} else {
 				mix = h
 			}
@@ -351,9 +351,9 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
 
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = new(big.Int).SetInt64(calcModeForDoge(*reserve,item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toDoge(*reserve,item.Value.Int64()))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = new(big.Int).SetInt64(calcModeForLtc(*reserve,item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toLtc(*reserve,item.Value.Int64()))
 	}
 	*reserve = *reserve - item.Value.Int64()
 	kk := KeepedItem{
@@ -361,13 +361,6 @@ func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
 		Amount:   new(big.Int).Set(item.Value),
 	}
 	return kk
-}
-
-func toDoge(v *big.Int) *big.Int {
-	return new(big.Int).Set(v)
-}
-func toLtc(v *big.Int) *big.Int {
-	return new(big.Int).Set(v)
 }
 
 func EnoughAmount(reserve int64, items []*EntangleItem) bool {
@@ -392,7 +385,7 @@ func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 	return nil
 }
 
-func calcModeForDoge(entangled, needed int64) int64 {
+func toDoge(entangled, needed int64) int64 {
 	if needed <= 0 {
 		return 0
 	}
@@ -400,20 +393,25 @@ func calcModeForDoge(entangled, needed int64) int64 {
 	rate = rate + int64(entangled/int64(12500000))
 	p := entangled % int64(12500000)
 
-	// ignore remainder
 	if (int64(12500000) - p) >= needed {
-		kk = int64(needed / rate)
+		f1 := big.NewFloat(float64(needed))
+		f1 = f1.Quo(f1,big.NewFloat(float64(rate)))
+		kk = toCzz(f1).Int64()
 	} else {
-		v1 := int64(12500000) - p
-		v2 := needed - p
-		kk = int64(v1 / rate)
+		v1 := big.NewFloat(float64(int64(12500000) - p))
+		v2 := big.NewFloat(float64(needed - p))
+		r1 := big.NewFloat(float64(rate))
+		v1 = v1.Quo(v1,r1)
+		kk = toCzz(v1).Int64()
 		rate += 1
-		kk = kk + int64(v2/rate)
+		r2 := big.NewFloat(float64(rate))
+		v2 = v2.Quo(v2,r2)
+		kk = kk + toCzz(v2).Int64()
 	}
 	return kk
 }
 
-func calcModeForLtc(entangled, needed int64) int64 {
+func toLtc(entangled, needed int64) int64 {
 	if needed <= 0 {
 		return 0
 	}
@@ -449,5 +447,6 @@ func toCzz(val *big.Float) *big.Int {
 	ii, _ := val.Int64()
 	return big.NewInt(ii)
 }
+
 
 
