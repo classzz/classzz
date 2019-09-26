@@ -31,8 +31,7 @@ func RecoverPublicFromBytes(pub []byte, t ExpandedTxType) (*ecdsa.PublicKey, err
 
 func MakeAddress(puk ecdsa.PublicKey) (error, czzutil.Address) {
 	pub := (*czzec.PublicKey)(&puk).SerializeCompressed()
-	if addrHash, err := czzutil.NewAddressPubKeyHash(
-		czzutil.Hash160(pub), &chaincfg.MainNetParams); err != nil {
+	if addrHash, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pub), &chaincfg.MainNetParams); err != nil {
 		return err, nil
 	} else {
 		address, err1 := czzutil.DecodeAddress(addrHash.String(), &chaincfg.MainNetParams)
@@ -41,4 +40,5 @@ func MakeAddress(puk ecdsa.PublicKey) (error, czzutil.Address) {
 		}
 		return nil, address
 	}
+
 }

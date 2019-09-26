@@ -485,6 +485,7 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 			delete(mp.outpoints, txIn.PreviousOutPoint)
 		}
 		delete(mp.pool, *txHash)
+		delete(mp.entanglepool, txHash.String())
 		atomic.StoreInt64(&mp.lastUpdated, time.Now().Unix())
 	}
 }
@@ -804,6 +805,18 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 			return nil, nil, chainRuleError(cerr)
 		}
 		return nil, nil, err
+	}
+
+	ok, einfo := cross.IsEntangleTx(tx.MsgTx())
+
+	if ok != nil {
+		return nil, nil, errors.New("not entangle tx")
+	}
+
+	if len(einfo) > 0 {
+		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
+			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
+		}
 	}
 
 	_, err = mp.fetchEntangleUtxos(tx)
@@ -1404,6 +1417,7 @@ func New(cfg *Config) *TxPool {
 	return &TxPool{
 		cfg:            *cfg,
 		pool:           make(map[chainhash.Hash]*TxDesc),
+		entanglepool:   make(map[string]*TxDesc),
 		orphans:        make(map[chainhash.Hash]*orphanTx),
 		orphansByPrev:  make(map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx),
 		nextExpireScan: time.Now().Add(orphanExpireScanInterval),

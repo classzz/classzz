@@ -15,7 +15,7 @@ type CacheEntangleInfo struct {
 func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 
 	var err error
-	var txExist bool
+	txExist := false
 
 	ExTxType := byte(info.ExTxType)
 	key := append(info.ExtTxHash, ExTxType)
@@ -29,14 +29,10 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 
 		value := entangleBucket.Get(key)
 		if value != nil {
-			txExist = false
+			txExist = true
 		}
 		return nil
 	})
-
-	if err != nil {
-		return true
-	}
 
 	return txExist
 }

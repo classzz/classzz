@@ -1,7 +1,6 @@
 package cross
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/txscript"
@@ -43,7 +42,7 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) (error, []*TuplePubIn
 	amount := int64(0)
 	if ev.Cache != nil {
 		for i, v := range einfo {
-			if ok := ev.Cache.FetchEntangleUtxoView(v); !ok {
+			if ok := ev.Cache.FetchEntangleUtxoView(v); ok {
 				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
 				return errors.New("txid has already entangle:" + errStr), nil
 			}
@@ -105,11 +104,11 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return errors.New(e), nil
 		}
 
-		pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
-		if !bytes.Equal(pool, dogePoolPub) {
-			e := fmt.Sprintf("doge dogePoolPub err")
-			return errors.New(e), nil
-		}
+		//pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
+		//if !bytes.Equal(pool, dogePoolPub) {
+		//	e := fmt.Sprintf("doge dogePoolPub err")
+		//	return errors.New(e), nil
+		//}
 
 		if pk, err := txscript.ComputePkScript(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
 			e := fmt.Sprintf("doge PkScript err %s", err)
@@ -119,13 +118,15 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			if count, err := client.GetBlockCount(); err != nil {
 				return err, nil
 			} else {
+				fmt.Println("pk.Script()", pk.Script())
 				if count-int64(height) > dogeMaturity {
-					return nil, pk.Script()[2:22]
+					//return nil, pk.Script()[3:23]
+					puk := tx.MsgTx().TxOut[Vout].PkScript[3:23]
+					return nil, puk
 				} else {
 					e := fmt.Sprintf("dogeMaturity err ")
 					return errors.New(e), nil
 				}
-
 			}
 		}
 	}
