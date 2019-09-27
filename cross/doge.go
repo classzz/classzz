@@ -10,7 +10,7 @@ func UnmarshalPubkey1(pub []byte) (*ecdsa.PublicKey, error) {
 	//x, y := elliptic.Unmarshal(czzec.S256(), pub)
 	pubk, err := czzec.ParsePubKey(pub, czzec.S256())
 
-	if err == nil {
+	if err != nil {
 		return nil, ErrInvalidPubkey
 	}
 	return pubk.ToECDSA(), nil

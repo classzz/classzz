@@ -53,7 +53,7 @@ const (
 	// syncPeer. Set to 30 seconds.
 	syncPeerTickerInterval = 30 * time.Second
 
-	checkProofOfWorkNum = 100
+	checkProofOfWorkNum = 128
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
