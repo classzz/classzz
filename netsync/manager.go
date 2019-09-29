@@ -313,7 +313,7 @@ func (sm *SyncManager) findNextHeaderCheckpoint(height int32) *chaincfg.Checkpoi
 // simply returns.  It also examines the candidates for any which are no longer
 // candidates and removes them as needed.
 func (sm *SyncManager) startSync() {
-	fmt.Println("startSync..")
+	log.Info("startSync..", "sm.syncPeer", sm.syncPeer)
 	// Return now if we're already syncing.
 	if sm.syncPeer != nil {
 		return
@@ -355,7 +355,7 @@ func (sm *SyncManager) startSync() {
 	} else if len(okPeers) > 0 {
 		bestPeer = okPeers[rand.Intn(len(okPeers))]
 	}
-
+	log.Info("startSync2..", "bestPeer", bestPeer)
 	// Start syncing from the best peer if one was selected.
 	if bestPeer != nil {
 		// Clear the requestedBlocks if the sync peer changes, otherwise
@@ -370,8 +370,8 @@ func (sm *SyncManager) startSync() {
 			return
 		}
 
-		log.Infof("Syncing to block height %d from peer %v",
-			bestPeer.LastBlock(), bestPeer.Addr())
+		log.Infof("Syncing to block height %d / bestHeight %d from peer %v ",
+			bestPeer.LastBlock(), best.Height, bestPeer.Addr())
 
 		// When the current height is less than a known checkpoint we
 		// can use block headers to learn about which blocks comprise
@@ -414,11 +414,13 @@ func (sm *SyncManager) startSync() {
 				sm.startSync()
 			}()
 		} else if !sm.fastSyncMode {
+
 			// We will only send the getBlocks message if we are not
 			// in fast sync mode. If we are in fast sync mode we will
 			// set this bool to false once the UTXO download/verification
 			// finishes and then we can proceed as if we are syncing
 			// normally.
+			log.Info("Syncing to block2", "locator", locator, " &zeroHash", &zeroHash)
 			if err := bestPeer.PushGetBlocksMsg(locator, &zeroHash); err != nil {
 				log.Infof("Downloading fastSyncMode headers for blocks %d to "+
 					"%d from peer %s ,err %s", best.Height+1,
@@ -429,6 +431,7 @@ func (sm *SyncManager) startSync() {
 
 		bestPeer.SetSyncPeer(true)
 		sm.syncPeer = bestPeer
+		log.Info("Syncing to block3", "SetSyncPeer", sm.syncPeer)
 		sm.syncPeerState = &syncPeerState{
 			lastBlockTime:     time.Now(),
 			recvBytes:         bestPeer.BytesReceived(),
@@ -509,7 +512,7 @@ func (sm *SyncManager) handleCheckSyncPeer() {
 	if atomic.LoadInt32(&sm.shutdown) != 0 {
 		return
 	}
-
+	log.Info(" (sm *SyncManager) handleCheckSyncPeer()", " sm.syncPeer", sm.syncPeer)
 	// If we don't have a sync peer, then there is nothing to do.
 	if sm.syncPeer == nil {
 		return
@@ -522,6 +525,7 @@ func (sm *SyncManager) handleCheckSyncPeer() {
 	// flushing the cache skip this round.
 	if (sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed) < maxNetworkViolations) &&
 		(time.Since(sm.syncPeerState.lastBlockTime) <= maxLastBlockTime) {
+		log.Info(" (sm *SyncManager) handleCheckSyncPeer() 2 ", " validNetworkSpeed", sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed), "time.Since(sm.syncPeerState.lastBlockTime)", time.Since(sm.syncPeerState.lastBlockTime))
 		return
 	}
 
@@ -529,7 +533,7 @@ func (sm *SyncManager) handleCheckSyncPeer() {
 	// blocks.
 
 	best := sm.chain.BestSnapshot()
-
+	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 3", " best.Hash", best.Hash, "Height", best.Height, "sm.topBlock()", sm.topBlock())
 	if sm.topBlock() == best.Height || sm.chain.UtxoCacheFlushInProgress() || (sm.fastSyncMode && best.Height == sm.lastCheckpoint().Height) {
 		// Update the time and violations to prevent disconnects.
 		sm.syncPeerState.lastBlockTime = time.Now()
@@ -543,7 +547,9 @@ func (sm *SyncManager) handleCheckSyncPeer() {
 	}
 
 	sm.clearRequestedState(state)
+	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 4", " clearRequestedState", "")
 	sm.updateSyncPeer(state)
+	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 5", " updateSyncPeer", "")
 }
 
 // topBlock returns the best chains top block height
@@ -728,6 +734,7 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 
 // handleBlockMsg handles block messages from all peers.
 func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.BehaviorFlags) {
+	log.Info(" (sm *SyncManager) handleBlockMsg()", "  bmsg.peer", bmsg.peer.Addr())
 	peer := bmsg.peer
 	state, exists := sm.peerStates[peer]
 	if !exists {
@@ -819,7 +826,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// who may have lost the lock announcment race.
 	var heightUpdate int32
 	var blkHashUpdate *chainhash.Hash
-
+	log.Info(" (sm *SyncManager) handleBlockMsg()", "  isOrphan", isOrphan)
 	// Request the parents for the orphan block from the peer that sent it.
 	if isOrphan {
 		// We've just received an orphan block from a peer. In order
@@ -869,6 +876,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// the server for updating peer heights if this is an orphan or our
 	// chain is "current". This avoids sending a spammy amount of messages
 	// if we're syncing the chain from scratch.
+	log.Info(" (sm *SyncManager) handleBlockMsg()", "  blkHashUpdate", blkHashUpdate, "heightUpdate", heightUpdate)
 	if blkHashUpdate != nil && heightUpdate != 0 {
 		peer.UpdateLastBlockHeight(heightUpdate)
 		if isOrphan || sm.current() {
@@ -880,6 +888,8 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// If we are not in headers first mode, it's a good time to periodically
 	// flush the blockchain cache because we don't expect new blocks immediately.
 	// After that, there is nothing more to do.
+	log.Info(" (sm *SyncManager) handleBlockMsg", "sm.headersFirstMode", sm.headersFirstMode)
+
 	if !sm.headersFirstMode {
 		if err := sm.chain.FlushCachedState(blockchain.FlushPeriodic); err != nil {
 			log.Errorf("Error while flushing the blockchain cache: %v", err)
@@ -890,6 +900,8 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// This is headers-first mode, so if the block is not a checkpoint
 	// request more blocks using the header list when the request queue is
 	// getting short.
+	log.Info(" (sm *SyncManager) handleBlockMsg", "isCheckpointBlock", isCheckpointBlock)
+
 	if !isCheckpointBlock {
 		if sm.startHeader != nil &&
 			len(state.requestedBlocks) < minInFlightBlocks {
@@ -905,7 +917,9 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	prevHeight := sm.nextCheckpoint.Height
 	prevHash := sm.nextCheckpoint.Hash
 	sm.nextCheckpoint = sm.findNextHeaderCheckpoint(prevHeight)
+
 	if sm.nextCheckpoint != nil {
+		log.Info(" (sm *SyncManager) handleBlockMsg", "sm.nextCheckpoint", sm.nextCheckpoint.Height, "sm.nextCheckpoint", sm.nextCheckpoint.Hash)
 		locator := blockchain.BlockLocator([]*chainhash.Hash{prevHash})
 		err := peer.PushGetHeadersMsg(locator, sm.nextCheckpoint.Hash)
 		if err != nil {
@@ -927,6 +941,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// from the block after this one up to the end of the chain (zero hash).
 	sm.headersFirstMode = false
 	sm.headerList.Init()
+	log.Info(" (sm *SyncManager) handleBlockMsg", "sm.headersFirstMode", sm.headersFirstMode)
 	log.Infof("Reached the final checkpoint -- switching to normal mode")
 	locator := blockchain.BlockLocator([]*chainhash.Hash{blockHash})
 	err = peer.PushGetBlocksMsg(locator, &zeroHash)

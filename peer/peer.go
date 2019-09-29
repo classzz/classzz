@@ -968,6 +968,7 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 
 	// Construct the getblocks request and queue it to be sent.
 	msg := wire.NewMsgGetBlocks(stopHash)
+	log.Info("(p *Peer) PushGetBlocksMsg", "msg", len(msg.BlockLocatorHashes))
 	for _, hash := range locator {
 		err := msg.AddBlockLocatorHash(hash)
 		if err != nil {
@@ -975,13 +976,14 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 		}
 	}
 	p.QueueMessage(msg, nil)
-
+	log.Info("(p *Peer) PushGetBlocksMsg", "QueueMessage")
 	// Update the previous getblocks request information for filtering
 	// duplicates.
 	p.prevGetBlocksMtx.Lock()
 	p.prevGetBlocksBegin = beginHash
 	p.prevGetBlocksStop = stopHash
 	p.prevGetBlocksMtx.Unlock()
+	log.Info("(p *Peer) PushGetBlocksMsg", "prevGetBlocksMtx.Unlock()")
 	return nil
 }
 

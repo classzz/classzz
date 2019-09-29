@@ -238,7 +238,7 @@ func (b *BlockChain) getSuitableBlock(node0 *blockNode) (*blockNode, error) {
 // This function differs from the exported CalcNextRequiredDifficulty in that
 // the exported version uses the current best chain as the previous block node
 // while this function accepts any block node.
-func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTime time.Time, algorithm DifficultyAlgorithm) (uint32, error) {
+func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTime time.Time) (uint32, error) {
 
 	// Genesis block.
 	if lastNode == nil {
@@ -299,8 +299,7 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 func (b *BlockChain) CalcNextRequiredDifficulty(timestamp time.Time) (uint32, error) {
 	b.chainLock.Lock()
 	tip := b.bestChain.Tip()
-	difficulty, err := b.calcNextRequiredDifficulty(tip, timestamp,
-		b.SelectDifficultyAdjustmentAlgorithm(tip.height))
+	difficulty, err := b.calcNextRequiredDifficulty(tip, timestamp)
 	b.chainLock.Unlock()
 	return difficulty, err
 }
