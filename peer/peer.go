@@ -13,6 +13,7 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -1429,6 +1430,8 @@ out:
 		// is done.  The timer is reset below for the next iteration if
 		// needed.
 		rmsg, buf, err := p.readMessage(p.wireEncoding)
+
+		fmt.Println("peer inHandler rmsg", reflect.TypeOf(rmsg), p.addr)
 		idleTimer.Stop()
 		if err != nil {
 			// In order to allow regression tests with malformed messages, don't
@@ -1468,6 +1471,7 @@ out:
 
 		// Handle each supported message type.
 		p.stallControl <- stallControlMsg{sccHandlerStart, rmsg}
+
 		switch msg := rmsg.(type) {
 		case *wire.MsgVersion:
 			// Limit to one version message per peer.
@@ -1957,7 +1961,7 @@ out:
 				continue
 			}
 			p.QueueMessage(wire.NewMsgPing(nonce), nil)
-
+			fmt.Println("peer.QueueMessage ", p.addr)
 		case <-p.quit:
 			break out
 		}

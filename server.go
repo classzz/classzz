@@ -47,8 +47,7 @@ import (
 const (
 	// defaultServices describes the default services that are supported by
 	// the server.
-	defaultServices = wire.SFNodeNetwork | wire.SFNodeBloom |
-		wire.SFNodeCF | wire.SFNodeBitcoinCash
+	defaultServices = wire.SFNodeNetwork | wire.SFNodeBloom | wire.SFNodeCF
 
 	// defaultRequiredServices describes the default services that are
 	// required to be supported by outbound peers.

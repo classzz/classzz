@@ -6,8 +6,10 @@ package netsync
 
 import (
 	"container/list"
+	"fmt"
 	"math/rand"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -311,6 +313,7 @@ func (sm *SyncManager) findNextHeaderCheckpoint(height int32) *chaincfg.Checkpoi
 // simply returns.  It also examines the candidates for any which are no longer
 // candidates and removes them as needed.
 func (sm *SyncManager) startSync() {
+	fmt.Println("startSync..")
 	// Return now if we're already syncing.
 	if sm.syncPeer != nil {
 		return
@@ -391,7 +394,12 @@ func (sm *SyncManager) startSync() {
 			best.Height < sm.nextCheckpoint.Height &&
 			sm.chainParams != &chaincfg.RegressionNetParams {
 
-			bestPeer.PushGetHeadersMsg(locator, sm.nextCheckpoint.Hash)
+			if err := bestPeer.PushGetHeadersMsg(locator, sm.nextCheckpoint.Hash); err != nil {
+				log.Infof("Downloading headers for blocks %d to "+
+					"%d from peer %s ,err %s", best.Height+1,
+					sm.nextCheckpoint.Height, bestPeer.Addr(), err.Error())
+				return
+			}
 			sm.headersFirstMode = true
 			log.Infof("Downloading headers for blocks %d to "+
 				"%d from peer %s", best.Height+1,
@@ -411,7 +419,12 @@ func (sm *SyncManager) startSync() {
 			// set this bool to false once the UTXO download/verification
 			// finishes and then we can proceed as if we are syncing
 			// normally.
-			bestPeer.PushGetBlocksMsg(locator, &zeroHash)
+			if err := bestPeer.PushGetBlocksMsg(locator, &zeroHash); err != nil {
+				log.Infof("Downloading fastSyncMode headers for blocks %d to "+
+					"%d from peer %s ,err %s", best.Height+1,
+					sm.nextCheckpoint.Height, bestPeer.Addr(), err.Error())
+				return
+			}
 		}
 
 		bestPeer.SetSyncPeer(true)
@@ -1403,6 +1416,7 @@ out:
 				bmsgs = []*blockMsg{}
 			}
 		case m := <-sm.msgChan:
+			fmt.Println(" (sm *SyncManager) blockHandler() ", reflect.TypeOf(m))
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
