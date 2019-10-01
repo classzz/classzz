@@ -2294,7 +2294,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 
 	blockTemplate := s.gbtWorkState.template
 
-	if blockTemplate == nil || blockTemplate.Height != s.cfg.Chain.BestSnapshot().Height || !s.gbtWorkState.prevHash.IsEqual(&s.cfg.Chain.BestSnapshot().Hash) {
+	if blockTemplate == nil || blockTemplate.Height != s.cfg.Chain.BestSnapshot().Height {
 		if err := s.gbtWorkState.updateBlockTemplate(s, false); err != nil {
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCDatabase,
