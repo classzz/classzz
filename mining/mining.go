@@ -312,6 +312,8 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
+	tx.AddTxIn(&wire.TxIn{})	// for pool1 address
+	tx.AddTxIn(&wire.TxIn{})
 
 	//Calculation incentive
 	reward := blockchain.CalcBlockSubsidy(nextBlockHeight, params)
