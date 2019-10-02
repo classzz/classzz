@@ -55,6 +55,14 @@ const (
 	// syncPeer. Set to 30 seconds.
 	syncPeerTickerInterval = 30 * time.Second
 
+	// maxStallDuration is the time after which we will disconnect our
+	// current sync peer if we haven't made progress.
+	maxStallDuration = 3 * time.Minute
+
+	// stallSampleInterval the interval at which we will check to see if our
+	// sync has stalled.
+	stallSampleInterval = 30 * time.Second
+
 	checkProofOfWorkNum = 100
 )
 
@@ -225,12 +233,13 @@ type SyncManager struct {
 	quit           chan struct{}
 
 	// These fields should only be accessed from the blockHandler thread.
-	rejectedTxns    map[chainhash.Hash]struct{}
-	requestedTxns   map[chainhash.Hash]struct{}
-	requestedBlocks map[chainhash.Hash]struct{}
-	syncPeer        *peerpkg.Peer
-	syncPeerState   *syncPeerState
-	peerStates      map[*peerpkg.Peer]*peerSyncState
+	rejectedTxns     map[chainhash.Hash]struct{}
+	requestedTxns    map[chainhash.Hash]struct{}
+	requestedBlocks  map[chainhash.Hash]struct{}
+	syncPeer         *peerpkg.Peer
+	syncPeerState    *syncPeerState
+	peerStates       map[*peerpkg.Peer]*peerSyncState
+	lastProgressTime time.Time
 
 	// The following fields are used for headers-first mode.
 	headersFirstMode bool
@@ -437,6 +446,7 @@ func (sm *SyncManager) startSync() {
 			recvBytes:         bestPeer.BytesReceived(),
 			recvBytesLastTick: uint64(0),
 		}
+		sm.lastProgressTime = time.Now()
 	} else {
 		log.Warnf("No sync peer candidates available")
 	}
@@ -507,50 +517,51 @@ func (sm *SyncManager) handleNewPeerMsg(peer *peerpkg.Peer) {
 	}
 }
 
-// handleCheckSyncPeer selects a new sync peer.
-func (sm *SyncManager) handleCheckSyncPeer() {
-	if atomic.LoadInt32(&sm.shutdown) != 0 {
-		return
-	}
-	log.Info(" (sm *SyncManager) handleCheckSyncPeer()", " sm.syncPeer", sm.syncPeer)
-	// If we don't have a sync peer, then there is nothing to do.
-	if sm.syncPeer == nil {
-		return
-	}
-
-	// Update network stats at the end of this tick.
-	defer sm.syncPeerState.updateNetwork(sm.syncPeer)
-
-	// Check network speed of the sync peer and its last block time. If we're currently
-	// flushing the cache skip this round.
-	if (sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed) < maxNetworkViolations) &&
-		(time.Since(sm.syncPeerState.lastBlockTime) <= maxLastBlockTime) {
-		log.Info(" (sm *SyncManager) handleCheckSyncPeer() 2 ", " validNetworkSpeed", sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed), "time.Since(sm.syncPeerState.lastBlockTime)", time.Since(sm.syncPeerState.lastBlockTime))
-		return
-	}
-
-	// Don't update sync peers if you have all the available
-	// blocks.
-
-	best := sm.chain.BestSnapshot()
-	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 3", " best.Hash", best.Hash, "Height", best.Height, "sm.topBlock()", sm.topBlock())
-	if sm.topBlock() == best.Height || sm.chain.UtxoCacheFlushInProgress() || (sm.fastSyncMode && best.Height == sm.lastCheckpoint().Height) {
-		// Update the time and violations to prevent disconnects.
-		sm.syncPeerState.lastBlockTime = time.Now()
-		sm.syncPeerState.violations = 0
-		return
-	}
-
-	state, exists := sm.peerStates[sm.syncPeer]
-	if !exists {
-		return
-	}
-
-	sm.clearRequestedState(state)
-	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 4", " clearRequestedState", "")
-	sm.updateSyncPeer(state)
-	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 5", " updateSyncPeer", "")
-}
+//
+//// handleCheckSyncPeer selects a new sync peer.
+//func (sm *SyncManager) handleCheckSyncPeer() {
+//	if atomic.LoadInt32(&sm.shutdown) != 0 {
+//		return
+//	}
+//	log.Info(" (sm *SyncManager) handleCheckSyncPeer()", " sm.syncPeer", sm.syncPeer)
+//	// If we don't have a sync peer, then there is nothing to do.
+//	if sm.syncPeer == nil {
+//		return
+//	}
+//
+//	// Update network stats at the end of this tick.
+//	defer sm.syncPeerState.updateNetwork(sm.syncPeer)
+//
+//	// Check network speed of the sync peer and its last block time. If we're currently
+//	// flushing the cache skip this round.
+//	if (sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed) < maxNetworkViolations) &&
+//		(time.Since(sm.syncPeerState.lastBlockTime) <= maxLastBlockTime) {
+//		log.Info(" (sm *SyncManager) handleCheckSyncPeer() 2 ", " validNetworkSpeed", sm.syncPeerState.validNetworkSpeed(sm.minSyncPeerNetworkSpeed), "time.Since(sm.syncPeerState.lastBlockTime)", time.Since(sm.syncPeerState.lastBlockTime))
+//		return
+//	}
+//
+//	// Don't update sync peers if you have all the available
+//	// blocks.
+//
+//	best := sm.chain.BestSnapshot()
+//	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 3", " best.Hash", best.Hash, "Height", best.Height, "sm.topBlock()", sm.topBlock())
+//	if sm.topBlock() == best.Height || sm.chain.UtxoCacheFlushInProgress() || (sm.fastSyncMode && best.Height == sm.lastCheckpoint().Height) {
+//		// Update the time and violations to prevent disconnects.
+//		sm.syncPeerState.lastBlockTime = time.Now()
+//		sm.syncPeerState.violations = 0
+//		return
+//	}
+//
+//	state, exists := sm.peerStates[sm.syncPeer]
+//	if !exists {
+//		return
+//	}
+//
+//	sm.clearRequestedState(state)
+//	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 4", " clearRequestedState", "")
+//	sm.updateSyncPeer(false)
+//	log.Info(" (sm *SyncManager) handleCheckSyncPeer() 5", " updateSyncPeer", "")
+//}
 
 // topBlock returns the best chains top block height
 func (sm *SyncManager) topBlock() int32 {
@@ -583,7 +594,9 @@ func (sm *SyncManager) handleDonePeerMsg(peer *peerpkg.Peer) {
 
 	// Fetch a new sync peer if this is the sync peer.
 	if peer == sm.syncPeer {
-		sm.updateSyncPeer(state)
+		// Update the sync peer. The server has already disconnected the
+		// peer before signaling to the sync manager.
+		sm.updateSyncPeer(false)
 	}
 }
 
@@ -604,23 +617,22 @@ func (sm *SyncManager) clearRequestedState(state *peerSyncState) {
 }
 
 // updateSyncPeer picks a new peer to sync from.
-func (sm *SyncManager) updateSyncPeer(state *peerSyncState) {
-	log.Infof("Updating sync peer, last block: %v, violations: %v", sm.syncPeerState.lastBlockTime, sm.syncPeerState.violations)
+func (sm *SyncManager) updateSyncPeer(dcSyncPeer bool) {
+	log.Debugf("Updating sync peer, no progress for: %v",
+		time.Since(sm.lastProgressTime))
 
-	// Disconnect from the misbehaving peer.
-	sm.syncPeer.Disconnect()
+	// First, disconnect the current sync peer if requested.
+	if dcSyncPeer {
+		sm.syncPeer.Disconnect()
+	}
 
-	// Attempt to find a new peer to sync from
-	// Also, reset the headers-first state.
-	sm.syncPeer.SetSyncPeer(false)
-	sm.syncPeer = nil
-	sm.syncPeerState = nil
-
+	// Reset any header state before we choose our next active sync peer.
 	if sm.headersFirstMode {
 		best := sm.chain.BestSnapshot()
 		sm.resetHeaderState(&best.Hash, best.Height)
 	}
 
+	sm.syncPeer = nil
 	sm.startSync()
 }
 
@@ -856,6 +868,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 		// Only consider non-orphans for the timer.
 		if peer == sm.syncPeer {
 			sm.syncPeerState.lastBlockTime = time.Now()
+			sm.lastProgressTime = time.Now()
 		}
 
 		// When the block is not an orphan, log information about it and
@@ -1413,8 +1426,8 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 // important because the sync manager controls which blocks are needed and how
 // the fetching should proceed.
 func (sm *SyncManager) blockHandler() {
-	ticker := time.NewTicker(syncPeerTickerInterval)
-	defer ticker.Stop()
+	stallTicker := time.NewTicker(stallSampleInterval)
+	defer stallTicker.Stop()
 	ticker1 := time.NewTicker(1 * time.Second)
 	defer ticker1.Stop()
 
@@ -1423,13 +1436,14 @@ func (sm *SyncManager) blockHandler() {
 out:
 	for {
 		select {
-		case <-ticker.C:
-			sm.handleCheckSyncPeer()
 		case <-ticker1.C:
 			if len(bmsgs) > 0 {
 				sm.handleBlocksMsg(bmsgs)
 				bmsgs = []*blockMsg{}
 			}
+		case <-stallTicker.C:
+			sm.handleStallSample()
+
 		case m := <-sm.msgChan:
 			fmt.Println(" (sm *SyncManager) blockHandler() ", reflect.TypeOf(m))
 			switch msg := m.(type) {
@@ -1535,6 +1549,59 @@ out:
 
 	sm.wg.Done()
 	log.Trace("Block handler done")
+}
+
+// handleStallSample will switch to a new sync peer if the current one has
+// stalled. This is detected when by comparing the last progress timestamp with
+// the current time, and disconnecting the peer if we stalled before reaching
+// their highest advertised block.
+func (sm *SyncManager) handleStallSample() {
+	if atomic.LoadInt32(&sm.shutdown) != 0 {
+		return
+	}
+
+	// If we don't have an active sync peer, exit early.
+	if sm.syncPeer == nil {
+		return
+	}
+
+	// If the stall timeout has not elapsed, exit early.
+	if time.Since(sm.lastProgressTime) <= maxStallDuration {
+		return
+	}
+
+	// Check to see that the peer's sync state exists.
+	state, exists := sm.peerStates[sm.syncPeer]
+	if !exists {
+		return
+	}
+
+	sm.clearRequestedState(state)
+
+	disconnectSyncPeer := sm.shouldDCStalledSyncPeer()
+	sm.updateSyncPeer(disconnectSyncPeer)
+}
+
+// shouldDCStalledSyncPeer determines whether or not we should disconnect a
+// stalled sync peer. If the peer has stalled and its reported height is greater
+// than our own best height, we will disconnect it. Otherwise, we will keep the
+// peer connected in case we are already at tip.
+func (sm *SyncManager) shouldDCStalledSyncPeer() bool {
+	lastBlock := sm.syncPeer.LastBlock()
+	startHeight := sm.syncPeer.StartingHeight()
+
+	var peerHeight int32
+	if lastBlock > startHeight {
+		peerHeight = lastBlock
+	} else {
+		peerHeight = startHeight
+	}
+
+	// If we've stalled out yet the sync peer reports having more blocks for
+	// us we will disconnect them. This allows us at tip to not disconnect
+	// peers when we are equal or they temporarily lag behind us.
+	best := sm.chain.BestSnapshot()
+	return peerHeight > best.Height
 }
 
 // handleBlockchainNotification handles notifications from blockchain.  It does
