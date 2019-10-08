@@ -63,7 +63,7 @@ const (
 	// sync has stalled.
 	stallSampleInterval = 30 * time.Second
 
-	checkProofOfWorkNum = 100
+	checkProofOfWorkNum = 128
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -1428,21 +1428,19 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 func (sm *SyncManager) blockHandler() {
 	stallTicker := time.NewTicker(stallSampleInterval)
 	defer stallTicker.Stop()
-	ticker1 := time.NewTicker(1 * time.Second)
-	defer ticker1.Stop()
 
 	var bmsgs []*blockMsg
 
 out:
 	for {
 		select {
-		case <-ticker1.C:
+		case <-stallTicker.C:
+			sm.handleStallSample()
+
 			if len(bmsgs) > 0 {
 				sm.handleBlocksMsg(bmsgs)
 				bmsgs = []*blockMsg{}
 			}
-		case <-stallTicker.C:
-			sm.handleStallSample()
 
 		case m := <-sm.msgChan:
 			fmt.Println(" (sm *SyncManager) blockHandler() ", reflect.TypeOf(m))
