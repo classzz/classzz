@@ -7,11 +7,11 @@ import (
 	"math/big"
 	"fmt"
 
-	// "github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/chaincfg"
 	// "github.com/classzz/classzz/czzec"
 	// "github.com/classzz/classzz/txscript"
-	// "github.com/classzz/classzz/wire"
-	// "github.com/classzz/czzutil"
+	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 	"testing"
 )
 
@@ -70,4 +70,19 @@ func TestStruct(t *testing.T) {
 
 func TestEntangleTx(t *testing.T) {
 
+}
+
+func makeTxIncludeEntx() *czzutil.Tx {
+	targetTx := czzutil.NewTx(&wire.MsgTx{
+		TxOut: []*wire.TxOut{{
+			PkScript: nil,
+			Value:    10,
+		}},
+	})
+	info := EntangleTxInfo{}
+	mstx,e := MakeEntangleTx(&chaincfg.MainNetParams,targetTx.MsgTx().TxIn,10,1000,nil,&info)
+	if e != nil {
+		return nil
+	}
+	return czzutil.NewTx(mstx)
 }
