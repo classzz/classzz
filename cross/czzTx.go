@@ -9,6 +9,7 @@ import (
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
@@ -448,5 +449,75 @@ func toCzz(val *big.Float) *big.Int {
 	return big.NewInt(ii)
 }
 
+// the tool function for entangle tx 
+type TmpAddressPair struct {
+	index   uint32
+	address czzutil.Address
+}
+
+func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*EntangleItem {
+	items := make([]*EntangleItem, 0)
+	for _, v := range txs {
+		err, infos := IsEntangleTx(v.MsgTx())
+		if err == nil {
+			for i, out := range infos {
+				item := &EntangleItem{
+					EType: out.ExTxType,
+					Value: new(big.Int).Set(out.Amount),
+					Addr:  nil,
+				}
+				pairs, ok := addrs[*v.Hash()]
+				if ok {
+					for _, vv := range pairs {
+						if i == vv.index {
+							item.Addr = vv.address
+						}
+					}
+				}
+				items = append(items, item)
+			}
+		}
+	}
+	return items
+}
+
+func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPair, error) {
+	// txhash := tx.Hash()
+	err, _ := IsEntangleTx(tx.MsgTx())
+	if err == nil {
+		// verify the entangle tx
+
+		pairs := make([]*TmpAddressPair, 0)
+		err, tt := ev.VerifyEntangleTx(tx.MsgTx())
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range tt {
+			pub, err1 := RecoverPublicFromBytes(v.Pub, v.EType)
+			if err1 != nil {
+				return nil, err1
+			}
+			err2, addr := MakeAddress(*pub)
+			if err2 != nil {
+				return nil, err2
+			}
+			pairs = append(pairs, &TmpAddressPair{
+				index:   v.Index,
+				address: addr,
+			})
+		}
+
+		return pairs, nil
+	}
+
+	return nil, nil
+}
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) bool {
+	if items == nil || len(items) == 0 {
+		return false
+	}
+	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
+	return !EnoughAmount(all, items)
+}
 
 
