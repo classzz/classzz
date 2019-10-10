@@ -3,6 +3,7 @@ package cross
 import (
 	"crypto/ecdsa"
 	"errors"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/czzutil"
@@ -24,6 +25,8 @@ func RecoverPublicFromBytes(pub []byte, t ExpandedTxType) (*ecdsa.PublicKey, err
 	switch t {
 	case ExpandedTxEntangle_Doge:
 		return UnmarshalPubkey1(pub)
+	case ExpandedTxEntangle_Ltc:
+		return UnmarshalPubkey1(pub) // tmp exc
 	default:
 		return nil, ErrCryptoType
 	}
@@ -42,3 +45,4 @@ func MakeAddress(puk ecdsa.PublicKey) (error, czzutil.Address) {
 	}
 
 }
+
