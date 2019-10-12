@@ -321,7 +321,7 @@ func (sm *SyncManager) findNextHeaderCheckpoint(height int32) *chaincfg.Checkpoi
 // simply returns.  It also examines the candidates for any which are no longer
 // candidates and removes them as needed.
 func (sm *SyncManager) startSync() {
-	log.Info("startSync..", "sm.syncPeer", sm.syncPeer)
+	log.Debug("startSync..", "sm.syncPeer", sm.syncPeer)
 	// Return now if we're already syncing.
 	if sm.syncPeer != nil {
 		return
@@ -363,7 +363,7 @@ func (sm *SyncManager) startSync() {
 	} else if len(okPeers) > 0 {
 		bestPeer = okPeers[rand.Intn(len(okPeers))]
 	}
-	log.Info("startSync2..", "bestPeer", bestPeer)
+	log.Debug("startSync2..", "bestPeer", bestPeer)
 	// Start syncing from the best peer if one was selected.
 	if bestPeer != nil {
 		// Clear the requestedBlocks if the sync peer changes, otherwise
@@ -439,7 +439,7 @@ func (sm *SyncManager) startSync() {
 
 		bestPeer.SetSyncPeer(true)
 		sm.syncPeer = bestPeer
-		log.Info("Syncing to block3", "SetSyncPeer", sm.syncPeer)
+		log.Debug("Syncing to block3", "SetSyncPeer", sm.syncPeer)
 		sm.syncPeerState = &syncPeerState{
 			lastBlockTime:     time.Now(),
 			recvBytes:         bestPeer.BytesReceived(),
