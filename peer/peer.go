@@ -1433,7 +1433,7 @@ out:
 		// needed.
 		rmsg, buf, err := p.readMessage(p.wireEncoding)
 
-		fmt.Println("peer inHandler rmsg", reflect.TypeOf(rmsg), p.addr)
+		log.Debug("peer inHandler ", "rmsg", reflect.TypeOf(rmsg), "addr", p.addr)
 		idleTimer.Stop()
 		if err != nil {
 			// In order to allow regression tests with malformed messages, don't

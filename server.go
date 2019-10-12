@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/czzrpc"
-	"log"
 	"math"
 	"net"
 	"runtime"
@@ -1941,9 +1940,9 @@ func (s *server) pushMerkleBlockMsg(sp *serverPeer, hash *chainhash.Hash,
 // handleUpdatePeerHeight updates the heights of all peers who were known to
 // announce a block we recently accepted.
 func (s *server) handleUpdatePeerHeights(state *peerState, umsg updatePeerHeightsMsg) {
-	log.Println(" (s *server) handleUpdatePeerHeights")
+	peerLog.Debug(" (s *server) handleUpdatePeerHeights")
 	state.forAllPeers(func(sp *serverPeer) {
-		log.Println(" (s *server) handleUpdatePeerHeights", "state.forAllPeers", sp.Peer.Addr())
+		peerLog.Debug(" (s *server) handleUpdatePeerHeights", "state.forAllPeers", sp.Peer.Addr())
 		// The origin peer should already have the updated height.
 		if sp.Peer == umsg.originPeer {
 			return
@@ -1960,7 +1959,7 @@ func (s *server) handleUpdatePeerHeights(state *peerState, umsg updatePeerHeight
 		// If the peer has recently announced a block, and this block
 		// matches our newly accepted block, then update their block
 		// height.
-		log.Println(" (s *server) handleUpdatePeerHeights", "*latestBlkHash", *latestBlkHash, "*umsg.newHash", *umsg.newHash)
+		peerLog.Debug(" (s *server) handleUpdatePeerHeights", "*latestBlkHash", *latestBlkHash, "*umsg.newHash", *umsg.newHash)
 
 		if *latestBlkHash == *umsg.newHash {
 			sp.UpdateLastBlockHeight(umsg.newHeight)

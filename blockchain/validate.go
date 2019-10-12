@@ -716,7 +716,7 @@ func (b *BlockChain) checkBlockHeaderContext(header *wire.BlockHeader, prevNode 
 		// difficulty retarget rules.
 		expectedDifficulty, err := b.calcNextRequiredDifficulty(prevNode, header.Timestamp)
 
-		fmt.Println("blockHeight", blockHeight, "hash", header.BlockHash(), "header", header.Timestamp)
+		log.Debug("checkBlockHeaderContext", "blockHeight", blockHeight, "hash", header.BlockHash(), "header", header.Timestamp)
 		if err != nil {
 			return err
 		}

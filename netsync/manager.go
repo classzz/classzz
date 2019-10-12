@@ -6,7 +6,6 @@ package netsync
 
 import (
 	"container/list"
-	"fmt"
 	"math/rand"
 	"net"
 	"reflect"
@@ -429,7 +428,7 @@ func (sm *SyncManager) startSync() {
 			// set this bool to false once the UTXO download/verification
 			// finishes and then we can proceed as if we are syncing
 			// normally.
-			log.Info("Syncing to block2", "locator", locator, " &zeroHash", &zeroHash)
+			log.Debug("Syncing to block2", "locator", locator, " &zeroHash", &zeroHash)
 			if err := bestPeer.PushGetBlocksMsg(locator, &zeroHash); err != nil {
 				log.Infof("Downloading fastSyncMode headers for blocks %d to "+
 					"%d from peer %s ,err %s", best.Height+1,
@@ -746,7 +745,7 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 
 // handleBlockMsg handles block messages from all peers.
 func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.BehaviorFlags) {
-	log.Info(" (sm *SyncManager) handleBlockMsg()", "  bmsg.peer", bmsg.peer.Addr())
+	log.Debug(" (sm *SyncManager) handleBlockMsg()", "  bmsg.peer", bmsg.peer.Addr())
 	peer := bmsg.peer
 	state, exists := sm.peerStates[peer]
 	if !exists {
@@ -838,7 +837,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// who may have lost the lock announcment race.
 	var heightUpdate int32
 	var blkHashUpdate *chainhash.Hash
-	log.Info(" (sm *SyncManager) handleBlockMsg()", "  isOrphan", isOrphan)
+	log.Debug(" (sm *SyncManager) handleBlockMsg()", "  isOrphan", isOrphan)
 	// Request the parents for the orphan block from the peer that sent it.
 	if isOrphan {
 		// We've just received an orphan block from a peer. In order
@@ -889,7 +888,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// the server for updating peer heights if this is an orphan or our
 	// chain is "current". This avoids sending a spammy amount of messages
 	// if we're syncing the chain from scratch.
-	log.Info(" (sm *SyncManager) handleBlockMsg()", "  blkHashUpdate", blkHashUpdate, "heightUpdate", heightUpdate)
+	log.Debug(" (sm *SyncManager) handleBlockMsg()", "  blkHashUpdate", blkHashUpdate, "heightUpdate", heightUpdate)
 	if blkHashUpdate != nil && heightUpdate != 0 {
 		peer.UpdateLastBlockHeight(heightUpdate)
 		if isOrphan || sm.current() {
@@ -901,7 +900,6 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// If we are not in headers first mode, it's a good time to periodically
 	// flush the blockchain cache because we don't expect new blocks immediately.
 	// After that, there is nothing more to do.
-	log.Info(" (sm *SyncManager) handleBlockMsg", "sm.headersFirstMode", sm.headersFirstMode)
 
 	if !sm.headersFirstMode {
 		if err := sm.chain.FlushCachedState(blockchain.FlushPeriodic); err != nil {
@@ -913,7 +911,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// This is headers-first mode, so if the block is not a checkpoint
 	// request more blocks using the header list when the request queue is
 	// getting short.
-	log.Info(" (sm *SyncManager) handleBlockMsg", "isCheckpointBlock", isCheckpointBlock)
+	log.Debug(" (sm *SyncManager) handleBlockMsg", "isCheckpointBlock", isCheckpointBlock)
 
 	if !isCheckpointBlock {
 		if sm.startHeader != nil &&
@@ -932,7 +930,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	sm.nextCheckpoint = sm.findNextHeaderCheckpoint(prevHeight)
 
 	if sm.nextCheckpoint != nil {
-		log.Info(" (sm *SyncManager) handleBlockMsg", "sm.nextCheckpoint", sm.nextCheckpoint.Height, "sm.nextCheckpoint", sm.nextCheckpoint.Hash)
+		log.Debug(" (sm *SyncManager) handleBlockMsg", "sm.nextCheckpoint", sm.nextCheckpoint.Height, "sm.nextCheckpoint", sm.nextCheckpoint.Hash)
 		locator := blockchain.BlockLocator([]*chainhash.Hash{prevHash})
 		err := peer.PushGetHeadersMsg(locator, sm.nextCheckpoint.Hash)
 		if err != nil {
@@ -954,7 +952,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 	// from the block after this one up to the end of the chain (zero hash).
 	sm.headersFirstMode = false
 	sm.headerList.Init()
-	log.Info(" (sm *SyncManager) handleBlockMsg", "sm.headersFirstMode", sm.headersFirstMode)
+	log.Debug(" (sm *SyncManager) handleBlockMsg", "sm.headersFirstMode", sm.headersFirstMode)
 	log.Infof("Reached the final checkpoint -- switching to normal mode")
 	locator := blockchain.BlockLocator([]*chainhash.Hash{blockHash})
 	err = peer.PushGetBlocksMsg(locator, &zeroHash)
@@ -1443,7 +1441,7 @@ out:
 			}
 
 		case m := <-sm.msgChan:
-			fmt.Println(" (sm *SyncManager) blockHandler() ", reflect.TypeOf(m))
+			log.Debug(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)

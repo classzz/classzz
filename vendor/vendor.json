@@ -4,9 +4,10 @@
 	"package": [
 		{
 			"checksumSHA1": "QwswCajYVbs8Wps2/Wl1FT5vH10=",
+			"origin": "github.com/classzz/czzutil/vendor/github.com/aead/siphash",
 			"path": "github.com/aead/siphash",
-			"revision": "83563a290f60225eb120d724600b9690c3fb536f",
-			"revisionTime": "2018-08-14T21:33:30Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "j3yRnuia1i5Wb7C9Tc5g0d6gdpM=",
@@ -105,46 +106,46 @@
 			"revisionTime": "2019-07-01T13:45:21Z"
 		},
 		{
-			"checksumSHA1": "Ogl6bQfFAE8OM1QZQCor6md4vU8=",
+			"checksumSHA1": "b5Ol/DeJQMpHE/oVGQz9YR6SFXk=",
 			"path": "github.com/classzz/czzutil",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "FrNiMKO0Sz36Wb58AYmYGb217Nw=",
 			"path": "github.com/classzz/czzutil/base58",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "RIy5AriOi7DQ6LAimgQbdS9SZew=",
 			"path": "github.com/classzz/czzutil/bloom",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "2FIxImA4++e0PTTswUkwjvoLPMk=",
 			"path": "github.com/classzz/czzutil/gcs",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "C2t3J4pkRYrqqMbKdbftC1x+Zwc=",
 			"path": "github.com/classzz/czzutil/gcs/builder",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "RdDSvn/OcfqAmAn2DK9iNBQPCsU=",
 			"path": "github.com/classzz/czzutil/hdkeychain",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "qQLdfLw8WVD3H4Nd80UWG8yvj7c=",
 			"path": "github.com/classzz/czzutil/merkleblock",
-			"revision": "7a63a47e861e28145e937da6d1342271051e1fc1",
-			"revisionTime": "2019-07-01T14:04:49Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "aENNVxKxF9h9PfvTIstiAS5I3Lg=",
@@ -220,9 +221,10 @@
 		},
 		{
 			"checksumSHA1": "qgA8cXnCjtNb8XZeZXHs/6RR4hU=",
+			"origin": "github.com/classzz/czzutil/vendor/github.com/kkdai/bstream",
 			"path": "github.com/kkdai/bstream",
-			"revision": "a8d27c5aa8eedad6b6683069d64b96ece63696db",
-			"revisionTime": "2019-05-26T00:30:52Z"
+			"revision": "5f8168b24b48dc8f123c529735f54951c3b0b27d",
+			"revisionTime": "2019-07-16T01:42:48Z"
 		},
 		{
 			"checksumSHA1": "hev23KrSfQ4KfosxH+gJKziFVtA=",
