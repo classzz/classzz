@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"math/big"
 	"fmt"
+	"math/big"
 
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
@@ -263,7 +263,7 @@ func VerifyTxsSequence(txs []*czzutil.Tx) error {
 		if e == nil {
 			h := GetMaxHeight(ii)
 			if mix > h {
-				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]",i-1,mix,i,h))
+				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]", i-1, mix, i, h))
 			} else {
 				mix = h
 			}
@@ -352,9 +352,9 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
 
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = new(big.Int).SetInt64(toDoge(*reserve,item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toDoge(*reserve, item.Value.Int64()))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = new(big.Int).SetInt64(toLtc(*reserve,item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toLtc(*reserve, item.Value.Int64()))
 	}
 	*reserve = *reserve - item.Value.Int64()
 	kk := KeepedItem{
@@ -396,17 +396,17 @@ func toDoge(entangled, needed int64) int64 {
 
 	if (int64(12500000) - p) >= needed {
 		f1 := big.NewFloat(float64(needed))
-		f1 = f1.Quo(f1,big.NewFloat(float64(rate)))
+		f1 = f1.Quo(f1, big.NewFloat(float64(rate)))
 		kk = toCzz(f1).Int64()
 	} else {
 		v1 := big.NewFloat(float64(int64(12500000) - p))
 		v2 := big.NewFloat(float64(needed - p))
 		r1 := big.NewFloat(float64(rate))
-		v1 = v1.Quo(v1,r1)
+		v1 = v1.Quo(v1, r1)
 		kk = toCzz(v1).Int64()
 		rate += 1
 		r2 := big.NewFloat(float64(rate))
-		v2 = v2.Quo(v2,r2)
+		v2 = v2.Quo(v2, r2)
 		kk = kk + toCzz(v2).Int64()
 	}
 	return kk
@@ -448,8 +448,13 @@ func toCzz(val *big.Float) *big.Int {
 	ii, _ := val.Int64()
 	return big.NewInt(ii)
 }
+func fromCzz(val int64) *big.Float {
+	base := new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	v := new(big.Float).Quo(big.NewFloat(float64(val)), big.NewFloat(float64(base.Int64())))
+	return v
+}
 
-// the tool function for entangle tx 
+// the tool function for entangle tx
 type TmpAddressPair struct {
 	index   uint32
 	address czzutil.Address
@@ -519,5 +524,4 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !EnoughAmount(all, items)
 }
-
 

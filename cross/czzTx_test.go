@@ -33,12 +33,13 @@ func TestCalcModel(t *testing.T) {
 		v1 := toDoge(reserve[0], doge)
 		v2 := toLtc(reserve[1], itc)
 
-		fmt.Println("entangle index:", i, "[doge:", doge, " to czz:", v1, "][itc:", itc, " to czz:", v2, "]")
+		fmt.Println("entangle index:", i, "[doge:", doge, " to czz:", fromCzz(v1).String(), "][itc:", itc, " to czz:", fromCzz(v2).String(), "]")
 		reserve[0] += doge
 		reserve[1] += itc
 		doge = doge * int64(i+1)
 		itc = itc * int64(i+1)
 	}
+	fmt.Println("finish")
 }
 
 func TestStruct(t *testing.T) {
