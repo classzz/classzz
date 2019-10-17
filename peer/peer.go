@@ -1963,7 +1963,7 @@ out:
 				continue
 			}
 			p.QueueMessage(wire.NewMsgPing(nonce), nil)
-			fmt.Println("peer.QueueMessage ", p.addr)
+			log.Debug("peer.QueueMessage ", "addr", p.addr)
 		case <-p.quit:
 			break out
 		}

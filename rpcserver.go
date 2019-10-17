@@ -265,6 +265,7 @@ var rpcLimited = map[string]struct{}{
 	"getbestblock":          {},
 	"getbestblockhash":      {},
 	"getblock":              {},
+	"getwork":               {},
 	"getblockcount":         {},
 	"getblockhash":          {},
 	"getblockheader":        {},
