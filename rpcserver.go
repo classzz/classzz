@@ -3702,6 +3702,7 @@ func handleSubmitBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 // handleSubmitBlock implements the submitblock command.
 func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.SubmitWorkCmd)
+	rpcsLog.Infof("handleSubmitWork block %s ", c.Hash)
 
 	template := s.gbtWorkState.template
 	if template == nil || template.Block.Header.BlockHashNoNonce().String() != c.Hash {
