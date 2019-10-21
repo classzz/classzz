@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/mining"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
@@ -213,6 +215,54 @@ func MakeBlocks(count int, address czzutil.Address) ([]*czzutil.Block, error) {
 		prevBlock = block
 	}
 	return blocks, nil
+}
+func checkEntangleTx(tx *czzutil.Tx) error {
+	// tmp the cache is nil
+	// err, _ := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
+	// if err != nil {
+	// 	return err
+	// }
+	return nil
+}
+func CheckBlockEntangle(block *czzutil.Block) error {
+	curHeight := int64(0)
+	for _, tx := range block.Transactions() {
+		err, items := cross.IsEntangleTx(tx.MsgTx())
+		if err == nil {
+			max := int64(0)
+			for _, ii := range items {
+				if max < int64(ii.Height) {
+					max = int64(ii.Height)
+				}
+			}
+			if curHeight > max {
+				return errors.New("unordered entangle tx in the block")
+			}
+			err := checkEntangleTx(tx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+func CheckTxSequence(block *czzutil.Block) error {
+	txs := block.Transactions()
+	return cross.VerifyTxsSequence(txs)
+}
+func verifyBlock(block *czzutil.Block) error {
+	chainParams := chaincfg.MainNetParams
+
+	if err := blockchain.CheckBlockSanity(block, chainParams.PowLimit, nil, true); err != nil {
+		return err
+	}
+	if err := CheckBlockEntangle(block); err != nil {
+		return err
+	}
+	if err := CheckTxSequence(block); err != nil {
+		return err
+	}
+	return nil
 }
 
 func TestCZZ1(t *testing.T) {
