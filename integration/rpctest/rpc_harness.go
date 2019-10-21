@@ -456,7 +456,7 @@ func (h *Harness) GenerateAndSubmitBlockWithCustomCoinbaseOutputs(
 	if err != nil {
 		return nil, err
 	}
-	mBlock, err := h.Node.GetBlock(prevBlockHash)
+	mBlock, err := h.Node.GetBlock(prevBlockHash.String())
 	if err != nil {
 		return nil, err
 	}
