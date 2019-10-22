@@ -1017,6 +1017,7 @@ func (sp *serverPeer) OnGetBlocks(_ *peer.Peer, msg *wire.MsgGetBlocks) {
 	hashList := chain.LocateBlocks(msg.BlockLocatorHashes, &msg.HashStop,
 		wire.MaxBlocksPerMsg)
 
+	fmt.Println("OnGetBlocks blocks ", len(hashList), " HashStop", msg.HashStop)
 	// Generate inventory message.
 	invMsg := wire.NewMsgInv()
 	for i := range hashList {
@@ -1071,7 +1072,7 @@ func (sp *serverPeer) OnGetHeaders(_ *peer.Peer, msg *wire.MsgGetHeaders) {
 	// This mirrors the behavior in the reference implementation.
 	chain := sp.server.chain
 	headers := chain.LocateHeaders(msg.BlockLocatorHashes, &msg.HashStop)
-
+	fmt.Print("OnGetHeaders LocateHeaders", len(headers))
 	// Send found headers to the requesting peer.
 	blockHeaders := make([]*wire.BlockHeader, len(headers))
 	for i := range headers {

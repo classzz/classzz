@@ -1350,12 +1350,12 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 			// very good chance the previous header processed is the parent.
 			var parent *blockNode
 			if lastNode == nil {
-				blockHash := header.BlockHash()
-				if !blockHash.IsEqual(b.chainParams.GenesisHash) {
-					return AssertError(fmt.Sprintf("initChainState: Expected "+
-						"first entry in block index to be genesis block, "+
-						"found %s", blockHash))
-				}
+				//blockHash := header.BlockHash()
+				//if !blockHash.IsEqual(b.chainParams.GenesisHash) {
+				//	return AssertError(fmt.Sprintf("initChainState: Expected "+
+				//		"first entry in block index to be genesis block, "+
+				//		"found %s", blockHash))
+				//}
 			} else if header.PrevBlock == lastNode.hash {
 				// Since we iterate block headers in order of height, if the
 				// blocks are mostly linear there is a very good chance the

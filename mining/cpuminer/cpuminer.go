@@ -5,7 +5,6 @@
 package cpuminer
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -194,8 +193,8 @@ func (m *CPUMiner) submitBlock(block *czzutil.Block) bool {
 	coinbaseTx := block.MsgBlock().Transactions[0].TxOut[0]
 	coinPool1 := block.MsgBlock().Transactions[0].TxOut[1]
 	coinPool2 := block.MsgBlock().Transactions[0].TxOut[2]
-	log.Infof("Block submitted via CPU miner accepted (hash %s, "+
-		"coinbaseAmount %v, coinPool1Amount %v, coinPool2Amount %v )", block.Hash(), czzutil.Amount(coinbaseTx.Value), czzutil.Amount(coinPool1.Value), czzutil.Amount(coinPool2.Value))
+	log.Infof("Block submitted via CPU miner accepted (hash %s, number %v "+
+		"coinbaseAmount %v, coinPool1Amount %v, coinPool2Amount %v )", block.Hash(), block.Height(), czzutil.Amount(coinbaseTx.Value), czzutil.Amount(coinPool1.Value), czzutil.Amount(coinPool2.Value))
 
 	return true
 }
@@ -321,7 +320,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	lastTxUpdate := m.g.TxSource().LastUpdated()
 	hashesCompleted := uint64(0)
 
-	fmt.Println("miner block", "hash", param.Info.HeadHash.String(), "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
+	//fmt.Println("miner block", "hash", param.Info.HeadHash.String(), "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
 
 	for {
 		select {
@@ -453,7 +452,7 @@ func (m *CPUMiner) miningWorkerController() {
 	// workers for generating blocks.
 	var runningWorkers []chan struct{}
 	launchWorkers := func(numWorkers uint32) {
-		for i := uint32(0); i < numWorkers; i++ {
+		for i := uint32(0); i < 1; i++ {
 			quit := make(chan struct{})
 			runningWorkers = append(runningWorkers, quit)
 

@@ -6,6 +6,7 @@ package netsync
 
 import (
 	"container/list"
+	"fmt"
 	"math/rand"
 	"net"
 	"reflect"
@@ -52,17 +53,17 @@ const (
 
 	// syncPeerTickerInterval is how often we check the current
 	// syncPeer. Set to 30 seconds.
-	syncPeerTickerInterval = 30 * time.Second
+	syncPeerTickerInterval = 5 * time.Second
 
 	// maxStallDuration is the time after which we will disconnect our
 	// current sync peer if we haven't made progress.
-	maxStallDuration = 3 * time.Minute
+	maxStallDuration = 30 * time.Second
 
 	// stallSampleInterval the interval at which we will check to see if our
 	// sync has stalled.
-	stallSampleInterval = 30 * time.Second
+	stallSampleInterval = 5 * time.Second
 
-	checkProofOfWorkNum = 128
+	checkProofOfWorkNum = 500
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -321,12 +322,12 @@ func (sm *SyncManager) findNextHeaderCheckpoint(height int32) *chaincfg.Checkpoi
 // simply returns.  It also examines the candidates for any which are no longer
 // candidates and removes them as needed.
 func (sm *SyncManager) startSync() {
-	log.Debug("startSync..", "sm.syncPeer", sm.syncPeer)
+
 	// Return now if we're already syncing.
 	if sm.syncPeer != nil {
 		return
 	}
-
+	log.Debug("startSync..", "sm.syncPeer", sm.syncPeer)
 	best := sm.chain.BestSnapshot()
 	bestPeers := []*peerpkg.Peer{}
 	okPeers := []*peerpkg.Peer{}
@@ -428,7 +429,7 @@ func (sm *SyncManager) startSync() {
 			// set this bool to false once the UTXO download/verification
 			// finishes and then we can proceed as if we are syncing
 			// normally.
-			log.Debug("Syncing to block2", "locator", locator, " &zeroHash", &zeroHash)
+			log.Infof("Syncing to block2", "locator", len(locator), " &zeroHash", &zeroHash)
 			if err := bestPeer.PushGetBlocksMsg(locator, &zeroHash); err != nil {
 				log.Infof("Downloading fastSyncMode headers for blocks %d to "+
 					"%d from peer %s ,err %s", best.Height+1,
@@ -739,7 +740,21 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 	}
 
 	for _, bmsg := range bmsgs {
+		fmt.Println("msgChan SyncHeight", sm.SyncHeight(), "Height", sm.chain.BestSnapshot().Height)
 		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
+	}
+
+	locator, err := sm.chain.LatestBlockLocator()
+	if err != nil {
+		log.Warnf("Failed to get block locator for the "+
+			"latest block: %v", err)
+	}
+
+	fmt.Println("handleBlockMsg peer.PushGetBlocksMsg", len(locator), zeroHash)
+	err = sm.syncPeer.PushGetBlocksMsg(locator, &zeroHash)
+	if err != nil {
+		log.Warnf("Failed to get block locator for the "+
+			"latest block: %v", err)
 	}
 }
 
@@ -861,6 +876,7 @@ func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.B
 			log.Warnf("Failed to get block locator for the "+
 				"latest block: %v", err)
 		} else {
+			fmt.Println("handleBlockMsg peer.PushGetBlocksMsg", len(locator), orphanRoot)
 			peer.PushGetBlocksMsg(locator, orphanRoot)
 		}
 	} else {
@@ -1456,12 +1472,13 @@ out:
 				}
 
 			case *blockMsg:
-
+				fmt.Println("blockMsg bmsgs ", len(bmsgs))
 				if sm.syncPeer == nil {
 					sm.handleBlockMsg(msg, blockchain.BFNone)
 					bmsgs = []*blockMsg{}
 
-				} else if int64(sm.SyncHeight())-int64(sm.syncPeer.LastBlock()) < int64(checkProofOfWorkNum) {
+				} else if int64(sm.SyncHeight())-int64(sm.chain.BestSnapshot().Height) < int64(checkProofOfWorkNum) {
+
 					sm.handleBlockMsg(msg, blockchain.BFNone)
 					bmsgs = []*blockMsg{}
 				} else {

@@ -527,6 +527,7 @@ func (p *Peer) UpdateLastBlockHeight(newHeight int32) {
 	p.statsMtx.Lock()
 	log.Tracef("Updating last block height of peer %v from %v to %v",
 		p.addr, p.lastBlock, newHeight)
+	//log.Infof("update lastBlock %d ， newHeight %d", p.lastBlock , newHeight)
 	p.lastBlock = newHeight
 	p.statsMtx.Unlock()
 }
@@ -2086,6 +2087,7 @@ func (p *Peer) readRemoteVersionMsg() error {
 	// peer's time offset.
 	p.statsMtx.Lock()
 	p.lastBlock = msg.LastBlock
+	log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
 	p.startingHeight = msg.LastBlock
 	p.timeOffset = msg.Timestamp.Unix() - time.Now().Unix()
 	p.statsMtx.Unlock()
