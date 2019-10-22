@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,17 +52,17 @@ const (
 
 	// syncPeerTickerInterval is how often we check the current
 	// syncPeer. Set to 30 seconds.
-	syncPeerTickerInterval = 5 * time.Second
+	syncPeerTickerInterval = 30 * time.Second
 
 	// maxStallDuration is the time after which we will disconnect our
 	// current sync peer if we haven't made progress.
-	maxStallDuration = 30 * time.Second
+	maxStallDuration = 2 * time.Minute
 
 	// stallSampleInterval the interval at which we will check to see if our
 	// sync has stalled.
-	stallSampleInterval = 5 * time.Second
+	stallSampleInterval = 30 * time.Second
 
-	checkProofOfWorkNum = 500
+	checkProofOfWorkNum = 128
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
@@ -338,14 +337,14 @@ func (sm *SyncManager) startSync() {
 
 		// Add any peers on the same block to okPeers. These should
 		// only be used as a last resort.
-		if peer.LastBlock() == best.Height {
+		if peer.TopBlock() == best.Height {
 			okPeers = append(okPeers, peer)
 			continue
 		}
 
 		// Remove sync candidate peers that are no longer candidates due
 		// to passing their latest known block.
-		if peer.LastBlock() < best.Height {
+		if peer.TopBlock() < best.Height {
 			state.syncCandidate = false
 			continue
 		}
@@ -740,22 +739,22 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 	}
 
 	for _, bmsg := range bmsgs {
-		fmt.Println("msgChan SyncHeight", sm.SyncHeight(), "Height", sm.chain.BestSnapshot().Height)
+		//fmt.Println("msgChan SyncHeight", sm.SyncHeight(), "Height", sm.chain.BestSnapshot().Height)
 		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
 	}
 
-	locator, err := sm.chain.LatestBlockLocator()
-	if err != nil {
-		log.Warnf("Failed to get block locator for the "+
-			"latest block: %v", err)
-	}
-
-	fmt.Println("handleBlockMsg peer.PushGetBlocksMsg", len(locator), zeroHash)
-	err = sm.syncPeer.PushGetBlocksMsg(locator, &zeroHash)
-	if err != nil {
-		log.Warnf("Failed to get block locator for the "+
-			"latest block: %v", err)
-	}
+	//locator, err := sm.chain.LatestBlockLocator()
+	//if err != nil {
+	//	log.Warnf("Failed to get block locator for the "+
+	//		"latest block: %v", err)
+	//}
+	//
+	//fmt.Println("handleBlockMsg peer.PushGetBlocksMsg", len(locator), zeroHash)
+	//err = sm.syncPeer.PushGetBlocksMsg(locator, &zeroHash)
+	//if err != nil {
+	//	log.Warnf("Failed to get block locator for the "+
+	//		"latest block: %v", err)
+	//}
 }
 
 // handleBlockMsg handles block messages from all peers.
@@ -1457,7 +1456,7 @@ out:
 			}
 
 		case m := <-sm.msgChan:
-			log.Debug(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
+			//log.Debug(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
@@ -1472,7 +1471,7 @@ out:
 				}
 
 			case *blockMsg:
-				fmt.Println("blockMsg bmsgs ", len(bmsgs))
+				//fmt.Println("blockMsg bmsgs ", len(bmsgs))
 				if sm.syncPeer == nil {
 					sm.handleBlockMsg(msg, blockchain.BFNone)
 					bmsgs = []*blockMsg{}
@@ -1569,6 +1568,7 @@ out:
 // the current time, and disconnecting the peer if we stalled before reaching
 // their highest advertised block.
 func (sm *SyncManager) handleStallSample() {
+	log.Infof("handleStallSample ......")
 	if atomic.LoadInt32(&sm.shutdown) != 0 {
 		return
 	}
@@ -1577,7 +1577,7 @@ func (sm *SyncManager) handleStallSample() {
 	if sm.syncPeer == nil {
 		return
 	}
-
+	log.Infof("handleStallSample ......", "sm.lastProgressTime", sm.lastProgressTime, "maxStallDuration", maxStallDuration)
 	// If the stall timeout has not elapsed, exit early.
 	if time.Since(sm.lastProgressTime) <= maxStallDuration {
 		return
@@ -1591,8 +1591,8 @@ func (sm *SyncManager) handleStallSample() {
 
 	sm.clearRequestedState(state)
 
-	disconnectSyncPeer := sm.shouldDCStalledSyncPeer()
-	sm.updateSyncPeer(disconnectSyncPeer)
+	//disconnectSyncPeer := sm.shouldDCStalledSyncPeer()
+	sm.updateSyncPeer(true)
 }
 
 // shouldDCStalledSyncPeer determines whether or not we should disconnect a

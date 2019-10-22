@@ -527,9 +527,17 @@ func (p *Peer) UpdateLastBlockHeight(newHeight int32) {
 	p.statsMtx.Lock()
 	log.Tracef("Updating last block height of peer %v from %v to %v",
 		p.addr, p.lastBlock, newHeight)
-	//log.Infof("update lastBlock %d ， newHeight %d", p.lastBlock , newHeight)
+	log.Infof("update lastBlock %d ， newHeight %d", p.lastBlock, newHeight)
 	p.lastBlock = newHeight
 	p.statsMtx.Unlock()
+}
+
+func (p *Peer) TopBlock() int32 {
+	if p.LastBlock() > p.StartingHeight() {
+		return p.LastBlock()
+	}
+
+	return p.StartingHeight()
 }
 
 // UpdateLastAnnouncedBlock updates meta-data about the last block hash this
@@ -2039,7 +2047,7 @@ func (p *Peer) Disconnect() {
 		return
 	}
 
-	log.Tracef("Disconnecting %s", p)
+	log.Infof("Disconnecting %s", p)
 	if atomic.LoadInt32(&p.connected) != 0 {
 		p.conn.Close()
 	}
