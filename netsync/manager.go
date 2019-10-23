@@ -56,7 +56,7 @@ const (
 
 	// maxStallDuration is the time after which we will disconnect our
 	// current sync peer if we haven't made progress.
-	maxStallDuration = 2 * time.Minute
+	maxStallDuration = 10 * time.Second
 
 	// stallSampleInterval the interval at which we will check to see if our
 	// sync has stalled.

@@ -1559,6 +1559,7 @@ out:
 			}
 
 		case *wire.MsgInv:
+			log.Info("*wire.MsgInv", len(msg.InvList))
 			if p.cfg.Listeners.OnInv != nil {
 				p.cfg.Listeners.OnInv(p, msg)
 			}
