@@ -1017,7 +1017,9 @@ func (sp *serverPeer) OnGetBlocks(_ *peer.Peer, msg *wire.MsgGetBlocks) {
 	hashList := chain.LocateBlocks(msg.BlockLocatorHashes, &msg.HashStop,
 		wire.MaxBlocksPerMsg)
 
-	fmt.Println("OnGetBlocks blocks ", len(hashList), " HashStop", msg.HashStop)
+	peerLog.Info("OnGetBlocks blocks ", len(hashList), " HashStop", msg.HashStop)
+	defer peerLog.Info("OnGetBlocks blocks OK", len(hashList), " HashStop", msg.HashStop)
+
 	// Generate inventory message.
 	invMsg := wire.NewMsgInv()
 	for i := range hashList {
