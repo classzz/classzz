@@ -6,7 +6,6 @@ package netsync
 
 import (
 	"container/list"
-	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -1565,6 +1564,7 @@ out:
 // the current time, and disconnecting the peer if we stalled before reaching
 // their highest advertised block.
 func (sm *SyncManager) handleStallSample() {
+	log.Infof("handleStallSample ......")
 	if atomic.LoadInt32(&sm.shutdown) != 0 {
 		return
 	}
