@@ -2094,7 +2094,7 @@ func (p *Peer) readRemoteVersionMsg() error {
 	// peer's time offset.
 	p.statsMtx.Lock()
 	p.lastBlock = msg.LastBlock
-	log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
+	//log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
 	p.startingHeight = msg.LastBlock
 	p.timeOffset = msg.Timestamp.Unix() - time.Now().Unix()
 	p.statsMtx.Unlock()
