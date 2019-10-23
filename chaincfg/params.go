@@ -177,6 +177,7 @@ type Params struct {
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
+	EntangleHeight int32 // entangle tx from other chian(doge and ltc)
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 
@@ -236,6 +237,7 @@ var MainNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -303,6 +305,7 @@ var RegressionNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -378,6 +381,7 @@ var TestNet3Params = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        false,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -448,6 +452,7 @@ var SimNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -621,3 +626,4 @@ func init() {
 	mustRegister(&RegressionNetParams)
 	mustRegister(&SimNetParams)
 }
+

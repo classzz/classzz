@@ -171,11 +171,11 @@ func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
 	// Using > here so that pop gives the highest fee item as opposed
 	// to the lowest.  Sort by fee first, then priority.
 	if pq.items[i].feePerKB == pq.items[j].feePerKB {
-		e1,i1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx()) 
-		e2,i2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx()) 
+		e1, i1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
+		e2, i2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
 		if e1 == nil && e2 == nil {
 			return cross.GetMaxHeight(i1) > cross.GetMaxHeight(i2)
-		} 
+		}
 		return pq.items[i].priority > pq.items[j].priority
 	}
 	return pq.items[i].feePerKB > pq.items[j].feePerKB
@@ -312,8 +312,10 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
-	tx.AddTxIn(&wire.TxIn{})	// for pool1 address
-	tx.AddTxIn(&wire.TxIn{})
+	if nextBlockHeight > params.EntangleHeight {
+		tx.AddTxIn(&wire.TxIn{}) // for pool1 address
+		tx.AddTxIn(&wire.TxIn{})
+	}
 
 	//Calculation incentive
 	reward := blockchain.CalcBlockSubsidy(nextBlockHeight, params)
@@ -1011,5 +1013,4 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
-
 
