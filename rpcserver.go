@@ -3737,7 +3737,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
 	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash())
-	return nil, nil
+	return true, nil
 }
 
 // handleUptime implements the uptime command.

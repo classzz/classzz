@@ -7,8 +7,6 @@ package rpcclient
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-
 	"github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/czzutil"
@@ -369,24 +367,19 @@ type FutureSubmitBlockResult chan *response
 
 // Receive waits for the response promised by the future and returns an error if
 // any occurred when submitting the block.
-func (r FutureSubmitBlockResult) Receive() error {
+func (r FutureSubmitBlockResult) Receive() (bool, error) {
 	res, err := receiveFuture(r)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if string(res) != "null" {
-		var result string
-		err = json.Unmarshal(res, &result)
-		if err != nil {
-			return err
-		}
+	var accepted bool
+	err = json.Unmarshal(res, &accepted)
 
-		return errors.New(result)
+	if err != nil {
+		return false, err
 	}
-
-	return nil
-
+	return accepted, nil
 }
 
 // SubmitBlockAsync returns an instance of a type that can be used to get the
@@ -410,7 +403,7 @@ func (c *Client) SubmitBlockAsync(block *czzutil.Block, options *btcjson.SubmitB
 }
 
 // SubmitBlock attempts to submit a new block into the bitcoin network.
-func (c *Client) SubmitBlock(block *czzutil.Block, options *btcjson.SubmitBlockOptions) error {
+func (c *Client) SubmitBlock(block *czzutil.Block, options *btcjson.SubmitBlockOptions) (bool, error) {
 	return c.SubmitBlockAsync(block, options).Receive()
 }
 
@@ -421,7 +414,7 @@ func (c *Client) SubmitWorkAsync(Hash string, Nonce uint64) FutureSubmitBlockRes
 }
 
 // SubmitBlock attempts to submit a new block into the bitcoin network.
-func (c *Client) SubmitWork(Hash string, Nonce uint64) error {
+func (c *Client) SubmitWork(Hash string, Nonce uint64) (bool, error) {
 	return c.SubmitWorkAsync(Hash, Nonce).Receive()
 }
 
