@@ -3,11 +3,11 @@ package consensus
 
 import (
 	"encoding/binary"
-	"errors"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"golang.org/x/crypto/sha3"
 	"hash"
 	"math/big"
+	"time"
 )
 
 func init() {
@@ -72,29 +72,30 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 		found = false
 	)
 
-	for i := uint64(0); i < conf.Loops; i++ {
-		conf.Done = nonce + 1
-		select {
-		case <-conf.Abort:
-			return nonce, found
-		default:
-			result := CZZhashFull(conf.Info.HeadHash[:], nonce)
-
-			//fmt.Println("HeadHash",conf.Info.HeadHash[:],"nonce",nonce,"result",result,"Target",conf.Info.Target)
-			if new(big.Int).SetBytes(result).Cmp(conf.Info.Target) <= 0 {
-				found = true
-				return nonce, found
-			}
-		}
-
-		nonce++
-	}
+	//for i := uint64(0); i < conf.Loops; i++ {
+	//	conf.Done = nonce + 1
+	//	select {
+	//	case <-conf.Abort:
+	//		return nonce, found
+	//	default:
+	//		result := CZZhashFull(conf.Info.HeadHash[:], nonce)
+	//
+	//		//fmt.Println("HeadHash",conf.Info.HeadHash[:],"nonce",nonce,"result",result,"Target",conf.Info.Target)
+	//		if new(big.Int).SetBytes(result).Cmp(conf.Info.Target) <= 0 {
+	time.Sleep(1 * time.Second)
+	found = true
 	return nonce, found
+	//		}
+	//	}
+	//
+	//	nonce++
+	//}
+	//return nonce, found
 }
 func VerifyBlockSeal(Info *CzzConsensusParam, nonce uint64) error {
-	result := CZZhashFull(Info.HeadHash[:], nonce)
-	if new(big.Int).SetBytes(result).Cmp(Info.Target) <= 0 {
-		return nil
-	}
-	return errors.New("invalid mix digest")
+	//result := CZZhashFull(Info.HeadHash[:], nonce)
+	//if new(big.Int).SetBytes(result).Cmp(Info.Target) <= 0 {
+	return nil
+	//}
+	//return errors.New("invalid mix digest")
 }

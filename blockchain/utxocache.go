@@ -6,14 +6,14 @@ package blockchain
 
 import (
 	"container/list"
-	"fmt"
-	"github.com/classzz/classzz/txscript"
-	"sync"
 	"errors"
+	"fmt"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"sync"
 )
 
 const (
@@ -874,7 +874,7 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	if err1 != nil {
 		return nil, err1
 	}
-	if len(tx.MsgTx().TxIn) != 3 {
+	if len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight < height {
 		return nil, nil
 	}
 	outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}

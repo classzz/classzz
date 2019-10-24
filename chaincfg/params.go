@@ -237,7 +237,7 @@ var MainNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 
-	EntangleHeight: 12000,
+	EntangleHeight: 12,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -626,4 +626,3 @@ func init() {
 	mustRegister(&RegressionNetParams)
 	mustRegister(&SimNetParams)
 }
-

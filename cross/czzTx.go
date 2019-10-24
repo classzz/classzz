@@ -524,5 +524,3 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !EnoughAmount(all, items)
 }
-
-

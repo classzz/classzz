@@ -1270,6 +1270,7 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 	var totalSatoshiOut int64
 	for _, txOut := range transactions[0].MsgTx().TxOut {
 		totalSatoshiOut += txOut.Value
+		break
 	}
 	expectedSatoshiOut := CalcBlockSubsidy(node.height, b.chainParams) +
 		totalFees
@@ -1388,4 +1389,3 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	newNode := newBlockNode(&header, tip)
 	return b.checkConnectBlock(newNode, block, view, nil)
 }
-
