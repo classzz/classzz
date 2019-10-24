@@ -8,12 +8,13 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"sync"
 )
 
 const (
@@ -874,7 +875,9 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	if err1 != nil {
 		return nil, err1
 	}
-	if len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight < height {
+
+	if b.chainParams.EntangleHeight > height ||
+		(len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight+1 < height) {
 		return nil, nil
 	}
 	outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
@@ -882,3 +885,4 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	defer b.chainLock.RUnlock()
 	return b.utxoCache.FetchPoolAddrView(outs)
 }
+

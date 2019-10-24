@@ -266,7 +266,7 @@ func standardCoinbaseScript(nextBlockHeight int32, extraNonce uint64) ([]byte, e
 //
 // See the comment for NewBlockTemplate for more information about why the nil
 // address handling is useful.
-func createCoinbaseTx(chain *blockchain.BlockChain, params *chaincfg.Params, coinbaseScript []byte, nextBlockHeight int32, addr czzutil.Address) (*czzutil.Tx, error) {
+func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockHeight int32, addr czzutil.Address) (*czzutil.Tx, error) {
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
@@ -313,15 +313,9 @@ func createCoinbaseTx(chain *blockchain.BlockChain, params *chaincfg.Params, coi
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
 	if nextBlockHeight > params.EntangleHeight {
-		if block, err := chain.BlockByHeight(nextBlockHeight - 1); err != nil {
-			tx1 := block.Transactions()[0].MsgTx().TxHash()
-			tx.AddTxIn(&wire.TxIn{PreviousOutPoint: *wire.NewOutPoint(&tx1,
-				1),
-			}) // for pool1 address
-			tx.AddTxIn(&wire.TxIn{PreviousOutPoint: *wire.NewOutPoint(&tx1,
-				2),
-			})
-		}
+		// utxo of coinbase in params.EntangleHeight-1 block
+		tx.AddTxIn(&wire.TxIn{}) // for pool address hold this
+		tx.AddTxIn(&wire.TxIn{})
 	}
 
 	//Calculation incentive
@@ -343,9 +337,9 @@ func createCoinbaseTx(chain *blockchain.BlockChain, params *chaincfg.Params, coi
 	})
 
 	//Sum up all the previous pool value
-	if nextBlockHeight == params.EntangleHeight {
-		reward1 = reward1 * int64(params.EntangleHeight)
-		reward2 = reward2 * int64(params.EntangleHeight)
+	if nextBlockHeight == params.EntangleHeight+1 {
+		reward1 = reward1 * int64(params.EntangleHeight+1)
+		reward2 = reward2 * int64(params.EntangleHeight+1)
 	}
 
 	// CoinPool1 reward
@@ -542,7 +536,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	if err != nil {
 		return nil, err
 	}
-	coinbaseTx, err := createCoinbaseTx(g.chain, g.chainParams, coinbaseScript,
+	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
 		nextBlockHeight, payToAddress)
 	if err != nil {
 		return nil, err
@@ -1032,3 +1026,4 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
+
