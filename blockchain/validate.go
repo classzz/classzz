@@ -105,8 +105,18 @@ func isNullOutpoint(outpoint *wire.OutPoint) bool {
 // transaction as opposed to a higher level util transaction.
 func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 	// A coin base must only have one transaction input.
-	// if len(msgTx.TxIn) != 1 {
+	// height,err := ExtractCoinbaseHeight(czzutil.NewTx(tx))
+	// if err != nil {
 	// 	return false
+	// }
+	// if height > chaincfg.MainNetParams.EntangleHeight {
+	// 	if len(msgTx.TxIn) != 3 {
+	// 		return false
+	// 	}
+	// } else {
+	// 	if len(msgTx.TxIn) != 1 {
+	// 		return false
+	// 	}
 	// }
 
 	// The previous output of a coin base must have a max value index and

@@ -199,12 +199,15 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 
 		return false, true, nil
 	}
-	if err := b.CheckBlockEntangle(block); err != nil {
-		return false,false,err
+	if b.chainParams.EntangleHeight > block.Height() {
+		if err := b.CheckBlockEntangle(block); err != nil {
+			return false, false, err
+		}
+		if err := b.CheckTxSequence(block); err != nil {
+			return false, false, err
+		}
 	}
-	if err := b.CheckTxSequence(block); err != nil {
-		return false,false,err
-	}
+
 	// The block has passed all context independent checks and appears sane
 	// enough to potentially accept it into the block chain.
 	isMainChain, err := b.maybeAcceptBlock(block, flags)
