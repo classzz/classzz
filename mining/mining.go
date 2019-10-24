@@ -599,8 +599,13 @@ mempoolLoop:
 		// non-finalized transactions.
 		tx := txDesc.Tx
 		if blockchain.IsCoinBase(tx) {
-			log.Tracef("Skipping coinbase tx %s", tx.Hash())
-			continue
+			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 {
+				log.Tracef("Skipping coinbase tx %s", tx.Hash())
+				continue
+			} else if len(tx.MsgTx().TxIn) == 1 {
+				log.Tracef("Skipping coinbase tx %s", tx.Hash())
+				continue
+			}
 		}
 		if !blockchain.IsFinalizedTransaction(tx, nextBlockHeight,
 			g.timeSource.AdjustedTime()) {
@@ -807,15 +812,15 @@ mempoolLoop:
 				continue
 			}
 			entangleAddress[*tx.Hash()] = obj
-			err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
-				txscript.StandardVerifyFlags, g.sigCache,
-				g.hashCache)
-			if err != nil {
-				log.Tracef("Skipping tx %s due to error in "+
-					"ValidateTransactionScripts: %v", tx.Hash(), err)
-				logSkippedDeps(tx, deps)
-				continue
-			}
+		}
+		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
+			txscript.StandardVerifyFlags, g.sigCache,
+			g.hashCache)
+		if err != nil {
+			log.Tracef("Skipping tx %s due to error in "+
+				"ValidateTransactionScripts: %v", tx.Hash(), err)
+			logSkippedDeps(tx, deps)
+			continue
 		}
 		// Spend the transaction inputs in the block utxo view and add
 		// an entry for it to ensure any transactions which reference
@@ -878,10 +883,11 @@ mempoolLoop:
 	// make entangle tx if it exist
 
 	eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-
-	err = cross.MakeMergeTx(coinbaseTx.MsgTx(), poolItem, eItems)
-	if err != nil {
-		return nil, err
+	if g.chainParams.EntangleHeight > nextBlockHeight {
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems)
+		if err != nil {
+			return nil, err
+		}
 	}
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
@@ -1013,4 +1019,5 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
+
 

@@ -294,7 +294,7 @@ MakeMegerTx
 				entangle txoutn
 			   '''''''''''''''
 */
-func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -316,10 +316,10 @@ func MakeMergeTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) erro
 		return errors.New("not enough amount to be entangle...")
 	}
 	// add keeped Amount txout
-	tx.AddTxOut(&wire.TxOut{
-		Value:    0,
-		PkScript: nil,
-	})
+	// tx.AddTxOut(&wire.TxOut{
+	// 	Value:    0,
+	// 	PkScript: nil,
+	// })
 	keepInfo := KeepedAmount{Items: []KeepedItem{}}
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
@@ -524,4 +524,5 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !EnoughAmount(all, items)
 }
+
 
