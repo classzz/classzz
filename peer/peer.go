@@ -527,7 +527,7 @@ func (p *Peer) UpdateLastBlockHeight(newHeight int32) {
 	p.statsMtx.Lock()
 	log.Tracef("Updating last block height of peer %v from %v to %v",
 		p.addr, p.lastBlock, newHeight)
-	log.Infof("update lastBlock %d ， newHeight %d", p.lastBlock, newHeight)
+	//log.Infof("update lastBlock %d ， newHeight %d", p.lastBlock, newHeight)
 	p.lastBlock = newHeight
 	p.statsMtx.Unlock()
 }
@@ -1442,7 +1442,7 @@ out:
 		// needed.
 		rmsg, buf, err := p.readMessage(p.wireEncoding)
 
-		log.Debug("peer inHandler ", "rmsg", reflect.TypeOf(rmsg), "addr", p.addr)
+		log.Info("peer inHandler ", "rmsg", reflect.TypeOf(rmsg), "addr", p.addr)
 		idleTimer.Stop()
 		if err != nil {
 			// In order to allow regression tests with malformed messages, don't
@@ -1554,6 +1554,7 @@ out:
 			}
 
 		case *wire.MsgBlock:
+			//log.Info("*wire.MsgBlock", msg.Header.CIDRoot)
 			if p.cfg.Listeners.OnBlock != nil {
 				p.cfg.Listeners.OnBlock(p, msg, buf)
 			}
@@ -1580,6 +1581,7 @@ out:
 			}
 
 		case *wire.MsgGetBlocks:
+			log.Info("*wire.MsgGetBlocks", len(msg.BlockLocatorHashes))
 			if p.cfg.Listeners.OnGetBlocks != nil {
 				p.cfg.Listeners.OnGetBlocks(p, msg)
 			}
@@ -2096,7 +2098,7 @@ func (p *Peer) readRemoteVersionMsg() error {
 	// peer's time offset.
 	p.statsMtx.Lock()
 	p.lastBlock = msg.LastBlock
-	log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
+	//log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
 	p.startingHeight = msg.LastBlock
 	p.timeOffset = msg.Timestamp.Unix() - time.Now().Unix()
 	p.statsMtx.Unlock()

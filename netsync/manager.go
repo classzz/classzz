@@ -1456,7 +1456,7 @@ out:
 			}
 
 		case m := <-sm.msgChan:
-			//log.Debug(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
+			//log.Info(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
