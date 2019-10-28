@@ -105,19 +105,20 @@ func isNullOutpoint(outpoint *wire.OutPoint) bool {
 // transaction as opposed to a higher level util transaction.
 func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 	// A coin base must only have one transaction input.
-	// height,err := ExtractCoinbaseHeight(czzutil.NewTx(tx))
-	// if err != nil {
-	// 	return false
-	// }
-	// if height > chaincfg.MainNetParams.EntangleHeight {
-	// 	if len(msgTx.TxIn) != 3 {
-	// 		return false
-	// 	}
-	// } else {
-	// 	if len(msgTx.TxIn) != 1 {
-	// 		return false
-	// 	}
-	// }
+	height, err := ExtractCoinbaseHeight(czzutil.NewTx(msgTx))
+	if err != nil {
+		return false
+	}
+
+	if height+1 > chaincfg.MainNetParams.EntangleHeight {
+		if len(msgTx.TxIn) != 3 {
+			return false
+		}
+	} else {
+		if len(msgTx.TxIn) != 1 {
+			return false
+		}
+	}
 
 	// The previous output of a coin base must have a max value index and
 	// a zero hash.
@@ -1013,9 +1014,9 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 // CheckTransactionSanity function prior to calling this function.
 func CheckTransactionInputs(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
 	// Coinbase transactions have no inputs.
-	// if IsCoinBase(tx) {
-	// 	return 0, nil
-	// }
+	if IsCoinBase(tx) {
+		return 0, nil
+	}
 
 	if ok, err := checkMergeTxInCoinbase(tx, txHeight, utxoView, chainParams); ok {
 		return 0, err

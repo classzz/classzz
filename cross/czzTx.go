@@ -52,7 +52,7 @@ type TuplePubIndex struct {
 }
 
 type PoolAddrItem struct {
-	POut   []*wire.OutPoint
+	POut   []wire.OutPoint
 	Script [][]byte
 	Amount []*big.Int
 }
@@ -301,12 +301,12 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	// make sure have enough Value to exchange
 	poolIn1 := &wire.TxIn{
-		PreviousOutPoint: *pool.POut[0],
+		PreviousOutPoint: pool.POut[0],
 		SignatureScript:  pool.Script[0],
 		Sequence:         wire.MaxTxInSequenceNum,
 	}
 	poolIn2 := &wire.TxIn{
-		PreviousOutPoint: *pool.POut[1],
+		PreviousOutPoint: pool.POut[1],
 		SignatureScript:  pool.Script[1],
 		Sequence:         wire.MaxTxInSequenceNum,
 	}
@@ -341,6 +341,9 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	keepEntangleAmount(&keepInfo, tx)
 	tx.TxOut[1].Value = reserve1
+	if reserve1 < reserve2 {
+		fmt.Println("as")
+	}
 	return nil
 }
 
@@ -374,6 +377,9 @@ func EnoughAmount(reserve int64, items []*EntangleItem) bool {
 
 func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 
+	if info.Count == 0 {
+		return nil
+	}
 	scriptInfo, err := txscript.KeepedAmountScript(info.Serialize())
 	if err != nil {
 		return err
@@ -382,7 +388,7 @@ func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 		Value:    0,
 		PkScript: scriptInfo,
 	}
-	tx.TxOut[3] = txout
+	tx.TxOut = append(tx.TxOut, txout)
 	return nil
 }
 

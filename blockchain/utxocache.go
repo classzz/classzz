@@ -871,18 +871,19 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	if block.Height() != height {
 		return nil, errors.New("the height not match")
 	}
-	tx, err1 := block.Tx(0)
-	if err1 != nil {
-		return nil, err1
+	tx, err := block.Tx(0)
+	if err != nil {
+		return nil, err
 	}
 
-	if b.chainParams.EntangleHeight >= height ||
-		(len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight+1 < height) {
+	if b.chainParams.EntangleHeight > height+1 || (len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight > height+1) {
 		return nil, nil
 	}
-	outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
+	//tx.MsgTx().TxOut[1].PkScript
+	outs := []*wire.OutPoint{wire.NewOutPoint(tx.Hash(), 1), wire.NewOutPoint(tx.Hash(), 2)}
+	//outs := []*wire.OutPoint{wire.NewOutPoint(,1),wire.NewOutPoint(hash,2)}
+	//outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
 	return b.utxoCache.FetchPoolAddrView(outs)
 }
-

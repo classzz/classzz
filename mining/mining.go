@@ -312,7 +312,7 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
-	if nextBlockHeight > params.EntangleHeight {
+	if nextBlockHeight >= params.EntangleHeight {
 		// utxo of coinbase in params.EntangleHeight-1 block
 		tx.AddTxIn(&wire.TxIn{}) // for pool address hold this
 		tx.AddTxIn(&wire.TxIn{})
@@ -337,9 +337,9 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	})
 
 	//Sum up all the previous pool value
-	if nextBlockHeight == params.EntangleHeight+1 {
-		reward1 = reward1 * int64(params.EntangleHeight+1)
-		reward2 = reward2 * int64(params.EntangleHeight+1)
+	if nextBlockHeight == params.EntangleHeight {
+		reward1 = reward1 * int64(params.EntangleHeight-1)
+		reward2 = reward2 * int64(params.EntangleHeight-1)
 	}
 
 	// CoinPool1 reward
@@ -888,7 +888,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight > nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems)
 		if err != nil {
@@ -1011,18 +1011,17 @@ func (g *BlkTmplGenerator) TxSource() TxSource {
 
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	items := &cross.PoolAddrItem{
-		POut:   make([]*wire.OutPoint, 0),
-		Script: make([][]byte, 0),
-		Amount: make([]*big.Int, 0),
+		POut:   make([]wire.OutPoint, 2),
+		Script: make([][]byte, 2),
+		Amount: make([]*big.Int, 2),
 	}
 	if view != nil {
 		m := view.Entries()
 		for k, v := range m {
-			items.POut = append(items.POut, &k)
-			items.Script = append(items.Script, v.PkScript())
-			items.Amount = append(items.Amount, new(big.Int).SetInt64(v.Amount()))
+			items.POut[k.Index-1] = k
+			items.Script[k.Index-1] = v.PkScript()
+			items.Amount[k.Index-1] = new(big.Int).SetInt64(v.Amount())
 		}
 	}
 	return items
 }
-

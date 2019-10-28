@@ -237,7 +237,7 @@ var MainNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 
-	EntangleHeight: 12,
+	EntangleHeight: 3,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
