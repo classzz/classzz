@@ -1564,7 +1564,7 @@ out:
 // the current time, and disconnecting the peer if we stalled before reaching
 // their highest advertised block.
 func (sm *SyncManager) handleStallSample() {
-	log.Infof("handleStallSample ......")
+	//log.Infof("handleStallSample ......")
 	if atomic.LoadInt32(&sm.shutdown) != 0 {
 		return
 	}
@@ -1573,7 +1573,7 @@ func (sm *SyncManager) handleStallSample() {
 	if sm.syncPeer == nil {
 		return
 	}
-	log.Infof("handleStallSample ......", "sm.lastProgressTime", sm.lastProgressTime.String(), "maxStallDuration", maxStallDuration)
+	log.Info("handleStallSample ", "lastProgressTime", sm.lastProgressTime, "maxStallDuration", maxStallDuration)
 	// If the stall timeout has not elapsed, exit early.
 	if time.Since(sm.lastProgressTime) <= maxStallDuration {
 		return
