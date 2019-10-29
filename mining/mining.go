@@ -6,6 +6,7 @@ package mining
 
 import (
 	"container/heap"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -353,7 +354,18 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		Value:    reward2,
 		PkScript: pkScript2,
 	})
-
+	// the amount of already entangled,placeholder
+	if nextBlockHeight >= params.EntangleHeight {
+		keepInfo := cross.KeepedAmount{Items: []cross.KeepedItem{}}
+		keepInfo.Add(cross.KeepedItem{
+			ExTxType: cross.ExpandedTxEntangle_Doge,
+			Amount:   big.NewInt(0),
+		})
+		keepInfo.Add(cross.KeepedItem{
+			ExTxType: cross.ExpandedTxEntangle_Ltc,
+			Amount:   big.NewInt(0),
+		})
+	}
 	// Make sure the coinbase is above the minimum size threshold.
 	if tx.SerializeSize() < blockchain.MinTransactionSize {
 		tx.TxIn[0].SignatureScript = append(tx.TxIn[0].SignatureScript,
@@ -597,6 +609,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
+	lastScriptInfo, sErr := g.getlastScriptInfo(&cHash, cheight)
+	if sErr != nil {
+		return nil, sErr
+	}
+
 	log.Debugf("Considering %d transactions for inclusion to new block",
 		len(sourceTxns))
 
@@ -807,7 +824,7 @@ mempoolLoop:
 		}
 		if isEntangleTx {
 			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems); ok {
+			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo); ok {
 				isOver = true
 				continue
 			}
@@ -1008,7 +1025,24 @@ func (g *BlkTmplGenerator) BestSnapshot() *blockchain.BestState {
 func (g *BlkTmplGenerator) TxSource() TxSource {
 	return g.txSource
 }
-
+func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32) (error, []byte) {
+	block, err := g.chain.BlockByHash(hash)
+	if err != nil {
+		return err, nil
+	}
+	if block.Height() != height {
+		return errors.New("the height not match"), nil
+	}
+	tx, err := block.Tx(0)
+	if err != nil {
+		return err, nil
+	}
+	if height < b.chainParams.EntangleHeight {
+		return nil, nil
+	}
+	txout := tx.MsgTx().TxOut[3]
+	return txout.PkScript, nil
+}
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	items := &cross.PoolAddrItem{
 		POut:   make([]wire.OutPoint, 2),
@@ -1025,3 +1059,4 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
+

@@ -141,6 +141,9 @@ func (info *KeepedAmount) Serialize() []byte {
 }
 
 func (info *KeepedAmount) Parse(data []byte) error {
+	if data == nil {
+		return nil	
+	}
 	info.Count = data[0]
 	buf := bytes.NewBuffer(data[1:])
 
@@ -157,7 +160,7 @@ func (info *KeepedAmount) Parse(data []byte) error {
 	}
 	return nil
 }
-func (info *KeepedAmount) add(item KeepedItem) {
+func (info *KeepedAmount) Add(item KeepedItem) {
 	for _, v := range info.Items {
 		if v.ExTxType == item.ExTxType {
 			v.Amount.Add(v.Amount, item.Amount)
@@ -166,6 +169,14 @@ func (info *KeepedAmount) add(item KeepedItem) {
 	}
 	info.Count++
 	info.Items = append(info.Items, item)
+}
+func (info *KeepedAmount) GetValue(t ExpandedTxType) *big.Int {
+	for _, v := range info.Items {
+		if v.ExTxType == t {
+			return v.Amount
+		}
+	}
+	return nil
 }
 
 func MakeEntangleTx(params *chaincfg.Params, inputs []*wire.TxIn, feeRate, inAmount czzutil.Amount,
@@ -294,10 +305,14 @@ MakeMegerTx
 				entangle txoutn
 			   '''''''''''''''
 */
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, lastScriptInfo []byte) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
+	}
+	keepInfo := KeepedAmount{Items: []KeepedItem{}}
+	if err := keepInfo.Parse(lastScriptInfo); err != nil {
+		return err
 	}
 	// make sure have enough Value to exchange
 	poolIn1 := &wire.TxIn{
@@ -312,19 +327,14 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := EnoughAmount(reserve1, items); !ok {
+	if ok := EnoughAmount(reserve1, items, &keepInfo); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
-	// add keeped Amount txout
-	// tx.AddTxOut(&wire.TxOut{
-	// 	Value:    0,
-	// 	PkScript: nil,
-	// })
-	keepInfo := KeepedAmount{Items: []KeepedItem{}}
+
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 	for i := range items {
-		calcExchange(items[i], &reserve1)
+		calcExchange(items[i], &reserve1, &keepInfo, true)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
 			return errors.New("Make Meger tx failed,err: " + err.Error())
@@ -333,10 +343,6 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 			Value:    items[i].Value.Int64(),
 			PkScript: pkScript,
 		}
-		keepInfo.add(KeepedItem{
-			ExTxType: items[i].EType,
-			Amount:   new(big.Int).Set(items[i].Value),
-		})
 		tx.AddTxOut(out)
 	}
 	keepEntangleAmount(&keepInfo, tx)
@@ -352,35 +358,40 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 	return nil
 }
 
-func calcExchange(item *EntangleItem, reserve *int64) KeepedItem {
-
+func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change bool) {
+	amount := int64(0)
+	cur := keepInfo.GetValue(item.EType)
+	if cur != nil {
+		amount = cur.Int64()
+	}
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = new(big.Int).SetInt64(toDoge(*reserve, item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toDoge(amount, item.Value.Int64()))
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = new(big.Int).SetInt64(toLtc(*reserve, item.Value.Int64()))
+		item.Value = new(big.Int).SetInt64(toLtc(amount, item.Value.Int64()))
 	}
 	*reserve = *reserve - item.Value.Int64()
-	kk := KeepedItem{
-		ExTxType: item.EType,
-		Amount:   new(big.Int).Set(item.Value),
+	if change {
+		kk := KeepedItem{
+			ExTxType: item.EType,
+			Amount:   new(big.Int).Set(item.Value),
+		}
+		keepInfo.Add(kk)
 	}
-	return kk
 }
 
-func EnoughAmount(reserve int64, items []*EntangleItem) bool {
+func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount) bool {
 	amount := reserve
 	for _, v := range items {
-		calcExchange(v.Clone(), &amount)
+		calcExchange(v.Clone(), &amount, keepInfo, false)
 	}
 	return amount > 0
 }
 
 func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
+	var scriptInfo []byte
+	var err error
 
-	if info.Count == 0 {
-		return nil
-	}
-	scriptInfo, err := txscript.KeepedAmountScript(info.Serialize())
+	scriptInfo, err = txscript.KeepedAmountScript(info.Serialize())
 	if err != nil {
 		return err
 	}
@@ -388,7 +399,7 @@ func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 		Value:    0,
 		PkScript: scriptInfo,
 	}
-	tx.TxOut = append(tx.TxOut, txout)
+	tx.TxOut[3] = txout
 	return nil
 }
 
@@ -523,10 +534,15 @@ func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPai
 
 	return nil, nil
 }
-func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem) bool {
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, lastScriptInfo []byte) bool {
 	if items == nil || len(items) == 0 {
 		return false
 	}
+	keepInfo := KeepedAmount{Items: []KeepedItem{}}
+	if err := keepInfo.Parse(lastScriptInfo); err != nil {
+		return false
+	}
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
-	return !EnoughAmount(all, items)
+	return !EnoughAmount(all, items, &keepInfo)
 }
+
