@@ -1014,9 +1014,9 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 // CheckTransactionSanity function prior to calling this function.
 func CheckTransactionInputs(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
 	// Coinbase transactions have no inputs.
-	if IsCoinBase(tx) {
-		return 0, nil
-	}
+	// if IsCoinBase(tx) {
+	// 	return 0, nil
+	// }
 
 	if ok, err := checkMergeTxInCoinbase(tx, txHeight, utxoView, chainParams); ok {
 		return 0, err

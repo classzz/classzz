@@ -365,6 +365,14 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 			ExTxType: cross.ExpandedTxEntangle_Ltc,
 			Amount:   big.NewInt(0),
 		})
+		scriptInfo, err := txscript.KeepedAmountScript(keepInfo.Serialize())
+		if err != nil {
+			return nil, err
+		}
+		tx.AddTxOut(&wire.TxOut{
+			Value:    0,
+			PkScript: scriptInfo,
+		})
 	}
 	// Make sure the coinbase is above the minimum size threshold.
 	if tx.SerializeSize() < blockchain.MinTransactionSize {
@@ -609,7 +617,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
-	lastScriptInfo, sErr := g.getlastScriptInfo(&cHash, cheight)
+	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
 		return nil, sErr
 	}
@@ -907,7 +915,7 @@ mempoolLoop:
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -1037,11 +1045,11 @@ func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32)
 	if err != nil {
 		return err, nil
 	}
-	if height < b.chainParams.EntangleHeight {
+	if height < g.chainParams.EntangleHeight {
 		return nil, nil
 	}
 	txout := tx.MsgTx().TxOut[3]
-	return txout.PkScript, nil
+	return nil, txout.PkScript
 }
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	items := &cross.PoolAddrItem{
