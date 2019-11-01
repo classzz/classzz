@@ -55,6 +55,7 @@ const (
 	// know we do not need to commit them.  It is always safe to not mark
 	// tfFresh if that condition is not guaranteed.
 	tfFresh
+	tfPool
 )
 
 // UtxoEntry houses details about an individual transaction output in a utxo
@@ -84,6 +85,10 @@ type UtxoEntry struct {
 // transaction.
 func (entry *UtxoEntry) IsCoinBase() bool {
 	return entry.packedFlags&tfCoinBase == tfCoinBase
+}
+
+func (entry *UtxoEntry) IsPool() bool {
+	return entry.packedFlags&tfPool == tfPool
 }
 
 // IsSpent returns whether or not the output has been spent based upon the
