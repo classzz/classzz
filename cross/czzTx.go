@@ -282,9 +282,6 @@ func VerifyTxsSequence(txs []*czzutil.Tx) error {
 	}
 	return nil
 }
-func GetPoolAmount() int64 {
-	return 0
-}
 
 /*
 MakeMegerTx
@@ -325,14 +322,15 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 		SignatureScript:  pool.Script[1],
 		Sequence:         wire.MaxTxInSequenceNum,
 	}
+	// merge pool tx
+	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
+
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
 	if ok := EnoughAmount(reserve1, items, &keepInfo); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
 
-	// merge pool tx
-	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 	for i := range items {
 		calcExchange(items[i], &reserve1, &keepInfo, true)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
@@ -364,12 +362,6 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 	if cur != nil {
 		amount = cur.Int64()
 	}
-	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = new(big.Int).SetInt64(toDoge(amount, item.Value.Int64()))
-	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = new(big.Int).SetInt64(toLtc(amount, item.Value.Int64()))
-	}
-	*reserve = *reserve - item.Value.Int64()
 	if change {
 		kk := KeepedItem{
 			ExTxType: item.EType,
@@ -377,6 +369,17 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 		}
 		keepInfo.Add(kk)
 	}
+	if item.EType == ExpandedTxEntangle_Doge {
+		item.Value = new(big.Int).SetInt64(toDoge(amount, item.Value.Int64()))
+	} else if item.EType == ExpandedTxEntangle_Ltc {
+		item.Value = new(big.Int).SetInt64(toLtc(amount, item.Value.Int64()))
+	}
+	*reserve = *reserve - item.Value.Int64()
+}
+
+func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount) {
+	var vv int64
+	calcExchange(item, &vv, keepInfo, true)
 }
 
 func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount) bool {
