@@ -110,7 +110,33 @@ func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 		return false
 	}
 
-	if height+1 > chaincfg.MainNetParams.EntangleHeight {
+	if height >= chaincfg.MainNetParams.EntangleHeight {
+		if len(msgTx.TxIn) != 3 {
+			return false
+		}
+	} else {
+		if len(msgTx.TxIn) != 1 {
+			return false
+		}
+	}
+
+	// The previous output of a coin base must have a max value index and
+	// a zero hash.
+	prevOut := &msgTx.TxIn[0].PreviousOutPoint
+	if prevOut.Index != math.MaxUint32 || prevOut.Hash != zeroHash {
+		return false
+	}
+
+	return true
+}
+func isCoinBaseInParam(tx *czzutil.Tx, chainParams *chaincfg.Params) bool {
+	msgTx := tx.MsgTx()
+	height, err := ExtractCoinbaseHeight(czzutil.NewTx(msgTx))
+	if err != nil {
+		return false
+	}
+
+	if height >= chainParams.EntangleHeight {
 		if len(msgTx.TxIn) != 3 {
 			return false
 		}
@@ -1001,6 +1027,45 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	return false, nil
 }
 
+func checkSubsidyForPoolAddr(income1, income2 int64) error {
+	return nil
+}
+
+//
+func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
+	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
+	originIncome3 := amountSubsidy - originIncome1 - originIncome2
+	if txHeight == chainParams.EntangleHeight {
+		originIncome1 = originIncome1 * int64(chainParams.EntangleHeight-1)
+		originIncome2 = originIncome2 * int64(chainParams.EntangleHeight-1)
+	}
+	reward1, reward2, reward3 := originIncome1, originIncome2, originIncome3
+	// check sum reward
+	summay, err := summayOfTxsAndCheck(preBlock, block, utxoView, reward3, reward1, reward2)
+	if err != nil {
+		return err
+	}
+	// check pool1 reward
+	expPool1Amount := summay.lastpool1Amount + originIncome1 - summay.EntangleAmount
+	if summay.pool1Amount != expPool1Amount {
+		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+			"which is more than expected value of %v",
+			summay.pool1Amount, expPool1Amount))
+	}
+	// check pool2 reward
+	if originIncome2+summay.lastpool2Amount != summay.pool2Amount {
+		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+			"which is more than expected value of %v",
+			originIncome2+summay.lastpool2Amount, summay.pool2Amount))
+	}
+	if summay.TotalOut > summay.TotalIn {
+		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+			"which is more than expected value of %v",
+			summay.TotalOut, summay.TotalIn))
+	}
+	return nil
+}
+
 // CheckTransactionInputs performs a series of checks on the inputs to a
 // transaction to ensure they are valid.  An example of some of the checks
 // include verifying all inputs exist, ensuring the coinbase seasoning
@@ -1389,4 +1454,115 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	view := NewUtxoViewpoint()
 	newNode := newBlockNode(&header, tip)
 	return b.checkConnectBlock(newNode, block, view, nil)
+}
+
+type KeepedInfoSummay struct {
+	TotalIn             int64
+	TotalOut            int64
+	KeepedAmountInBlock cross.KeepedAmount
+	EntangleAmount      int64
+	lastpool1Amount     int64
+	lastpool2Amount     int64
+	pool1Amount         int64
+	pool2Amount         int64
+}
+
+func getKeepedAmountFormPreBlock(block *czzutil.Block) (*cross.KeepedAmount, error) {
+	keepInfo := &cross.KeepedAmount{
+		Count: 0,
+		Items: make([]cross.KeepedItem, 0),
+	}
+	coinbaseTx, err := block.Tx(0)
+	if err == nil {
+		if len(coinbaseTx.MsgTx().TxOut) >= 4 {
+			if err := keepInfo.Parse(coinbaseTx.MsgTx().TxOut[3].PkScript); err != nil {
+				return keepInfo, err
+			}
+		}
+	}
+	return keepInfo, nil
+}
+func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) error {
+	coinbaseTx, err := block.Tx(0)
+	if err == nil {
+		summay.lastpool1Amount = coinbaseTx.MsgTx().TxOut[1].Value
+		summay.lastpool2Amount = coinbaseTx.MsgTx().TxOut[2].Value
+	}
+	return err
+}
+
+func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount, infos map[uint32]*cross.EntangleTxInfo) {
+	for _, v := range infos {
+		item := &cross.EntangleItem{
+			EType: v.ExTxType,
+			Value: new(big.Int).Set(v.Amount),
+		}
+		summay.KeepedAmountInBlock.Add(cross.KeepedItem{
+			ExTxType: item.EType,
+			Amount:   new(big.Int).Set(item.Value),
+		})
+		cross.PreCalcEntangleAmount(item, keepedInfo)
+		summay.EntangleAmount += item.Value.Int64()
+	}
+}
+
+func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint, subsidy, pool1Amount, pool2Amount int64) (*KeepedInfoSummay, error) {
+	var totalIn, totalOut, amount1 int64
+	summay := &KeepedInfoSummay{
+		KeepedAmountInBlock: cross.KeepedAmount{
+			Count: 0,
+			Items: make([]cross.KeepedItem, 0),
+		},
+	}
+	keepInfo, err := getKeepedAmountFormPreBlock(preblock)
+	if err != nil {
+		return nil, err
+	}
+	if err := getPoolAmountFromPreBlock(preblock, summay); err != nil {
+		return nil, err
+	}
+	totalIn = summay.lastpool1Amount + summay.lastpool2Amount + pool1Amount + pool2Amount + subsidy
+	txs := block.Transactions()
+	for txIndex, tx := range txs {
+		if txIndex == 0 {
+			for i, txout := range tx.MsgTx().TxOut {
+				if i > 3 {
+					amount1 = amount1 + txout.Value
+				}
+				if i == 1 {
+					summay.pool1Amount = txout.Value
+				}
+				if i == 2 {
+					summay.pool2Amount = txout.Value
+				}
+				totalOut = totalOut + txout.Value
+			}
+		} else {
+			// summay all txout
+			err, infos := cross.IsEntangleTx(tx.MsgTx())
+			if err == nil {
+				handleSummayEntangle(summay, keepInfo, infos)
+			}
+			for _, txout := range tx.MsgTx().TxOut {
+				totalOut = totalOut + txout.Value
+			}
+			// summay all txin
+			for i, txIn := range tx.MsgTx().TxIn {
+				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
+				if utxo == nil || utxo.IsSpent() {
+					str := fmt.Sprintf("output %v referenced from "+
+						"transaction %s:%d does not valid", txIn.PreviousOutPoint,
+						tx.Hash(), i)
+					return nil, ruleError(ErrMissingTxOut, str)
+				}
+				totalIn = totalIn + utxo.amount
+			}
+		}
+	}
+	// check entangle amount
+	if amount1 != summay.EntangleAmount {
+		return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))
+	}
+	summay.TotalIn, summay.TotalOut = totalIn, totalOut
+	return summay, nil
 }
