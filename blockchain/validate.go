@@ -937,8 +937,6 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 		}
 	} else {
 		if isCoinBaseInParam(tx,chainParams) {
-			txHash := tx.Hash()
-			var totalSatoshiIn int64
 			for txInIndex, txIn := range tx.MsgTx().TxIn {
 				if txInIndex == 0 {
 					continue
