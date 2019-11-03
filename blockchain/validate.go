@@ -977,7 +977,6 @@ func checkSubsidyForPoolAddr(income1, income2 int64) error {
 	return nil
 }
 
-//
 func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
 	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
 	originIncome3 := amountSubsidy - originIncome1 - originIncome2
@@ -1284,15 +1283,26 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		totalSatoshiOut += txOut.Value
 		break
 	}
-	expectedSatoshiOut := CalcBlockSubsidy(node.height, b.chainParams) +
-		totalFees
+	amountSubsidy := CalcBlockSubsidy(node.height, b.chainParams) 
+	expectedSatoshiOut := amountSubsidy + totalFees
 	if totalSatoshiOut > expectedSatoshiOut {
 		str := fmt.Sprintf("coinbase transaction for block pays %v "+
 			"which is more than expected value of %v",
 			totalSatoshiOut, expectedSatoshiOut)
 		return ruleError(ErrBadCoinbaseValue, str)
 	}
-
+	preHash := block.MsgBlock().Header.PrevBlock
+	if preblock, err := b.BlockByHash(&preHash);err != nil {
+		str := fmt.Sprintf("cann't get preblock %v,current height: %d",
+			preblock, node.height)
+		return ruleError(ErrPrevBlockNotBest, str) 
+	} else {
+		if err := checkBlockSubsidy(block,preblock,node.height,view,
+			amountSubsidy,b.chainParams);err != nil {
+				return err
+			}
+	}
+	
 	// Don't run scripts if this node is before the latest known good
 	// checkpoint since the validity is verified via the checkpoints (all
 	// transactions are included in the merkle root hash and any changes
