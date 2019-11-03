@@ -932,14 +932,17 @@ func (b *BlockChain) checkBlockContext(block *czzutil.Block, prevNode *blockNode
 }
 func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (bool, error) {
 	if chainParams.EntangleHeight >= txHeight {
-		if IsCoinBase(tx) && len(tx.MsgTx().TxIn) == 1 {
+		if isCoinBaseInParam(tx,chainParams) {
 			return true, nil
 		}
 	} else {
-		if IsCoinBase(tx) && len(tx.MsgTx().TxIn) == 3 {
+		if isCoinBaseInParam(tx,chainParams) {
 			txHash := tx.Hash()
 			var totalSatoshiIn int64
 			for txInIndex, txIn := range tx.MsgTx().TxIn {
+				if txInIndex == 0 {
+					continue
+				}
 				// Ensure the referenced input transaction is available.
 				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
 				if utxo == nil {
