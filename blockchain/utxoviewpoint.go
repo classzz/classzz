@@ -148,8 +148,11 @@ func (view *UtxoViewpoint) addInputUtxos(source utxoView, block *czzutil.Block) 
 
 	// Loop through all of the transaction inputs (except for the coinbase
 	// which has no inputs).
-	for i, tx := range block.Transactions()[1:] {
-		for _, txIn := range tx.MsgTx().TxIn {
+	for i, tx := range block.Transactions() {
+		for index, txIn := range tx.MsgTx().TxIn {
+			if index == 0 && i == 0 {
+				continue
+			}
 			originHash := &txIn.PreviousOutPoint.Hash
 			if inFlightIndex, ok := txInFlight[*originHash]; ok &&
 				(i >= inFlightIndex) {

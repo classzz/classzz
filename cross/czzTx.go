@@ -84,6 +84,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if len(data) <= 14 {
 		return errors.New("wrong lenght!")
 	}
+	data = data[4:]
 	info.ExTxType = ExpandedTxType(data[0])
 	switch info.ExTxType {
 	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc:
@@ -142,7 +143,7 @@ func (info *KeepedAmount) Serialize() []byte {
 
 func (info *KeepedAmount) Parse(data []byte) error {
 	if data == nil {
-		return nil	
+		return nil
 	}
 	info.Count = data[0]
 	buf := bytes.NewBuffer(data[1:])
@@ -245,7 +246,7 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	einfo := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info := &EntangleTxInfo{}
-		if err := info.Parse(v.PkScript[4:]); err == nil {
+		if err := info.Parse(v.PkScript[:]); err == nil {
 			if v.Value != 0 {
 				return errors.New("the output value must be 0 in entangle tx."), nil
 			}
@@ -548,4 +549,3 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !EnoughAmount(all, items, &keepInfo)
 }
-
