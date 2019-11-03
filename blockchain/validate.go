@@ -972,12 +972,10 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	}
 	return false, nil
 }
-
-func checkSubsidyForPoolAddr(income1, income2 int64) error {
-	return nil
-}
-
 func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
+	if txHeight <=1 {
+		return nil
+	}
 	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
 	originIncome3 := amountSubsidy - originIncome1 - originIncome2
 	if txHeight == chainParams.EntangleHeight {
