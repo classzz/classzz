@@ -961,6 +961,11 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 						uxtoHeight, chainParams.EntangleHeight - 1)
 					return true, ruleError(ErrBadTxOutValue, str)
 				}
+				if txInIndex <=2 {
+					if err := matchPoolFromUtxo(utxo,txInIndex,chainParams);err != nil {
+						return true,nil
+					}
+				}
 			}
 			return true, nil
 		}
@@ -1506,4 +1511,35 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 	}
 	summay.TotalIn, summay.TotalOut = totalIn, totalOut
 	return summay, nil
+}
+
+func getPoolAddress(pk []byte,chainParams *chaincfg.Params) (czzutil.Address,error) {
+	addr,err := czzutil.NewAddressPubKeyHash(pk,chainParams)
+	return addr,err
+}
+func matchPoolFromUtxo(utxo *UtxoEntry,index int,chainParams *chaincfg.Params) error {
+	CoinPool1 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	CoinPool2 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}
+	var pool []byte
+	if index == 1 {
+		pool = CoinPool1[:]		
+	} else if index == 2 {
+		pool = CoinPool2[:]
+	} else {
+		errors.New("wrong index of pool address")
+	}
+	addr,err := getPoolAddress(pool,chainParams)
+	if err != nil {
+		return errors.New("[pool not match:]"+err.Error())
+	}
+	class, addrs, reqSigs, err1 := txscript.ExtractPkScriptAddrs(pool, chainParams)
+	if err1 != nil {
+		errors.New("[pool not match:]"+err1.Error())
+	}
+	if class != txscript.PubKeyHashTy || reqSigs != 1 || len(addrs) != 1 ||
+	addr.String() != addrs[0].String() {
+		return errors.New(fmt.Sprintf("pool not match[class:%v,req:%d,addr=%v]",
+		class,reqSigs,addrs))
+	}
+	return nil
 }
