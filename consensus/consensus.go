@@ -82,7 +82,7 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 	//
 	//		//fmt.Println("HeadHash",conf.Info.HeadHash[:],"nonce",nonce,"result",result,"Target",conf.Info.Target)
 	//		if new(big.Int).SetBytes(result).Cmp(conf.Info.Target) <= 0 {
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	found = true
 	return nonce, found
 	//		}

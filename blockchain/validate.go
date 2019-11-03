@@ -932,11 +932,11 @@ func (b *BlockChain) checkBlockContext(block *czzutil.Block, prevNode *blockNode
 }
 func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (bool, error) {
 	if chainParams.EntangleHeight >= txHeight {
-		if isCoinBaseInParam(tx,chainParams) {
+		if isCoinBaseInParam(tx, chainParams) {
 			return true, nil
 		}
 	} else {
-		if isCoinBaseInParam(tx,chainParams) {
+		if isCoinBaseInParam(tx, chainParams) {
 			for txInIndex, txIn := range tx.MsgTx().TxIn {
 				if txInIndex == 0 {
 					continue
@@ -955,15 +955,15 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 					return true, ruleError(ErrSpentTxOut, str)
 				}
 				uxtoHeight := utxo.BlockHeight()
-				if uxtoHeight < chainParams.EntangleHeight - 1 {
+				if uxtoHeight < chainParams.EntangleHeight-1 {
 					str := fmt.Sprintf("output %v referenced from "+
 						"the wrong height[%d,%d]", txIn.PreviousOutPoint,
-						uxtoHeight, chainParams.EntangleHeight - 1)
+						uxtoHeight, chainParams.EntangleHeight-1)
 					return true, ruleError(ErrBadTxOutValue, str)
 				}
-				if txInIndex <=2 {
-					if err := matchPoolFromUtxo(utxo,txInIndex,chainParams);err != nil {
-						return true,nil
+				if txInIndex <= 2 {
+					if err := matchPoolFromUtxo(utxo, txInIndex, chainParams); err != nil {
+						return true, nil
 					}
 				}
 			}
@@ -973,7 +973,7 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	return false, nil
 }
 func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
-	if txHeight <=1 {
+	if txHeight <= chainParams.EntangleHeight {
 		return nil
 	}
 	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
@@ -991,18 +991,18 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	// check pool1 reward
 	expPool1Amount := summay.lastpool1Amount + originIncome1 - summay.EntangleAmount
 	if summay.pool1Amount != expPool1Amount {
-		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+		return errors.New(fmt.Sprintf("1coinbase transaction for block pays %v "+
 			"which is more than expected value of %v",
 			summay.pool1Amount, expPool1Amount))
 	}
 	// check pool2 reward
 	if originIncome2+summay.lastpool2Amount != summay.pool2Amount {
-		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+		return errors.New(fmt.Sprintf("2coinbase transaction for block pays %v "+
 			"which is more than expected value of %v",
 			originIncome2+summay.lastpool2Amount, summay.pool2Amount))
 	}
 	if summay.TotalOut > summay.TotalIn {
-		return errors.New(fmt.Sprintf("coinbase transaction for block pays %v "+
+		return errors.New(fmt.Sprintf("3coinbase transaction for block pays %v "+
 			"which is more than expected value of %v",
 			summay.TotalOut, summay.TotalIn))
 	}
@@ -1281,7 +1281,7 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		totalSatoshiOut += txOut.Value
 		break
 	}
-	amountSubsidy := CalcBlockSubsidy(node.height, b.chainParams) 
+	amountSubsidy := CalcBlockSubsidy(node.height, b.chainParams)
 	expectedSatoshiOut := amountSubsidy + totalFees
 	if totalSatoshiOut > expectedSatoshiOut {
 		str := fmt.Sprintf("coinbase transaction for block pays %v "+
@@ -1290,17 +1290,17 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		return ruleError(ErrBadCoinbaseValue, str)
 	}
 	preHash := block.MsgBlock().Header.PrevBlock
-	if preblock, err := b.BlockByHash(&preHash);err != nil {
+	if preblock, err := b.BlockByHash(&preHash); err != nil {
 		str := fmt.Sprintf("cann't get preblock %v,current height: %d",
 			preblock, node.height)
-		return ruleError(ErrPrevBlockNotBest, str) 
+		return ruleError(ErrPrevBlockNotBest, str)
 	} else {
-		if err := checkBlockSubsidy(block,preblock,node.height,view,
-			amountSubsidy,b.chainParams);err != nil {
-				return err
-			}
+		if err := checkBlockSubsidy(block, preblock, node.height, view,
+			amountSubsidy, b.chainParams); err != nil {
+			return err
+		}
 	}
-	
+
 	// Don't run scripts if this node is before the latest known good
 	// checkpoint since the validity is verified via the checkpoints (all
 	// transactions are included in the merkle root hash and any changes
@@ -1503,7 +1503,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			// summay all txin
 			for i, txIn := range tx.MsgTx().TxIn {
 				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
-				if utxo == nil || utxo.IsSpent() {
+				if utxo == nil {
 					str := fmt.Sprintf("output %v referenced from "+
 						"transaction %s:%d does not valid", txIn.PreviousOutPoint,
 						tx.Hash(), i)
@@ -1521,33 +1521,33 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 	return summay, nil
 }
 
-func getPoolAddress(pk []byte,chainParams *chaincfg.Params) (czzutil.Address,error) {
-	addr,err := czzutil.NewAddressPubKeyHash(pk,chainParams)
-	return addr,err
+func getPoolAddress(pk []byte, chainParams *chaincfg.Params) (czzutil.Address, error) {
+	addr, err := czzutil.NewAddressPubKeyHash(pk, chainParams)
+	return addr, err
 }
-func matchPoolFromUtxo(utxo *UtxoEntry,index int,chainParams *chaincfg.Params) error {
+func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params) error {
 	CoinPool1 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 	CoinPool2 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}
 	var pool []byte
 	if index == 1 {
-		pool = CoinPool1[:]		
+		pool = CoinPool1[:]
 	} else if index == 2 {
 		pool = CoinPool2[:]
 	} else {
 		errors.New("wrong index of pool address")
 	}
-	addr,err := getPoolAddress(pool,chainParams)
+	addr, err := getPoolAddress(pool, chainParams)
 	if err != nil {
-		return errors.New("[pool not match:]"+err.Error())
+		return errors.New("[pool not match:]" + err.Error())
 	}
 	class, addrs, reqSigs, err1 := txscript.ExtractPkScriptAddrs(pool, chainParams)
 	if err1 != nil {
-		errors.New("[pool not match:]"+err1.Error())
+		errors.New("[pool not match:]" + err1.Error())
 	}
 	if class != txscript.PubKeyHashTy || reqSigs != 1 || len(addrs) != 1 ||
-	addr.String() != addrs[0].String() {
+		addr.String() != addrs[0].String() {
 		return errors.New(fmt.Sprintf("pool not match[class:%v,req:%d,addr=%v]",
-		class,reqSigs,addrs))
+			class, reqSigs, addrs))
 	}
 	return nil
 }

@@ -713,9 +713,30 @@ func createVinList(mtx *wire.MsgTx) []btcjson.Vin {
 	// Coinbase transactions only have a single txin by definition.
 	vinList := make([]btcjson.Vin, len(mtx.TxIn))
 	if blockchain.IsCoinBaseTx(mtx) {
-		txIn := mtx.TxIn[0]
-		vinList[0].Coinbase = hex.EncodeToString(txIn.SignatureScript)
-		vinList[0].Sequence = txIn.Sequence
+		for i, txIn := range mtx.TxIn {
+
+			if i == 0 {
+				txIn := mtx.TxIn[0]
+				vinList[0].Coinbase = hex.EncodeToString(txIn.SignatureScript)
+				vinList[0].Sequence = txIn.Sequence
+				continue
+			}
+
+			// The disassembled string will contain [error] inline
+			// if the script doesn't fully parse, so ignore the
+			// error here.
+			disbuf, _ := txscript.DisasmString(txIn.SignatureScript)
+
+			vinEntry := &vinList[i]
+			vinEntry.Txid = txIn.PreviousOutPoint.Hash.String()
+			vinEntry.Vout = txIn.PreviousOutPoint.Index
+			vinEntry.Sequence = txIn.Sequence
+			vinEntry.ScriptSig = &btcjson.ScriptSig{
+				Asm: disbuf,
+				Hex: hex.EncodeToString(txIn.SignatureScript),
+			}
+		}
+
 		return vinList
 	}
 
