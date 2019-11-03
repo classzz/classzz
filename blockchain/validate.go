@@ -956,73 +956,13 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 						tx.Hash(), txInIndex)
 					return true, ruleError(ErrSpentTxOut, str)
 				}
-
-				// Ensure the transaction is not spending coins which have not
-				// yet reached the required coinbase maturity.
-				if utxo.IsCoinBase() {
-					originHeight := utxo.BlockHeight()
-					blocksSincePrev := txHeight - originHeight
-					coinbaseMaturity := int32(chainParams.CoinbaseMaturity)
-					if blocksSincePrev < coinbaseMaturity {
-						str := fmt.Sprintf("tried to spend coinbase "+
-							"transaction output %v from height %v "+
-							"at height %v before required maturity "+
-							"of %v blocks", txIn.PreviousOutPoint,
-							originHeight, txHeight,
-							coinbaseMaturity)
-						return true, ruleError(ErrImmatureSpend, str)
-					}
-				}
-
-				// Ensure the transaction amounts are in range.  Each of the
-				// output values of the input transactions must not be negative
-				// or more than the max allowed per transaction.  All amounts in
-				// a transaction are in a unit value known as a satoshi.  One
-				// bitcoin is a quantity of satoshi as defined by the
-				// SatoshiPerBitcoin constant.
-				originTxSatoshi := utxo.Amount()
-				if originTxSatoshi < 0 {
-					str := fmt.Sprintf("transaction output has negative "+
-						"value of %v", czzutil.Amount(originTxSatoshi))
+				uxtoHeight := utxo.BlockHeight()
+				if uxtoHeight < chainParams.EntangleHeight - 1 {
+					str := fmt.Sprintf("output %v referenced from "+
+						"the wrong height[%d,%d]", txIn.PreviousOutPoint,
+						uxtoHeight, chainParams.EntangleHeight - 1)
 					return true, ruleError(ErrBadTxOutValue, str)
 				}
-				if originTxSatoshi > czzutil.MaxSatoshi {
-					str := fmt.Sprintf("transaction output value of %v is "+
-						"higher than max allowed value of %v",
-						czzutil.Amount(originTxSatoshi),
-						czzutil.MaxSatoshi)
-					return true, ruleError(ErrBadTxOutValue, str)
-				}
-
-				// The total of all outputs must not be more than the max
-				// allowed per transaction.  Also, we could potentially overflow
-				// the accumulator so check for overflow.
-				lastSatoshiIn := totalSatoshiIn
-				totalSatoshiIn += originTxSatoshi
-				if totalSatoshiIn < lastSatoshiIn ||
-					totalSatoshiIn > czzutil.MaxSatoshi {
-					str := fmt.Sprintf("total value of all transaction "+
-						"inputs is %v which is higher than max "+
-						"allowed value of %v", totalSatoshiIn,
-						czzutil.MaxSatoshi)
-					return true, ruleError(ErrBadTxOutValue, str)
-				}
-			}
-
-			// Calculate the total output amount for this transaction.  It is safe
-			// to ignore overflow and out of range errors here because those error
-			// conditions would have already been caught by checkTransactionSanity.
-			var totalSatoshiOut int64
-			for _, txOut := range tx.MsgTx().TxOut {
-				totalSatoshiOut += txOut.Value
-			}
-
-			// Ensure the transaction does not spend more than its inputs.
-			if totalSatoshiIn < totalSatoshiOut {
-				str := fmt.Sprintf("total value of all transaction inputs for "+
-					"transaction %v is %v which is less than the amount "+
-					"spent of %v", txHash, totalSatoshiIn, totalSatoshiOut)
-				return true, ruleError(ErrSpendTooHigh, str)
 			}
 			return true, nil
 		}
