@@ -5,6 +5,7 @@
 package txscript
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -178,6 +179,13 @@ func isEntangleTy(pops []parsedOpcode) bool {
 	return len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN193
+}
+
+func isKeepedAmountInfo(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN194
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -484,6 +492,26 @@ func MultiSigScript(pubkeys []*czzutil.AddressPubKey, nrequired int) ([]byte, er
 	builder.AddOp(OP_CHECKMULTISIG)
 
 	return builder.Script()
+}
+func GetKeepedAmountData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isKeepedAmountInfo(pops) {
+		return nil, errors.New("not keepedAmount info type")
+	}
+	return pops[2].data, nil
+}
+func GetEntangleInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isEntangleTy(pops) {
+		return nil, errors.New("not Entangle info type")
+	}
+	return pops[2].data, nil
 }
 
 // PushedData returns an array of byte slices containing any pushed data found
