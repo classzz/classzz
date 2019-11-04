@@ -110,6 +110,7 @@ func TestGenesisAdderss(t *testing.T) {
 	if err1 != nil {
 		t.Errorf("failed to make address for: %v", err1)
 	}
+
 	fmt.Println(address.String())
 
 }
