@@ -502,6 +502,11 @@ func checkBlockHeaderSanity(header *wire.BlockHeader, powLimit *big.Int, timeSou
 		return ruleError(ErrInvalidTime, str)
 	}
 
+	if header.Timestamp.Unix() > time.Now().Unix() {
+		str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
+		return ruleError(ErrInvalidTime, str)
+	}
+
 	// Ensure the block time is not too far in the future.
 	maxTimestamp := timeSource.AdjustedTime().Add(time.Second *
 		MaxTimeOffsetSeconds)
