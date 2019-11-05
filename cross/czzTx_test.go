@@ -13,7 +13,7 @@ import (
 	"github.com/classzz/classzz/chaincfg/chainhash"
 
 	// "github.com/classzz/classzz/czzec"
-	// "github.com/classzz/classzz/txscript"
+	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
@@ -30,8 +30,8 @@ func TestCalcModel(t *testing.T) {
 	doge := int64(10000)
 	itc := int64(100)
 	for i := 0; i < sum; i++ {
-		v1 := toDoge(reserve[0], doge)
-		v2 := toLtc(reserve[1], itc)
+		v1 := toDoge1(reserve[0], doge)
+		v2 := toLtc1(reserve[1], itc)
 
 		fmt.Println("entangle index:", i, "[doge:", doge, " to czz:", fromCzz(v1).String(), "][itc:", itc, " to czz:", fromCzz(v2).String(), "]")
 		reserve[0] += doge
@@ -67,14 +67,24 @@ func TestStruct(t *testing.T) {
 			ExTxType: ExpandedTxEntangle_Doge,
 			Amount:   big.NewInt(int64(100 * i)),
 		}
-		items.add(v)
+		items.Add(v)
 	}
 	fmt.Println("Count:", items.Count, "items:", items.Items)
 	sByte2 := items.Serialize()
 	fmt.Println("sByte2:", sByte2)
+	scriptInfo, err := txscript.KeepedAmountScript(sByte2)
+	if err != nil {
+		fmt.Println(err)
+	}
+	itme3, err2 := KeepedAmountFromScript(scriptInfo)
+	if err2 != nil {
+		fmt.Println(err2)
+	}
+	fmt.Println("Count:", itme3.Count, "items:", itme3.Items)
 	items2 := KeepedAmount{}
 	items2.Parse(sByte2)
 	fmt.Println("Count:", items2.Count, "items:", items2.Items)
+	fmt.Println("finish")
 }
 
 func makeTxIncludeEntx() *czzutil.Tx {
