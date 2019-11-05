@@ -419,7 +419,7 @@ func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 }
 func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 	if script == nil {
-		return nil, &KeepedAmount{Items: []KeepedItem{}}
+		return &KeepedAmount{Items: []KeepedItem{}}, nil
 	}
 	data, err1 := txscript.GetKeepedAmountData(script)
 	if err1 != nil {
