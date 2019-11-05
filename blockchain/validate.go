@@ -510,7 +510,7 @@ func checkBlockHeaderSanity(bc *BlockChain, header *wire.BlockHeader, powLimit *
 	}
 
 	prevblock, err := bc.BlockByHash(&header.PrevBlock)
-	if prevblock != nil && prevblock.MsgBlock().Header.Timestamp.After(header.Timestamp) {
+	if err != nil && int64(bc.chainParams.Deployments[chaincfg.DeploymentSEQ].StartTime) < header.Timestamp.Unix() && prevblock != nil && prevblock.MsgBlock().Header.Timestamp.After(header.Timestamp) {
 		str := fmt.Sprintf("prevheader timestamp %v > header %v", prevblock.MsgBlock().Header.Timestamp, header.Timestamp)
 		return ruleError(ErrInvalidTime, str)
 	}

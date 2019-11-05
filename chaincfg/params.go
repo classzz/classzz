@@ -94,9 +94,11 @@ const (
 	// 68, 112, and 113.
 	DeploymentCSV
 
+	//Ensure that the time of the parent block is less than the current time
+	DeploymentSEQ
+
 	// NOTE: DefinedDeployments must always come last since it is used to
 	// determine how many defined deployments there currently are.
-
 	// DefinedDeployments is the number of currently defined deployments.
 	DefinedDeployments
 )
@@ -259,6 +261,11 @@ var MainNetParams = Params{
 			BitNumber:  0,
 			StartTime:  1462060800, // May 1st, 2016
 			ExpireTime: 1493596800, // May 1st, 2017
+		},
+		DeploymentSEQ: {
+			BitNumber:  0,
+			StartTime:  1572868800,    //
+			ExpireTime: math.MaxInt64, // Never expires
 		},
 	},
 
