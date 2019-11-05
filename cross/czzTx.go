@@ -29,7 +29,7 @@ var (
 		ExpandedTxEntangle_Ltc:  64,
 	}
 	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)),baseUnit)
+	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 )
 
 type EntangleItem struct {
@@ -418,6 +418,9 @@ func keepEntangleAmount(info *KeepedAmount, tx *wire.MsgTx) error {
 	return nil
 }
 func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
+	if script == nil {
+		return nil, &KeepedAmount{Items: []KeepedItem{}}
+	}
 	data, err1 := txscript.GetKeepedAmountData(script)
 	if err1 != nil {
 		return nil, err1
@@ -457,23 +460,23 @@ func toDoge(entangled, needed *big.Int) *big.Int {
 		return big.NewInt(0)
 	}
 	var rate int64 = 25
-	z,m := new(big.Int).DivMod(entangled,dogeUnit,new(big.Int).Set(dogeUnit))
+	z, m := new(big.Int).DivMod(entangled, dogeUnit, new(big.Int).Set(dogeUnit))
 	rate = rate + z.Int64()
-	l := new(big.Int).Sub(dogeUnit,m)
+	l := new(big.Int).Sub(dogeUnit, m)
 	base := new(big.Float).SetInt(baseUnit)
 
 	if l.Cmp(needed) >= 1 {
-		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed),base)
+		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed), base)
 		f1 = f1.Quo(f1, big.NewFloat(float64(rate)))
 		return toCzz(f1)
 	} else {
-		v1 := new(big.Float).Quo(new(big.Float).SetInt(l),base)
-		v2 := new(big.Float).Sub(new(big.Float).SetInt(needed),new(big.Float).SetInt(l))
-		v2 = v2.Quo(v2,base)
+		v1 := new(big.Float).Quo(new(big.Float).SetInt(l), base)
+		v2 := new(big.Float).Sub(new(big.Float).SetInt(needed), new(big.Float).SetInt(l))
+		v2 = v2.Quo(v2, base)
 		v1 = v1.Quo(v1, big.NewFloat(float64(rate)))
 		rate += 1
 		v2 = v2.Quo(v2, big.NewFloat(float64(rate)))
-		return new(big.Int).Add(toCzz(v1),toCzz(v2))
+		return new(big.Int).Add(toCzz(v1), toCzz(v2))
 	}
 }
 func toLtc1(entangled, needed int64) int64 {
@@ -514,24 +517,24 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 	base := big.NewFloat(0.0001)
 
 	u := new(big.Float).SetInt(baseUnit)
-	fixed := new(big.Int).Mul(big.NewInt(int64(1150)),baseUnit)
-	divisor,remainder := new(big.Int).DivMod(entangled,fixed,new(big.Int).Set(fixed))
+	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
+	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
 
 	base1 := base.Mul(base, big.NewFloat(float64(divisor.Int64())))
 	rate = rate.Add(rate, base1)
-	l := new(big.Int).Sub(fixed,remainder)
+	l := new(big.Int).Sub(fixed, remainder)
 
 	if l.Cmp(needed) >= 1 {
-		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed),u)
+		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed), u)
 		f1 = f1.Quo(f1, rate)
 		return toCzz(f1)
 	} else {
-		f1 := new(big.Float).Quo(new(big.Float).SetInt(l),u)
-		f2 := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Sub(needed,l)),u)
+		f1 := new(big.Float).Quo(new(big.Float).SetInt(l), u)
+		f2 := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Sub(needed, l)), u)
 		f1 = f1.Quo(f1, rate)
 		rate = rate.Add(rate, base)
 		f2 = f2.Quo(f2, rate)
-		return new(big.Int).Add(toCzz(f1),toCzz(f2))
+		return new(big.Int).Add(toCzz(f1), toCzz(f2))
 	}
 }
 func toCzz(val *big.Float) *big.Int {
