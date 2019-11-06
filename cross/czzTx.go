@@ -86,7 +86,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	if len(data) <= 14 {
 		return errors.New("wrong lenght!")
 	}
-	data = data[4:]
+	//data = data[4:]
 	info.ExTxType = ExpandedTxType(data[0])
 	switch info.ExTxType {
 	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc:
@@ -245,6 +245,7 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 
 func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	// make sure at least one txout in OUTPUT
+
 	einfo := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info, err := EntangleTxFromScript(v.PkScript)
