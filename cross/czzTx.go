@@ -262,12 +262,12 @@ func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
 	return errors.New("no entangle info in transcation"), nil
 }
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
-	data, err1 := txscript.GetEntangleInfoData(script)
-	if err1 != nil {
-		return nil, err1
+	data, err := txscript.GetEntangleInfoData(script)
+	if err != nil {
+		return nil, err
 	}
 	info := &EntangleTxInfo{}
-	err := info.Parse(data)
+	err = info.Parse(data)
 	return info, err
 }
 

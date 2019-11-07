@@ -75,7 +75,7 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 
 	rand.Seed(time.Now().Unix())
 	index := rand.Int63n(5)
-	for i := index; i > 0; index-- {
+	for i := index; i > 0; i-- {
 		time.Sleep(1 * time.Second)
 	}
 	found = true
