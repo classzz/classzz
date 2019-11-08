@@ -697,7 +697,7 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader) error {
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 
-	flags := BFNoPoWCheck
+	flags := BFNone
 
 	tip := b.bestChain.Tip()
 

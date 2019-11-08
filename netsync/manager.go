@@ -732,26 +732,13 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 
 	err := blockchain.CheckProofOfWork(block, powLimit)
 	if err != nil {
+		sm.syncPeer.Disconnect()
 		return
 	}
 
 	for _, bmsg := range bmsgs {
-		//fmt.Println("msgChan SyncHeight", sm.SyncHeight(), "Height", sm.chain.BestSnapshot().Height)
 		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
 	}
-
-	//locator, err := sm.chain.LatestBlockLocator()
-	//if err != nil {
-	//	log.Warnf("Failed to get block locator for the "+
-	//		"latest block: %v", err)
-	//}
-	//
-	//fmt.Println("handleBlockMsg peer.PushGetBlocksMsg", len(locator), zeroHash)
-	//err = sm.syncPeer.PushGetBlocksMsg(locator, &zeroHash)
-	//if err != nil {
-	//	log.Warnf("Failed to get block locator for the "+
-	//		"latest block: %v", err)
-	//}
 }
 
 // handleBlockMsg handles block messages from all peers.
@@ -1437,7 +1424,6 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 func (sm *SyncManager) blockHandler() {
 	stallTicker := time.NewTicker(stallSampleInterval)
 	defer stallTicker.Stop()
-
 	var bmsgs []*blockMsg
 
 out:
@@ -1452,7 +1438,6 @@ out:
 			}
 
 		case m := <-sm.msgChan:
-			//log.Debug(" (sm *SyncManager) blockHandler() ", "m", reflect.TypeOf(m))
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
@@ -1467,7 +1452,6 @@ out:
 				}
 
 			case *blockMsg:
-				//fmt.Println("blockMsg bmsgs ", len(bmsgs))
 				if sm.syncPeer == nil {
 					sm.handleBlockMsg(msg, blockchain.BFNone)
 					bmsgs = []*blockMsg{}
