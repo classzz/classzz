@@ -13,6 +13,7 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -530,6 +531,14 @@ func (p *Peer) UpdateLastBlockHeight(newHeight int32) {
 	p.statsMtx.Unlock()
 }
 
+func (p *Peer) TopBlock() int32 {
+	if p.LastBlock() > p.StartingHeight() {
+		return p.LastBlock()
+	}
+
+	return p.StartingHeight()
+}
+
 // UpdateLastAnnouncedBlock updates meta-data about the last block hash this
 // peer is known to have announced.
 //
@@ -967,6 +976,7 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 
 	// Construct the getblocks request and queue it to be sent.
 	msg := wire.NewMsgGetBlocks(stopHash)
+	log.Debug("(p *Peer) PushGetBlocksMsg", "msg", len(msg.BlockLocatorHashes))
 	for _, hash := range locator {
 		err := msg.AddBlockLocatorHash(hash)
 		if err != nil {
@@ -974,13 +984,14 @@ func (p *Peer) PushGetBlocksMsg(locator blockchain.BlockLocator, stopHash *chain
 		}
 	}
 	p.QueueMessage(msg, nil)
-
+	log.Debug("(p *Peer) PushGetBlocksMsg", "QueueMessage")
 	// Update the previous getblocks request information for filtering
 	// duplicates.
 	p.prevGetBlocksMtx.Lock()
 	p.prevGetBlocksBegin = beginHash
 	p.prevGetBlocksStop = stopHash
 	p.prevGetBlocksMtx.Unlock()
+	log.Debug("(p *Peer) PushGetBlocksMsg", "prevGetBlocksMtx.Unlock()")
 	return nil
 }
 
@@ -1429,6 +1440,8 @@ out:
 		// is done.  The timer is reset below for the next iteration if
 		// needed.
 		rmsg, buf, err := p.readMessage(p.wireEncoding)
+
+		log.Debug("peer inHandler ", "rmsg", reflect.TypeOf(rmsg), "addr", p.addr)
 		idleTimer.Stop()
 		if err != nil {
 			// In order to allow regression tests with malformed messages, don't
@@ -1468,6 +1481,7 @@ out:
 
 		// Handle each supported message type.
 		p.stallControl <- stallControlMsg{sccHandlerStart, rmsg}
+
 		switch msg := rmsg.(type) {
 		case *wire.MsgVersion:
 			// Limit to one version message per peer.
@@ -1957,7 +1971,7 @@ out:
 				continue
 			}
 			p.QueueMessage(wire.NewMsgPing(nonce), nil)
-
+			log.Debug("peer.QueueMessage ", "addr", p.addr)
 		case <-p.quit:
 			break out
 		}
@@ -2032,7 +2046,7 @@ func (p *Peer) Disconnect() {
 		return
 	}
 
-	log.Tracef("Disconnecting %s", p)
+	log.Infof("Disconnecting %s", p)
 	if atomic.LoadInt32(&p.connected) != 0 {
 		p.conn.Close()
 	}
@@ -2080,6 +2094,7 @@ func (p *Peer) readRemoteVersionMsg() error {
 	// peer's time offset.
 	p.statsMtx.Lock()
 	p.lastBlock = msg.LastBlock
+	//log.Infof("update lastBlock %d for peer %d", p.lastBlock, msg.LastBlock)
 	p.startingHeight = msg.LastBlock
 	p.timeOffset = msg.Timestamp.Unix() - time.Now().Unix()
 	p.statsMtx.Unlock()

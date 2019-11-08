@@ -47,8 +47,7 @@ import (
 const (
 	// defaultServices describes the default services that are supported by
 	// the server.
-	defaultServices = wire.SFNodeNetwork | wire.SFNodeBloom |
-		wire.SFNodeCF | wire.SFNodeBitcoinCash
+	defaultServices = wire.SFNodeNetwork | wire.SFNodeBloom | wire.SFNodeCF
 
 	// defaultRequiredServices describes the default services that are
 	// required to be supported by outbound peers.
@@ -1941,7 +1940,9 @@ func (s *server) pushMerkleBlockMsg(sp *serverPeer, hash *chainhash.Hash,
 // handleUpdatePeerHeight updates the heights of all peers who were known to
 // announce a block we recently accepted.
 func (s *server) handleUpdatePeerHeights(state *peerState, umsg updatePeerHeightsMsg) {
+	peerLog.Debug(" (s *server) handleUpdatePeerHeights")
 	state.forAllPeers(func(sp *serverPeer) {
+		peerLog.Debug(" (s *server) handleUpdatePeerHeights", "state.forAllPeers", sp.Peer.Addr())
 		// The origin peer should already have the updated height.
 		if sp.Peer == umsg.originPeer {
 			return
@@ -1955,14 +1956,16 @@ func (s *server) handleUpdatePeerHeights(state *peerState, umsg updatePeerHeight
 		if latestBlkHash == nil {
 			return
 		}
-
 		// If the peer has recently announced a block, and this block
 		// matches our newly accepted block, then update their block
 		// height.
+		peerLog.Debug(" (s *server) handleUpdatePeerHeights", "*latestBlkHash", *latestBlkHash, "*umsg.newHash", *umsg.newHash)
+
 		if *latestBlkHash == *umsg.newHash {
 			sp.UpdateLastBlockHeight(umsg.newHeight)
 			sp.UpdateLastAnnouncedBlock(nil)
 		}
+
 	})
 }
 

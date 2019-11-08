@@ -310,9 +310,8 @@ func getTBL() int {
 
 	}
 
-	var size int64 = stats.Size()
+	var size = stats.Size()
 	if size != TBLSize {
-		fmt.Printf("file size is %d\n", size)
 		return 1
 	}
 
@@ -353,8 +352,7 @@ func HashCZZ(header []byte, nonce uint64) []byte {
 
 	err := getTBL()
 	if err != 0 {
-		fmt.Println("Init Table failed")
-		return nil
+		panic("Init Table failed")
 	}
 	val0 := uint32(nonce & 0xFFFFFFFF)
 	val1 := uint32(nonce >> 32)

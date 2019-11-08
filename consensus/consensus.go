@@ -80,7 +80,6 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 		default:
 			result := CZZhashFull(conf.Info.HeadHash[:], nonce)
 
-			//fmt.Println("HeadHash",conf.Info.HeadHash[:],"nonce",nonce,"result",result,"Target",conf.Info.Target)
 			if new(big.Int).SetBytes(result).Cmp(conf.Info.Target) <= 0 {
 				found = true
 				return nonce, found
