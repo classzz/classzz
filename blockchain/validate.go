@@ -991,20 +991,17 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	// check pool1 reward
 	expPool1Amount := summay.lastpool1Amount + originIncome1 - summay.EntangleAmount
 	if summay.pool1Amount != expPool1Amount {
-		return errors.New(fmt.Sprintf("1coinbase transaction for block pays %v "+
-			"which is more than expected value of %v",
-			summay.pool1Amount, expPool1Amount))
+		return errors.New(fmt.Sprintf("BlockSubsidy:the pool1 address's reward was wrong[%v,expected:%v] height:%d ",
+			summay.pool1Amount, expPool1Amount, txHeight))
 	}
 	// check pool2 reward
 	if originIncome2+summay.lastpool2Amount != summay.pool2Amount {
-		return errors.New(fmt.Sprintf("2coinbase transaction for block pays %v "+
-			"which is more than expected value of %v",
-			originIncome2+summay.lastpool2Amount, summay.pool2Amount))
+		return errors.New(fmt.Sprintf("BlockSubsidy:the pool2 address's reward was wrong[%v,expected:%v] height:%d ",
+			summay.pool2Amount, originIncome2+summay.lastpool2Amount, txHeight))
 	}
 	if summay.TotalOut > summay.TotalIn {
-		return errors.New(fmt.Sprintf("3coinbase transaction for block pays %v "+
-			"which is more than expected value of %v",
-			summay.TotalOut, summay.TotalIn))
+		return errors.New(fmt.Sprintf("BlockSubsidy:wrong,the totalOut > totalIn,[totalOut:%v,totalIn:%v] height:%d",
+			summay.TotalOut, summay.TotalIn, txHeight))
 	}
 	return nil
 }
