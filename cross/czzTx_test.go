@@ -42,6 +42,53 @@ func TestCalcModel(t *testing.T) {
 	fmt.Println("finish")
 }
 
+func TestCaclMode2(t *testing.T) {
+	sum := 10
+	reserve := []*big.Int{new(big.Int).Mul(big.NewInt(0), baseUnit), new(big.Int).Mul(big.NewInt(0), baseUnit)}
+	doge, itc := new(big.Int).Mul(big.NewInt(10000), baseUnit), new(big.Int).Mul(big.NewInt(100), baseUnit)
+
+	for i := 0; i < sum; i++ {
+		v1 := toDoge(reserve[0], doge)
+		v2 := toLtc(reserve[1], itc)
+		fmt.Println("==============================================entangle index:", i, "==============================================")
+		fmt.Printf("entangle doge:%v [最小单位]\n", doge)
+		fmt.Printf("entangle doge:%v [doge]\n", fromCzz1(doge).Text('f', 4))
+		fmt.Printf("to czz:%v [最小单位]\n", v1)
+		fmt.Printf("to czz:%v [czz]\n", fromCzz1(v1).Text('f', 4))
+
+		fmt.Printf("entangle itc:%v [最小单位]\n", itc)
+		fmt.Printf("entangle itc:%v [itc]\n", fromCzz1(itc).Text('f', 4))
+		fmt.Printf("to czz:%v [最小单位]\n", v2)
+		fmt.Printf("to czz:%v [czz]\n", fromCzz1(v2).Text('f', 4))
+		fmt.Println("==============================================entangle index:", i, "==============================================")
+		reserve[0] = reserve[0].Add(reserve[0], doge)
+		reserve[1] = reserve[1].Add(reserve[1], itc)
+		doge = doge.Mul(doge, big.NewInt(int64(i+1)))
+		itc = itc.Mul(itc, big.NewInt(int64(i+1)))
+	}
+	fmt.Println("finish")
+}
+
+func TestCaclMode3(t *testing.T) {
+	rate := big.NewFloat(0.0008)
+	f1 := big.NewFloat(float64(100))
+	f1 = f1.Quo(f1, rate)
+	ret := toCzz(f1).Int64()
+	fmt.Println(ret)
+
+	itc := big.NewInt(100)
+	f2 := new(big.Float).SetInt(itc)
+	// f2 := big.NewFloat(float64(itc.Int64()))
+	// f2 := new(big.Float).SetFloat64(float64(itc.Int64()))
+	fmt.Println(f2)
+	f2 = f2.Quo(f2, rate)
+	fmt.Println(toCzz(f2).Int64())
+	itc = itc.Mul(itc, baseUnit)
+	f2 = new(big.Float).Quo(big.NewFloat(float64(itc.Int64())), rate)
+	fmt.Println(toCzz(f2).Int64())
+
+	fmt.Println("finish")
+}
 func TestStruct(t *testing.T) {
 	d1 := EntangleTxInfo{
 		ExTxType:  ExpandedTxEntangle_Doge,
