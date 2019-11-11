@@ -37,8 +37,6 @@ var (
 	// errNoBlockIDEntry is an error that indicates a requested entry does
 	// not exist in the block ID index.
 	errNoBlockIDEntry = errors.New("no entry in the block ID index")
-
-	entangleBucketKey = []byte("entangle-tx")
 )
 
 // -----------------------------------------------------------------------------
@@ -186,7 +184,7 @@ func dbPutTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash, serializedData 
 }
 
 func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
-	txIndex := dbTx.Metadata().Bucket(entangleBucketKey)
+	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
 	einfos, err := cross.IsEntangleTx(tx.MsgTx())
 	if err != nil && err != cross.NoEntangle {
 		return err
@@ -195,6 +193,42 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 		ExTxType := byte(v.ExTxType)
 		key := append(v.ExtTxHash, ExTxType)
 		if err := txIndex.Put(key, v.Serialize()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// dbRemoveTxIndexEntry uses an existing database transaction to remove the most
+// recent transaction index entry for the given hash.
+func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
+	einfos, err := cross.IsEntangleTx(tx.MsgTx())
+	if err != nil && err != cross.NoEntangle {
+		return err
+	}
+	for _, v := range einfos {
+		ExTxType := byte(v.ExTxType)
+		key := append(v.ExtTxHash, ExTxType)
+		serializedData := txIndex.Get(key)
+		if len(serializedData) == 0 {
+			return fmt.Errorf("can't remove non-existent Entangle transaction %s "+
+				"from the  Entangle transaction index", key)
+		}
+		if err := txIndex.Delete(key); err != nil {
+			return fmt.Errorf("can't Delete  Entangle transaction %s ", key)
+		}
+	}
+
+	return nil
+}
+
+// dbRemoveTxIndexEntries uses an existing database transaction to remove the
+// latest transaction entry for every transaction in the passed block.
+func dbRemoveEntangleTxIndexEntries(dbTx database.Tx, block *czzutil.Block) error {
+	for _, tx := range block.Transactions() {
+		err := dbRemoveEntangleTxIndexEntry(dbTx, tx)
+		if err != nil {
 			return err
 		}
 	}
@@ -412,7 +446,7 @@ func (idx *TxIndex) Create(dbTx database.Tx) error {
 	if _, err := meta.CreateBucket(hashByIDIndexBucketName); err != nil {
 		return err
 	}
-	if _, err := meta.CreateBucket(entangleBucketKey); err != nil {
+	if _, err := meta.CreateBucket(cross.BucketKey); err != nil {
 		return err
 	}
 	_, err := meta.CreateBucket(txIndexKey)
@@ -455,6 +489,11 @@ func (idx *TxIndex) DisconnectBlock(dbTx database.Tx, block *czzutil.Block,
 
 	// Remove all of the transactions in the block from the index.
 	if err := dbRemoveTxIndexEntries(dbTx, block); err != nil {
+		return err
+	}
+
+	// Remove all of the Entangle transactions in the block from the index.
+	if err := dbRemoveEntangleTxIndexEntries(dbTx, block); err != nil {
 		return err
 	}
 

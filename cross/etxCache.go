@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	BucketKey = "entangle-tx"
+	BucketKey = []byte("entangle-tx")
 )
 
 type CacheEntangleInfo struct {
@@ -20,9 +20,9 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 	ExTxType := byte(info.ExTxType)
 	key := append(info.ExtTxHash, ExTxType)
 	err = c.DB.Update(func(tx database.Tx) error {
-		entangleBucket := tx.Metadata().Bucket([]byte(BucketKey))
+		entangleBucket := tx.Metadata().Bucket(BucketKey)
 		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists([]byte(BucketKey)); err != nil {
+			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(BucketKey); err != nil {
 				return err
 			}
 		}

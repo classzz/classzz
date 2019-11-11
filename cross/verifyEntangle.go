@@ -174,7 +174,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 				return nil, err
 			} else {
 				fmt.Println("pk.Script()", pk)
-				if count-int64(height) > dogeMaturity {
+				if count-int64(height) > ltcMaturity {
 					//return nil, pk.Script()[3:23]
 					return pk, nil
 				} else {
