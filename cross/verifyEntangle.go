@@ -28,33 +28,33 @@ type EntangleVerify struct {
 	Cache       *CacheEntangleInfo
 }
 
-func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) (error, []*TuplePubIndex) {
+func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
 	/*
 		1. check entangle tx struct
 		2. check the repeat tx
 		3. check the correct tx
 		4. check the pool reserve enough reward
 	*/
-	ok, einfo := IsEntangleTx(tx)
+	einfos, ok := IsEntangleTx(tx)
 	if ok != nil {
-		return errors.New("not entangle tx"), nil
+		return nil, errors.New("not entangle tx")
 	}
 	pairs := make([]*TuplePubIndex, 0)
 	amount := int64(0)
 	if ev.Cache != nil {
-		for i, v := range einfo {
+		for i, v := range einfos {
 			if ok := ev.Cache.FetchEntangleUtxoView(v); ok {
 				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
-				return errors.New("txid has already entangle:" + errStr), nil
+				return nil, errors.New("txid has already entangle:" + errStr)
 			}
 			amount += tx.TxOut[i].Value
 		}
 	}
 
-	for i, v := range einfo {
-		if err, pub := ev.verifyTx(v.ExTxType, v.ExtTxHash, v.Index, v.Height, v.Amount); err != nil {
+	for i, v := range einfos {
+		if pub, err := ev.verifyTx(v.ExTxType, v.ExtTxHash, v.Index, v.Height, v.Amount); err != nil {
 			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Index)
-			return errors.New("txid verify failed:" + errStr + " err:" + err.Error()), nil
+			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 		} else {
 			pairs = append(pairs, &TuplePubIndex{
 				EType: v.ExTxType,
@@ -70,11 +70,11 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) (error, []*TuplePubIn
 	// 	e := fmt.Sprintf("amount not enough,[request:%v,reserve:%v]", amount, reserve)
 	// 	return errors.New(e),nil
 	// }
-	return nil, pairs
+	return pairs, nil
 }
 
 func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32,
-	height uint64, amount *big.Int) (error, []byte) {
+	height uint64, amount *big.Int) ([]byte, error) {
 	switch ExTxType {
 	case ExpandedTxEntangle_Doge:
 		return ev.verifyDogeTx(ExtTxHash, Vout, amount, height)
@@ -84,7 +84,7 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 	return nil, nil
 }
 
-func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) (error, []byte) {
+func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
@@ -93,18 +93,19 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	// Get the current block count.
 	fmt.Println("tran: ", string(ExtTxHash))
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
-		return err, nil
+
+		return nil, err
 	} else {
 		if len(tx.MsgTx().TxOut) < int(Vout) {
-			return errors.New("doge TxOut index err"), nil
+			return nil, errors.New("doge TxOut index err")
 		}
 		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
 			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		}
 		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
 			e := fmt.Sprintf("doge PkScript err ")
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		}
 
 		//pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
@@ -115,26 +116,26 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 
 		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
 			e := fmt.Sprintf("doge PkScript err %s", err)
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		} else {
 
 			if count, err := client.GetBlockCount(); err != nil {
-				return err, nil
+				return nil, err
 			} else {
 				fmt.Println("pk.Script()", pk)
 				if count-int64(height) > dogeMaturity {
 					//return nil, pk.Script()[3:23]
-					return nil, pk
+					return pk, nil
 				} else {
 					e := fmt.Sprintf("dogeMaturity err ")
-					return errors.New(e), nil
+					return nil, errors.New(e)
 				}
 			}
 		}
 	}
 }
 
-func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) (error, []byte) {
+func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
@@ -143,18 +144,19 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 	// Get the current block count.
 	fmt.Println("tran: ", string(ExtTxHash))
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
-		return err, nil
+
+		return nil, err
 	} else {
 		if len(tx.MsgTx().TxOut) < int(Vout) {
-			return errors.New("doge TxOut index err"), nil
+			return nil, errors.New("doge TxOut index err")
 		}
 		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
 			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		}
 		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
 			e := fmt.Sprintf("doge PkScript err ")
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		}
 
 		//pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
@@ -165,19 +167,19 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 
 		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
 			e := fmt.Sprintf("doge PkScript err %s", err)
-			return errors.New(e), nil
+			return nil, errors.New(e)
 		} else {
 
 			if count, err := client.GetBlockCount(); err != nil {
-				return err, nil
+				return nil, err
 			} else {
 				fmt.Println("pk.Script()", pk)
-				if count-int64(height) > ltcMaturity {
+				if count-int64(height) > dogeMaturity {
 					//return nil, pk.Script()[3:23]
-					return nil, pk
+					return pk, nil
 				} else {
 					e := fmt.Sprintf("dogeMaturity err ")
-					return errors.New(e), nil
+					return nil, errors.New(e)
 				}
 			}
 		}

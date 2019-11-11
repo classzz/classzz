@@ -187,8 +187,11 @@ func dbPutTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash, serializedData 
 
 func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	txIndex := dbTx.Metadata().Bucket(entangleBucketKey)
-	_, einfo := cross.IsEntangleTx(tx.MsgTx())
-	for _, v := range einfo {
+	einfos, err := cross.IsEntangleTx(tx.MsgTx())
+	if err != nil && err != cross.NoEntangle {
+		return err
+	}
+	for _, v := range einfos {
 		ExTxType := byte(v.ExTxType)
 		key := append(v.ExtTxHash, ExTxType)
 		if err := txIndex.Put(key, v.Serialize()); err != nil {
