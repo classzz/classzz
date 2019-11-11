@@ -523,7 +523,7 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
 	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
 
-	base1 := base.Mul(base, big.NewFloat(float64(divisor.Int64())))
+	base1 := new(big.Float).Mul(base, big.NewFloat(float64(divisor.Int64())))
 	rate = rate.Add(rate, base1)
 	l := new(big.Int).Sub(fixed, remainder)
 
