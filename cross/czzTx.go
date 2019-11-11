@@ -285,8 +285,8 @@ func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 func VerifyTxsSequence(txs []*czzutil.Tx) error {
 	mix := uint64(0)
 	for i, v := range txs {
-		einfos, e := IsEntangleTx(v.MsgTx())
-		if e == nil {
+		einfos, err := IsEntangleTx(v.MsgTx())
+		if err == nil {
 			h := GetMaxHeight(einfos)
 			if mix > h {
 				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]", i-1, mix, i, h))
@@ -590,7 +590,7 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 
 func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
-	err, _ := IsEntangleTx(tx.MsgTx())
+	_, err := IsEntangleTx(tx.MsgTx())
 	if err == nil {
 		// verify the entangle tx
 
