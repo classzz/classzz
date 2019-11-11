@@ -3137,6 +3137,9 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		DogeCoinRPC:        cfg.DogeCoinRPC,
 		DogeCoinRPCUser:    cfg.DogeCoinRPCUser,
 		DogeCoinRPCPass:    cfg.DogeCoinRPCPass,
+		LtcCoinRPC:         cfg.LtcCoinRPC,
+		LtcCoinRPCUser:     cfg.LtcCoinRPCUser,
+		LtcCoinRPCPass:     cfg.LtcCoinRPCPass,
 	})
 	if err != nil {
 		return nil, err

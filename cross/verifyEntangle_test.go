@@ -71,9 +71,9 @@ func TestVerifyTx(t *testing.T) {
 	EntangleOut := &btcjson.EntangleOut{
 		ExTxType:  240,
 		Index:     0,
-		Height:    8034,
-		Amount:    big.NewInt(100000000000),
-		ExtTxHash: "4473e9d5bfe6597ca9363e76d9206bc8c5e2095c4caf2d0348e9c31b027ffeb5",
+		Height:    2972841,
+		Amount:    big.NewInt(225226803000),
+		ExtTxHash: "6800e9579dad0e6667e6e897e2d65f08afdba18ed1eb9956fe5f0b936162404a",
 	}
 
 	scriptInfo, err := txscript.EntangleScript(EntangleOut.Serialize())
@@ -86,6 +86,9 @@ func TestVerifyTx(t *testing.T) {
 	}
 	tx.AddTxOut(txout)
 	err, puk := entangleVerify.VerifyEntangleTx(tx)
-	t.Log(puk, err)
+	if err != nil {
+		t.Error("err", err)
+	}
 
+	t.Log(puk[0].Pub)
 }

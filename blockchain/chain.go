@@ -2197,6 +2197,14 @@ type Config struct {
 
 	//
 	DogeCoinRPCPass string
+
+	LtcCoinRPC []string
+
+	//
+	LtcCoinRPCUser string
+
+	//
+	LtcCoinRPCPass string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2256,12 +2264,36 @@ func New(config *Config) (*BlockChain, error) {
 		dogeclients = append(dogeclients, client)
 	}
 
+	var ltcclients []*rpcclient.Client
+
+	for _, ltcrpc := range config.LtcCoinRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		connCfg := &rpcclient.ConnConfig{
+			Host:         ltcrpc,
+			Endpoint:     "ws",
+			User:         config.LtcCoinRPCUser,
+			Pass:         config.LtcCoinRPCPass,
+			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		}
+
+		// Notice the notification parameter is nil since notifications are
+		// not supported in HTTP POST mode.
+		client, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcclients = append(ltcclients, client)
+	}
+
 	cacheEntangleInfo := &cross.CacheEntangleInfo{
 		DB: config.DB,
 	}
 
 	entangleVerify := &cross.EntangleVerify{
 		DogeCoinRPC: dogeclients,
+		LtcCoinRPC:  ltcclients,
 		Cache:       cacheEntangleInfo,
 	}
 

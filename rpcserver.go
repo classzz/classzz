@@ -157,6 +157,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"gethashespersec":              handleGetHashesPerSec,
 	"getheaders":                   handleGetHeaders,
 	"getinfo":                      handleGetInfo,
+	"getentangleinfo":              handleGetEntangleInfo,
 	"getwork":                      handleGetWork,
 	"getmempoolinfo":               handleGetMempoolInfo,
 	"getmininginfo":                handleGetMiningInfo,
@@ -2368,6 +2369,23 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		TestNet:         cfg.TestNet3,
 		RelayFee:        cfg.minRelayTxFee.ToCZZ(),
 	}
+
+	return ret, nil
+}
+
+func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	best := s.cfg.Chain.BestSnapshot()
+	block, err := s.cfg.Chain.BlockByHash(&best.Hash)
+	if err != nil {
+		return nil, err
+	}
+	txs := block.Transactions()
+	if len(txs) <= 0 {
+
+	}
+	//tx := txs[0].MsgTx().TxOut[3].PkScript
+
+	ret := &btcjson.InfoChainResult{}
 
 	return ret, nil
 }
