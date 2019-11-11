@@ -172,10 +172,10 @@ func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
 	// Using > here so that pop gives the highest fee item as opposed
 	// to the lowest.  Sort by fee first, then priority.
 	if pq.items[i].feePerKB == pq.items[j].feePerKB {
-		e1, i1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
-		e2, i2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
-		if e1 == nil && e2 == nil {
-			return cross.GetMaxHeight(i1) > cross.GetMaxHeight(i2)
+		einfos1, err1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
+		einfos2, err2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
+		if err1 == nil && err2 == nil {
+			return cross.GetMaxHeight(einfos1) > cross.GetMaxHeight(einfos2)
 		}
 		return pq.items[i].priority > pq.items[j].priority
 	}
@@ -824,7 +824,7 @@ mempoolLoop:
 			continue
 		}
 		isEntangleTx := false
-		if err, _ := cross.IsEntangleTx(tx.MsgTx()); err == nil {
+		if _, err := cross.IsEntangleTx(tx.MsgTx()); err == nil {
 			isEntangleTx = true
 		}
 		if isOver && isEntangleTx {
@@ -1067,4 +1067,3 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
-

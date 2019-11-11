@@ -24,6 +24,8 @@ const (
 )
 
 var (
+	NoEntangle = errors.New("no entangle info in transcation")
+
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
 		ExpandedTxEntangle_Ltc:  64,
@@ -243,23 +245,23 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 	return nil
 }
 
-func IsEntangleTx(tx *wire.MsgTx) (error, map[uint32]*EntangleTxInfo) {
+func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	// make sure at least one txout in OUTPUT
 
-	einfo := make(map[uint32]*EntangleTxInfo)
+	einfos := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info, err := EntangleTxFromScript(v.PkScript)
 		if err == nil {
 			if v.Value != 0 {
-				return errors.New("the output value must be 0 in entangle tx."), nil
+				return nil, errors.New("the output value must be 0 in entangle tx.")
 			}
-			einfo[uint32(i)] = info
+			einfos[uint32(i)] = info
 		}
 	}
-	if len(einfo) > 0 {
-		return nil, einfo
+	if len(einfos) > 0 {
+		return einfos, nil
 	}
-	return errors.New("no entangle info in transcation"), nil
+	return nil, NoEntangle
 }
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
@@ -283,9 +285,9 @@ func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 func VerifyTxsSequence(txs []*czzutil.Tx) error {
 	mix := uint64(0)
 	for i, v := range txs {
-		e, ii := IsEntangleTx(v.MsgTx())
-		if e == nil {
-			h := GetMaxHeight(ii)
+		einfos, err := IsEntangleTx(v.MsgTx())
+		if err == nil {
+			h := GetMaxHeight(einfos)
 			if mix > h {
 				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]", i-1, mix, i, h))
 			} else {
@@ -563,9 +565,9 @@ type TmpAddressPair struct {
 func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*EntangleItem {
 	items := make([]*EntangleItem, 0)
 	for _, v := range txs {
-		err, infos := IsEntangleTx(v.MsgTx())
+		einfos, err := IsEntangleTx(v.MsgTx())
 		if err == nil {
-			for i, out := range infos {
+			for i, out := range einfos {
 				item := &EntangleItem{
 					EType: out.ExTxType,
 					Value: new(big.Int).Set(out.Amount),
@@ -588,12 +590,12 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 
 func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
-	err, _ := IsEntangleTx(tx.MsgTx())
+	_, err := IsEntangleTx(tx.MsgTx())
 	if err == nil {
 		// verify the entangle tx
 
 		pairs := make([]*TmpAddressPair, 0)
-		err, tt := ev.VerifyEntangleTx(tx.MsgTx())
+		tt, err := ev.VerifyEntangleTx(tx.MsgTx())
 		if err != nil {
 			return nil, err
 		}

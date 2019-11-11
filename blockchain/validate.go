@@ -363,7 +363,7 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
-	err, _ := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
+	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
 	if err != nil {
 		return err
 	}
@@ -372,10 +372,10 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
-		err, items := cross.IsEntangleTx(tx.MsgTx())
+		einfos, err := cross.IsEntangleTx(tx.MsgTx())
 		if err == nil {
 			max := int64(0)
-			for _, ii := range items {
+			for _, ii := range einfos {
 				if max < int64(ii.Height) {
 					max = int64(ii.Height)
 				}
@@ -1490,9 +1490,9 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			err, infos := cross.IsEntangleTx(tx.MsgTx())
+			einfos, err := cross.IsEntangleTx(tx.MsgTx())
 			if err == nil {
-				handleSummayEntangle(summay, keepInfo, infos)
+				handleSummayEntangle(summay, keepInfo, einfos)
 			}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value

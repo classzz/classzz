@@ -67,6 +67,7 @@ type Config struct {
 
 	FetchEntangleUtxoView func(info *cross.EntangleTxInfo) bool
 
+	EntangleVerify *cross.EntangleVerify
 	// BestHeight defines the function to use to access the block height of
 	// the current best chain.
 	BestHeight func() int32
@@ -544,9 +545,9 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 
 	mp.pool[*tx.Hash()] = txD
 
-	_, einfo := cross.IsEntangleTx(tx.MsgTx())
+	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 
-	for _, v := range einfo {
+	for _, v := range einfos {
 
 		ExTxType := byte(v.ExTxType)
 		key := append(v.ExtTxHash, ExTxType)
@@ -648,12 +649,12 @@ func (mp *TxPool) fetchInputUtxos(tx *czzutil.Tx) (*blockchain.UtxoViewpoint, er
 
 func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (bool, error) {
 
-	ok, einfo := cross.IsEntangleTx(tx.MsgTx())
-	if ok != nil {
+	einfos, err := cross.IsEntangleTx(tx.MsgTx())
+	if err != nil {
 		return true, errors.New("not entangle tx")
 	}
 
-	for _, v := range einfo {
+	for _, v := range einfos {
 		ExTxType := byte(v.ExTxType)
 		key := append(v.ExtTxHash, ExTxType)
 
@@ -807,16 +808,17 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	ok, einfo := cross.IsEntangleTx(tx.MsgTx())
+	einfos, err := cross.IsEntangleTx(tx.MsgTx())
 
-	if ok != nil {
+	if err != nil {
 		return nil, nil, errors.New("not entangle tx")
 	}
 
-	if len(einfo) > 0 {
+	if len(einfos) > 0 {
 		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
 			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
 		}
+
 	}
 
 	_, err = mp.fetchEntangleUtxos(tx)
@@ -824,6 +826,10 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
+	_, err = mp.cfg.EntangleVerify.VerifyEntangleTx(tx.MsgTx())
+	if err != nil {
+		return nil, nil, err
+	}
 	// Don't allow the transaction if it exists in the main chain and is not
 	// not already fully spent.
 	prevOut := wire.OutPoint{Hash: *txHash}
