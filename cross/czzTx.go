@@ -466,7 +466,7 @@ func toDoge(entangled, needed *big.Int) *big.Int {
 	z, m := new(big.Int).DivMod(entangled, dogeUnit, new(big.Int).Set(dogeUnit))
 	rate = rate + z.Int64()
 	l := new(big.Int).Sub(dogeUnit, m)
-	base := new(big.Float).SetInt(baseUnit)
+	base := new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 
 	if l.Cmp(needed) >= 1 {
 		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed), base)
@@ -519,7 +519,7 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 	rate := big.NewFloat(0.0008)
 	base := big.NewFloat(0.0001)
 
-	u := new(big.Float).SetInt(baseUnit)
+	u := new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
 	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
 
@@ -528,12 +528,13 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 	l := new(big.Int).Sub(fixed, remainder)
 
 	if l.Cmp(needed) >= 1 {
-		f1 := new(big.Float).Quo(new(big.Float).SetInt(needed), u)
+		// f1 := new(big.Float).Quo(new(big.Float).SetInt(needed), u)
+		f1 := new(big.Float).Quo(new(big.Float).SetFloat64(float64(needed.Int64())), u)
 		f1 = f1.Quo(f1, rate)
 		return toCzz(f1)
 	} else {
-		f1 := new(big.Float).Quo(new(big.Float).SetInt(l), u)
-		f2 := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Sub(needed, l)), u)
+		f1 := new(big.Float).Quo(new(big.Float).SetFloat64(float64(l.Int64())), u)
+		f2 := new(big.Float).Quo(new(big.Float).SetFloat64(float64(new(big.Int).Sub(needed, l).Int64())), u)
 		f1 = f1.Quo(f1, rate)
 		rate = rate.Add(rate, base)
 		f2 = f2.Quo(f2, rate)
@@ -548,6 +549,11 @@ func toCzz(val *big.Float) *big.Int {
 func fromCzz(val int64) *big.Float {
 	v := new(big.Float).Quo(big.NewFloat(float64(val)), big.NewFloat(float64(baseUnit.Int64())))
 	return v
+}
+func fromCzz1(val *big.Int) *big.Float {
+	fval := new(big.Float).SetInt(val)
+	fval = fval.Quo(fval, new(big.Float).SetInt(baseUnit))
+	return fval
 }
 
 // the tool function for entangle tx
