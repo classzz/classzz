@@ -736,6 +736,7 @@ var rpcResultTypes = map[string][]interface{}{
 	"gethashespersec":              {(*float64)(nil)},
 	"getheaders":                   {(*[]string)(nil)},
 	"getinfo":                      {(*btcjson.InfoChainResult)(nil)},
+	"getentangleinfo":              {(*btcjson.EntangleInfoChainResult)(nil)},
 	"getmempoolinfo":               {(*btcjson.GetMempoolInfoResult)(nil)},
 	"getmininginfo":                {(*btcjson.GetMiningInfoResult)(nil)},
 	"getnettotals":                 {(*btcjson.GetNetTotalsResult)(nil)},

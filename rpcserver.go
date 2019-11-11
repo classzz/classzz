@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"io"
 	"io/ioutil"
 	"math"
@@ -277,6 +278,7 @@ var rpcLimited = map[string]struct{}{
 	"getdifficulty":                {},
 	"getheaders":                   {},
 	"getinfo":                      {},
+	"getentangleinfo":              {},
 	"getnettotals":                 {},
 	"getnetworkhashps":             {},
 	"getrawmempool":                {},
@@ -2381,13 +2383,25 @@ func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 	txs := block.Transactions()
 	if len(txs) <= 0 {
-
+		return nil, errors.New("Transactions is nil")
 	}
-	//tx := txs[0].MsgTx().TxOut[3].PkScript
+	txPkScript := txs[0].MsgTx().TxOut[3].PkScript
 
-	ret := &btcjson.InfoChainResult{}
+	keepedAmount, err := cross.KeepedAmountFromScript(txPkScript)
 
-	return ret, nil
+	infos := make([]*btcjson.EntangleInfoChainResult, 0)
+	for _, item := range keepedAmount.Items {
+		info := &btcjson.EntangleInfoChainResult{}
+		switch item.ExTxType {
+		case cross.ExpandedTxEntangle_Doge:
+			info.ExTxType = "doge"
+		case cross.ExpandedTxEntangle_Ltc:
+			info.ExTxType = "ltc"
+		}
+		info.Amount = item.Amount.Int64()
+		infos = append(infos, info)
+	}
+	return infos, nil
 }
 
 func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {

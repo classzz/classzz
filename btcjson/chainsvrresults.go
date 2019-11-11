@@ -4,7 +4,9 @@
 
 package btcjson
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // GetBlockHeaderVerboseResult models the data from the getblockheader command when
 // the verbose flag is set.  When the verbose flag is not set, getblockheader
@@ -456,6 +458,11 @@ type InfoChainResult struct {
 	TestNet         bool    `json:"testnet"`
 	RelayFee        float64 `json:"relayfee"`
 	Errors          string  `json:"errors"`
+}
+
+type EntangleInfoChainResult struct {
+	ExTxType string `json:"extxtype"`
+	Amount   int64  `json:"amount"`
 }
 
 // TxRawResult models the data from the getrawtransaction command.

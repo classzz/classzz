@@ -281,6 +281,37 @@ func (c *Client) GetPeerInfo() ([]btcjson.GetPeerInfoResult, error) {
 	return c.GetPeerInfoAsync().Receive()
 }
 
+// FutureGetEntangleInfoResult is a future promise to deliver the result of a
+// GetPeerInfoAsync RPC invocation (or an applicable error).
+type FutureGetEntangleInfoResult chan *response
+
+// Receive waits for the response promised by the future and returns  data about
+// each connected network peer.
+func (r FutureGetEntangleInfoResult) Receive() ([]btcjson.EntangleInfoChainResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal result as an array of getpeerinfo result objects.
+	var peerInfo []btcjson.EntangleInfoChainResult
+	err = json.Unmarshal(res, &peerInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return peerInfo, nil
+}
+func (c *Client) GetEntangleInfoAsync() FutureGetEntangleInfoResult {
+	cmd := btcjson.NewGetEntangleInfoCmd()
+	return c.sendCmd(cmd)
+}
+
+// GetPeerInfo returns data about each connected network peer.
+func (c *Client) GetEntangleInfo() ([]btcjson.EntangleInfoChainResult, error) {
+	return c.GetEntangleInfoAsync().Receive()
+}
+
 // FutureGetNetTotalsResult is a future promise to deliver the result of a
 // GetNetTotalsAsync RPC invocation (or an applicable error).
 type FutureGetNetTotalsResult chan *response
