@@ -419,6 +419,9 @@ var helpDescsEnUS = map[string]string{
 	// GetInfoCmd help.
 	"getinfo--synopsis": "Returns a JSON object containing various state info.",
 
+	// GetEntangleInfoCmd help.
+	"getentangleinfo--synopsis": "Returns a JSON object containing various Entangle info.",
+
 	// GetMempoolInfoCmd help.
 	"getmempoolinfo--synopsis": "Returns memory pool information",
 
