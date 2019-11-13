@@ -1559,3 +1559,64 @@ func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params)
 	}
 	return nil
 }
+func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64,error) {
+	if isCoinBaseInParam(tx, chainParams) {
+		return 0, nil
+	}
+	txHash := tx.Hash()
+	var totalSatoshiIn int64
+	for txInIndex, txIn := range tx.MsgTx().TxIn {
+		// Ensure the referenced input transaction is available.
+		utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
+		if utxo == nil {
+			str := fmt.Sprintf("output %v referenced from "+
+				"transaction %s:%d does not exist", txIn.PreviousOutPoint,
+				tx.Hash(), txInIndex)
+			return 0, ruleError(ErrMissingTxOut, str)
+		}
+		originTxSatoshi := utxo.Amount()
+		if originTxSatoshi < 0 {
+			str := fmt.Sprintf("transaction output has negative "+
+				"value of %v", czzutil.Amount(originTxSatoshi))
+			return 0, ruleError(ErrBadTxOutValue, str)
+		}
+		totalSatoshiIn += originTxSatoshi
+	}
+
+	// Calculate the total output amount for this transaction.  It is safe
+	// to ignore overflow and out of range errors here because those error
+	// conditions would have already been caught by checkTransactionSanity.
+	var totalSatoshiOut int64
+	for _, txOut := range tx.MsgTx().TxOut {
+		totalSatoshiOut += txOut.Value
+	}
+
+	// Ensure the transaction does not spend more than its inputs.
+	if totalSatoshiIn < totalSatoshiOut {
+		str := fmt.Sprintf("total value of all transaction inputs for "+
+			"transaction %v is %v which is less than the amount "+
+			"spent of %v", txHash, totalSatoshiIn, totalSatoshiOut)
+		return 0, ruleError(ErrSpendTooHigh, str)
+	}
+
+	// NOTE: bitcoind checks if the transaction fees are < 0 here, but that
+	// is an impossible condition because of the check above that ensures
+	// the inputs are >= the outputs.
+	txFeeInSatoshi := totalSatoshiIn - totalSatoshiOut
+	return txFeeInSatoshi, nil
+}
+func getEtsInfoInBlock(block *czzutil.Block,utxoView *UtxoViewpoint, chainParams *chaincfg.Params) ([]*cross.EtsInfo,error) {
+	
+	txs := block.Transactions()
+	infos := make([]*cross.EtsInfo,0,len(txs))
+	height := block.Height()
+	for i,tx := range txs {
+		fee,err := getFee(tx,height,utxoView,chainParams)
+		if err != nil {
+			return nil,err
+		}
+		infos[i].FeePerKB = fee * 1000 / int64(tx.MsgTx().SerializeSize())
+		infos[i].Tx = tx.MsgTx()
+	}
+	return infos,nil
+}

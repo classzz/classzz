@@ -49,6 +49,11 @@ func (ii *EntangleItem) Clone() *EntangleItem {
 	}
 	return item
 }
+// entangle tx Sequence infomation
+type EtsInfo struct {
+	FeePerKB 	int64
+	Tx			*wire.MsgTx
+}
 
 type TuplePubIndex struct {
 	EType ExpandedTxType
@@ -303,6 +308,26 @@ func VerifyTxsSequence(txs []*czzutil.Tx, fees []int64) error {
 			mixfee = fees[i]
 		}
 	}
+	return nil
+}
+func VerifyTxsSequence2(infos []*EtsInfo) error {
+	if infos == nil {
+		return nil
+	}	
+	pre,pos := uint64(0),0
+	for i, v := range infos {
+		einfos, err := IsEntangleTx(v.Tx)
+		if err == nil {
+			h := GetMaxHeight(einfos)
+			if pre > h && infos[pos].FeePerKB <= infos[i].FeePerKB {
+				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v,f=%v][i=%d,h=%v,f=%v]",
+				 pos, pre,infos[pos].FeePerKB, i, h,infos[i].FeePerKB))
+			} else {
+				pre,pos = h,i
+			}
+		}
+	}
+	
 	return nil
 }
 
