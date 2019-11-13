@@ -192,6 +192,7 @@ func newTxPriorityQueue(reserve int, sortByFee bool) *txPriorityQueue {
 	pq := &txPriorityQueue{
 		items: make([]*txPrioItem, 0, reserve),
 	}
+	fmt.Println("sortByFee", sortByFee)
 	if sortByFee {
 		pq.SetLessFunc(txPQByFeeAndHeight)
 	} else {
@@ -580,7 +581,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// choose the initial sort order for the priority queue based on whether
 	// or not there is an area allocated for high-priority transactions.
 	sourceTxns := g.txSource.MiningDescs()
-	sortedByFee := g.policy.BlockPrioritySize == 0
+	sortedByFee := g.policy.BlockPrioritySize == 0 || true
 	priorityQueue := newTxPriorityQueue(len(sourceTxns), sortedByFee)
 
 	// Create a slice to hold the transactions to be included in the

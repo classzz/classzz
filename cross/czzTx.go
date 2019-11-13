@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -282,17 +283,24 @@ func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 	}
 	return h
 }
-func VerifyTxsSequence(txs []*czzutil.Tx) error {
+func VerifyTxsSequence(txs []*czzutil.Tx, fees []int64) error {
 	mix := uint64(0)
+	mixfee := int64(math.MaxInt64)
 	for i, v := range txs {
-		einfos, err := IsEntangleTx(v.MsgTx())
-		if err == nil {
-			h := GetMaxHeight(einfos)
-			if mix > h {
-				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]", i-1, mix, i, h))
-			} else {
-				mix = h
+		if mixfee < fees[i] {
+			return errors.New(fmt.Sprintf("tx maxfee sequence wrong,[i=%d,feekb=%v][i=%d,feekb=%v]", i-1, mixfee, i, fees[i]))
+		} else if mixfee == fees[i] {
+			einfos, err := IsEntangleTx(v.MsgTx())
+			if err == nil {
+				h := GetMaxHeight(einfos)
+				if mix > h {
+					return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v][i=%d,h=%v]", i-1, mix, i, h))
+				} else {
+					mix = h
+				}
 			}
+		} else {
+			mixfee = fees[i]
 		}
 	}
 	return nil

@@ -393,7 +393,18 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 }
 func (b *BlockChain) CheckTxSequence(block *czzutil.Block) error {
 	txs := block.Transactions()
-	return cross.VerifyTxsSequence(txs)
+	fees := make([]int64, 0)
+	blockUtxos := NewUtxoViewpoint()
+	for _, tx := range txs {
+		fee, err := CheckTransactionInputs(tx, block.Height(), blockUtxos, b.chainParams)
+		fmt.Println("CheckTransactionInputs", err)
+		if err != nil {
+			return err
+		}
+		FeePerKB := fee * 1000 / int64(tx.MsgTx().SerializeSize())
+		fees = append(fees, FeePerKB)
+	}
+	return cross.VerifyTxsSequence(txs, fees)
 }
 
 // checkProofOfWork ensures the block header bits which indicate the target
