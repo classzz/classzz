@@ -1288,8 +1288,8 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 	}
 	preHash := block.MsgBlock().Header.PrevBlock
 	if preblock, err := b.BlockByHash(&preHash); err != nil {
-		str := fmt.Sprintf("cann't get preblock %v,current height: %d",
-			preblock, node.height)
+		str := fmt.Sprintf("cann't get preblock %v,current height: %d,err:%s",
+			preblock, node.height, err.Error())
 		return ruleError(ErrPrevBlockNotBest, str)
 	} else {
 		if err := checkBlockSubsidy(block, preblock, node.height, view,
