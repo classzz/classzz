@@ -59,6 +59,21 @@ func (t *Tx) SetIndex(index int) {
 	t.txIndex = index
 }
 
+// SetIndex sets the index of the transaction in within a block.
+func (t *Tx) Bytes() ([]byte, error) {
+
+	// Serialize the MsgBlock.
+	w := bytes.NewBuffer(make([]byte, 0, t.msgTx.SerializeSize()))
+	err := t.msgTx.Serialize(w)
+
+	if err != nil {
+		return nil, err
+	}
+	serializedBlock := w.Bytes()
+
+	return serializedBlock, nil
+}
+
 // NewTx returns a new instance of a bitcoin transaction given an underlying
 // wire.MsgTx.  See Tx.
 func NewTx(msgTx *wire.MsgTx) *Tx {

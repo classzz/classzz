@@ -6,6 +6,7 @@ package mining
 
 import (
 	"container/heap"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -167,6 +168,20 @@ func txPQByFee(pq *txPriorityQueue, i, j int) bool {
 	return pq.items[i].feePerKB > pq.items[j].feePerKB
 }
 
+func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
+	// Using > here so that pop gives the highest fee item as opposed
+	// to the lowest.  Sort by fee first, then priority.
+	if pq.items[i].feePerKB == pq.items[j].feePerKB {
+		einfos1, err1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
+		einfos2, err2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
+		if err1 == nil && err2 == nil {
+			return cross.GetMaxHeight(einfos1) > cross.GetMaxHeight(einfos2)
+		}
+		return pq.items[i].priority > pq.items[j].priority
+	}
+	return pq.items[i].feePerKB > pq.items[j].feePerKB
+}
+
 // newTxPriorityQueue returns a new transaction priority queue that reserves the
 // passed amount of space for the elements.  The new priority queue uses either
 // the txPQByPriority or the txPQByFee compare function depending on the
@@ -178,7 +193,7 @@ func newTxPriorityQueue(reserve int, sortByFee bool) *txPriorityQueue {
 		items: make([]*txPrioItem, 0, reserve),
 	}
 	if sortByFee {
-		pq.SetLessFunc(txPQByFee)
+		pq.SetLessFunc(txPQByFeeAndHeight)
 	} else {
 		pq.SetLessFunc(txPQByPriority)
 	}
@@ -298,6 +313,11 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
+	if nextBlockHeight >= params.EntangleHeight {
+		// utxo of coinbase in params.EntangleHeight-1 block
+		tx.AddTxIn(&wire.TxIn{}) // for pool address hold this
+		tx.AddTxIn(&wire.TxIn{})
+	}
 
 	//Calculation incentive
 	reward := blockchain.CalcBlockSubsidy(nextBlockHeight, params)
@@ -308,7 +328,7 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	// Calculate 1% of the reward.
 	reward2 := reward / 100
 
-	// Calculate 1 -20% = 80% of the reward. Coinbase
+	// Calculate 1 - 20% = 80% of the reward. Coinbase
 	reward3 := reward - reward1 - reward2
 
 	// Coinbase reward
@@ -316,6 +336,12 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		Value:    reward3,
 		PkScript: pkScript,
 	})
+
+	//Sum up all the previous pool value
+	if nextBlockHeight == params.EntangleHeight {
+		reward1 = reward1 * int64(params.EntangleHeight-1)
+		reward2 = reward2 * int64(params.EntangleHeight-1)
+	}
 
 	// CoinPool1 reward
 	tx.AddTxOut(&wire.TxOut{
@@ -328,7 +354,26 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		Value:    reward2,
 		PkScript: pkScript2,
 	})
-
+	// the amount of already entangled,placeholder
+	if nextBlockHeight >= params.EntangleHeight {
+		keepInfo := cross.KeepedAmount{Items: []cross.KeepedItem{}}
+		keepInfo.Add(cross.KeepedItem{
+			ExTxType: cross.ExpandedTxEntangle_Doge,
+			Amount:   big.NewInt(0),
+		})
+		keepInfo.Add(cross.KeepedItem{
+			ExTxType: cross.ExpandedTxEntangle_Ltc,
+			Amount:   big.NewInt(0),
+		})
+		scriptInfo, err := txscript.KeepedAmountScript(keepInfo.Serialize())
+		if err != nil {
+			return nil, err
+		}
+		tx.AddTxOut(&wire.TxOut{
+			Value:    0,
+			PkScript: scriptInfo,
+		})
+	}
 	// Make sure the coinbase is above the minimum size threshold.
 	if tx.SerializeSize() < blockchain.MinTransactionSize {
 		tx.TxIn[0].SignatureScript = append(tx.TxIn[0].SignatureScript,
@@ -544,7 +589,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleAddress := make(map[chainhash.Hash][]*tmpAddressPair)
+	entangleAddress := make(map[chainhash.Hash][]*cross.TmpAddressPair)
 
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
@@ -564,6 +609,19 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	txFees = append(txFees, -1) // Updated once known
 	txSigOps = append(txSigOps, coinbaseSigOps)
 
+	cHash, cheight := best.Hash, best.Height
+	lView, lerr := g.chain.FetchPoolUtxoView(&cHash, cheight)
+	if lerr != nil {
+		return nil, err
+	}
+	poolItem := toPoolAddrItems(lView)
+	isOver := false
+
+	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
+	if sErr != nil {
+		return nil, sErr
+	}
+
 	log.Debugf("Considering %d transactions for inclusion to new block",
 		len(sourceTxns))
 
@@ -573,8 +631,13 @@ mempoolLoop:
 		// non-finalized transactions.
 		tx := txDesc.Tx
 		if blockchain.IsCoinBase(tx) {
-			log.Tracef("Skipping coinbase tx %s", tx.Hash())
-			continue
+			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 {
+				log.Tracef("Skipping coinbase tx %s", tx.Hash())
+				continue
+			} else if len(tx.MsgTx().TxIn) == 1 {
+				log.Tracef("Skipping coinbase tx %s", tx.Hash())
+				continue
+			}
 		}
 		if !blockchain.IsFinalizedTransaction(tx, nextBlockHeight,
 			g.timeSource.AdjustedTime()) {
@@ -760,14 +823,28 @@ mempoolLoop:
 			logSkippedDeps(tx, deps)
 			continue
 		}
-		err1,obj := toAddressFromEntangle(tx,g.chain.GetEntangleVerify())
-		if err1 != nil {
-			log.Tracef("Skipping tx %s due to error in "+
-				"toAddressFromEntangle: %v", tx.Hash(), err)
-			logSkippedDeps(tx, deps)
+		isEntangleTx := false
+		if _, err := cross.IsEntangleTx(tx.MsgTx()); err == nil {
+			isEntangleTx = true
+		}
+		if isOver && isEntangleTx {
 			continue
 		}
-		entangleAddress[*tx.Hash()] = obj
+		if isEntangleTx {
+			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
+			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo); ok {
+				isOver = true
+				continue
+			}
+			obj, err1 := cross.ToAddressFromEntangle(tx, g.chain.GetEntangleVerify())
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"toAddressFromEntangle: %v", tx.Hash(), err)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			entangleAddress[*tx.Hash()] = obj
+		}
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
 			txscript.StandardVerifyFlags, g.sigCache,
 			g.hashCache)
@@ -777,7 +854,6 @@ mempoolLoop:
 			logSkippedDeps(tx, deps)
 			continue
 		}
-
 		// Spend the transaction inputs in the block utxo view and add
 		// an entry for it to ensure any transactions which reference
 		// this one have it available as an input and can ensure they
@@ -835,18 +911,14 @@ mempoolLoop:
 
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
-	
+
 	// make entangle tx if it exist
-	cHash,cheight := best.Hash,best.Height
-	lView,lerr := g.chain.FetchPoolUtxoView(&cHash,cheight)
-	if lerr != nil {
-		return nil, err
-	}
-	eItems := toEntangleItems(blockTxns,entangleAddress)
-	poolItem := toPoolAddrItems(lView)
-	err = cross.MakeMergeTx(coinbaseTx.MsgTx(),poolItem,eItems)
-	if err != nil {
-		return nil, err
+	if g.chainParams.EntangleHeight <= nextBlockHeight {
+		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo)
+		if err != nil {
+			return nil, err
+		}
 	}
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
@@ -961,84 +1033,37 @@ func (g *BlkTmplGenerator) BestSnapshot() *blockchain.BestState {
 func (g *BlkTmplGenerator) TxSource() TxSource {
 	return g.txSource
 }
-
+func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32) (error, []byte) {
+	block, err := g.chain.BlockByHash(hash)
+	if err != nil {
+		return err, nil
+	}
+	if block.Height() != height {
+		return errors.New("the height not match"), nil
+	}
+	tx, err := block.Tx(0)
+	if err != nil {
+		return err, nil
+	}
+	if height < g.chainParams.EntangleHeight {
+		return nil, nil
+	}
+	txout := tx.MsgTx().TxOut[3]
+	return nil, txout.PkScript
+}
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	items := &cross.PoolAddrItem{
-		POut:   make([]*wire.OutPoint, 0),
-		Script: make([][]byte, 0),
-		Amount: make([]*big.Int, 0),
+		POut:   make([]wire.OutPoint, 2),
+		Script: make([][]byte, 2),
+		Amount: make([]*big.Int, 2),
 	}
 	if view != nil {
 		m := view.Entries()
 		for k, v := range m {
-			items.POut = append(items.POut, &k)
-			items.Script = append(items.Script, v.PkScript())
-			items.Amount = append(items.Amount, new(big.Int).SetInt64(v.Amount()))
-		}	
-	} 
-	return items
-}
-
-type tmpAddressPair struct {
-	index		uint32
-	address		czzutil.Address
-}
-
-func toEntangleItems(txs []*czzutil.Tx,addrs map[chainhash.Hash][]*tmpAddressPair) []*cross.EntangleItem {
-	items := make([]*cross.EntangleItem,0)
-	for _,v := range txs {
-		err,infos := cross.IsEntangleTx(v.MsgTx())
-		if err == nil {
-			for i,out := range infos {
-				item := &cross.EntangleItem{
-					EType:		out.ExTxType,
-					Value:		new(big.Int).Set(out.Amount),
-					Addr:		nil,
-				}
-				pairs,ok := addrs[*v.Hash()]
-				if ok {
-					for _,vv := range pairs {
-						if i == vv.index {
-							item.Addr = vv.address
-						}
-					}
-				}
-				items = append(items,item)
-			}
-		}		
+			items.POut[k.Index-1] = k
+			items.Script[k.Index-1] = v.PkScript()
+			items.Amount[k.Index-1] = new(big.Int).SetInt64(v.Amount())
+		}
 	}
 	return items
 }
-
-func toAddressFromEntangle(tx *czzutil.Tx,ev *cross.EntangleVerify) (error,[]*tmpAddressPair) {
-	// txhash := tx.Hash()
-	err,_ := cross.IsEntangleTx(tx.MsgTx())
-	if err == nil {
-		// verify the entangle tx 
-		
-		pairs := make([]*tmpAddressPair,0)
-		err, tt := ev.VerifyEntangleTx(tx.MsgTx(),nil)
-		if err != nil {
-			return err,nil
-		}
-		for _,v := range tt {
-			pub,err1 := cross.RecoverPublicFromBytes(v.Pub,v.EType)
-			if err1 != nil {
-				return err1,nil
-			}
-			err2,addr := cross.MakeAddress(*pub)
-			if err2 != nil {
-				return err2,nil
-			}
-			pairs = append(pairs,&tmpAddressPair{
-				index:		v.Index,
-				address:	addr,
-			})
-		}
-		
-		return nil,pairs		
-	}
-
-	return nil,nil
-}
-

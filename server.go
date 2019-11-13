@@ -3138,6 +3138,11 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		FastSyncDataDir:    cfg.DataDir,
 		Proxy:              cfg.Proxy,
 		DogeCoinRPC:        cfg.DogeCoinRPC,
+		DogeCoinRPCUser:    cfg.DogeCoinRPCUser,
+		DogeCoinRPCPass:    cfg.DogeCoinRPCPass,
+		LtcCoinRPC:         cfg.LtcCoinRPC,
+		LtcCoinRPCUser:     cfg.LtcCoinRPCUser,
+		LtcCoinRPCPass:     cfg.LtcCoinRPCPass,
 	})
 	if err != nil {
 		return nil, err
@@ -3189,10 +3194,12 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 			MinRelayTxFee:        cfg.minRelayTxFee,
 			MaxTxVersion:         2,
 		},
-		ChainParams:    chainParams,
-		FetchUtxoView:  s.chain.FetchUtxoView,
-		BestHeight:     func() int32 { return s.chain.BestSnapshot().Height },
-		MedianTimePast: func() time.Time { return s.chain.BestSnapshot().MedianTime },
+		ChainParams:           chainParams,
+		FetchUtxoView:         s.chain.FetchUtxoView,
+		FetchEntangleUtxoView: s.chain.GetEntangleVerify().Cache.FetchEntangleUtxoView,
+		EntangleVerify:        s.chain.GetEntangleVerify(),
+		BestHeight:            func() int32 { return s.chain.BestSnapshot().Height },
+		MedianTimePast:        func() time.Time { return s.chain.BestSnapshot().MedianTime },
 		CalcSequenceLock: func(tx *czzutil.Tx, view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {
 			return s.chain.CalcSequenceLock(tx, view, true)
 		},

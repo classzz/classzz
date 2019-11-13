@@ -24,7 +24,7 @@ var (
 
 	// mainPowLimit is the highest proof of work value a Bitcoin block can
 	// have for the main network.  It is the value 2^224 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 236), bigOne)
+	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 246), bigOne)
 
 	// regressionPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the regression test network.  It is the value 2^255 - 1.
@@ -179,6 +179,7 @@ type Params struct {
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
+	EntangleHeight int32 // entangle tx from other chian(doge and ltc)
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 
@@ -223,25 +224,22 @@ type Params struct {
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "18883",
-	DNSSeeds: []DNSSeed{
-		{"3.15.206.33", true},
-		{"18.222.100.56", true},
-		{"3.15.206.49", true},
-	},
+	DefaultPort: "19526",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
 	GenesisBlock: &genesisBlock,
 	GenesisHash:  &genesisHash,
 
 	PowLimit:     mainPowLimit,
-	PowLimitBits: 0x1e10624d,
+	PowLimitBits: 0x2000ffff,
 
-	CoinbaseMaturity:         14,
+	CoinbaseMaturity:         2,
 	SubsidyReductionInterval: 1000000,
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 
+	EntangleHeight: 3,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
@@ -320,6 +318,7 @@ var RegressionNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -395,6 +394,7 @@ var TestNet3Params = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        false,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -465,6 +465,7 @@ var SimNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 12000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 

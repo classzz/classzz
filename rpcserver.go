@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"io"
 	"io/ioutil"
 	"math"
@@ -50,10 +51,10 @@ import (
 
 // API version constants
 const (
-	jsonrpcSemverString = "1.3.0"
+	jsonrpcSemverString = "1.3.1"
 	jsonrpcSemverMajor  = 1
 	jsonrpcSemverMinor  = 3
-	jsonrpcSemverPatch  = 0
+	jsonrpcSemverPatch  = 1
 )
 
 const (
@@ -131,58 +132,60 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":               handleAddNode,
-	"createrawtransaction":  handleCreateRawTransaction,
-	"debuglevel":            handleDebugLevel,
-	"decoderawtransaction":  handleDecodeRawTransaction,
-	"decodescript":          handleDecodeScript,
-	"estimatefee":           handleEstimateFee,
-	"generate":              handleGenerate,
-	"getaddednodeinfo":      handleGetAddedNodeInfo,
-	"getbestblock":          handleGetBestBlock,
-	"getbestblockhash":      handleGetBestBlockHash,
-	"getblock":              handleGetBlock,
-	"getblockchaininfo":     handleGetBlockChainInfo,
-	"getblockcount":         handleGetBlockCount,
-	"getblockhash":          handleGetBlockHash,
-	"getblockheader":        handleGetBlockHeader,
-	"getblocktemplate":      handleGetBlockTemplate,
-	"getcfilter":            handleGetCFilter,
-	"getcfilterheader":      handleGetCFilterHeader,
-	"getconnectioncount":    handleGetConnectionCount,
-	"getcurrentnet":         handleGetCurrentNet,
-	"getdifficulty":         handleGetDifficulty,
-	"getgenerate":           handleGetGenerate,
-	"gethashespersec":       handleGetHashesPerSec,
-	"getheaders":            handleGetHeaders,
-	"getinfo":               handleGetInfo,
-	"getwork":               handleGetWork,
-	"getmempoolinfo":        handleGetMempoolInfo,
-	"getmininginfo":         handleGetMiningInfo,
-	"getnettotals":          handleGetNetTotals,
-	"getnetworkhashps":      handleGetNetworkHashPS,
-	"getpeerinfo":           handleGetPeerInfo,
-	"getrawmempool":         handleGetRawMempool,
-	"getrawtransaction":     handleGetRawTransaction,
-	"gettxout":              handleGetTxOut,
-	"gettxoutproof":         handleGetTxOutProof,
-	"help":                  handleHelp,
-	"invalidateblock":       handleInvalidateBlock,
-	"node":                  handleNode,
-	"ping":                  handlePing,
-	"reconsiderblock":       handleReconsiderBlock,
-	"searchrawtransactions": handleSearchRawTransactions,
-	"sendrawtransaction":    handleSendRawTransaction,
-	"setgenerate":           handleSetGenerate,
-	"stop":                  handleStop,
-	"submitblock":           handleSubmitBlock,
-	"submitwork":            handleSubmitWork,
-	"uptime":                handleUptime,
-	"validateaddress":       handleValidateAddress,
-	"verifychain":           handleVerifyChain,
-	"verifymessage":         handleVerifyMessage,
-	"verifytxoutproof":      handleVerifyTxOutProof,
-	"version":               handleVersion,
+	"addnode":                      handleAddNode,
+	"createrawtransaction":         handleCreateRawTransaction,
+	"createrawentangletransaction": handleCreateRawEntangleTransaction,
+	"debuglevel":                   handleDebugLevel,
+	"decoderawtransaction":         handleDecodeRawTransaction,
+	"decodescript":                 handleDecodeScript,
+	"estimatefee":                  handleEstimateFee,
+	"generate":                     handleGenerate,
+	"getaddednodeinfo":             handleGetAddedNodeInfo,
+	"getbestblock":                 handleGetBestBlock,
+	"getbestblockhash":             handleGetBestBlockHash,
+	"getblock":                     handleGetBlock,
+	"getblockchaininfo":            handleGetBlockChainInfo,
+	"getblockcount":                handleGetBlockCount,
+	"getblockhash":                 handleGetBlockHash,
+	"getblockheader":               handleGetBlockHeader,
+	"getblocktemplate":             handleGetBlockTemplate,
+	"getcfilter":                   handleGetCFilter,
+	"getcfilterheader":             handleGetCFilterHeader,
+	"getconnectioncount":           handleGetConnectionCount,
+	"getcurrentnet":                handleGetCurrentNet,
+	"getdifficulty":                handleGetDifficulty,
+	"getgenerate":                  handleGetGenerate,
+	"gethashespersec":              handleGetHashesPerSec,
+	"getheaders":                   handleGetHeaders,
+	"getinfo":                      handleGetInfo,
+	"getentangleinfo":              handleGetEntangleInfo,
+	"getwork":                      handleGetWork,
+	"getmempoolinfo":               handleGetMempoolInfo,
+	"getmininginfo":                handleGetMiningInfo,
+	"getnettotals":                 handleGetNetTotals,
+	"getnetworkhashps":             handleGetNetworkHashPS,
+	"getpeerinfo":                  handleGetPeerInfo,
+	"getrawmempool":                handleGetRawMempool,
+	"getrawtransaction":            handleGetRawTransaction,
+	"gettxout":                     handleGetTxOut,
+	"gettxoutproof":                handleGetTxOutProof,
+	"help":                         handleHelp,
+	"invalidateblock":              handleInvalidateBlock,
+	"node":                         handleNode,
+	"ping":                         handlePing,
+	"reconsiderblock":              handleReconsiderBlock,
+	"searchrawtransactions":        handleSearchRawTransactions,
+	"sendrawtransaction":           handleSendRawTransaction,
+	"setgenerate":                  handleSetGenerate,
+	"stop":                         handleStop,
+	"submitblock":                  handleSubmitBlock,
+	"submitwork":                   handleSubmitWork,
+	"uptime":                       handleUptime,
+	"validateaddress":              handleValidateAddress,
+	"verifychain":                  handleVerifyChain,
+	"verifymessage":                handleVerifyMessage,
+	"verifytxoutproof":             handleVerifyTxOutProof,
+	"version":                      handleVersion,
 }
 
 // list of commands that we recognize, but for which classzz has no support because
@@ -258,38 +261,39 @@ var rpcLimited = map[string]struct{}{
 	"help": {},
 
 	// HTTP/S-only commands
-	"createrawtransaction":  {},
-	"decoderawtransaction":  {},
-	"decodescript":          {},
-	"estimatefee":           {},
-	"getbestblock":          {},
-	"getbestblockhash":      {},
-	"getblock":              {},
-	"getwork":               {},
-	"getblockcount":         {},
-	"getblockhash":          {},
-	"getblockheader":        {},
-	"getcfilter":            {},
-	"getcfilterheader":      {},
-	"getcurrentnet":         {},
-	"getdifficulty":         {},
-	"getheaders":            {},
-	"getinfo":               {},
-	"getnettotals":          {},
-	"getnetworkhashps":      {},
-	"getrawmempool":         {},
-	"getrawtransaction":     {},
-	"gettxout":              {},
-	"gettxoutproof":         {},
-	"searchrawtransactions": {},
-	"sendrawtransaction":    {},
-	"submitblock":           {},
-	"submitwork":            {},
-	"uptime":                {},
-	"validateaddress":       {},
-	"verifymessage":         {},
-	"verifytxoutproof":      {},
-	"version":               {},
+	"createrawtransaction":         {},
+	"createrawentangletransaction": {},
+	"decoderawtransaction":         {},
+	"decodescript":                 {},
+	"estimatefee":                  {},
+	"getbestblock":                 {},
+	"getbestblockhash":             {},
+	"getblock":                     {},
+	"getblockcount":                {},
+	"getblockhash":                 {},
+	"getblockheader":               {},
+	"getcfilter":                   {},
+	"getcfilterheader":             {},
+	"getcurrentnet":                {},
+	"getdifficulty":                {},
+	"getheaders":                   {},
+	"getinfo":                      {},
+	"getentangleinfo":              {},
+	"getnettotals":                 {},
+	"getnetworkhashps":             {},
+	"getrawmempool":                {},
+	"getrawtransaction":            {},
+	"gettxout":                     {},
+	"gettxoutproof":                {},
+	"searchrawtransactions":        {},
+	"sendrawtransaction":           {},
+	"submitblock":                  {},
+	"submitwork":                   {},
+	"uptime":                       {},
+	"validateaddress":              {},
+	"verifymessage":                {},
+	"verifytxoutproof":             {},
+	"version":                      {},
 }
 
 // builderScript is a convenience function which is used for hard-coded scripts
@@ -627,6 +631,64 @@ func handleCreateRawTransaction(s *rpcServer, cmd interface{}, closeChan <-chan 
 	return mtxHex, nil
 }
 
+// handleCreateRawTransaction handles createrawtransaction commands.
+func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.CreateRawEntangleTransactionCmd)
+
+	// Validate the locktime, if given.
+	if c.LockTime != nil &&
+		(*c.LockTime < 0 || *c.LockTime > int64(wire.MaxTxInSequenceNum)) {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "Locktime out of range",
+		}
+	}
+
+	// Add all transaction inputs to a new transaction after performing
+	// some validity checks.
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	for _, input := range c.Inputs {
+		txHash, err := chainhash.NewHashFromStr(input.Txid)
+		if err != nil {
+			return nil, rpcDecodeHexError(input.Txid)
+		}
+
+		prevOut := wire.NewOutPoint(txHash, input.Vout)
+		txIn := wire.NewTxIn(prevOut, []byte{})
+		if c.LockTime != nil && *c.LockTime != 0 {
+			txIn.Sequence = wire.MaxTxInSequenceNum - 1
+		}
+		mtx.AddTxIn(txIn)
+	}
+
+	for _, entangle := range c.EntangleOuts {
+		scriptInfo, err := txscript.EntangleScript(entangle.Serialize())
+		if err != nil {
+			return nil, err
+		}
+
+		mtx.AddTxOut(&wire.TxOut{
+			Value:    0,
+			PkScript: scriptInfo,
+		})
+	}
+
+	// Set the Locktime, if given.
+	if c.LockTime != nil {
+		mtx.LockTime = uint32(*c.LockTime)
+	}
+
+	// Return the serialized and hex-encoded transaction.  Note that this
+	// is intentionally not directly returning because the first return
+	// value is a string and it would result in returning an empty string to
+	// the client instead of nothing (nil) in the case of an error.
+	mtxHex, err := messageToHex(mtx)
+	if err != nil {
+		return nil, err
+	}
+	return mtxHex, nil
+}
+
 // handleDebugLevel handles debuglevel commands.
 func handleDebugLevel(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.DebugLevelCmd)
@@ -654,9 +716,30 @@ func createVinList(mtx *wire.MsgTx) []btcjson.Vin {
 	// Coinbase transactions only have a single txin by definition.
 	vinList := make([]btcjson.Vin, len(mtx.TxIn))
 	if blockchain.IsCoinBaseTx(mtx) {
-		txIn := mtx.TxIn[0]
-		vinList[0].Coinbase = hex.EncodeToString(txIn.SignatureScript)
-		vinList[0].Sequence = txIn.Sequence
+		for i, txIn := range mtx.TxIn {
+
+			if i == 0 {
+				txIn := mtx.TxIn[0]
+				vinList[0].Coinbase = hex.EncodeToString(txIn.SignatureScript)
+				vinList[0].Sequence = txIn.Sequence
+				continue
+			}
+
+			// The disassembled string will contain [error] inline
+			// if the script doesn't fully parse, so ignore the
+			// error here.
+			disbuf, _ := txscript.DisasmString(txIn.SignatureScript)
+
+			vinEntry := &vinList[i]
+			vinEntry.Txid = txIn.PreviousOutPoint.Hash.String()
+			vinEntry.Vout = txIn.PreviousOutPoint.Index
+			vinEntry.Sequence = txIn.Sequence
+			vinEntry.ScriptSig = &btcjson.ScriptSig{
+				Asm: disbuf,
+				Hex: hex.EncodeToString(txIn.SignatureScript),
+			}
+		}
+
 		return vinList
 	}
 
@@ -1541,8 +1624,9 @@ func (state *gbtWorkState) updateBlockTemplate(s *rpcServer, useCoinbaseValue bo
 		// full coinbase as opposed to only the pertinent details needed
 		// to create their own coinbase.
 		var payAddr czzutil.Address
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		if !useCoinbaseValue {
-			payAddr = cfg.miningAddrs[rand.Intn(len(cfg.miningAddrs))]
+			payAddr = cfg.miningAddrs[r.Intn(len(cfg.miningAddrs))]
 		}
 
 		// Create a new block template that has a coinbase which anyone
@@ -2291,17 +2375,41 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	return ret, nil
 }
 
+func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	best := s.cfg.Chain.BestSnapshot()
+	block, err := s.cfg.Chain.BlockByHash(&best.Hash)
+	if err != nil {
+		return nil, err
+	}
+	txs := block.Transactions()
+	if len(txs) <= 0 {
+		return nil, errors.New("Transactions is nil")
+	}
+	txPkScript := txs[0].MsgTx().TxOut[3].PkScript
+
+	keepedAmount, err := cross.KeepedAmountFromScript(txPkScript)
+
+	infos := make([]*btcjson.EntangleInfoChainResult, 0)
+	for _, item := range keepedAmount.Items {
+		info := &btcjson.EntangleInfoChainResult{}
+		switch item.ExTxType {
+		case cross.ExpandedTxEntangle_Doge:
+			info.ExTxType = "doge"
+		case cross.ExpandedTxEntangle_Ltc:
+			info.ExTxType = "ltc"
+		}
+		info.Amount = item.Amount.Int64()
+		infos = append(infos, info)
+	}
+	return infos, nil
+}
+
 func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
 	blockTemplate := s.gbtWorkState.template
 
-	if blockTemplate == nil || blockTemplate.Height-s.cfg.Chain.BestSnapshot().Height < 1 || !s.gbtWorkState.prevHash.IsEqual(&s.cfg.Chain.BestSnapshot().Hash) {
-		if err := s.gbtWorkState.updateBlockTemplate(s, false); err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCDatabase,
-				Message: "Data in sync",
-			}
-		}
+	if blockTemplate == nil || (s.cfg.Chain.BestSnapshot().Hash == blockTemplate.Block.BlockHash() && s.cfg.Chain.BestSnapshot().Height == blockTemplate.Height) {
+		s.gbtWorkState.updateBlockTemplate(s, false)
 		blockTemplate = s.gbtWorkState.template
 	}
 
@@ -3702,6 +3810,7 @@ func handleSubmitBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 // handleSubmitBlock implements the submitblock command.
 func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.SubmitWorkCmd)
+
 	template := s.gbtWorkState.template
 	if template == nil || template.Block.Header.BlockHashNoNonce().String() != c.Hash {
 		return nil, &btcjson.RPCError{
@@ -3729,15 +3838,15 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	// nodes.  This will in turn relay it to the network like normal.
 	_, err := s.cfg.SyncMgr.SubmitBlock(block, blockchain.BFNone)
 	if err != nil {
-		return fmt.Sprintf("rejected: 1 %s", err.Error()), nil
+		return fmt.Sprintf("rejected: %s", err.Error()), nil
 	}
 
-	err = s.gbtWorkState.updateBlockTemplate(s, false)
-	if err != nil {
-		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
-	}
+	//err = s.gbtWorkState.updateBlockTemplate(s, false)
+	//if err != nil {
+	//	return fmt.Sprintf("rejected: %s", err.Error()), nil
+	//}
 	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash())
-	return true, nil
+	return nil, nil
 }
 
 // handleUptime implements the uptime command.
@@ -3789,7 +3898,8 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
-			err = blockchain.CheckBlockSanity(s.cfg.Chain, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive)
+			err := blockchain.CheckBlockSanity(block,
+				s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive)
 			if err != nil {
 				rpcsLog.Errorf("Verify is unable to validate "+
 					"block at hash %v height %d: %v",

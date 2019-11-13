@@ -10,6 +10,7 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/classzz/classzz/cross"
+	"github.com/classzz/classzz/rpcclient"
 	"math"
 	"sync"
 	"time"
@@ -2188,7 +2189,22 @@ type Config struct {
 	// the UTXO set in fast sync mode.
 	Proxy string
 
+	//
 	DogeCoinRPC []string
+
+	//
+	DogeCoinRPCUser string
+
+	//
+	DogeCoinRPCPass string
+
+	LtcCoinRPC []string
+
+	//
+	LtcCoinRPCUser string
+
+	//
+	LtcCoinRPCPass string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2225,8 +2241,60 @@ func New(config *Config) (*BlockChain, error) {
 		}
 	}
 
+	var dogeclients []*rpcclient.Client
+
+	for _, dogerpc := range config.DogeCoinRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		connCfg := &rpcclient.ConnConfig{
+			Host:         dogerpc,
+			Endpoint:     "ws",
+			User:         config.DogeCoinRPCUser,
+			Pass:         config.DogeCoinRPCPass,
+			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		}
+
+		// Notice the notification parameter is nil since notifications are
+		// not supported in HTTP POST mode.
+		client, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		dogeclients = append(dogeclients, client)
+	}
+
+	var ltcclients []*rpcclient.Client
+
+	for _, ltcrpc := range config.LtcCoinRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		connCfg := &rpcclient.ConnConfig{
+			Host:         ltcrpc,
+			Endpoint:     "ws",
+			User:         config.LtcCoinRPCUser,
+			Pass:         config.LtcCoinRPCPass,
+			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		}
+
+		// Notice the notification parameter is nil since notifications are
+		// not supported in HTTP POST mode.
+		client, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcclients = append(ltcclients, client)
+	}
+
+	cacheEntangleInfo := &cross.CacheEntangleInfo{
+		DB: config.DB,
+	}
+
 	entangleVerify := &cross.EntangleVerify{
-		DogeCoinRPC: config.DogeCoinRPC,
+		DogeCoinRPC: dogeclients,
+		LtcCoinRPC:  ltcclients,
+		Cache:       cacheEntangleInfo,
 	}
 
 	params := config.ChainParams

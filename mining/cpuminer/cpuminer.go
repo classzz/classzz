@@ -39,7 +39,7 @@ const (
 	// while they are actively searching for a solution.  This is done to
 	// reduce the amount of syncs between the workers that must be done to
 	// keep track of the hashes per second.
-	hashUpdateSecs = 60
+	hashUpdateSecs = 2
 )
 
 var (
@@ -423,8 +423,7 @@ out:
 		template, err := m.g.NewBlockTemplate(payToAddr)
 		m.submitBlockLock.Unlock()
 		if err != nil {
-			errStr := fmt.Sprintf("Failed to create new block "+
-				"template: %v", err)
+			errStr := fmt.Sprintf("Failed to create new block template: %v", err)
 			log.Errorf(errStr)
 			continue
 		}
@@ -453,7 +452,7 @@ func (m *CPUMiner) miningWorkerController() {
 	// workers for generating blocks.
 	var runningWorkers []chan struct{}
 	launchWorkers := func(numWorkers uint32) {
-		for i := uint32(0); i < numWorkers; i++ {
+		for i := uint32(0); i < 1; i++ {
 			quit := make(chan struct{})
 			runningWorkers = append(runningWorkers, quit)
 

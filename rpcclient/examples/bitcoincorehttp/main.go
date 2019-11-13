@@ -35,4 +35,8 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("Block count: %d", blockCount)
+
+	accounts, err := client.ListAccounts()
+	log.Printf("Block accounts: %d", accounts)
+
 }

@@ -6,12 +6,13 @@ package blockchain
 
 import (
 	"container/list"
-	"fmt"
-	"github.com/classzz/classzz/txscript"
-	"sync"
 	"errors"
+	"fmt"
+	"sync"
+
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
@@ -54,6 +55,7 @@ const (
 	// know we do not need to commit them.  It is always safe to not mark
 	// tfFresh if that condition is not guaranteed.
 	tfFresh
+	tfPool
 )
 
 // UtxoEntry houses details about an individual transaction output in a utxo
@@ -83,6 +85,10 @@ type UtxoEntry struct {
 // transaction.
 func (entry *UtxoEntry) IsCoinBase() bool {
 	return entry.packedFlags&tfCoinBase == tfCoinBase
+}
+
+func (entry *UtxoEntry) IsPool() bool {
+	return entry.packedFlags&tfPool == tfPool
 }
 
 // IsSpent returns whether or not the output has been spent based upon the
@@ -870,14 +876,18 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	if block.Height() != height {
 		return nil, errors.New("the height not match")
 	}
-	tx, err1 := block.Tx(0)
-	if err1 != nil {
-		return nil, err1
+	tx, err := block.Tx(0)
+	if err != nil {
+		return nil, err
 	}
-	if len(tx.MsgTx().TxIn) != 3 {
+
+	if b.chainParams.EntangleHeight > height+1 || (len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight > height+1) {
 		return nil, nil
 	}
-	outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
+	//tx.MsgTx().TxOut[1].PkScript
+	outs := []*wire.OutPoint{wire.NewOutPoint(tx.Hash(), 1), wire.NewOutPoint(tx.Hash(), 2)}
+	//outs := []*wire.OutPoint{wire.NewOutPoint(,1),wire.NewOutPoint(hash,2)}
+	//outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
 	return b.utxoCache.FetchPoolAddrView(outs)

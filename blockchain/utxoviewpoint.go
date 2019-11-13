@@ -63,7 +63,7 @@ func (view *UtxoViewpoint) spendEntry(outpoint wire.OutPoint, putIfNil *UtxoEntr
 // unspendable.  When the view already has an entry for the output, it will be
 // marked unspent.  All fields will be updated for existing entries since it's
 // possible it has changed during a reorg.
-func (view *UtxoViewpoint) addTxOut(outpoint wire.OutPoint, txOut *wire.TxOut, isCoinBase bool, blockHeight int32) {
+func (view *UtxoViewpoint) addTxOut(outpoint wire.OutPoint, txOut *wire.TxOut, isCoinBase, ispool bool, blockHeight int32) {
 	// Don't add provably unspendable outputs.
 	if txscript.IsUnspendable(txOut.PkScript) {
 		return
@@ -84,6 +84,9 @@ func (view *UtxoViewpoint) addTxOut(outpoint wire.OutPoint, txOut *wire.TxOut, i
 	entry.blockHeight = blockHeight
 	entry.packedFlags = tfModified
 	if isCoinBase {
+		if ispool {
+			entry.packedFlags |= tfPool
+		}
 		entry.packedFlags |= tfCoinBase
 	}
 }
@@ -104,7 +107,8 @@ func (view *UtxoViewpoint) AddTxOut(tx *czzutil.Tx, txOutIdx uint32, blockHeight
 	// is allowed so long as the previous transaction is fully spent.
 	prevOut := wire.OutPoint{Hash: *tx.Hash(), Index: txOutIdx}
 	txOut := tx.MsgTx().TxOut[txOutIdx]
-	view.addTxOut(prevOut, txOut, IsCoinBase(tx), blockHeight)
+	ispool := txOutIdx > 0
+	view.addTxOut(prevOut, txOut, IsCoinBase(tx), ispool, blockHeight)
 }
 
 // AddTxOuts adds all outputs in the passed transaction which are not provably
@@ -123,7 +127,8 @@ func (view *UtxoViewpoint) AddTxOuts(tx *czzutil.Tx, blockHeight int32) {
 		// same hash.  This is allowed so long as the previous
 		// transaction is fully spent.
 		prevOut.Index = uint32(txOutIdx)
-		view.addTxOut(prevOut, txOut, isCoinBase, blockHeight)
+		ispool := prevOut.Index > 0
+		view.addTxOut(prevOut, txOut, isCoinBase, ispool, blockHeight)
 	}
 }
 
@@ -143,8 +148,11 @@ func (view *UtxoViewpoint) addInputUtxos(source utxoView, block *czzutil.Block) 
 
 	// Loop through all of the transaction inputs (except for the coinbase
 	// which has no inputs).
-	for i, tx := range block.Transactions()[1:] {
-		for _, txIn := range tx.MsgTx().TxIn {
+	for i, tx := range block.Transactions() {
+		for index, txIn := range tx.MsgTx().TxIn {
+			if index == 0 && i == 0 {
+				continue
+			}
 			originHash := &txIn.PreviousOutPoint.Hash
 			if inFlightIndex, ok := txInFlight[*originHash]; ok &&
 				(i >= inFlightIndex) {
@@ -178,6 +186,9 @@ func addTxOuts(view utxoView, tx *czzutil.Tx, blockHeight int32, overwrite bool)
 		if txscript.IsUnspendable(txOut.PkScript) {
 			continue
 		}
+		if txscript.IsEntangleTy(txOut.PkScript) {
+			continue
+		}
 
 		// Create a new entry from the output.
 		entry := &UtxoEntry{
@@ -187,6 +198,9 @@ func addTxOuts(view utxoView, tx *czzutil.Tx, blockHeight int32, overwrite bool)
 			packedFlags: tfModified,
 		}
 		if isCoinBase {
+			if txOutIdx > 0 {
+				entry.packedFlags |= tfPool
+			}
 			entry.packedFlags |= tfCoinBase
 		}
 		if !overwrite {
