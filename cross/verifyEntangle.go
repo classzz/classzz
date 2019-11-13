@@ -91,9 +91,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	client := ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 
 	// Get the current block count.
-	fmt.Println("tran: ", string(ExtTxHash))
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
-
 		return nil, err
 	} else {
 		if len(tx.MsgTx().TxOut) < int(Vout) {
@@ -104,7 +102,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, errors.New(e)
 		}
 		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
-			e := fmt.Sprintf("doge PkScript err ")
+			e := fmt.Sprintf("doge PkScript err")
 			return nil, errors.New(e)
 		}
 
@@ -127,7 +125,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 					//return nil, pk.Script()[3:23]
 					return pk, nil
 				} else {
-					e := fmt.Sprintf("dogeMaturity err ")
+					e := fmt.Sprintf("dogeMaturity err")
 					return nil, errors.New(e)
 				}
 			}
@@ -142,9 +140,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
 
 	// Get the current block count.
-	fmt.Println("tran: ", string(ExtTxHash))
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
-
 		return nil, err
 	} else {
 		if len(tx.MsgTx().TxOut) < int(Vout) {
@@ -155,7 +151,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 			return nil, errors.New(e)
 		}
 		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
-			e := fmt.Sprintf("doge PkScript err ")
+			e := fmt.Sprintf("doge PkScript err")
 			return nil, errors.New(e)
 		}
 
@@ -178,7 +174,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 					//return nil, pk.Script()[3:23]
 					return pk, nil
 				} else {
-					e := fmt.Sprintf("dogeMaturity err ")
+					e := fmt.Sprintf("dogeMaturity err")
 					return nil, errors.New(e)
 				}
 			}
