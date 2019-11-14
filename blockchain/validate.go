@@ -391,20 +391,16 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	}
 	return nil
 }
-func (b *BlockChain) CheckTxSequence(block *czzutil.Block) error {
-	txs := block.Transactions()
-	fees := make([]int64, 0)
-	blockUtxos := NewUtxoViewpoint()
-	for _, tx := range txs {
-		fee, err := CheckTransactionInputs(tx, block.Height(), blockUtxos, b.chainParams)
-		fmt.Println("CheckTransactionInputs", err)
-		if err != nil {
-			return err
-		}
-		FeePerKB := fee * 1000 / int64(tx.MsgTx().SerializeSize())
-		fees = append(fees, FeePerKB)
+func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
+	height := block.Height()
+	if chainParams.EntangleHeight >= height {
+		return nil
 	}
-	return cross.VerifyTxsSequence(txs, fees)
+	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
+	if err != nil {
+		return err
+	}
+	return cross.VerifyTxsSequence(infos)
 }
 
 // checkProofOfWork ensures the block header bits which indicate the target
@@ -1272,7 +1268,9 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		// 	}
 		// }
 	}
-
+	if err := checkTxSequence(block, view, b.chainParams); err != nil {
+		return err
+	}
 	// we can use Outputs-then-inputs validation to validate the utxos.
 	err = connectTransactions(view, block, stxos, false)
 	if err != nil {

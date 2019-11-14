@@ -200,11 +200,8 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, true, nil
 	}
 	fmt.Println("b.chainParams.EntangleHeight < block.Height()", b.chainParams.EntangleHeight > block.Height())
-	if b.chainParams.EntangleHeight > block.Height() {
+	if b.chainParams.EntangleHeight < block.Height() {
 		if err := b.CheckBlockEntangle(block); err != nil {
-			return false, false, err
-		}
-		if err := b.CheckTxSequence(block); err != nil {
 			return false, false, err
 		}
 	}
