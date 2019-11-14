@@ -393,9 +393,16 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	}
 	return nil
 }
-func (b *BlockChain) CheckTxSequence(block *czzutil.Block) error {
-	txs := block.Transactions()
-	return cross.VerifyTxsSequence(txs)
+func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
+	height := block.Height()
+	if chainParams.EntangleHeight >= height {
+		return nil
+	}
+	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
+	if err != nil {
+		return err
+	}
+	return cross.VerifyTxsSequence(infos)
 }
 
 // checkProofOfWork ensures the block header bits which indicate the target
@@ -1275,7 +1282,9 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		// 	}
 		// }
 	}
-
+	if err := checkTxSequence(block, view, b.chainParams); err != nil {
+		return err
+	}
 	// we can use Outputs-then-inputs validation to validate the utxos.
 	err = connectTransactions(view, block, stxos, false)
 	if err != nil {
@@ -1561,4 +1570,68 @@ func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params)
 			class, reqSigs, addrs))
 	}
 	return nil
+}
+func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
+	if isCoinBaseInParam(tx, chainParams) {
+		return 0, nil
+	}
+	txHash := tx.Hash()
+	var totalSatoshiIn int64
+	for txInIndex, txIn := range tx.MsgTx().TxIn {
+		// Ensure the referenced input transaction is available.
+		utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
+		if utxo == nil {
+			str := fmt.Sprintf("output %v referenced from "+
+				"transaction %s:%d does not exist", txIn.PreviousOutPoint,
+				tx.Hash(), txInIndex)
+			return 0, ruleError(ErrMissingTxOut, str)
+		}
+		originTxSatoshi := utxo.Amount()
+		if originTxSatoshi < 0 {
+			str := fmt.Sprintf("transaction output has negative "+
+				"value of %v", czzutil.Amount(originTxSatoshi))
+			return 0, ruleError(ErrBadTxOutValue, str)
+		}
+		totalSatoshiIn += originTxSatoshi
+	}
+
+	// Calculate the total output amount for this transaction.  It is safe
+	// to ignore overflow and out of range errors here because those error
+	// conditions would have already been caught by checkTransactionSanity.
+	var totalSatoshiOut int64
+	for _, txOut := range tx.MsgTx().TxOut {
+		totalSatoshiOut += txOut.Value
+	}
+
+	// Ensure the transaction does not spend more than its inputs.
+	if totalSatoshiIn < totalSatoshiOut {
+		str := fmt.Sprintf("total value of all transaction inputs for "+
+			"transaction %v is %v which is less than the amount "+
+			"spent of %v", txHash, totalSatoshiIn, totalSatoshiOut)
+		return 0, ruleError(ErrSpendTooHigh, str)
+	}
+
+	// NOTE: bitcoind checks if the transaction fees are < 0 here, but that
+	// is an impossible condition because of the check above that ensures
+	// the inputs are >= the outputs.
+	txFeeInSatoshi := totalSatoshiIn - totalSatoshiOut
+	return txFeeInSatoshi, nil
+}
+func getEtsInfoInBlock(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) ([]*cross.EtsInfo, error) {
+
+	txs := block.Transactions()
+	infos := make([]*cross.EtsInfo, 0)
+	height := block.Height()
+	for _, tx := range txs {
+		fee, err := getFee(tx, height, utxoView, chainParams)
+		if err != nil {
+			return nil, err
+		}
+		etsInfo := &cross.EtsInfo{
+			FeePerKB: fee * 1000 / int64(tx.MsgTx().SerializeSize()),
+			Tx:       tx.MsgTx(),
+		}
+		infos = append(infos, etsInfo)
+	}
+	return infos, nil
 }

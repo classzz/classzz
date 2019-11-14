@@ -227,7 +227,7 @@ func checkEntangleTx(tx *czzutil.Tx) error {
 func CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
-		err, items := cross.IsEntangleTx(tx.MsgTx())
+		items, err := cross.IsEntangleTx(tx.MsgTx())
 		if err == nil {
 			max := int64(0)
 			for _, ii := range items {
@@ -247,8 +247,9 @@ func CheckBlockEntangle(block *czzutil.Block) error {
 	return nil
 }
 func CheckTxSequence(block *czzutil.Block) error {
-	txs := block.Transactions()
-	return cross.VerifyTxsSequence(txs)
+	// txs := block.Transactions()
+	// return cross.VerifyTxsSequence(txs)
+	return nil
 }
 func verifyBlock(block *czzutil.Block) error {
 	chainParams := chaincfg.MainNetParams
