@@ -1557,7 +1557,7 @@ func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params)
 	}
 	return nil
 }
-func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64,error) {
+func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
 	if isCoinBaseInParam(tx, chainParams) {
 		return 0, nil
 	}
@@ -1603,18 +1603,21 @@ func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams
 	txFeeInSatoshi := totalSatoshiIn - totalSatoshiOut
 	return txFeeInSatoshi, nil
 }
-func getEtsInfoInBlock(block *czzutil.Block,utxoView *UtxoViewpoint, chainParams *chaincfg.Params) ([]*cross.EtsInfo,error) {
-	
+func getEtsInfoInBlock(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) ([]*cross.EtsInfo, error) {
+
 	txs := block.Transactions()
-	infos := make([]*cross.EtsInfo,0,len(txs))
+	infos := make([]*cross.EtsInfo, 0)
 	height := block.Height()
-	for i,tx := range txs {
-		fee,err := getFee(tx,height,utxoView,chainParams)
+	for _, tx := range txs {
+		fee, err := getFee(tx, height, utxoView, chainParams)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
-		infos[i].FeePerKB = fee * 1000 / int64(tx.MsgTx().SerializeSize())
-		infos[i].Tx = tx.MsgTx()
+		etsInfo := &cross.EtsInfo{
+			FeePerKB: fee * 1000 / int64(tx.MsgTx().SerializeSize()),
+			Tx:       tx.MsgTx(),
+		}
+		infos = append(infos, etsInfo)
 	}
-	return infos,nil
+	return infos, nil
 }
