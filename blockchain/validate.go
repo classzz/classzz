@@ -1296,14 +1296,17 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		return ruleError(ErrBadCoinbaseValue, str)
 	}
 	preHash := block.MsgBlock().Header.PrevBlock
-	if preblock, err := b.BlockByHash(&preHash); err != nil {
-		str := fmt.Sprintf("cann't get preblock %v,current height: %d,err:%s",
-			preblock, node.height, err.Error())
-		return ruleError(ErrPrevBlockNotBest, str)
-	} else {
-		if err := checkBlockSubsidy(block, preblock, node.height, view,
-			amountSubsidy, b.chainParams); err != nil {
-			return err
+	preHeight := node.height - 1
+	if preHeight > 0 {
+		if preblock, err := b.blockByHashAndHeight(&preHash, preHeight); err != nil {
+			str := fmt.Sprintf("cann't get preblock %v,current height: %d,err:%s",
+				preblock, node.height, err.Error())
+			return ruleError(ErrPrevBlockNotBest, str)
+		} else {
+			if err := checkBlockSubsidy(block, preblock, node.height, view,
+				amountSubsidy, b.chainParams); err != nil {
+				return err
+			}
 		}
 	}
 
