@@ -372,21 +372,22 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
-		einfos, err := cross.IsEntangleTx(tx.MsgTx())
-		if err == nil {
-			max := int64(0)
-			for _, ii := range einfos {
-				if max < int64(ii.Height) {
-					max = int64(ii.Height)
-				}
+		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+		if einfos == nil {
+			continue
+		}
+		max := int64(0)
+		for _, ii := range einfos {
+			if max < int64(ii.Height) {
+				max = int64(ii.Height)
 			}
-			if curHeight > max {
-				return errors.New("unordered entangle tx in the block")
-			}
-			err := b.checkEntangleTx(tx)
-			if err != nil {
-				return err
-			}
+		}
+		if curHeight > max {
+			return errors.New("unordered entangle tx in the block")
+		}
+		err := b.checkEntangleTx(tx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1502,8 +1503,8 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			einfos, err := cross.IsEntangleTx(tx.MsgTx())
-			if err == nil {
+			einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+			if einfos != nil {
 				handleSummayEntangle(summay, keepInfo, einfos)
 			}
 			for _, txout := range tx.MsgTx().TxOut {

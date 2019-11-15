@@ -66,7 +66,6 @@ func makeDatasetHash(dataset []uint64) []byte {
 	sha256(output, datas[:])
 	return output
 }
-
 func MineBlock(conf *MiningParam) (uint64, bool) {
 	var (
 		nonce = conf.Begin
@@ -74,7 +73,7 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 	)
 
 	rand.Seed(time.Now().Unix())
-	index := rand.Int63n(5)
+	index := rand.Int63n(10)
 	index = index + 2
 	for i := index; i > 0; i-- {
 		time.Sleep(1 * time.Second)
@@ -84,5 +83,6 @@ func MineBlock(conf *MiningParam) (uint64, bool) {
 
 }
 func VerifyBlockSeal(Info *CzzConsensusParam, nonce uint64) error {
+	time.Sleep(1 * time.Second)
 	return nil
 }
