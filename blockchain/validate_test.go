@@ -247,7 +247,7 @@ func TestSigOpsLimitsWithMultiMBBlocks(t *testing.T) {
 	// Since we're not dealing with the real block chain, set the coinbase
 	// maturity to 1.
 	chain.TstSetCoinbaseMaturity(1)
-	chain.excessiveBlockSize = 32000000
+	chain.excessiveBlockSize = 8000000
 
 	// Load up blocks such that there is a side chain.
 	// (genesis block) -> 1 -> 2 -> 3 -> 4

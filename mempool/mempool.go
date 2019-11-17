@@ -485,8 +485,16 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 		for _, txIn := range txDesc.Tx.MsgTx().TxIn {
 			delete(mp.outpoints, txIn.PreviousOutPoint)
 		}
+
 		delete(mp.pool, *txHash)
-		delete(mp.entanglepool, txHash.String())
+
+		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+		for _, v := range einfos {
+			ExTxType := byte(v.ExTxType)
+			key := append(v.ExtTxHash, ExTxType)
+			delete(mp.entanglepool, string(key))
+		}
+
 		atomic.StoreInt64(&mp.lastUpdated, time.Now().Unix())
 	}
 }
@@ -532,6 +540,7 @@ func (mp *TxPool) RemoveDoubleSpends(tx *czzutil.Tx) {
 func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil.Tx, height int32, fee int64) *TxDesc {
 	// Add the transaction to the pool and mark the referenced outpoints
 	// as spent by the pool.
+
 	txD := &TxDesc{
 		TxDesc: mining.TxDesc{
 			Tx:       tx,
@@ -546,9 +555,7 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 	mp.pool[*tx.Hash()] = txD
 
 	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-
 	for _, v := range einfos {
-
 		ExTxType := byte(v.ExTxType)
 		key := append(v.ExtTxHash, ExTxType)
 		mp.entanglepool[string(key)] = txD
@@ -569,7 +576,6 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 	if mp.cfg.FeeEstimator != nil {
 		mp.cfg.FeeEstimator.ObserveTransaction(txD)
 	}
-
 	return txD
 }
 
@@ -647,29 +653,25 @@ func (mp *TxPool) fetchInputUtxos(tx *czzutil.Tx) (*blockchain.UtxoViewpoint, er
 	return utxoView, nil
 }
 
-func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (bool, error) {
+func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (map[uint32]*cross.EntangleTxInfo, error) {
 
-	einfos, err := cross.IsEntangleTx(tx.MsgTx())
-	if err != nil {
-		return true, errors.New("not entangle tx")
-	}
+	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+	if einfos != nil {
+		for _, v := range einfos {
+			ExTxType := byte(v.ExTxType)
+			key := append(v.ExtTxHash, ExTxType)
 
-	for _, v := range einfos {
-		ExTxType := byte(v.ExTxType)
-		key := append(v.ExtTxHash, ExTxType)
-
-		if _, exists := mp.entanglepool[string(key)]; exists {
-			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
-			return true, errors.New("txid has already entangle:" + errStr)
-		}
-
-		if ok := mp.cfg.FetchEntangleUtxoView(v); ok {
-			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
-			return true, errors.New("txid has already entangle:" + errStr)
+			if _, exists := mp.entanglepool[string(key)]; exists {
+				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+				return einfos, errors.New("txid has already entangle:" + errStr)
+			}
+			if ok := mp.cfg.FetchEntangleUtxoView(v); ok {
+				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+				return einfos, errors.New("txid has already entangle:" + errStr)
+			}
 		}
 	}
-
-	return false, nil
+	return einfos, nil
 }
 
 // FetchTransaction returns the requested transaction from the transaction pool.
@@ -808,27 +810,20 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	einfos, err := cross.IsEntangleTx(tx.MsgTx())
-
+	einfo, err := mp.fetchEntangleUtxos(tx)
 	if err != nil {
-		return nil, nil, errors.New("not entangle tx")
+		return nil, nil, err
 	}
 
-	if len(einfos) > 0 {
+	if einfo != nil {
+
 		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
 			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
 		}
 
-	}
-
-	_, err = mp.fetchEntangleUtxos(tx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	_, err = mp.cfg.EntangleVerify.VerifyEntangleTx(tx.MsgTx())
-	if err != nil {
-		return nil, nil, err
+		if _, err = mp.cfg.EntangleVerify.VerifyEntangleTx(tx.MsgTx()); err != nil {
+			return nil, nil, err
+		}
 	}
 	// Don't allow the transaction if it exists in the main chain and is not
 	// not already fully spent.

@@ -1596,3 +1596,23 @@ func (b *BlockChain) BlockByHash(hash *chainhash.Hash) (*czzutil.Block, error) {
 	})
 	return block, err
 }
+
+func (b *BlockChain) blockByHashAndHeight(hash *chainhash.Hash, height int32) (*czzutil.Block, error) {
+	node := &blockNode{
+		hash:   *hash,
+		height: height,
+	}
+	// Load the block from the database and return it.
+	var block *czzutil.Block
+	err := b.db.View(func(dbTx database.Tx) error {
+		var err error
+		var exists bool
+		exists, err = dbTx.HasBlock(hash)
+		if err != nil || !exists {
+			return err
+		}
+		block, err = dbFetchBlockByNode(dbTx, node)
+		return err
+	})
+	return block, err
+}

@@ -35,8 +35,8 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 		3. check the correct tx
 		4. check the pool reserve enough reward
 	*/
-	einfos, ok := IsEntangleTx(tx)
-	if ok != nil {
+	einfos, _ := IsEntangleTx(tx)
+	if einfos == nil {
 		return nil, errors.New("not entangle tx")
 	}
 	pairs := make([]*TuplePubIndex, 0)

@@ -1332,3 +1332,34 @@ func (c *Client) Connect(tries int) error {
 	// All connection attempts failed, so return the last error.
 	return err
 }
+
+func HttpClientTest(config *ConnConfig) error {
+	var res string = "do nothing"
+	if config.HTTPPostMode {
+		res = "http test"
+		httpClient, err := newHTTPClient(config)
+		if err != nil {
+			return fmt.Errorf("%s:%v", res, err)
+		}
+		protocol := "http"
+		if !config.DisableTLS {
+			protocol = "https"
+		}
+		url := protocol + "://" + config.Host
+		httpReq, err1 := http.NewRequest("GET", url, nil)
+		if err1 != nil {
+			return fmt.Errorf("%s:[url:%s][err:%v]", res, url, err1)
+		}
+		httpReq.Close = true
+		httpReq.Header.Set("Content-Type", "application/json")
+		// Configure basic access authorization.
+		httpReq.SetBasicAuth(config.User, config.Pass)
+
+		rep, err2 := httpClient.Do(httpReq)
+		if err2 != nil {
+			return fmt.Errorf("%s:[failed][err:%v]", res, err2)
+		}
+		return fmt.Errorf("%s:[successed][url:%s][response:%v]", res, url, rep)
+	}
+	return fmt.Errorf("%s", res)
+}

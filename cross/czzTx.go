@@ -253,7 +253,6 @@ func SignEntangleTx(tx *wire.MsgTx, inputAmount []czzutil.Amount,
 
 func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	// make sure at least one txout in OUTPUT
-
 	einfos := make(map[uint32]*EntangleTxInfo)
 	for i, v := range tx.TxOut {
 		info, err := EntangleTxFromScript(v.PkScript)
@@ -269,6 +268,7 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	}
 	return nil, NoEntangle
 }
+
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -295,8 +295,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	}
 	pre, pos := uint64(0), 0
 	for i, v := range infos {
-		einfos, err := IsEntangleTx(v.Tx)
-		if err == nil {
+		einfos, _ := IsEntangleTx(v.Tx)
+		if einfos != nil {
 			h := GetMaxHeight(einfos)
 			if pre > h && infos[pos].FeePerKB <= infos[i].FeePerKB {
 				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v,f=%v][i=%d,h=%v,f=%v]",
@@ -577,8 +577,8 @@ type TmpAddressPair struct {
 func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*EntangleItem {
 	items := make([]*EntangleItem, 0)
 	for _, v := range txs {
-		einfos, err := IsEntangleTx(v.MsgTx())
-		if err == nil {
+		einfos, _ := IsEntangleTx(v.MsgTx())
+		if einfos != nil {
 			for i, out := range einfos {
 				item := &EntangleItem{
 					EType: out.ExTxType,
@@ -602,8 +602,8 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 
 func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
-	_, err := IsEntangleTx(tx.MsgTx())
-	if err == nil {
+	einfo, _ := IsEntangleTx(tx.MsgTx())
+	if einfo != nil {
 		// verify the entangle tx
 
 		pairs := make([]*TmpAddressPair, 0)

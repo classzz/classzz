@@ -172,9 +172,9 @@ func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
 	// Using > here so that pop gives the highest fee item as opposed
 	// to the lowest.  Sort by fee first, then priority.
 	if pq.items[i].feePerKB == pq.items[j].feePerKB {
-		einfos1, err1 := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
-		einfos2, err2 := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
-		if err1 == nil && err2 == nil {
+		einfos1, _ := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
+		einfos2, _ := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
+		if einfos1 != nil && einfos2 != nil {
 			return cross.GetMaxHeight(einfos1) < cross.GetMaxHeight(einfos2)
 		}
 		return pq.items[i].priority > pq.items[j].priority
@@ -192,7 +192,7 @@ func newTxPriorityQueue(reserve int, sortByFee bool) *txPriorityQueue {
 	pq := &txPriorityQueue{
 		items: make([]*txPrioItem, 0, reserve),
 	}
-	fmt.Println("sortByFee", sortByFee)
+	//fmt.Println("sortByFee", sortByFee)
 	if sortByFee {
 		pq.SetLessFunc(txPQByFeeAndHeight)
 	} else {
@@ -745,7 +745,7 @@ mempoolLoop:
 		if blockPlusTxSize < txSize ||
 			blockPlusTxSize >= g.policy.BlockMaxSize {
 
-			log.Tracef("Skipping tx %s because it would exceed "+
+			log.Debugf("Skipping tx %s because it would exceed "+
 				"the max block size", tx.Hash())
 			logSkippedDeps(tx, deps)
 			continue
@@ -757,14 +757,14 @@ mempoolLoop:
 			blockUtxos, scriptFlags)
 		maxSigOps = blockchain.MaxBlockSigOps(blockPlusTxSize)
 		if err != nil {
-			log.Tracef("Skipping tx %s due to error in "+
+			log.Debugf("Skipping tx %s due to error in "+
 				"GetSigOpCost: %v", tx.Hash(), err)
 			logSkippedDeps(tx, deps)
 			continue
 		}
 		if blockSigOps+int64(sigOps) < blockSigOps ||
 			blockSigOps+int64(sigOps) > int64(maxSigOps) {
-			log.Tracef("Skipping tx %s because it would "+
+			log.Debugf("Skipping tx %s because it would "+
 				"exceed the maximum sigops per block", tx.Hash())
 			logSkippedDeps(tx, deps)
 			continue
@@ -776,7 +776,7 @@ mempoolLoop:
 			prioItem.feePerKB < int64(g.policy.TxMinFreeFee) &&
 			blockPlusTxSize >= g.policy.BlockMinSize {
 
-			log.Tracef("Skipping tx %s with feePerKB %d "+
+			log.Debugf("Skipping tx %s with feePerKB %d "+
 				"< TxMinFreeFee %d and block size %d >= "+
 				"minBlockSize %d", tx.Hash(), prioItem.feePerKB,
 				g.policy.TxMinFreeFee, blockPlusTxSize,
@@ -825,9 +825,10 @@ mempoolLoop:
 			continue
 		}
 		isEntangleTx := false
-		if _, err := cross.IsEntangleTx(tx.MsgTx()); err == nil {
+		if einfo, _ := cross.IsEntangleTx(tx.MsgTx()); einfo != nil {
 			isEntangleTx = true
 		}
+
 		if isOver && isEntangleTx {
 			continue
 		}

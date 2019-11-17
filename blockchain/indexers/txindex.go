@@ -185,9 +185,9 @@ func dbPutTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash, serializedData 
 
 func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
-	einfos, err := cross.IsEntangleTx(tx.MsgTx())
-	if err != nil && err != cross.NoEntangle {
-		return err
+	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+	if einfos == nil {
+		return nil
 	}
 	for _, v := range einfos {
 		ExTxType := byte(v.ExTxType)
@@ -203,9 +203,9 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 // recent transaction index entry for the given hash.
 func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
-	einfos, err := cross.IsEntangleTx(tx.MsgTx())
-	if err != nil && err != cross.NoEntangle {
-		return err
+	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+	if einfos == nil {
+		return nil
 	}
 	for _, v := range einfos {
 		ExTxType := byte(v.ExTxType)

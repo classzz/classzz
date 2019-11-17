@@ -374,21 +374,22 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
-		einfos, err := cross.IsEntangleTx(tx.MsgTx())
-		if err == nil {
-			max := int64(0)
-			for _, ii := range einfos {
-				if max < int64(ii.Height) {
-					max = int64(ii.Height)
-				}
+		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+		if einfos == nil {
+			continue
+		}
+		max := int64(0)
+		for _, ii := range einfos {
+			if max < int64(ii.Height) {
+				max = int64(ii.Height)
 			}
-			if curHeight > max {
-				return errors.New("unordered entangle tx in the block")
-			}
-			err := b.checkEntangleTx(tx)
-			if err != nil {
-				return err
-			}
+		}
+		if curHeight > max {
+			return errors.New("unordered entangle tx in the block")
+		}
+		err := b.checkEntangleTx(tx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1310,14 +1311,17 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		return ruleError(ErrBadCoinbaseValue, str)
 	}
 	preHash := block.MsgBlock().Header.PrevBlock
-	if preblock, err := b.BlockByHash(&preHash); err != nil {
-		str := fmt.Sprintf("cann't get preblock %v,current height: %d,err:%s",
-			preblock, node.height, err.Error())
-		return ruleError(ErrPrevBlockNotBest, str)
-	} else {
-		if err := checkBlockSubsidy(block, preblock, node.height, view,
-			amountSubsidy, b.chainParams); err != nil {
-			return err
+	preHeight := node.height - 1
+	if preHeight > 0 {
+		if preblock, err := b.blockByHashAndHeight(&preHash, preHeight); err != nil {
+			str := fmt.Sprintf("cann't get preblock %v,current height: %d,err:%s",
+				preblock, node.height, err.Error())
+			return ruleError(ErrPrevBlockNotBest, str)
+		} else {
+			if err := checkBlockSubsidy(block, preblock, node.height, view,
+				amountSubsidy, b.chainParams); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1513,8 +1517,8 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			einfos, err := cross.IsEntangleTx(tx.MsgTx())
-			if err == nil {
+			einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+			if einfos != nil {
 				handleSummayEntangle(summay, keepInfo, einfos)
 			}
 			for _, txout := range tx.MsgTx().TxOut {
