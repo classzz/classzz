@@ -52,9 +52,9 @@ const (
 	defaultDbType                  = "ffldb"
 	defaultFreeTxRelayLimit        = 15.0
 	defaultTrickleInterval         = peer.DefaultTrickleInterval
-	defaultExcessiveBlockSize      = 32000000
+	defaultExcessiveBlockSize      = 8000000
 	defaultBlockMinSize            = 0
-	defaultBlockMaxSize            = 750000
+	defaultBlockMaxSize            = 7500000
 	blockMaxSizeMin                = 1000
 	defaultGenerate                = false
 	defaultMaxOrphanTransactions   = 100

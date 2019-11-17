@@ -745,7 +745,7 @@ mempoolLoop:
 		if blockPlusTxSize < txSize ||
 			blockPlusTxSize >= g.policy.BlockMaxSize {
 
-			log.Tracef("Skipping tx %s because it would exceed "+
+			log.Debugf("Skipping tx %s because it would exceed "+
 				"the max block size", tx.Hash())
 			logSkippedDeps(tx, deps)
 			continue
@@ -757,14 +757,14 @@ mempoolLoop:
 			blockUtxos, scriptFlags)
 		maxSigOps = blockchain.MaxBlockSigOps(blockPlusTxSize)
 		if err != nil {
-			log.Tracef("Skipping tx %s due to error in "+
+			log.Debugf("Skipping tx %s due to error in "+
 				"GetSigOpCost: %v", tx.Hash(), err)
 			logSkippedDeps(tx, deps)
 			continue
 		}
 		if blockSigOps+int64(sigOps) < blockSigOps ||
 			blockSigOps+int64(sigOps) > int64(maxSigOps) {
-			log.Tracef("Skipping tx %s because it would "+
+			log.Debugf("Skipping tx %s because it would "+
 				"exceed the maximum sigops per block", tx.Hash())
 			logSkippedDeps(tx, deps)
 			continue
@@ -776,7 +776,7 @@ mempoolLoop:
 			prioItem.feePerKB < int64(g.policy.TxMinFreeFee) &&
 			blockPlusTxSize >= g.policy.BlockMinSize {
 
-			log.Tracef("Skipping tx %s with feePerKB %d "+
+			log.Debugf("Skipping tx %s with feePerKB %d "+
 				"< TxMinFreeFee %d and block size %d >= "+
 				"minBlockSize %d", tx.Hash(), prioItem.feePerKB,
 				g.policy.TxMinFreeFee, blockPlusTxSize,
