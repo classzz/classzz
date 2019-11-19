@@ -3,7 +3,9 @@ package cross
 import (
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/txscript"
+	"github.com/classzz/czzutil"
 	"math/big"
 	"math/rand"
 
@@ -12,12 +14,12 @@ import (
 )
 
 var (
-	dogePoolPub       = []byte{1, 2}
-	ltcPoolPub        = []byte{1, 2}
 	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
 )
 
 const (
+	dogePoolAddr = "DNGzkoZbnVMihLTMq8M1m7L62XvN3d2cN2"
+	ltcPoolAddr  = "MUy9qiaLQtaqmKBSk27FXrEEfUkRBeddCZ"
 	dogeMaturity = 14
 	ltcMaturity  = 14
 )
@@ -106,11 +108,26 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, errors.New(e)
 		}
 
-		//pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
-		//if !bytes.Equal(pool, dogePoolPub) {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return errors.New(e), nil
-		//}
+		dogeparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x1e,
+		}
+
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[Vout].PkScript)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := czzutil.NewLegacyAddressScriptHash(pub, dogeparams)
+		if err != nil {
+			e := fmt.Sprintf("doge Pool err")
+			return nil, errors.New(e)
+		}
+
+		fmt.Print(addr.String())
+		if addr.String() != dogePoolAddr {
+			e := fmt.Sprintf("doge dogePoolPub err")
+			return nil, errors.New(e)
+		}
 
 		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
 			e := fmt.Sprintf("doge PkScript err %s", err)
@@ -144,37 +161,48 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		return nil, err
 	} else {
 		if len(tx.MsgTx().TxOut) < int(Vout) {
-			return nil, errors.New("doge TxOut index err")
+			return nil, errors.New("ltc TxOut index err")
 		}
 		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
-			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
+			e := fmt.Sprintf("amount err ,[request:%v,ltc:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return nil, errors.New(e)
 		}
 		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
-			e := fmt.Sprintf("doge PkScript err")
+			e := fmt.Sprintf("ltc PkScript err")
 			return nil, errors.New(e)
 		}
 
-		//pool := tx.MsgTx().TxOut[Vout].PkScript[2:22]
-		//if !bytes.Equal(pool, dogePoolPub) {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return errors.New(e), nil
-		//}
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[Vout].PkScript)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x32,
+		}
+		addr, err := czzutil.NewLegacyAddressScriptHash(pub, ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("ltcaddr err")
+			return nil, errors.New(e)
+		}
+
+		fmt.Print(addr.String())
+		if addr.String() != ltcPoolAddr {
+			e := fmt.Sprintf("ltc ltcPoolAddr err")
+			return nil, errors.New(e)
+		}
 
 		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
-			e := fmt.Sprintf("doge PkScript err %s", err)
+			e := fmt.Sprintf("ltc PkScript err %s", err)
 			return nil, errors.New(e)
 		} else {
-
 			if count, err := client.GetBlockCount(); err != nil {
 				return nil, err
 			} else {
-				fmt.Println("pk.Script()", pk)
 				if count-int64(height) > ltcMaturity {
-					//return nil, pk.Script()[3:23]
 					return pk, nil
 				} else {
-					e := fmt.Sprintf("dogeMaturity err")
+					e := fmt.Sprintf("ltcMaturity err")
 					return nil, errors.New(e)
 				}
 			}
