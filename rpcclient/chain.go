@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-
 	"github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/wire"
@@ -103,6 +102,47 @@ func (c *Client) GetBlockAsync(blockHash string) FutureGetBlockResult {
 // block instead.
 func (c *Client) GetBlock(blockHash string) (*wire.MsgBlock, error) {
 	return c.GetBlockAsync(blockHash).Receive()
+}
+
+type DogecoinMsgBlock struct {
+	Txs []string `json:"tx"`
+}
+
+// FutureGetBlockResult is a future promise to deliver the result of a
+// GetBlockAsync RPC invocation (or an applicable error).
+type FutureGetDogecoinBlockResult chan *response
+
+// Receive waits for the response promised by the future and returns the raw
+// block requested from the server given its hash.
+func (r FutureGetDogecoinBlockResult) Receive() (*DogecoinMsgBlock, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+	// Unmarshal result as a string.
+	msgBlock := DogecoinMsgBlock{}
+
+	err = json.Unmarshal(res, &msgBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	return &msgBlock, nil
+}
+
+// GetBlockAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See GetBlock for the blocking version and more details.
+func (c *Client) GetDogecoinBlockAsync(blockHash string) FutureGetDogecoinBlockResult {
+
+	cmd := btcjson.NewGetDogecoinBlockCmd(blockHash)
+	return c.sendCmd(cmd)
+}
+
+func (c *Client) GetDogecoinBlock(blockHash string) (*DogecoinMsgBlock, error) {
+	return c.GetDogecoinBlockAsync(blockHash).Receive()
 }
 
 // FutureGetBlockVerboseResult is a future promise to deliver the result of a

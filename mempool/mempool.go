@@ -815,7 +815,9 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	if einfo != nil {
+	if einfo != nil && chaincfg.MainNetParams.EntangleHeight > nextBlockHeight {
+		return nil, nil, errors.New("err entangle tx  EntangleHeight < nextBlockHeight ")
+	} else if einfo != nil {
 
 		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
 			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")

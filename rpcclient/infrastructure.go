@@ -878,6 +878,9 @@ func (c *Client) sendCmd(cmd interface{}) chan *response {
 		return newFutureError(err)
 	}
 
+	if method == "getdogeblock" {
+		method = "getblock"
+	}
 	// Generate the request and send it along with a channel to respond on.
 	responseChan := make(chan *response, 1)
 	jReq := &jsonRequest{

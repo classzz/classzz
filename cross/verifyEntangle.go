@@ -1,6 +1,7 @@
 package cross
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -46,7 +47,7 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 	if ev.Cache != nil {
 		for i, v := range einfos {
 			if ok := ev.Cache.FetchEntangleUtxoView(v); ok {
-				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+				errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Height)
 				return nil, errors.New("txid has already entangle:" + errStr)
 			}
 			amount += tx.TxOut[i].Value
@@ -55,7 +56,7 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 
 	for i, v := range einfos {
 		if pub, err := ev.verifyTx(v.ExTxType, v.ExtTxHash, v.Index, v.Height, v.Amount); err != nil {
-			errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Index)
+			errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Index)
 			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 		} else {
 			pairs = append(pairs, &TuplePubIndex{
@@ -96,6 +97,22 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
 		return nil, err
 	} else {
+
+		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
+			fmt.Println(bhash.String())
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+
+				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
+					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
+					return nil, errors.New(e)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
 		if len(tx.MsgTx().TxOut) < int(Vout) {
 			return nil, errors.New("doge TxOut index err")
 		}
@@ -117,13 +134,12 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, err
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHash(pub, dogeparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge Pool err")
 			return nil, errors.New(e)
 		}
 
-		fmt.Print(addr.String())
 		if addr.String() != dogePoolAddr {
 			e := fmt.Sprintf("doge dogePoolPub err")
 			return nil, errors.New(e)
@@ -137,9 +153,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			if count, err := client.GetBlockCount(); err != nil {
 				return nil, err
 			} else {
-				fmt.Println("pk.Script()", pk)
 				if count-int64(height) > dogeMaturity {
-					//return nil, pk.Script()[3:23]
 					return pk, nil
 				} else {
 					e := fmt.Sprintf("dogeMaturity err")
@@ -160,6 +174,15 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
 		return nil, err
 	} else {
+
+		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err != nil {
+				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
+					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
+					return nil, errors.New(e)
+				}
+			}
+		}
 		if len(tx.MsgTx().TxOut) < int(Vout) {
 			return nil, errors.New("ltc TxOut index err")
 		}
@@ -180,7 +203,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		ltcparams := &chaincfg.Params{
 			LegacyScriptHashAddrID: 0x32,
 		}
-		addr, err := czzutil.NewLegacyAddressScriptHash(pub, ltcparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltcaddr err")
 			return nil, errors.New(e)
@@ -208,4 +231,13 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 			}
 		}
 	}
+}
+
+func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) bool {
+	for _, dtx := range block.Txs {
+		if dtx == txhash {
+			return true
+		}
+	}
+	return false
 }

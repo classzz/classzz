@@ -2254,7 +2254,7 @@ func New(config *Config) (*BlockChain, error) {
 			DisableTLS:   true, // Bitcoin core does not provide TLS by default
 		}
 		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Info(err)
+			log.Warn(err)
 		}
 		// Notice the notification parameter is nil since notifications are
 		// not supported in HTTP POST mode.
@@ -2279,7 +2279,7 @@ func New(config *Config) (*BlockChain, error) {
 			DisableTLS:   true, // Bitcoin core does not provide TLS by default
 		}
 		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Info(err)
+			log.Warn(err)
 		}
 		// Notice the notification parameter is nil since notifications are
 		// not supported in HTTP POST mode.

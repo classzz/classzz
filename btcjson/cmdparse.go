@@ -41,6 +41,9 @@ func MarshalCmd(id interface{}, cmd interface{}) ([]byte, error) {
 	registerLock.RLock()
 	method, ok := concreteTypeToMethod[rt]
 	registerLock.RUnlock()
+	if method == "getdogeblock" {
+		method = "getblock"
+	}
 	if !ok {
 		str := fmt.Sprintf("%q is not registered", method)
 		return nil, makeError(ErrUnregisteredMethod, str)
