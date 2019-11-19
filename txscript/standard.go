@@ -616,6 +616,34 @@ func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (Script
 	return scriptClass, addrs, requiredSigs, nil
 }
 
+func ExtractPkScriptPub(pkScript []byte) (ScriptClass, []byte, error) {
+
+	pops, err := parseScript(pkScript)
+	if err != nil {
+		return NonStandardTy, nil, err
+	}
+
+	scriptClass := typeOfScript(pops)
+	switch scriptClass {
+	case PubKeyHashTy:
+		// A pay-to-pubkey-hash script is of the form:
+		//  OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG
+		// Therefore the pubkey hash is the 3rd item on the stack.
+		// Skip the pubkey hash if it's invalid for some reason.
+		return PubKeyHashTy, pops[2].data, nil
+
+	case ScriptHashTy:
+		// A pay-to-script-hash script is of the form:
+		//  OP_HASH160 <scripthash> OP_EQUAL
+		// Therefore the script hash is the 2nd item on the stack.
+		// Skip the script hash if it's invalid for some reason.
+		return ScriptHashTy, pops[1].data, nil
+	}
+
+	return NonStandardTy, nil, errors.New("outScript not PubKeyHashTy or ScriptHashTy")
+
+}
+
 // AtomicSwapDataPushes houses the data pushes found in atomic swap contracts.
 type AtomicSwapDataPushes struct {
 	RecipientHash160 [20]byte
