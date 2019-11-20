@@ -1358,11 +1358,11 @@ func HttpClientTest(config *ConnConfig) error {
 		// Configure basic access authorization.
 		httpReq.SetBasicAuth(config.User, config.Pass)
 
-		rep, err2 := httpClient.Do(httpReq)
+		_, err2 := httpClient.Do(httpReq)
 		if err2 != nil {
 			return fmt.Errorf("%s:[failed][err:%v]", res, err2)
 		}
-		return fmt.Errorf("%s:[successed][url:%s][response:%v]", res, url, rep)
+		return fmt.Errorf("%s:[successed][url:%s]", res, url)
 	}
 	return fmt.Errorf("%s", res)
 }
