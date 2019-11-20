@@ -3841,10 +3841,10 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 		return fmt.Sprintf("rejected: %s", err.Error()), nil
 	}
 
-	//err = s.gbtWorkState.updateBlockTemplate(s, false)
-	//if err != nil {
-	//	return fmt.Sprintf("rejected: %s", err.Error()), nil
-	//}
+	err = s.gbtWorkState.updateBlockTemplate(s, false)
+	if err != nil {
+		return fmt.Sprintf("rejected: %s", err.Error()), nil
+	}
 	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash())
 	return nil, nil
 }
