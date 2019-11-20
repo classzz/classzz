@@ -3810,7 +3810,6 @@ func handleSubmitBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 // handleSubmitBlock implements the submitblock command.
 func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.SubmitWorkCmd)
-
 	template := s.gbtWorkState.template
 	if template == nil || template.Block.Header.BlockHashNoNonce().String() != c.Hash {
 		return nil, &btcjson.RPCError{
@@ -3838,15 +3837,15 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	// nodes.  This will in turn relay it to the network like normal.
 	_, err := s.cfg.SyncMgr.SubmitBlock(block, blockchain.BFNone)
 	if err != nil {
-		return fmt.Sprintf("rejected: %s", err.Error()), nil
+		return fmt.Sprintf("rejected: 1 %s", err.Error()), nil
 	}
 
 	err = s.gbtWorkState.updateBlockTemplate(s, false)
 	if err != nil {
-		return fmt.Sprintf("rejected: %s", err.Error()), nil
+		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
 	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash())
-	return nil, nil
+	return true, nil
 }
 
 // handleUptime implements the uptime command.
