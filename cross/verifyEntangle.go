@@ -111,12 +111,15 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 		if tx.MsgTx().TxIn[0].Witness == nil {
 			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
 			if err != nil {
-				e := fmt.Sprintf("ltc PkScript err %s", err)
+				e := fmt.Sprintf("doge PkScript err %s", err)
 				return nil, errors.New(e)
 			}
 		} else {
-			e := fmt.Sprintf("ltc not SignatureScript   %s", err)
-			return nil, errors.New(e)
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("doge PkScript err %s", err)
+				return nil, errors.New(e)
+			}
 		}
 
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
@@ -159,6 +162,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, errors.New(e)
 		}
 
+		fmt.Println("addr", addr.String())
 		if addr.String() != dogePoolAddr {
 			e := fmt.Sprintf("doge dogePoolPub err")
 			return nil, errors.New(e)
@@ -206,8 +210,11 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 				return nil, errors.New(e)
 			}
 		} else {
-			e := fmt.Sprintf("ltc not SignatureScript   %s", err)
-			return nil, errors.New(e)
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("ltc PkScript err %s", err)
+				return nil, errors.New(e)
+			}
 		}
 
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {

@@ -229,12 +229,10 @@ func ComputeWitnessPk(witness wire.TxWitness) ([]byte, error) {
 	// We'll use the last item of the witness stack to determine the proper
 	// witness type.
 	lastWitnessItem := witness[len(witness)-1]
-
 	if len(witness) == 2 && len(lastWitnessItem) == compressedPubKeyLen {
-		pubKeyHash := hash160(lastWitnessItem)
-		fmt.Println(hex.EncodeToString(pubKeyHash))
-		if czzec.IsCompressedPubKey(pubKeyHash) {
-			return pubKeyHash, nil
+		fmt.Println(hex.EncodeToString(lastWitnessItem))
+		if czzec.IsCompressedPubKey(lastWitnessItem) {
+			return lastWitnessItem, nil
 		}
 	}
 	return nil, nil
