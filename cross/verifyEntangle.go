@@ -22,7 +22,7 @@ const (
 	dogePoolAddr = "DNGzkoZbnVMihLTMq8M1m7L62XvN3d2cN2"
 	ltcPoolAddr  = "MUy9qiaLQtaqmKBSk27FXrEEfUkRBeddCZ"
 	dogeMaturity = 14
-	ltcMaturity  = 14
+	ltcMaturity  = 12
 )
 
 type EntangleVerify struct {
@@ -67,12 +67,6 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 		}
 	}
 
-	// find the pool addrees
-	// reserve := GetPoolAmount()
-	// if amount >= reserve {
-	// 	e := fmt.Sprintf("amount not enough,[request:%v,reserve:%v]", amount, reserve)
-	// 	return errors.New(e),nil
-	// }
 	return pairs, nil
 }
 
@@ -99,7 +93,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	} else {
 
 		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
-			e := fmt.Sprintf("Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			e := fmt.Sprintf("doge Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
 			return nil, errors.New(e)
 		}
 
@@ -111,13 +105,13 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 		if tx.MsgTx().TxIn[0].Witness == nil {
 			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
 			if err != nil {
-				e := fmt.Sprintf("doge PkScript err %s", err)
+				e := fmt.Sprintf("doge ComputePk err %s", err)
 				return nil, errors.New(e)
 			}
 		} else {
 			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
 			if err != nil {
-				e := fmt.Sprintf("doge PkScript err %s", err)
+				e := fmt.Sprintf("doge ComputeWitnessPk err %s", err)
 				return nil, errors.New(e)
 			}
 		}
@@ -126,7 +120,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			fmt.Println(bhash.String())
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
-					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
+					e := fmt.Sprintf("doge Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -137,7 +131,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 		}
 
 		if Amount.Int64() < 0 || tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
-			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
+			e := fmt.Sprintf("doge amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return nil, errors.New(e)
 		}
 
@@ -158,11 +152,10 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
 		if err != nil {
-			e := fmt.Sprintf("doge Pool err")
+			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
 		}
 
-		fmt.Println("addr", addr.String())
 		if addr.String() != dogePoolAddr {
 			e := fmt.Sprintf("doge dogePoolPub err")
 			return nil, errors.New(e)
@@ -174,7 +167,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			if count-int64(height) > dogeMaturity {
 				return pk, nil
 			} else {
-				e := fmt.Sprintf("dogeMaturity err")
+				e := fmt.Sprintf("doge Maturity err")
 				return nil, errors.New(e)
 			}
 		}
@@ -194,7 +187,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 	} else {
 
 		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
-			e := fmt.Sprintf("Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			e := fmt.Sprintf("ltc Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
 			return nil, errors.New(e)
 		}
 
@@ -206,13 +199,13 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		if tx.MsgTx().TxIn[0].Witness == nil {
 			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
 			if err != nil {
-				e := fmt.Sprintf("ltc PkScript err %s", err)
+				e := fmt.Sprintf("ltc ComputePk err %s", err)
 				return nil, errors.New(e)
 			}
 		} else {
 			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
 			if err != nil {
-				e := fmt.Sprintf("ltc PkScript err %s", err)
+				e := fmt.Sprintf("ltc ComputeWitnessPk err %s", err)
 				return nil, errors.New(e)
 			}
 		}
@@ -221,7 +214,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 			fmt.Println(bhash.String())
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
-					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
+					e := fmt.Sprintf("ltc Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -232,7 +225,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		}
 
 		if Amount.Int64() < 0 || tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
-			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
+			e := fmt.Sprintf("ltc amount err ,[request:%v,ltc:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return nil, errors.New(e)
 		}
 
@@ -253,12 +246,12 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
 		if err != nil {
-			e := fmt.Sprintf("ltcaddr err")
+			e := fmt.Sprintf("ltc addr err")
 			return nil, errors.New(e)
 		}
-		fmt.Println(addr.String())
+
 		if addr.String() != ltcPoolAddr {
-			e := fmt.Sprintf("ltc ltcPoolAddr err")
+			e := fmt.Sprintf("ltc PoolAddr err")
 			return nil, errors.New(e)
 		}
 
@@ -268,7 +261,7 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 			if count-int64(height) > ltcMaturity {
 				return pk, nil
 			} else {
-				e := fmt.Sprintf("ltcMaturity err")
+				e := fmt.Sprintf("ltc Maturity err")
 				return nil, errors.New(e)
 			}
 		}

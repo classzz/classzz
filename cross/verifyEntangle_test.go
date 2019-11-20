@@ -19,6 +19,10 @@ var (
 	dogecoinrpc     = "127.0.0.1:9999"
 	dogecoinrpcuser = "root"
 	dogecoinrpcpass = "admin"
+
+	ltccoinrpc     = "127.0.0.1:9998"
+	ltccoinrpcuser = "root"
+	ltccoinrpcpass = "admin"
 )
 
 func TestVerifyTx(t *testing.T) {
@@ -68,6 +72,8 @@ func TestVerifyTx(t *testing.T) {
 			wire.MaxPrevOutIndex),
 		Sequence: wire.MaxTxInSequenceNum,
 	})
+
+	// {\"extxtype\":240,\"index\":1,\"height\":2975150,\"amount\":1000000000,\"exttxhash\":\"6800e9579dad0e6667e6e897e2d65f08afdba18ed1eb9956fe5f0b936162404a\"\}\]
 	EntangleOut := &btcjson.EntangleOut{
 		ExTxType:  240,
 		Index:     0,
@@ -85,10 +91,11 @@ func TestVerifyTx(t *testing.T) {
 		PkScript: scriptInfo,
 	}
 	tx.AddTxOut(txout)
-	err, puk := entangleVerify.VerifyEntangleTx(tx)
+	puk, err := entangleVerify.VerifyEntangleTx(tx)
 	if err != nil {
 		t.Error("err", err)
 	}
 
 	t.Log(puk[0].Pub)
+
 }

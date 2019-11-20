@@ -15,9 +15,9 @@ const semanticAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqr
 
 // These constants define the application version and follow the semantic
 const (
-	AppMajor uint = 1
+	AppMajor uint = 2
 	AppMinor uint = 0
-	AppPatch uint = 6
+	AppPatch uint = 0
 
 	// AppPreRelease MUST only contain characters from semanticAlphabet
 	// per the semantic versioning spec.
