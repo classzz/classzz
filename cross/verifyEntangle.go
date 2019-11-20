@@ -94,14 +94,34 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	client := ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(string(ExtTxHash)); err != nil {
 		return nil, err
 	} else {
+
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(Vout) {
+			return nil, errors.New("doge TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("ltc PkScript err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			e := fmt.Sprintf("ltc not SignatureScript   %s", err)
+			return nil, errors.New(e)
+		}
 
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
 			fmt.Println(bhash.String())
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
 					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
 					return nil, errors.New(e)
@@ -113,14 +133,13 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, err
 		}
 
-		if len(tx.MsgTx().TxOut) < int(Vout) {
-			return nil, errors.New("doge TxOut index err")
-		}
-		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
+		if Amount.Int64() < 0 || tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
 			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return nil, errors.New(e)
 		}
-		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
+
+		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript)
+		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("doge PkScript err")
 			return nil, errors.New(e)
 		}
@@ -145,22 +164,17 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 			return nil, errors.New(e)
 		}
 
-		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
-			e := fmt.Sprintf("doge PkScript err %s", err)
-			return nil, errors.New(e)
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
 		} else {
-
-			if count, err := client.GetBlockCount(); err != nil {
-				return nil, err
+			if count-int64(height) > dogeMaturity {
+				return pk, nil
 			} else {
-				if count-int64(height) > dogeMaturity {
-					return pk, nil
-				} else {
-					e := fmt.Sprintf("dogeMaturity err")
-					return nil, errors.New(e)
-				}
+				e := fmt.Sprintf("dogeMaturity err")
+				return nil, errors.New(e)
 			}
 		}
+
 	}
 }
 
@@ -171,26 +185,52 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetRawTransaction(string(ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(string(ExtTxHash)); err != nil {
 		return nil, err
 	} else {
 
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(Vout) {
+			return nil, errors.New("ltc TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("ltc PkScript err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			e := fmt.Sprintf("ltc not SignatureScript   %s", err)
+			return nil, errors.New(e)
+		}
+
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
-			if dblock, err := client.GetDogecoinBlock(bhash.String()); err != nil {
+			fmt.Println(bhash.String())
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
 					e := fmt.Sprintf("Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
 					return nil, errors.New(e)
 				}
+			} else {
+				return nil, err
 			}
+		} else {
+			return nil, err
 		}
-		if len(tx.MsgTx().TxOut) < int(Vout) {
-			return nil, errors.New("ltc TxOut index err")
-		}
-		if tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
-			e := fmt.Sprintf("amount err ,[request:%v,ltc:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
+
+		if Amount.Int64() < 0 || tx.MsgTx().TxOut[Vout].Value != Amount.Int64() {
+			e := fmt.Sprintf("amount err ,[request:%v,doge:%v]", Amount, tx.MsgTx().TxOut[Vout].Value)
 			return nil, errors.New(e)
 		}
-		if txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript) != 2 {
+
+		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[Vout].PkScript)
+		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("ltc PkScript err")
 			return nil, errors.New(e)
 		}
@@ -203,31 +243,26 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		ltcparams := &chaincfg.Params{
 			LegacyScriptHashAddrID: 0x32,
 		}
+
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltcaddr err")
 			return nil, errors.New(e)
 		}
-
-		fmt.Print(addr.String())
+		fmt.Println(addr.String())
 		if addr.String() != ltcPoolAddr {
 			e := fmt.Sprintf("ltc ltcPoolAddr err")
 			return nil, errors.New(e)
 		}
 
-		if pk, err := txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript); err != nil {
-			e := fmt.Sprintf("ltc PkScript err %s", err)
-			return nil, errors.New(e)
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
 		} else {
-			if count, err := client.GetBlockCount(); err != nil {
-				return nil, err
+			if count-int64(height) > ltcMaturity {
+				return pk, nil
 			} else {
-				if count-int64(height) > ltcMaturity {
-					return pk, nil
-				} else {
-					e := fmt.Sprintf("ltcMaturity err")
-					return nil, errors.New(e)
-				}
+				e := fmt.Sprintf("ltcMaturity err")
+				return nil, errors.New(e)
 			}
 		}
 	}

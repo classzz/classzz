@@ -83,6 +83,8 @@ const (
 	// BaseEncoding encodes all messages in the default format specified
 	// for the Bitcoin wire protocol.
 	BaseEncoding MessageEncoding = 1 << iota
+
+	WitnessEncoding
 )
 
 // LatestEncoding is the most recently specified encoding for the Bitcoin wire

@@ -2,8 +2,10 @@ package txscript
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/wire"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
@@ -219,6 +221,23 @@ func ComputePk(sigScript []byte) ([]byte, error) {
 	}
 
 	return nil, ErrUnsupportedScriptType
+}
+
+// computeWitnessPk computes the script of an output by looking at the
+// spending input's witness.
+func ComputeWitnessPk(witness wire.TxWitness) ([]byte, error) {
+	// We'll use the last item of the witness stack to determine the proper
+	// witness type.
+	lastWitnessItem := witness[len(witness)-1]
+
+	if len(witness) == 2 && len(lastWitnessItem) == compressedPubKeyLen {
+		pubKeyHash := hash160(lastWitnessItem)
+		fmt.Println(hex.EncodeToString(pubKeyHash))
+		if czzec.IsCompressedPubKey(pubKeyHash) {
+			return pubKeyHash, nil
+		}
+	}
+	return nil, nil
 }
 
 // hash160 returns the RIPEMD160 hash of the SHA-256 HASH of the given data.

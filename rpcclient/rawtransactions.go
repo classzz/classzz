@@ -115,6 +115,54 @@ func (c *Client) GetRawTransaction(txHash string) (*czzutil.Tx, error) {
 	return c.GetRawTransactionAsync(txHash).Receive()
 }
 
+// FutureGetRawTransactionResult is a future promise to deliver the result of a
+// GetRawTransactionAsync RPC invocation (or an applicable error).
+type FutureGetWitnessRawTransactionResult chan *response
+
+// Receive waits for the response promised by the future and returns a
+// transaction given its hash.
+func (r FutureGetWitnessRawTransactionResult) Receive() (*czzutil.Tx, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal result as a string.
+	var txHex string
+	err = json.Unmarshal(res, &txHex)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decode the serialized transaction hex to raw bytes.
+	serializedTx, err := hex.DecodeString(txHex)
+	if err != nil {
+		return nil, err
+	}
+
+	// Deserialize the transaction and return it.
+	var msgTx wire.MsgTx
+	if err := msgTx.DeserializeWitness(bytes.NewReader(serializedTx)); err != nil {
+		return nil, err
+	}
+	return czzutil.NewTx(&msgTx), nil
+}
+
+// GetRawTransactionAsync returns an instance of a type that can be used to get
+// the result of the RPC at some future time by invoking the Receive function on
+// the returned instance.
+//
+// See GetRawTransaction for the blocking version and more details.
+func (c *Client) GetWitnessRawTransactionAsync(txHash string) FutureGetWitnessRawTransactionResult {
+
+	cmd := btcjson.NewGetRawTransactionCmd(txHash, btcjson.Int(0))
+	return c.sendCmd(cmd)
+}
+
+func (c *Client) GetWitnessRawTransaction(txHash string) (*czzutil.Tx, error) {
+	return c.GetWitnessRawTransactionAsync(txHash).Receive()
+}
+
 // FutureGetRawTransactionVerboseResult is a future promise to deliver the
 // result of a GetRawTransactionVerboseAsync RPC invocation (or an applicable
 // error).

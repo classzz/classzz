@@ -452,7 +452,7 @@ func (m *CPUMiner) miningWorkerController() {
 	// workers for generating blocks.
 	var runningWorkers []chan struct{}
 	launchWorkers := func(numWorkers uint32) {
-		for i := uint32(0); i < 1; i++ {
+		for i := uint32(0); i < numWorkers; i++ {
 			quit := make(chan struct{})
 			runningWorkers = append(runningWorkers, quit)
 

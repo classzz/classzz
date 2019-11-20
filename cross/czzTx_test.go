@@ -51,14 +51,14 @@ func TestCaclMode2(t *testing.T) {
 		v1 := toDoge(reserve[0], doge)
 		v2 := toLtc(reserve[1], itc)
 		fmt.Println("==============================================entangle index:", i, "==============================================")
-		fmt.Printf("entangle doge:%v [最小单位]\n", doge)
+		fmt.Printf("entangle doge:%v []\n", doge)
 		fmt.Printf("entangle doge:%v [doge]\n", fromCzz1(doge).Text('f', 4))
-		fmt.Printf("to czz:%v [最小单位]\n", v1)
+		fmt.Printf("to czz:%v []\n", v1)
 		fmt.Printf("to czz:%v [czz]\n", fromCzz1(v1).Text('f', 4))
 
-		fmt.Printf("entangle itc:%v [最小单位]\n", itc)
+		fmt.Printf("entangle itc:%v []\n", itc)
 		fmt.Printf("entangle itc:%v [itc]\n", fromCzz1(itc).Text('f', 4))
-		fmt.Printf("to czz:%v [最小单位]\n", v2)
+		fmt.Printf("to czz:%v []\n", v2)
 		fmt.Printf("to czz:%v [czz]\n", fromCzz1(v2).Text('f', 4))
 		fmt.Println("==============================================entangle index:", i, "==============================================")
 		reserve[0] = reserve[0].Add(reserve[0], doge)
@@ -190,4 +190,3 @@ func TestAddrTrans(t *testing.T) {
 	}
 	fmt.Println(addr.String())
 }
-
