@@ -1313,6 +1313,9 @@ func handleGetBlockChainInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 		case chaincfg.DeploymentCSV:
 			forkName = "csv"
 
+		case chaincfg.DeploymentSEQ:
+			forkName = "SEQ"
+
 		default:
 			return nil, &btcjson.RPCError{
 				Code: btcjson.ErrRPCInternal.Code,
