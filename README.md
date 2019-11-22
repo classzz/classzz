@@ -59,7 +59,29 @@ gofmt -s -w bindata.go
 ```
 
 ## Getting Started
+The V2.0 main network needs to download dogecoin and litecoin nodes and enable RPC services.
 
+Dogecoin node configuration example:
+
+```text
+server = 1
+rpcuser =root # RPC user name
+rpcpassword = admin # RPC password
+rpcallowip =127.0.0.1 # need to enable all access to 0.0.0.0/0
+rpcbind = 0.0.0.0
+rpcport = 9999 # RPC ports
+txindex = 1
+```
+Litecoin node configuration example:
+```text
+server=1
+rpcuser=root # RPC user name
+rpcpassword=admin # RPC password
+rpcallowip=127.0.0.1 # need to enable all access to 0.0.0.0/0
+rpcbind=0.0.0.0
+rpcport=19200 # RPC ports
+txindex=1
+```
 To start classzz with default options just run:
 
 ```bash
