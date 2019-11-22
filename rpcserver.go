@@ -278,6 +278,7 @@ var rpcLimited = map[string]struct{}{
 	"getdifficulty":                {},
 	"getheaders":                   {},
 	"getinfo":                      {},
+	"getwork":                      {},
 	"getentangleinfo":              {},
 	"getnettotals":                 {},
 	"getnetworkhashps":             {},
