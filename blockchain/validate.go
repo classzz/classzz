@@ -558,7 +558,7 @@ func CountP2SHSigOps(tx *czzutil.Tx, isCoinBaseTx bool, utxoView *UtxoViewpoint,
 //
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkProofOfWork.
-func checkBlockHeaderSanity(bc *BlockChain, header *wire.BlockHeader, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
+func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeader, header *wire.BlockHeader, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
 	// Ensure the proof of work bits in the block header is in min/max range
 	// and the block hash is less than the target value described by the
 	// bits.
@@ -583,9 +583,8 @@ func checkBlockHeaderSanity(bc *BlockChain, header *wire.BlockHeader, powLimit *
 		return ruleError(ErrInvalidTime, str)
 	}
 
-	prevblock, err := bc.BlockByHash(&header.PrevBlock)
-	if err != nil && int64(bc.chainParams.Deployments[chaincfg.DeploymentSEQ].StartTime) < header.Timestamp.Unix() && prevblock != nil && prevblock.MsgBlock().Header.Timestamp.After(header.Timestamp) {
-		str := fmt.Sprintf("prevheader timestamp %v > header %v", prevblock.MsgBlock().Header.Timestamp, header.Timestamp)
+	if int64(params.Deployments[chaincfg.DeploymentSEQ].StartTime) < header.Timestamp.Unix() && prevHeader != nil && prevHeader.Timestamp.After(header.Timestamp) {
+		str := fmt.Sprintf("prevheader timestamp %v > header %v", prevHeader.Timestamp, header.Timestamp)
 		return ruleError(ErrInvalidTime, str)
 	}
 
@@ -605,11 +604,11 @@ func checkBlockHeaderSanity(bc *BlockChain, header *wire.BlockHeader, powLimit *
 //
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkBlockHeaderSanity.
-func checkBlockSanity(b *BlockChain, block *czzutil.Block, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
+func checkBlockSanity(params *chaincfg.Params, prevHeader *wire.BlockHeader, block *czzutil.Block, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
 	msgBlock := block.MsgBlock()
 	header := &msgBlock.Header
 
-	err := checkBlockHeaderSanity(b, header, powLimit, timeSource, flags)
+	err := checkBlockHeaderSanity(params, prevHeader, header, powLimit, timeSource, flags)
 	if err != nil {
 		return err
 	}
@@ -698,13 +697,13 @@ func checkBlockSanity(b *BlockChain, block *czzutil.Block, powLimit *big.Int, ti
 
 // CheckBlockSanity performs some preliminary checks on a block to ensure it is
 // sane before continuing with block processing.  These checks are context free.
-func CheckBlockSanity(b *BlockChain, block *czzutil.Block, powLimit *big.Int, timeSource MedianTimeSource, magneticAnomalyActive bool) error {
+func CheckBlockSanity(params *chaincfg.Params, prevHeader *wire.BlockHeader, block *czzutil.Block, powLimit *big.Int, timeSource MedianTimeSource, magneticAnomalyActive bool) error {
 	behaviorFlags := BFNone
 
 	if magneticAnomalyActive {
 		behaviorFlags |= BFMagneticAnomaly
 	}
-	return checkBlockSanity(b, block, powLimit, timeSource, behaviorFlags)
+	return checkBlockSanity(params, prevHeader, block, powLimit, timeSource, behaviorFlags)
 }
 
 // ExtractCoinbaseHeight attempts to extract the height of the block from the
@@ -775,7 +774,9 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader) error {
 
 	tip := b.bestChain.Tip()
 
-	err := checkBlockHeaderSanity(b, header, b.chainParams.PowLimit, b.timeSource, flags)
+	prevblock, _ := b.HeaderByHash(&header.PrevBlock)
+
+	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags)
 	if err != nil {
 		return err
 	}
@@ -1409,7 +1410,8 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	// new rule set.
 	flags |= BFMagneticAnomaly
 
-	err = checkBlockSanity(b, block, b.chainParams.PowLimit, b.timeSource, flags)
+	prevHeader, _ := b.HeaderByHash(&block.MsgBlock().Header.PrevBlock)
+	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags)
 	if err != nil {
 		return err
 	}

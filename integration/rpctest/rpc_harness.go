@@ -471,7 +471,7 @@ func (h *Harness) GenerateAndSubmitBlockWithCustomCoinbaseOutputs(
 	}
 
 	// Submit the block to the simnet node.
-	if err := h.Node.SubmitBlock(newBlock, nil); err != nil {
+	if _, err := h.Node.SubmitBlock(newBlock, nil); err != nil {
 		return nil, err
 	}
 
