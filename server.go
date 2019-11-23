@@ -487,6 +487,12 @@ func (sp *serverPeer) OnVersion(_ *peer.Peer, msg *wire.MsgVersion) *wire.MsgRej
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
+	if strings.Contains(msg.UserAgent, "classzz:1.0") || strings.Contains(msg.UserAgent, "classzz:0.0") {
+		srvrLog.Debugf("Rejecting peer %s for running < v2.0.0", sp.Peer)
+		reason := fmt.Sprint("Not >= v2.0.0 node")
+		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
+	}
+
 	// Reject outbound peers that are not full nodes.
 	wantServices := wire.SFNodeNetwork
 	if !isInbound && !hasServices(msg.Services, wantServices) {
@@ -1607,7 +1613,7 @@ func (sp *serverPeer) OnAddr(_ *peer.Peer, msg *wire.MsgAddr) {
 
 // OnReject logs all reject messages received from the remote peer.
 func (sp *serverPeer) OnReject(p *peer.Peer, msg *wire.MsgReject) {
-	peerLog.Warnf("Received reject message from peer %s, code: %s, reason: %s", p, msg.Code.String(), msg.Reason)
+	peerLog.Warnf("Received reject message from peer %s, version %s ,code: %s, reason: %s ", p, p.UserAgent(), msg.Code.String(), msg.Reason)
 }
 
 // OnNotFound logs all not found messages received from the remote peer.
