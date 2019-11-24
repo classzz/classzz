@@ -1571,8 +1571,8 @@ func (sm *SyncManager) handleStallSample() {
 
 	sm.clearRequestedState(state)
 
-	disconnectSyncPeer := sm.shouldDCStalledSyncPeer()
-	sm.updateSyncPeer(disconnectSyncPeer)
+	//disconnectSyncPeer := sm.shouldDCStalledSyncPeer()
+	sm.updateSyncPeer(true)
 }
 
 // shouldDCStalledSyncPeer determines whether or not we should disconnect a
@@ -1580,8 +1580,16 @@ func (sm *SyncManager) handleStallSample() {
 // than our own best height, we will disconnect it. Otherwise, we will keep the
 // peer connected in case we are already at tip.
 func (sm *SyncManager) shouldDCStalledSyncPeer() bool {
+	lastBlock := sm.syncPeer.LastBlock()
+	startHeight := sm.syncPeer.StartingHeight()
 
-	peerHeight := sm.topBlock()
+	var peerHeight int32
+	if lastBlock > startHeight {
+		peerHeight = lastBlock
+	} else {
+		peerHeight = startHeight
+	}
+
 	// If we've stalled out yet the sync peer reports having more blocks for
 	// us we will disconnect them. This allows us at tip to not disconnect
 	// peers when we are equal or they temporarily lag behind us.
