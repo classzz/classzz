@@ -305,7 +305,7 @@ var MainNetParams = Params{
 var RegressionNetParams = Params{
 	Name:        "regtest",
 	Net:         wire.TestNet,
-	DefaultPort: "18444",
+	DefaultPort: "18884",
 	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
@@ -313,17 +313,17 @@ var RegressionNetParams = Params{
 	GenesisHash:      &regTestGenesisHash,
 	PowLimit:         regressionPowLimit,
 	PowLimitBits:     0x207fffff,
-	CoinbaseMaturity: 100,
+	CoinbaseMaturity: 14,
 
-	SubsidyReductionInterval: 150,
-	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
+	SubsidyReductionInterval: 1000000,
+	TargetTimePerBlock:       30, // 10 minutes
+	RetargetAdjustmentFactor: 4,  // 25% less, 400% more
 	ReduceMinDifficulty:      true,
 	NoDifficultyAdjustment:   true,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 120000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
