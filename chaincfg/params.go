@@ -456,7 +456,7 @@ var TestNet3Params = Params{
 var SimNetParams = Params{
 	Name:        "simnet",
 	Net:         wire.SimNet,
-	DefaultPort: "18555",
+	DefaultPort: "18885",
 	DNSSeeds:    []DNSSeed{}, // NOTE: There must NOT be any seeds.
 
 	// Chain parameters
@@ -467,13 +467,14 @@ var SimNetParams = Params{
 	CoinbaseMaturity:         100,
 	SubsidyReductionInterval: 1000000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
+	TargetTimePerBlock:       30,                  // 10 minutes
 	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
 	ReduceMinDifficulty:      true,
 	NoDifficultyAdjustment:   true,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	EntangleHeight: 120000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -492,6 +493,11 @@ var SimNetParams = Params{
 		DeploymentCSV: {
 			BitNumber:  0,
 			StartTime:  0,             // Always available for vote
+			ExpireTime: math.MaxInt64, // Never expires
+		},
+		DeploymentSEQ: {
+			BitNumber:  0,
+			StartTime:  0,             //
 			ExpireTime: math.MaxInt64, // Never expires
 		},
 	},

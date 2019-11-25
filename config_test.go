@@ -142,3 +142,20 @@ func TestGenesisRegTestAdderss(t *testing.T) {
 	}
 	fmt.Println(address.String())
 }
+
+func TestGenesisSimNetAdderss(t *testing.T) {
+
+	key, _ := czzec.NewPrivateKey(czzec.S256())
+	wif, _ := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
+
+	fmt.Println("wif:", wif.String())
+	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
+	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
+	fmt.Println("pub:", hex.EncodeToString(pk))
+	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
+
+	if err1 != nil {
+		t.Errorf("failed to make address for: %v", err1)
+	}
+	fmt.Println(address.String())
+}
