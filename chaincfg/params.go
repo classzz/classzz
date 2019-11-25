@@ -344,6 +344,11 @@ var RegressionNetParams = Params{
 			StartTime:  0,             // Always available for vote
 			ExpireTime: math.MaxInt64, // Never expires
 		},
+		DeploymentSEQ: {
+			BitNumber:  0,
+			StartTime:  0,             //
+			ExpireTime: math.MaxInt64, // Never expires
+		},
 	},
 
 	// Mempool parameters
