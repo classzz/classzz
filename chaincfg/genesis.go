@@ -134,10 +134,14 @@ var testNet3GenesisBlock = wire.MsgBlock{
 // simNetGenesisHash is the hash of the first block in the block chain for the
 // simulation test network.
 var simNetGenesisHash = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
-	0xf6, 0x7a, 0xd7, 0x69, 0x5d, 0x9b, 0x66, 0x2a,
-	0x72, 0xff, 0x3d, 0x8e, 0xdb, 0xbb, 0x2d, 0xe0,
-	0xbf, 0xa6, 0x7b, 0x13, 0x97, 0x4b, 0xb9, 0x91,
-	0x0d, 0x11, 0x6d, 0x5c, 0xbd, 0x86, 0x3e, 0x68,
+	0xae, 0x3b, 0x39, 0x39,
+	0xff, 0x22, 0x6b, 0xad,
+	0xf1, 0x5e, 0xea, 0x7f,
+	0xf7, 0xdf, 0xe3, 0x98,
+	0x1e, 0xea, 0x73, 0x7b,
+	0xaf, 0x56, 0xf4, 0x87,
+	0x50, 0x9b, 0x82, 0x94,
+	0xbf, 0xeb, 0xb0, 0x2b,
 })
 
 // simNetGenesisMerkleRoot is the hash of the first transaction in the genesis
@@ -152,9 +156,9 @@ var simNetGenesisBlock = wire.MsgBlock{
 		Version:    1,
 		PrevBlock:  chainhash.Hash{},         // 0000000000000000000000000000000000000000000000000000000000000000
 		MerkleRoot: simNetGenesisMerkleRoot,  // 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
-		Timestamp:  time.Unix(1401292357, 0), // 2014-05-28 15:52:37 +0000 UTC
+		Timestamp:  time.Unix(1574672932, 0), // 2019-11-25 17:08:52 +1200 UTC
 		Bits:       0x207fffff,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
-		Nonce:      2,
+		Nonce:      0,
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
 }
