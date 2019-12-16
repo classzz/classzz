@@ -21,6 +21,10 @@ const (
 	// Entangle Transcation type
 	ExpandedTxEntangle_Doge = 0xF0
 	ExpandedTxEntangle_Ltc  = 0xF1
+	ExpandedTxEntangle_Bch  = 0xF2
+	ExpandedTxEntangle_Bsv  = 0xF3
+	ExpandedTxEntangle_USDT = 0xF4
+	ExpandedTxEntangle_Btc  = 0xF5
 )
 
 var (
@@ -29,6 +33,10 @@ var (
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
 		ExpandedTxEntangle_Ltc:  64,
+		ExpandedTxEntangle_Bch:  64,
+		ExpandedTxEntangle_Bsv:  64,
+		ExpandedTxEntangle_USDT: 64,
+		ExpandedTxEntangle_Btc:  64,
 	}
 	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
@@ -97,7 +105,12 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	//data = data[4:]
 	info.ExTxType = ExpandedTxType(data[0])
 	switch info.ExTxType {
-	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc:
+	case ExpandedTxEntangle_Doge,
+		ExpandedTxEntangle_Ltc,
+		ExpandedTxEntangle_Bch,
+		ExpandedTxEntangle_Bsv,
+		ExpandedTxEntangle_USDT,
+		ExpandedTxEntangle_Btc:
 		break
 	default:
 		return errors.New("Parse failed,not entangle tx")
@@ -400,6 +413,14 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 		item.Value = toDoge(amount, item.Value)
 	} else if item.EType == ExpandedTxEntangle_Ltc {
 		item.Value = toLtc(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bsv {
+		item.Value = toBsv(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bch {
+		item.Value = toBch(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_USDT {
+		item.Value = toUSDT(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Btc {
+		item.Value = toBtc(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
@@ -552,6 +573,30 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 		f2 = f2.Quo(f2, rate)
 		return new(big.Int).Add(toCzz(f1), toCzz(f2))
 	}
+}
+func toBch(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	return nil
+}
+func toBsv(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	return nil
+}
+func toUSDT(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	return nil
+}
+func toBtc(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	return nil
 }
 func toCzz(val *big.Float) *big.Int {
 	val = val.Mul(val, big.NewFloat(float64(baseUnit.Int64())))

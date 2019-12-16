@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+	"math/rand"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/czzutil"
-	"math/big"
-	"math/rand"
 
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
@@ -77,6 +78,14 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 		return ev.verifyDogeTx(ExtTxHash, Vout, amount, height)
 	case ExpandedTxEntangle_Ltc:
 		return ev.verifyLtcTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Bsv:
+		return ev.verifyBsvTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Bch:
+		return ev.verifyBchTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_USDT:
+		return ev.verifyUsdtTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Btc:
+		return ev.verifyBtcTx(ExtTxHash, Vout, amount, height)
 	}
 	return nil, nil
 }
@@ -267,7 +276,18 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		}
 	}
 }
-
+func (ev *EntangleVerify) verifyBsvTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+	return nil, nil
+}
+func (ev *EntangleVerify) verifyBchTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+	return nil, nil
+}
+func (ev *EntangleVerify) verifyUsdtTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+	return nil, nil
+}
+func (ev *EntangleVerify) verifyBtcTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+	return nil, nil
+}
 func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) bool {
 	for _, dtx := range block.Txs {
 		if dtx == txhash {

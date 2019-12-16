@@ -2401,6 +2401,14 @@ func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struc
 			info.ExTxType = "doge"
 		case cross.ExpandedTxEntangle_Ltc:
 			info.ExTxType = "ltc"
+		case cross.ExpandedTxEntangle_Bsv:
+			info.ExTxType = "bsv"
+		case cross.ExpandedTxEntangle_Bch:
+			info.ExTxType = "bch"
+		case cross.ExpandedTxEntangle_USDT:
+			info.ExTxType = "usdt"
+		case cross.ExpandedTxEntangle_Btc:
+			info.ExTxType = "btc"
 		}
 		info.Amount = item.Amount.Int64()
 		infos = append(infos, info)
