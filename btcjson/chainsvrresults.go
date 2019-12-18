@@ -45,6 +45,21 @@ type GetBlockBaseVerboseResult struct {
 	NextHash      string  `json:"nextblockhash,omitempty"`
 }
 
+type GetWorkTemplateResult struct {
+	Hash          string `json:"hash"`
+	Confirmations int64  `json:"confirmations"`
+	Size          int32  `json:"size"`
+	Height        int64  `json:"height"`
+	Version       int32  `json:"version"`
+	VersionHex    string `json:"versionHex"`
+	MerkleRoot    string `json:"merkleroot"`
+	Time          int64  `json:"time"`
+	Nonce         uint64 `json:"nonce"`
+	Bits          string `json:"bits"`
+	Difficulty    int64  `json:"difficulty"`
+	PreviousHash  string `json:"previousblockhash"`
+}
+
 // GetBlockVerboseResult models the data from the getblock command when the
 // verbose flag is set to 1 (default).
 type GetBlockVerboseResult struct {

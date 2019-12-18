@@ -160,6 +160,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getinfo":                      handleGetInfo,
 	"getentangleinfo":              handleGetEntangleInfo,
 	"getwork":                      handleGetWork,
+	"getworktemplate":              handleGetWorkTemplate,
 	"getmempoolinfo":               handleGetMempoolInfo,
 	"getmininginfo":                handleGetMiningInfo,
 	"getnettotals":                 handleGetNetTotals,
@@ -279,6 +280,7 @@ var rpcLimited = map[string]struct{}{
 	"getheaders":                   {},
 	"getinfo":                      {},
 	"getwork":                      {},
+	"getworktemplate":              {},
 	"getentangleinfo":              {},
 	"getnettotals":                 {},
 	"getnetworkhashps":             {},
@@ -2428,8 +2430,39 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		Hash:   blockTemplate.Block.Header.BlockHashNoNonce().String(),
 		Target: target,
 	}
-
 	return ret, nil
+}
+
+// handleGetBlock implements the getblock command.
+func handleGetWorkTemplate(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	blockTemplate := s.gbtWorkState.template
+	if blockTemplate == nil {
+		if err := s.gbtWorkState.updateBlockTemplate(s, false); err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCDatabase,
+				Message: "Data in sync",
+			}
+		}
+		blockTemplate = s.gbtWorkState.template
+	}
+
+	blockHeader := blockTemplate.Block.Header
+
+	baseBlockReply := &btcjson.GetWorkTemplateResult{
+		Hash:         blockHeader.BlockHashNoNonce().String(),
+		Version:      blockHeader.Version,
+		VersionHex:   fmt.Sprintf("%08x", blockTemplate.Block.Header.Version),
+		MerkleRoot:   blockHeader.MerkleRoot.String(),
+		PreviousHash: blockHeader.PrevBlock.String(),
+		Nonce:        blockHeader.Nonce,
+		Time:         blockHeader.Timestamp.Unix(),
+		Height:       int64(blockTemplate.Height),
+		Bits:         strconv.FormatInt(int64(blockHeader.Bits), 16),
+		Difficulty:   blockchain.CalcWork(blockHeader.Bits).Int64(),
+	}
+
+	return baseBlockReply, nil
 }
 
 // handleGetMempoolInfo implements the getmempoolinfo command.
@@ -3853,7 +3886,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	if err != nil {
 		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
-	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash())
+	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash(), "noNonce", block.MsgBlock().Header.BlockHashNoNonce().String())
 	return true, nil
 }
 

@@ -421,6 +421,15 @@ func NewGetInfoCmd() *GetInfoCmd {
 	return &GetInfoCmd{}
 }
 
+// GetInfoCmd defines the getinfo JSON-RPC command.
+type GetWorkTemplateCmd struct{}
+
+// NewGetInfoCmd returns a new instance which can be used to issue a
+// getinfo JSON-RPC command.
+func NewGetWorkTemplateCmd() *GetWorkTemplateCmd {
+	return &GetWorkTemplateCmd{}
+}
+
 // GetMempoolEntryCmd defines the getmempoolentry JSON-RPC command.
 type GetMempoolEntryCmd struct {
 	TxID string
@@ -892,6 +901,7 @@ func init() {
 	MustRegisterCmd("gettxoutproof", (*GetTxOutProofCmd)(nil), flags)
 	MustRegisterCmd("gettxoutsetinfo", (*GetTxOutSetInfoCmd)(nil), flags)
 	MustRegisterCmd("getwork", (*GetWorkCmd)(nil), flags)
+	MustRegisterCmd("getworktemplate", (*GetWorkTemplateCmd)(nil), flags)
 	MustRegisterCmd("help", (*HelpCmd)(nil), flags)
 	MustRegisterCmd("invalidateblock", (*InvalidateBlockCmd)(nil), flags)
 	MustRegisterCmd("ping", (*PingCmd)(nil), flags)
