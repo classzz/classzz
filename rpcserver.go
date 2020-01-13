@@ -3863,8 +3863,9 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	Target := blockchain.CompactToBig(template.Block.Header.Bits)
+	resultB := new(big.Int).SetBytes(result)
 
-	if new(big.Int).SetBytes(result).Cmp(Target) >= 0 {
+	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCVerify,
 			Message: "Nonce error, no consensus",
@@ -3886,7 +3887,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	if err != nil {
 		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
-	rpcsLog.Infof("Accepted block %s via submitblock", block.Hash(), "noNonce", block.MsgBlock().Header.BlockHashNoNonce().String())
+	rpcsLog.Infof("Accepted block %s via submitblock, noNonce %s", block.Hash(), block.MsgBlock().Header.BlockHashNoNonce().String())
 	return true, nil
 }
 
