@@ -256,6 +256,8 @@ var MainNetParams = Params{
 		{Height: 150000, Hash: newHashFromStr("621732d353237090755fd0ae2bcd1dbc62ff3e16730799f8da7e57ee7f1e7f6b")},
 		{Height: 170000, Hash: newHashFromStr("b322b92797469e366849947a6daabce890f74c8be58af5096f79efe629bd2b4c")},
 		{Height: 190000, Hash: newHashFromStr("bbccbab407a2755d3bac95c1dd02d4a25641e7fe40cc3e866f485125e5733b15")},
+		{Height: 210000, Hash: newHashFromStr("07f5e9acc27edfd1ff6252f1005e3984a374d05a92aead6914c9f5b2b1ef14c8")},
+		{Height: 225000, Hash: newHashFromStr("fc0e1538e7369862e41c8cedbf2b0b73eaf1a3f76cdad7496ec7884e3aad3e9d")},
 	},
 
 	// Consensus rule change deployments.
