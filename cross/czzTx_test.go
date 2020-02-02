@@ -3,7 +3,7 @@ package cross
 import (
 	// "bytes"
 	// "encoding/binary"
-	// "errors"
+	"strings"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -48,8 +48,8 @@ func TestCaclMode2(t *testing.T) {
 	doge, itc := new(big.Int).Mul(big.NewInt(10000), baseUnit), new(big.Int).Mul(big.NewInt(100), baseUnit)
 
 	for i := 0; i < sum; i++ {
-		v1 := toDoge(reserve[0], doge)
-		v2 := toLtc(reserve[1], itc)
+		v1 := toDoge2(reserve[0], doge)
+		v2 := toLtc2(reserve[1], itc)
 		fmt.Println("==============================================entangle index:", i, "==============================================")
 		fmt.Printf("entangle doge:%v []\n", doge)
 		fmt.Printf("entangle doge:%v [doge]\n", fromCzz1(doge).Text('f', 4))
@@ -189,4 +189,30 @@ func TestAddrTrans(t *testing.T) {
 		return
 	}
 	fmt.Println(addr.String())
+}
+func TestFloat(t *testing.T) {
+	rate := big.NewFloat(-0.0008)
+	fmt.Println(rate.Signbit())
+	r1, a1 := rate.Float64()
+	s := rate.String()
+	length := len(strings.Split(fmt.Sprintf("%v", s), ".")[1])
+	base := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(0)), nil)
+	fmt.Println(r1, a1,rate.Prec(),s,length,base)
+	fmt.Println("finish")
+}
+
+func TestFloat2(t *testing.T) {
+	rate := big.NewFloat(0.0008)
+	base := big.NewFloat(0.0001)
+	base1 := new(big.Float).Mul(base, big.NewFloat(float64(75)))
+	fmt.Println("base1",base1)
+	rate = rate.Add(rate, base1)
+	fmt.Println("rate",rate)
+
+	str := rate.Text('f',4)
+	fmt.Println(rate.Signbit(),str)
+	pos := countMant(rate,4)
+	fmt.Println(pos)
+	fmt.Println(makeMant(rate,4))
+	fmt.Println("finish")
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 	"math/big"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -470,6 +471,24 @@ func toDoge1(entangled, needed int64) int64 {
 	}
 	return kk
 }
+// doge has same precision with czz
+func toDoge2(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	var rate int64 = 25
+	z, m := new(big.Int).DivMod(entangled, dogeUnit, new(big.Int).Set(dogeUnit))
+	rate = rate + z.Int64()
+	l := new(big.Int).Sub(dogeUnit, m)
+
+	if l.Cmp(needed) >= 1 {
+		return new(big.Int).Quo(needed,big.NewInt(rate))
+	} else {
+		v1 := new(big.Int).Quo(l,big.NewInt(rate))
+		v2 := new(big.Int).Quo(new(big.Int).Sub(needed,l),big.NewInt(rate+1))
+		return new(big.Int).Add(v1,v2)
+	}
+}
 func toDoge(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
@@ -524,6 +543,35 @@ func toLtc1(entangled, needed int64) int64 {
 	}
 	return ret
 }
+// ltc has same precision with czz
+func toLtc2(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	rate := big.NewFloat(0.0008)
+	base := big.NewInt(1)
+
+	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
+	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
+
+	base1 := new(big.Int).Mul(base, divisor)
+	l := new(big.Int).Sub(fixed, remainder)
+
+	if l.Cmp(needed) >= 1 {
+		exp:= makeExp(countMant(rate,4))
+		mant := new(big.Int).Add(makeMant(rate,4),base1)
+		return new(big.Int).Quo(new(big.Int).Mul(needed,exp),mant)
+	} else {
+		exp := makeExp(countMant(rate,4))
+		mant := new(big.Int).Add(makeMant(rate,4),base1)
+		v1 := new(big.Int).Quo(new(big.Int).Mul(l,exp),mant)
+		// fmt.Println("exp",exp,"mant",mant,"v1",v1,"rate",rate)
+		mant = mant.Add(mant,base)
+		v2 := new(big.Int).Quo(new(big.Int).Mul(new(big.Int).Sub(needed,l),exp),mant)
+		// fmt.Println("exp",exp,"mant",mant,"v2",v2,"rate",rate)
+		return new(big.Int).Add(v1,v2)
+	}
+}
 func toLtc(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
@@ -566,6 +614,23 @@ func fromCzz1(val *big.Int) *big.Float {
 	fval := new(big.Float).SetInt(val)
 	fval = fval.Quo(fval, new(big.Float).SetInt(baseUnit))
 	return fval
+}
+
+func countMant(value *big.Float,prec int) int {
+	if !value.Signbit() {
+		str := value.Text('f',prec)
+		return len(strings.Split(fmt.Sprintf("%v", str), ".")[1])
+	}
+	return 0
+}
+func makeExp(exp int) *big.Int {
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(exp)), nil)
+}
+func makeMant(value *big.Float,prec int) *big.Int {
+	base := new(big.Float).SetFloat64(float64(makeExp(countMant(value,prec)).Uint64()))
+	v := new(big.Float).Mul(value,base)
+	val,_ := v.Int64()
+	return big.NewInt(val)
 }
 
 // the tool function for entangle tx
