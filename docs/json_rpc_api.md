@@ -57,7 +57,7 @@ While the [standard API](#Methods) is stable, the
 [Websocket extension API](#WSExtMethods) should be considered a work in
 progress, incomplete, and susceptible to changes (both additions and removals).
 
-The original bitcoind/bitcoin-qt JSON-RPC API documentation is available at [https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list)
+The original bitcoind/bitcoin-qt JSON-RPC API dfocumentation is available at [https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list)
 
 <a name="HttpPostVsWebsockets" />
 
