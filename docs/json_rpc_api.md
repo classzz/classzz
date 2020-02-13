@@ -188,7 +188,7 @@ the method name for further details such as parameter and return information.
 |29|[validateaddress](#validateaddress)|Y|Verifies the given address is valid.  NOTE: Since classzz does not have a wallet integrated, classzz will only return whether the address is valid or not.|
 |30|[verifychain](#verifychain)|N|Verifies the block chain database.|
 |31|[getwork](#getwork)|N|Get mining missions|
-|31|[submitwork](#submitwork)|N|Submit mining tasks|
+|32|[submitwork](#submitwork)|N|Submit mining tasks|
 
 
 <a name="MethodDetails" />
