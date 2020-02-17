@@ -63,7 +63,7 @@ not be reachable for inbound connections unless you also configure a Tor
 **2.2 Command Line Example**<br />
 
 ```bash
-$ ./classzz --proxy=127.0.0.1:9050
+$ ./czzd --proxy=127.0.0.1:9050
 ```
 
 <a name="ClientConfigFileExample" />
@@ -114,7 +114,7 @@ three flags:
 **3.2 Command Line Example**<br />
 
 ```bash
-$ ./classzz --proxy=127.0.0.1:9050 --listen=127.0.0.1 --externalip=fooanon.onion
+$ ./czzd --proxy=127.0.0.1:9050 --listen=127.0.0.1 --externalip=fooanon.onion
 ```
 
 <a name="HiddenServiceConfigFileExample" />
@@ -159,7 +159,7 @@ routed via Tor due to the `--onion` flag.
 **4.2 Command Line Example**<br />
 
 ```bash
-$ ./classzz --onion=127.0.0.1:9050 --externalip=fooanon.onion
+$ ./czzd --onion=127.0.0.1:9050 --externalip=fooanon.onion
 ```
 
 <a name="BridgeConfigFileExample" />
@@ -192,7 +192,7 @@ flag.  This option requires --proxy or --onionproxy to be set.
 **5.2 Command Line Example**<br />
 
 ```bash
-$ ./classzz --proxy=127.0.0.1:9050 --torisolation
+$ ./czzd --proxy=127.0.0.1:9050 --torisolation
 ```
 
 <a name="TorStreamIsolationFileExample" />

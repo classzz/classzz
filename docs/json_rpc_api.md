@@ -57,7 +57,7 @@ While the [standard API](#Methods) is stable, the
 [Websocket extension API](#WSExtMethods) should be considered a work in
 progress, incomplete, and susceptible to changes (both additions and removals).
 
-The original bitcoind/bitcoin-qt JSON-RPC API documentation is available at [https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list)
+The original bitcoind/bitcoin-qt JSON-RPC API dfocumentation is available at [https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list)
 
 <a name="HttpPostVsWebsockets" />
 
@@ -187,6 +187,9 @@ the method name for further details such as parameter and return information.
 |28|[submitblock](#submitblock)|Y|Attempts to submit a new serialized, hex-encoded block to the network.|
 |29|[validateaddress](#validateaddress)|Y|Verifies the given address is valid.  NOTE: Since classzz does not have a wallet integrated, classzz will only return whether the address is valid or not.|
 |30|[verifychain](#verifychain)|N|Verifies the block chain database.|
+|31|[getwork](#getwork)|N|Get mining missions|
+|32|[submitwork](#submitwork)|N|Submit mining tasks|
+
 
 <a name="MethodDetails" />
 
