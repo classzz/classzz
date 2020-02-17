@@ -98,8 +98,50 @@ func (es *EntangleState) UnregisterLightHouse(addr czzutil.Address) error {
 	}
 	return nil
 }
-func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint,lightID uint64) error {
-	return nil
+// AddEntangleItem add item in the state, keep lighthouse have enough amount to entangle,
+func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,lightID uint64,
+	height,amount *big.Int) (*big.Int,error) {
+	sendAmount := big.NewInt(0)
+	var err error
+	lhEntitys,ok := es.EnEntitys[lightID]
+	if !ok {
+		lhEntitys = UserEntangleInfos(make(map[czzutil.Address]EntangleEntitys))
+	}
+	if lhEntitys != nil {
+		userEntitys,ok1 := lhEntitys[addr]
+		if !ok1 {
+			userEntitys = EntangleEntitys(make([]*EntangleEntity,0,0))
+		}
+		found := false
+		for _,v := range userEntitys {
+			if aType == v.AssetType {
+				found = true
+				v.EntangleAmount = new(big.Int).Add(v.EntangleAmount,amount)
+				break
+			}
+		}
+		if !found {
+			entity := &EntangleEntity{
+				ExchangeID:	lightID,
+				Address:	addr,
+				AssetType:	aType,
+				Height:		new(big.Int).Set(height),
+				EntangleAmount: new(big.Int).Set(amount),
+				BurnAmount: big.NewInt(0),
+			}
+			userEntitys = append(userEntitys,entity)
+		}
+		
+		// calc the send amount
+		reserve := es.getEntangledAmount(lightID,aType)
+		sendAmount,err = calcEntangleAmount(reserve,amount,aType)
+		if err != nil {
+			return nil,err
+		}
+		lhEntitys[addr] = userEntitys
+		es.EnEntitys[lightID] = lhEntitys
+	}
+	return sendAmount,nil
 }
 func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint,lightID uint64) error {
 	return nil
@@ -114,4 +156,21 @@ func redeemAmount(addr czzutil.Address,amount *big.Int) error {
 		
 	}
 	return nil
+}
+func calcEntangleAmount(reserve,reqAmount *big.Int,atype uint32) (*big.Int,error) {
+	return nil,nil
+}
+func (es *EntangleState) getEntangledAmount(lightID uint64,atype uint32) *big.Int {
+	aa := big.NewInt(0)
+	if lhEntitys,ok := es.EnEntitys[lightID];ok {
+		for _,userEntitys := range lhEntitys{
+			for _,vv := range userEntitys {
+				if atype == vv.AssetType {
+					aa = aa.Add(aa,vv.EntangleAmount)
+					break
+				}
+			}
+		}
+	}
+	return aa
 }
