@@ -563,6 +563,19 @@ Example Return|`{`<br />&nbsp;&nbsp;`"bytes": 310768,`<br />&nbsp;&nbsp;`"size":
 |Example Return|`true`|
 [Return to Overview](#MethodOverview)<br />
 
+***
+<a name="getwork"/>
+
+|   |   |
+|---|---|
+|Method|getwork|
+|Description|getminerblock |
+|Returns|`{ `"hash":  block no nonce hash <br />&nbsp;&nbsp;`"target": block diff`<br />}|
+[Return to Overview](#MethodOverview)<br />
+
+|32|[submitwork](#submitwork)|N|Submit mining tasks|
+
+
 
 <a name="ExtensionMethods" />
 
