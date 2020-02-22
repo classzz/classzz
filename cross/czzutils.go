@@ -35,6 +35,22 @@ const (
 	LhAssetUSDT
 	LhAssetDOGE
 )
+type BurnItem struct {
+	Amount 	*big.Int
+	Height 	uint64
+}
+type BurnInfos []*BurnItem
+func (b *BurnInfos) GetAllAmount() *big.Int {
+	amount := big.NewInt(0)
+	for _,v := range *b {
+		amount = amount.Add(amount,v.Amount)
+	}
+	return amount
+}
+// Update the valid amount for diffence height for entangle info
+func (b *BurnInfos) Update() {
+
+}
 
 func ValidAssetType(utype uint32) bool {
 	if utype & LhAssetBTC != 0 || utype & LhAssetBCH != 0 || utype & LhAssetBSV != 0 ||
