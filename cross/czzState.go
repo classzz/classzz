@@ -20,6 +20,7 @@ type WhiteUnit struct {
 	Pk				[]byte
 }
 
+
 type LightHouseInfo struct {
 	ExchangeID		uint64
 	Address 		czzutil.Address
@@ -37,7 +38,7 @@ type EntangleEntity struct {
 	AssetType		uint32
 	Height			*big.Int
 	EntangleAmount 	*big.Int
-	BurnAmount 		*big.Int
+	BurnAmount 		*BurnInfos
 }
 type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[czzutil.Address]EntangleEntitys
@@ -127,7 +128,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,light
 				AssetType:	aType,
 				Height:		new(big.Int).Set(height),
 				EntangleAmount: new(big.Int).Set(amount),
-				BurnAmount: big.NewInt(0),
+				BurnAmount: newBurnInfos(),
 			}
 			userEntitys = append(userEntitys,entity)
 		}
@@ -143,8 +144,40 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,light
 	}
 	return sendAmount,nil
 }
-func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint,lightID uint64) error {
-	return nil
+// BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
+// verify the txid,keep equal amount czz
+func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint32,lightID uint64,
+	amount *big.Int) (*big.Int,error) {
+	light := es.getLightHouse(lightID)
+	if light == nil {
+		return nil,ErrNoRegister
+	}
+	lhEntitys,ok := es.EnEntitys[lightID]
+	if !ok {
+		return nil,ErrNoRegister
+	}
+	userEntitys,ok1 := lhEntitys[addr]
+	if !ok1 {
+		return nil,ErrNoUserReg
+	}
+	var userEntity *EntangleEntity
+	for _,v := range userEntitys {
+		if aType == v.AssetType {
+			userEntity = v
+			break
+		}
+	}
+	if userEntity == nil {
+		return nil,ErrNoUserAsset
+	}
+	validAmount := userEntity.BurnAmount.GetValidAmount()
+	if amount.Cmp(validAmount) > 0 {
+		return nil,ErrNotEnouthBurn
+	} 
+	userEntity.BurnAmount.BurnAmount = new(big.Int).Add(userEntity.BurnAmount.BurnAmount,amount)
+	res := new(big.Int).Div(new(big.Int).Mul(amount,big.NewInt(int64(light.Fee))),big.NewInt(int64(light.Fee)))
+	
+	return res,nil
 }
 func (es *EntangleState) ConfiscateAsset() error {
 	return nil
@@ -173,4 +206,12 @@ func (es *EntangleState) getEntangledAmount(lightID uint64,atype uint32) *big.In
 		}
 	}
 	return aa
+}
+func (es *EntangleState) getLightHouse(id uint64) *LightHouseInfo {
+	for _,val := range es.EnInfos {
+		if val.ExchangeID == id {
+			return val
+		}
+	}
+	return nil
 }
