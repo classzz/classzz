@@ -93,6 +93,15 @@ type CreateRawEntangleTransactionCmd struct {
 	LockTime     *int64
 }
 
+// CreatePledgeRegistrationCmd defines JSON-RPC command.
+type CreatePledgeRegistrationCmd struct {
+	Amount *int64
+	Type   *int64
+	Flag   *int64
+	Fee    *int64
+	Auto   *int64
+}
+
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
