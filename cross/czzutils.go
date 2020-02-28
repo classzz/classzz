@@ -13,7 +13,7 @@ import (
 	// "github.com/classzz/classzz/czzec"
 	// "github.com/classzz/classzz/txscript"
 	// "github.com/classzz/classzz/wire"
-	// "github.com/classzz/czzutil"
+	"github.com/classzz/czzutil"
 )
 
 var (
@@ -66,6 +66,45 @@ func (b *BurnInfos) GetValidAmount() *big.Int {
 func (b *BurnInfos) Update() {
 
 }
+type WhiteUnit struct {
+	AssetType 		uint32
+	Pk				[]byte
+}
+type EnAssetItem struct {
+	AssetType 		uint32
+	Amount 			*big.Int
+}
+
+type LightHouseInfo struct {
+	ExchangeID		uint64
+	Address 		czzutil.Address
+	StakingAmount 	*big.Int 			// in 
+	EntangleAmount  *big.Int			// out,express by czz
+	EnAssets		[]*EnAssetItem		// out,the extrinsic asset
+	AssetFlag 		uint32
+	Fee 			uint64
+	KeepTime		uint64 		// the time as the block count for finally redeem time
+	WhiteList 		[]*WhiteUnit
+}
+
+func (lh *LightHouseInfo) addEnAsset(atype uint32, amount *big.Int) {
+	found := false
+	for _,val := range lh.EnAssets {
+		if val.AssetType == atype {
+			found = true
+			val.Amount = new(big.Int).Add(val.Amount,amount)			
+		}
+	}
+	if !found {
+		lh.EnAssets = append(lh.EnAssets,&EnAssetItem{
+			AssetType:		atype,
+			Amount:			amount,
+		})
+	}
+}
+func (lh *LightHouseInfo) recordEntangleAmount(amount *big.Int) {
+	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount,amount)
+} 
 
 func ValidAssetType(utype uint32) bool {
 	if utype & LhAssetBTC != 0 || utype & LhAssetBCH != 0 || utype & LhAssetBSV != 0 ||
@@ -76,4 +115,7 @@ func ValidAssetType(utype uint32) bool {
 }
 func ValidPK(pk []byte) bool {
 	return true
+}
+func isValidAsset(atype,assetAll uint32) bool {
+	return atype & assetAll != 0
 }

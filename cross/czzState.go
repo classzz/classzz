@@ -15,22 +15,8 @@ import (
 	// "github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
-type WhiteUnit struct {
-	AssetType 		uint32
-	Pk				[]byte
-}
 
 
-type LightHouseInfo struct {
-	ExchangeID		uint64
-	Address 		czzutil.Address
-	StakeAmount 	*big.Int 
-	EntangleAmount  *big.Int
-	AssetFlag 		uint32
-	Fee 			uint64
-	KeepTime		uint64 		// the time as the block count for finally redeem time
-	WhiteList 		[]*WhiteUnit
-}
 // Address > EntangleEntity
 type EntangleEntity struct {
 	ExchangeID		uint64
@@ -64,9 +50,10 @@ func (es *EntangleState) RegisterLightHouse(addr czzutil.Address,amount *big.Int
 	info := &LightHouseInfo{
 		ExchangeID:		es.CurExchangeID+1,
 		Address:		addr,
-		StakeAmount:	new(big.Int).Set(amount),
+		StakingAmount:	new(big.Int).Set(amount),
 		AssetFlag:		assetType,
 		Fee:			fee,
+		EnAssets:		make([]*EnAssetItem,0,0),
 		EntangleAmount:	big.NewInt(0),
 		WhiteList:		make([]*WhiteUnit,0,0),
 	}
@@ -92,7 +79,7 @@ func (es *EntangleState) AppendWhiteList(addr czzutil.Address,wlist []*WhiteUnit
 // UnregisterLightHouse need to check all the proves and handle all the user's burn coins
 func (es *EntangleState) UnregisterLightHouse(addr czzutil.Address) error {
 	if val,ok := es.EnInfos[addr]; ok {
-		last := new(big.Int).Sub(val.StakeAmount,val.EntangleAmount)
+		last := new(big.Int).Sub(val.StakingAmount,val.EntangleAmount)
 		redeemAmount(addr,last)
 	} else {
 		return ErrNoRegister
@@ -102,6 +89,13 @@ func (es *EntangleState) UnregisterLightHouse(addr czzutil.Address) error {
 // AddEntangleItem add item in the state, keep lighthouse have enough amount to entangle,
 func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,lightID uint64,
 	height,amount *big.Int) (*big.Int,error) {
+	lh := es.getLightHouse(lightID)
+	if lh == nil {
+		return nil,ErrNoRegister
+	}
+	if !isValidAsset(aType,lh.AssetFlag) {
+		return nil,ErrNoUserAsset
+	}
 	sendAmount := big.NewInt(0)
 	var err error
 	lhEntitys,ok := es.EnEntitys[lightID]
@@ -139,6 +133,8 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,light
 		if err != nil {
 			return nil,err
 		}
+		lh.addEnAsset(aType,amount)
+		lh.recordEntangleAmount(sendAmount)
 		lhEntitys[addr] = userEntitys
 		es.EnEntitys[lightID] = lhEntitys
 	}
@@ -211,6 +207,32 @@ func (es *EntangleState) getLightHouse(id uint64) *LightHouseInfo {
 	for _,val := range es.EnInfos {
 		if val.ExchangeID == id {
 			return val
+		}
+	}
+	return nil
+}
+func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
+	all := big.NewInt(0)
+	for _,val := range es.EnInfos {
+		for _,v := range val.EnAssets {
+			if v.AssetType == atype {
+				all = all.Add(all,v.Amount)
+				break
+			}
+		}
+	}
+	return all
+}
+// 最低质押额度＝ 100 万 CZZ ＋（累计跨链买入 CZZ －累计跨链卖出 CZZ）x 汇率比
+func (es *EntangleState) LimitStakingAmount(eid uint64,atype uint32) *big.Int {
+	lh := es.getLightHouse(eid)
+	if lh != nil {
+		l := new(big.Int).Sub(lh.StakingAmount,lh.EntangleAmount)
+		if l.Sign() > 0 {
+			l = new(big.Int).Sub(l,MinStakingAmountForLightHouse)
+			if l.Sign() > 0 {
+				return l
+			}
 		}
 	}
 	return nil
