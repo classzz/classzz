@@ -135,6 +135,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"addnode":                      handleAddNode,
 	"createrawtransaction":         handleCreateRawTransaction,
 	"createrawentangletransaction": handleCreateRawEntangleTransaction,
+	"pledgeregistration":           handlePledgeRegistration,
 	"debuglevel":                   handleDebugLevel,
 	"decoderawtransaction":         handleDecodeRawTransaction,
 	"decodescript":                 handleDecodeScript,
@@ -264,6 +265,7 @@ var rpcLimited = map[string]struct{}{
 	// HTTP/S-only commands
 	"createrawtransaction":         {},
 	"createrawentangletransaction": {},
+	"pledgeregistration":           {},
 	"decoderawtransaction":         {},
 	"decodescript":                 {},
 	"estimatefee":                  {},
@@ -690,6 +692,11 @@ func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan
 		return nil, err
 	}
 	return mtxHex, nil
+}
+
+func handlePledgeRegistration(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	//_ := cmd.(*btcjson.CreatePledgeRegistrationCmd)
+	return nil, nil
 }
 
 // handleDebugLevel handles debuglevel commands.
