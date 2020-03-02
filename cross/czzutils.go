@@ -154,14 +154,17 @@ type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
 
 /////////////////////////////////////////////////////////////////
-func (e *EntangleEntity) updateFreeQuota(limit *big.Int) {
-	
-}
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
 	return e.MaxRedeem
 }
+func (e *EntangleEntity) updateFreeQuota(limitHeight *big.Int) {
+	
+}
 
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit big.Int) *big.Int {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit *big.Int) *big.Int {
+	for _,v := range *ee {
+		v.updateFreeQuota(limit)
+	}
 	return nil
 }
 
