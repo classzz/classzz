@@ -152,7 +152,8 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint32,lightID uin
 	if userEntity == nil {
 		return nil,ErrNoUserAsset
 	}
-	validAmount := userEntity.BurnAmount.GetValidAmount()
+	// self redeem amount, maybe add the free quota in the lighthouse
+	validAmount := userEntity.GetValidRedeemAmount()
 	if amount.Cmp(validAmount) > 0 {
 		return nil,ErrNotEnouthBurn
 	} 

@@ -68,10 +68,12 @@ type WhiteUnit struct {
 	AssetType 		uint32
 	Pk				[]byte
 }
-type EnAssetItem struct {
+type BaseAmountUint struct {
 	AssetType 		uint32
 	Amount 			*big.Int
 }
+type EnAssetItem BaseAmountUint
+type FreeQuotaItem BaseAmountUint
 
 type LightHouseInfo struct {
 	ExchangeID		uint64
@@ -79,6 +81,7 @@ type LightHouseInfo struct {
 	StakingAmount 	*big.Int 			// in 
 	EntangleAmount  *big.Int			// out,express by czz
 	EnAssets		[]*EnAssetItem		// out,the extrinsic asset
+	Frees 			[]*FreeQuotaItem	// extrinsic asset
 	AssetFlag 		uint32
 	Fee 			uint64
 	KeepTime		uint64 		// the time as the block count for finally redeem time
@@ -103,7 +106,37 @@ func (lh *LightHouseInfo) addEnAsset(atype uint32, amount *big.Int) {
 func (lh *LightHouseInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount,amount)
 } 
-
+func (lh *LightHouseInfo) addFreeQuota(amount *big.Int,atype uint32) {
+	for _,v := range lh.Frees {
+		if atype == v.AssetType {
+			v.Amount = new(big.Int).Add(v.Amount,amount)
+		}
+	}
+}
+func (lh *LightHouseInfo) useFreeQuota(amount *big.Int,atype uint32) {
+	for _,v := range lh.Frees {
+		if atype == v.AssetType {
+			if v.Amount.Cmp(amount) >= 0 {
+				v.Amount = new(big.Int).Sub(v.Amount,amount)
+			} else {
+				// panic
+				v.Amount = big.NewInt(0)
+			}
+		}
+	}
+}
+func (lh *LightHouseInfo) canRedeem(amount *big.Int,atype uint32) bool {
+	for _,v := range lh.Frees {
+		if atype == v.AssetType {
+			if v.Amount.Cmp(amount) >= 0 {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+	return false
+}
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
@@ -112,9 +145,8 @@ type EntangleEntity struct {
 	AssetType		uint32
 	Height			*big.Int				// newest height for entangle
 	OldHeight		*big.Int				// oldest height for entangle
-	EntangleAmount 	*big.Int				// out asset
-	FreeQuota 		*big.Int				
-	MaxRedeem       *big.Int
+	EntangleAmount 	*big.Int				// out asset	
+	MaxRedeem       *big.Int				// out asset
 	BurnAmount 		*BurnInfos
 }
 type EntangleEntitys []*EntangleEntity
@@ -122,8 +154,14 @@ type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
 
 /////////////////////////////////////////////////////////////////
+func (e *EntangleEntity) updateFreeQuota(limit *big.Int) {
+	
+}
+func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
+	return e.MaxRedeem
+}
 
-func (ee *EntangleEntitys) updateFreeQuota(limit big.Int) *big.Int {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit big.Int) *big.Int {
 	return nil
 }
 
