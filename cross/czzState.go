@@ -17,25 +17,11 @@ import (
 )
 
 
-// Address > EntangleEntity
-type EntangleEntity struct {
-	ExchangeID		uint64
-	Address 		czzutil.Address
-	AssetType		uint32
-	Height			*big.Int
-	EntangleAmount 	*big.Int
-	BurnAmount 		*BurnInfos
-}
-type EntangleEntitys []*EntangleEntity
-type UserEntangleInfos map[czzutil.Address]EntangleEntitys
-
 type EntangleState struct {
 	EnInfos 		map[czzutil.Address]*LightHouseInfo
 	EnEntitys 		map[uint64]UserEntangleInfos
 	CurExchangeID 	uint64
 }
-
-/////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
@@ -178,7 +164,6 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint32,lightID uin
 func (es *EntangleState) ConfiscateAsset() error {
 	return nil
 }
-
 //////////////////////////////////////////////////////////////////////
 func redeemAmount(addr czzutil.Address,amount *big.Int) error {
 	if amount.Sign() > 0 {
@@ -237,3 +222,5 @@ func (es *EntangleState) LimitStakingAmount(eid uint64,atype uint32) *big.Int {
 	}
 	return nil
 }
+
+//////////////////////////////////////////////////////////////////////

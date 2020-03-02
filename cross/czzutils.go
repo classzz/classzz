@@ -40,17 +40,16 @@ const (
 	LhAssetDOGE
 )
 type BurnItem struct {
-	Amount 	*big.Int
-	Height 	uint64
+	Amount 	*big.Int			// czz asset amount
+	Height 	uint64	
 }
 type BurnInfos struct {
 	Items 	[]*BurnItem
-	BurnAmount *big.Int 		// add the user's burn amount
+	BurnAmount *big.Int 		// burned amount for outside asset
 }
 func newBurnInfos() *BurnInfos {
 	return nil
 }
-
 func (b *BurnInfos) GetAllAmount() *big.Int {
 	amount := big.NewInt(0)
 	for _,v := range b.Items {
@@ -58,7 +57,6 @@ func (b *BurnInfos) GetAllAmount() *big.Int {
 	}
 	return amount
 }
-
 func (b *BurnInfos) GetValidAmount() *big.Int {
 	return nil
 }
@@ -105,6 +103,31 @@ func (lh *LightHouseInfo) addEnAsset(atype uint32, amount *big.Int) {
 func (lh *LightHouseInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount,amount)
 } 
+
+/////////////////////////////////////////////////////////////////
+// Address > EntangleEntity
+type EntangleEntity struct {
+	ExchangeID		uint64
+	Address 		czzutil.Address
+	AssetType		uint32
+	Height			*big.Int				// newest height for entangle
+	OldHeight		*big.Int				// oldest height for entangle
+	EntangleAmount 	*big.Int				// out asset
+	FreeQuota 		*big.Int				
+	MaxRedeem       *big.Int
+	BurnAmount 		*BurnInfos
+}
+type EntangleEntitys []*EntangleEntity
+type UserEntangleInfos map[czzutil.Address]EntangleEntitys
+
+
+/////////////////////////////////////////////////////////////////
+
+func (ee *EntangleEntitys) updateFreeQuota(limit big.Int) *big.Int {
+	return nil
+}
+
+/////////////////////////////////////////////////////////////////
 
 func ValidAssetType(utype uint32) bool {
 	if utype & LhAssetBTC != 0 || utype & LhAssetBCH != 0 || utype & LhAssetBSV != 0 ||
