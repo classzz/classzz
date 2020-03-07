@@ -88,7 +88,7 @@ type LightHouseInfo struct {
 	Frees 			[]*FreeQuotaItem	// extrinsic asset
 	AssetFlag 		uint32
 	Fee 			uint64
-	KeepTime		uint64 		// the time as the block count for finally redeem time
+	KeepTime		uint64 				// the time as the block count for finally redeem time
 	WhiteList 		[]*WhiteUnit
 }
 

@@ -9,7 +9,7 @@ import (
 	"math/big"
 
 	// "github.com/classzz/classzz/chaincfg"
-	// "github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	// "github.com/classzz/classzz/czzec"
 	// "github.com/classzz/classzz/txscript"
 	// "github.com/classzz/classzz/wire"
@@ -225,3 +225,18 @@ func (es *EntangleState) LimitStakingAmount(eid uint64,atype uint32) *big.Int {
 }
 
 //////////////////////////////////////////////////////////////////////
+func (es *EntangleState) toBytes() []byte {
+	return nil
+}
+func (es *EntangleState) Save() error {
+	return nil
+}
+func (es *EntangleState) Load() error {
+	return nil
+}
+func Hash(es *EntangleState) chainhash.Hash {
+	return chainhash.HashH(es.toBytes())
+}
+func NewEntangleState() *EntangleState {
+	return nil
+}
