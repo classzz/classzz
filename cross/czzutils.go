@@ -141,6 +141,26 @@ func (lh *LightHouseInfo) canRedeem(amount *big.Int,atype uint32) bool {
 	}
 	return false
 }
+func (lh *LightHouseInfo) updateFreeQuota(res []*BaseAmountUint) error {
+	// add free quota for lighthouse
+	for _,val := range res {
+		if val.Amount != nil && val.Amount.Sign() > 0 {
+			item := lh.getFreeQuotaInfo(val.AssetType)
+			if item != nil {
+				item.Amount = new(big.Int).Add(item.Amount,val.Amount)
+			}
+		}
+	}
+	return nil
+}
+func (lh *LightHouseInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
+	for _,v := range lh.Frees {
+		if atype == v.AssetType {
+			return v
+		}
+	}
+	return nil
+}
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
@@ -165,16 +185,22 @@ func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
 	} 
 	return nil
 }
-func (e *EntangleEntity) updateFreeQuota(limitHeight *big.Int) {
+func (e *EntangleEntity) updateFreeQuota(limitHeight *big.Int) *big.Int {
 	// update user's MaxRedeem,maybe subtraction user's all burned amount
 	// maybe change the GetValidRedeemAmount
+	return nil
 }
 
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit *big.Int) *big.Int {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit *big.Int) []*BaseAmountUint {
+	res := make([]*BaseAmountUint,0,0)
 	for _,v := range *ee {
-		v.updateFreeQuota(limit)
+		item := &BaseAmountUint{
+			AssetType: 		v.AssetType,
+		}
+		item.Amount = v.updateFreeQuota(limit)
+		res = append(res,item)
 	}
-	return nil
+	return res
 }
 
 /////////////////////////////////////////////////////////////////

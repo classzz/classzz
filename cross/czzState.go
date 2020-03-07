@@ -4,7 +4,7 @@ import (
 	// "bytes"
 	// "encoding/binary"
 	"errors"
-	// "fmt"
+	"fmt"
 	// "strings"
 	"math/big"
 
@@ -26,7 +26,7 @@ type EntangleState struct {
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterLightHouse(addr czzutil.Address,amount *big.Int,
-	fee uint64,assetType uint32) error {
+	fee ,keeptime uint64,assetType uint32) error {
 	if amount.Cmp(MinStakingAmountForLightHouse) < 0 {
 		return ErrLessThanMin
 	}
@@ -39,6 +39,7 @@ func (es *EntangleState) RegisterLightHouse(addr czzutil.Address,amount *big.Int
 		StakingAmount:	new(big.Int).Set(amount),
 		AssetFlag:		assetType,
 		Fee:			fee,
+		KeepTime:		keeptime,
 		EnAssets:		make([]*EnAssetItem,0,0),
 		EntangleAmount:	big.NewInt(0),
 		WhiteList:		make([]*WhiteUnit,0,0),
@@ -225,7 +226,23 @@ func (es *EntangleState) LimitStakingAmount(eid uint64,atype uint32) *big.Int {
 }
 
 //////////////////////////////////////////////////////////////////////
+// UpdateQuotaOnBlock called in insertBlock for update user's quota state
+func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
+	for _,lh := range es.EnInfos {
+		userEntitys,ok := es.EnEntitys[lh.ExchangeID]
+		if !ok {
+			fmt.Println("cann't found the lighthouse id:",lh.ExchangeID)
+		} else {
+			for _,userEntity := range userEntitys {
+				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(lh.KeepTime)))
+				lh.updateFreeQuota(res)
+			}
+		}
+	}
+	return nil
+}
 func (es *EntangleState) toBytes() []byte {
+	// maybe rlp encode
 	return nil
 }
 func (es *EntangleState) Save() error {
@@ -238,5 +255,9 @@ func Hash(es *EntangleState) chainhash.Hash {
 	return chainhash.HashH(es.toBytes())
 }
 func NewEntangleState() *EntangleState {
-	return nil
+	return &EntangleState{
+		EnInfos: 		make(map[czzutil.Address]*LightHouseInfo),
+		EnEntitys:		make(map[uint64]UserEntangleInfos),
+		CurExchangeID: 	0,
+	}
 }
