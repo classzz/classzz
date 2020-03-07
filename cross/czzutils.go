@@ -50,12 +50,16 @@ type BurnInfos struct {
 func newBurnInfos() *BurnInfos {
 	return nil
 }
+// GetAllAmount returns all burned amount asset (czz)
 func (b *BurnInfos) GetAllAmount() *big.Int {
 	amount := big.NewInt(0)
 	for _,v := range b.Items {
 		amount = amount.Add(amount,v.Amount)
 	}
 	return amount
+}
+func (b *BurnInfos) GetAllBurnedAmount() *big.Int {
+	return b.BurnAmount
 }
 func (b *BurnInfos) GetValidAmount() *big.Int {
 	return nil
@@ -79,7 +83,7 @@ type LightHouseInfo struct {
 	ExchangeID		uint64
 	Address 		czzutil.Address
 	StakingAmount 	*big.Int 			// in 
-	EntangleAmount  *big.Int			// out,express by czz
+	EntangleAmount  *big.Int			// out,express by czz,all amount of user's entangle
 	EnAssets		[]*EnAssetItem		// out,the extrinsic asset
 	Frees 			[]*FreeQuotaItem	// extrinsic asset
 	AssetFlag 		uint32
@@ -155,10 +159,15 @@ type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
 /////////////////////////////////////////////////////////////////
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	return e.MaxRedeem
+	left := new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmount())
+	if left.Sign() >= 0 {
+		return left
+	} 
+	return nil
 }
 func (e *EntangleEntity) updateFreeQuota(limitHeight *big.Int) {
-	
+	// update user's MaxRedeem,maybe subtraction user's all burned amount
+	// maybe change the GetValidRedeemAmount
 }
 
 func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit *big.Int) *big.Int {
