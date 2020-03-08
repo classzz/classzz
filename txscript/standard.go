@@ -449,6 +449,16 @@ func EntangleScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
 }
 
+// EntangleScript impl in
+func LighthouseScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN195).AddData(data).Script()
+}
+
 // KeepedAmountScript impl in
 func KeepedAmountScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
