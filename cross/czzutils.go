@@ -27,7 +27,7 @@ var (
 )
 
 var (
-	MinStakingAmountForLightHouse = new(big.Int).Mul(big.NewInt(1000000),big.NewInt(1e9))
+	MinStakingAmountForBeaconAddress = new(big.Int).Mul(big.NewInt(1000000),big.NewInt(1e9))
 	MaxWhiteListCount  = 5
 	MAXBASEFEE 		   = 10000
 )
@@ -79,7 +79,7 @@ type BaseAmountUint struct {
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
-type LightHouseInfo struct {
+type BeaconAddressInfo struct {
 	ExchangeID		uint64
 	Address 		czzutil.Address
 	StakingAmount 	*big.Int 			// in 
@@ -92,7 +92,7 @@ type LightHouseInfo struct {
 	WhiteList 		[]*WhiteUnit
 }
 
-func (lh *LightHouseInfo) addEnAsset(atype uint32, amount *big.Int) {
+func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
 	found := false
 	for _,val := range lh.EnAssets {
 		if val.AssetType == atype {
@@ -107,17 +107,17 @@ func (lh *LightHouseInfo) addEnAsset(atype uint32, amount *big.Int) {
 		})
 	}
 }
-func (lh *LightHouseInfo) recordEntangleAmount(amount *big.Int) {
+func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount,amount)
 } 
-func (lh *LightHouseInfo) addFreeQuota(amount *big.Int,atype uint32) {
+func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int,atype uint32) {
 	for _,v := range lh.Frees {
 		if atype == v.AssetType {
 			v.Amount = new(big.Int).Add(v.Amount,amount)
 		}
 	}
 }
-func (lh *LightHouseInfo) useFreeQuota(amount *big.Int,atype uint32) {
+func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int,atype uint32) {
 	for _,v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
@@ -129,7 +129,7 @@ func (lh *LightHouseInfo) useFreeQuota(amount *big.Int,atype uint32) {
 		}
 	}
 }
-func (lh *LightHouseInfo) canRedeem(amount *big.Int,atype uint32) bool {
+func (lh *BeaconAddressInfo) canRedeem(amount *big.Int,atype uint32) bool {
 	for _,v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
@@ -141,7 +141,7 @@ func (lh *LightHouseInfo) canRedeem(amount *big.Int,atype uint32) bool {
 	}
 	return false
 }
-func (lh *LightHouseInfo) updateFreeQuota(res []*BaseAmountUint) error {
+func (lh *BeaconAddressInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	// add free quota for lighthouse
 	for _,val := range res {
 		if val.Amount != nil && val.Amount.Sign() > 0 {
@@ -153,7 +153,7 @@ func (lh *LightHouseInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	}
 	return nil
 }
-func (lh *LightHouseInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
+func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
 	for _,v := range lh.Frees {
 		if atype == v.AssetType {
 			return v

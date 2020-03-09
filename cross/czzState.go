@@ -5,7 +5,7 @@ import (
 	// "encoding/binary"
 	"errors"
 	"fmt"
-	// "strings"
+	"sort"
 	"math/big"
 
 	// "github.com/classzz/classzz/chaincfg"
@@ -19,27 +19,27 @@ import (
 
 
 type EntangleState struct {
-	EnInfos 		map[czzutil.Address]*LightHouseInfo
+	EnInfos 		map[czzutil.Address]*BeaconAddressInfo
 	EnEntitys 		map[uint64]UserEntangleInfos
 	CurExchangeID 	uint64
 }
-type StoreLightHouse struct {
+type StoreBeaconAddress struct {
 	Address 		czzutil.Address
-	Lh 				*LightHouseInfo
+	Lh 				*BeaconAddressInfo
 }
 type StoreUserInfos struct {
 	EID 		uint64
 	UserInfos   UserEntangleInfos
 }
-type SortStoreLightHouse []*StoreLightHouse
+type SortStoreBeaconAddress []*StoreBeaconAddress
 
-func (vs SortStoreLightHouse) Len() int {
+func (vs SortStoreBeaconAddress) Len() int {
 	return len(vs)
 }
-func (vs SortStoreLightHouse) Less(i, j int) bool {
+func (vs SortStoreBeaconAddress) Less(i, j int) bool {
 	return bytes.Compare(vs[i].ScriptAddress(),vs[j].ScriptAddress()) == -1 
 }
-func (vs SortStoreLightHouse) Swap(i, j int) {
+func (vs SortStoreBeaconAddress) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it
@@ -59,10 +59,10 @@ func (vs SortStoreUserInfos) Swap(i, j int) {
 }
 /////////////////////////////////////////////////////////////////
 
-func (es *EntangleState) toSlice() (SortStoreLightHouse,SortStoreUserInfos) {
-	v1,v2 := make([]*StoreLightHouse,0,0),make([]*StoreUserInfos,0,0)
+func (es *EntangleState) toSlice() (SortStoreBeaconAddress,SortStoreUserInfos) {
+	v1,v2 := make([]*StoreBeaconAddress,0,0),make([]*StoreUserInfos,0,0)
 	for k,v := range es.EnInfos {
-		v1 = append(v1,&StoreLightHouse{
+		v1 = append(v1,&StoreBeaconAddress{
 			Address:		k,
 			Lh:				v,
 		})
@@ -73,12 +73,12 @@ func (es *EntangleState) toSlice() (SortStoreLightHouse,SortStoreUserInfos) {
 			UserInfos:	v,
 		})
 	}
-	sort.Sort(SortStoreLightHouse(v1))
+	sort.Sort(SortStoreBeaconAddress(v1))
 	sort.Sort(SortStoreUserInfos(v2))
 	return nil,nil
 }
-func (es *EntangleState) fromSlice(v1 SortStoreLightHouse,v2 SortStoreUserInfos) {
-	enInfos := make(map[czzutil.Address]*LightHouseInfo)
+func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress,v2 SortStoreUserInfos) {
+	enInfos := make(map[czzutil.Address]*BeaconAddressInfo)
 	entitys := make(map[uint64]UserEntangleInfos)
 	for _,v := range v1 {
 		enInfos[v.Address] = v.Lh
@@ -92,7 +92,7 @@ func (es *EntangleState) fromSlice(v1 SortStoreLightHouse,v2 SortStoreUserInfos)
 func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 	type Store1 struct {
 		ID 		uint64
-		Value1 SortStoreLightHouse
+		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
 	}
 	var eb Store1
@@ -106,7 +106,7 @@ func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 func (es *EntangleState) EncodeRLP(w io.Writer) error {
 	type Store1 struct {
 		ID 		uint64
-		Value1 SortStoreLightHouse
+		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
 	}
 	s1,s2 := es.toSlice()
@@ -118,15 +118,15 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 }
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterLightHouse(addr czzutil.Address,amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr czzutil.Address,amount *big.Int,
 	fee ,keeptime uint64,assetType uint32) error {
-	if amount.Cmp(MinStakingAmountForLightHouse) < 0 {
+	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
 	}
 	if _,ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	}
-	info := &LightHouseInfo{
+	info := &BeaconAddressInfo{
 		ExchangeID:		es.CurExchangeID+1,
 		Address:		addr,
 		StakingAmount:	new(big.Int).Set(amount),
@@ -156,8 +156,8 @@ func (es *EntangleState) AppendWhiteList(addr czzutil.Address,wlist []*WhiteUnit
 		return ErrNoRegister
 	}	
 }
-// UnregisterLightHouse need to check all the proves and handle all the user's burn coins
-func (es *EntangleState) UnregisterLightHouse(addr czzutil.Address) error {
+// UnregisterBeaconAddress need to check all the proves and handle all the user's burn coins
+func (es *EntangleState) UnregisterBeaconAddress(addr czzutil.Address) error {
 	if val,ok := es.EnInfos[addr]; ok {
 		last := new(big.Int).Sub(val.StakingAmount,val.EntangleAmount)
 		redeemAmount(addr,last)
@@ -166,10 +166,10 @@ func (es *EntangleState) UnregisterLightHouse(addr czzutil.Address) error {
 	}
 	return nil
 }
-// AddEntangleItem add item in the state, keep lighthouse have enough amount to entangle,
+// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,lightID uint64,
 	height,amount *big.Int) (*big.Int,error) {
-	lh := es.getLightHouse(lightID)
+	lh := es.getBeaconAddress(lightID)
 	if lh == nil {
 		return nil,ErrNoRegister
 	}
@@ -224,7 +224,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address,aType uint32,light
 // verify the txid,keep equal amount czz
 func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint32,lightID uint64,
 	amount *big.Int) (*big.Int,error) {
-	light := es.getLightHouse(lightID)
+	light := es.getBeaconAddress(lightID)
 	if light == nil {
 		return nil,ErrNoRegister
 	}
@@ -246,7 +246,7 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address,aType uint32,lightID uin
 	if userEntity == nil {
 		return nil,ErrNoUserAsset
 	}
-	// self redeem amount, maybe add the free quota in the lighthouse
+	// self redeem amount, maybe add the free quota in the BeaconAddress
 	validAmount := userEntity.GetValidRedeemAmount()
 	if amount.Cmp(validAmount) > 0 {
 		return nil,ErrNotEnouthBurn
@@ -283,7 +283,7 @@ func (es *EntangleState) getEntangledAmount(lightID uint64,atype uint32) *big.In
 	}
 	return aa
 }
-func (es *EntangleState) getLightHouse(id uint64) *LightHouseInfo {
+func (es *EntangleState) getBeaconAddress(id uint64) *BeaconAddressInfo {
 	for _,val := range es.EnInfos {
 		if val.ExchangeID == id {
 			return val
@@ -305,11 +305,11 @@ func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
 }
 // 最低质押额度＝ 100 万 CZZ ＋（累计跨链买入 CZZ －累计跨链卖出 CZZ）x 汇率比
 func (es *EntangleState) LimitStakingAmount(eid uint64,atype uint32) *big.Int {
-	lh := es.getLightHouse(eid)
+	lh := es.getBeaconAddress(eid)
 	if lh != nil {
 		l := new(big.Int).Sub(lh.StakingAmount,lh.EntangleAmount)
 		if l.Sign() > 0 {
-			l = new(big.Int).Sub(l,MinStakingAmountForLightHouse)
+			l = new(big.Int).Sub(l,MinStakingAmountForBeaconAddress)
 			if l.Sign() > 0 {
 				return l
 			}
@@ -324,7 +324,7 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 	for _,lh := range es.EnInfos {
 		userEntitys,ok := es.EnEntitys[lh.ExchangeID]
 		if !ok {
-			fmt.Println("cann't found the lighthouse id:",lh.ExchangeID)
+			fmt.Println("cann't found the BeaconAddress id:",lh.ExchangeID)
 		} else {
 			for _,userEntity := range userEntitys {
 				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(lh.KeepTime)))
@@ -353,7 +353,7 @@ func Hash(es *EntangleState) chainhash.Hash {
 }
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
-		EnInfos: 		make(map[czzutil.Address]*LightHouseInfo),
+		EnInfos: 		make(map[czzutil.Address]*BeaconAddressInfo),
 		EnEntitys:		make(map[uint64]UserEntangleInfos),
 		CurExchangeID: 	0,
 	}
