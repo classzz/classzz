@@ -13,6 +13,7 @@ import (
 	// "github.com/classzz/classzz/czzec"
 	// "github.com/classzz/classzz/txscript"
 	// "github.com/classzz/classzz/wire"
+	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
 )
 
@@ -243,7 +244,11 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 }
 func (es *EntangleState) toBytes() []byte {
 	// maybe rlp encode
-	return nil
+	data, err := rlp.EncodeToBytes(es)
+	if err != nil {
+		log.Crit("Failed to RLP encode EntangleState", "err", err)
+	}
+	return data
 }
 func (es *EntangleState) Save() error {
 	return nil
