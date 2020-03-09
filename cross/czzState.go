@@ -60,6 +60,21 @@ func (vs SortStoreUserInfos) Swap(i, j int) {
 /////////////////////////////////////////////////////////////////
 
 func (es *EntangleState) toSlice() (SortStoreLightHouse,SortStoreUserInfos) {
+	v1,v2 := make([]*StoreLightHouse,0,0),make([]*StoreUserInfos,0,0)
+	for k,v := range es.EnInfos {
+		v1 = append(v1,&StoreLightHouse{
+			Address:		k,
+			Lh:				v,
+		})
+	}
+	for k,v := range es.EnEntitys {
+		v2 := append(v2,&StoreUserInfos{
+			EID:		k,
+			UserInfos:	v,
+		})
+	}
+	sort.Sort(SortStoreLightHouse(v1))
+	sort.Sort(SortStoreUserInfos(v2))
 	return nil,nil
 }
 func (es *EntangleState) fromSlice(v1 SortStoreLightHouse,v2 SortStoreUserInfos) {
