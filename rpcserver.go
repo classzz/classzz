@@ -695,8 +695,58 @@ func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan
 }
 
 func handlePledgeRegistration(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	//_ := cmd.(*btcjson.CreatePledgeRegistrationCmd)
-	return nil, nil
+	c := cmd.(*btcjson.CreatePledgeRegistrationCmd)
+
+	// Validate the locktime, if given.
+	if c.LockTime != nil &&
+		(*c.LockTime < 0 || *c.LockTime > int64(wire.MaxTxInSequenceNum)) {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "Locktime out of range",
+		}
+	}
+
+	// Add all transaction inputs to a new transaction after performing
+	// some validity checks.
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	for _, input := range c.Inputs {
+		txHash, err := chainhash.NewHashFromStr(input.Txid)
+		if err != nil {
+			return nil, rpcDecodeHexError(input.Txid)
+		}
+
+		prevOut := wire.NewOutPoint(txHash, input.Vout)
+		txIn := wire.NewTxIn(prevOut, []byte{})
+		if c.LockTime != nil && *c.LockTime != 0 {
+			txIn.Sequence = wire.MaxTxInSequenceNum - 1
+		}
+		mtx.AddTxIn(txIn)
+	}
+
+	scriptInfo, err := txscript.LighthouseScript(c.PledgeRegistration.Serialize())
+	if err != nil {
+		return nil, err
+	}
+
+	mtx.AddTxOut(&wire.TxOut{
+		Value:    0,
+		PkScript: scriptInfo,
+	})
+
+	// Set the Locktime, if given.
+	if c.LockTime != nil {
+		mtx.LockTime = uint32(*c.LockTime)
+	}
+
+	// Return the serialized and hex-encoded transaction.  Note that this
+	// is intentionally not directly returning because the first return
+	// value is a string and it would result in returning an empty string to
+	// the client instead of nothing (nil) in the case of an error.
+	mtxHex, err := messageToHex(mtx)
+	if err != nil {
+		return nil, err
+	}
+	return mtxHex, nil
 }
 
 // handleDebugLevel handles debuglevel commands.

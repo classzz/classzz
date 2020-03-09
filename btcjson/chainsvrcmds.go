@@ -12,7 +12,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 	"math/big"
 )
 
@@ -86,6 +88,24 @@ func (info *EntangleOut) Serialize() []byte {
 	return buf.Bytes()
 }
 
+type PledgeRegistrationOut struct {
+	ExchangeID     uint64
+	Address        czzutil.Address
+	StakingAmount  *big.Int               // in
+	EntangleAmount *big.Int               // out,express by czz,all amount of user's entangle
+	EnAssets       []*cross.EnAssetItem   // out,the extrinsic asset
+	Frees          []*cross.FreeQuotaItem // extrinsic asset
+	AssetFlag      uint32
+	Fee            uint64
+	KeepTime       uint64 // the time as the block count for finally redeem time
+	WhiteList      []*cross.WhiteUnit
+}
+
+func (info *PledgeRegistrationOut) Serialize() []byte {
+	buf := new(bytes.Buffer)
+	return buf.Bytes()
+}
+
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawEntangleTransactionCmd struct {
 	Inputs       []TransactionInput
@@ -95,11 +115,9 @@ type CreateRawEntangleTransactionCmd struct {
 
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
 type CreatePledgeRegistrationCmd struct {
-	Amount *int64
-	Type   *int64
-	Flag   *int64
-	Fee    *int64
-	Auto   *int64
+	Inputs             []TransactionInput
+	PledgeRegistration PledgeRegistrationOut
+	LockTime           *int64
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
