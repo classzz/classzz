@@ -1,7 +1,7 @@
 package cross
 
 import (
-	// "bytes"
+	"bytes"
 	// "encoding/binary"
 	"errors"
 	"fmt"
@@ -23,7 +23,84 @@ type EntangleState struct {
 	EnEntitys 		map[uint64]UserEntangleInfos
 	CurExchangeID 	uint64
 }
+type StoreLightHouse struct {
+	Address 		czzutil.Address
+	Lh 				*LightHouseInfo
+}
+type StoreUserInfos struct {
+	EID 		uint64
+	UserInfos   UserEntangleInfos
+}
+type SortStoreLightHouse []*StoreLightHouse
 
+func (vs SortStoreLightHouse) Len() int {
+	return len(vs)
+}
+func (vs SortStoreLightHouse) Less(i, j int) bool {
+	return bytes.Compare(vs[i].ScriptAddress(),vs[j].ScriptAddress()) == -1 
+}
+func (vs SortStoreLightHouse) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+type SortStoreUserInfos []*StoreUserInfos
+
+func (vs SortStoreUserInfos) Len() int {
+	return len(vs)
+}
+func (vs SortStoreUserInfos) Less(i, j int) bool {
+	return vs[i].EID < vs[j].EID
+}
+func (vs SortStoreUserInfos) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+/////////////////////////////////////////////////////////////////
+
+func (es *EntangleState) toSlice() (SortStoreLightHouse,SortStoreUserInfos) {
+	return nil,nil
+}
+func (es *EntangleState) fromSlice(v1 SortStoreLightHouse,v2 SortStoreUserInfos) {
+	enInfos := make(map[czzutil.Address]*LightHouseInfo)
+	entitys := make(map[uint64]UserEntangleInfos)
+	for _,v := range v1 {
+		enInfos[v.Address] = v.Lh
+	}
+	for _,v := range v2 {
+		entitys[v.EID] = v.UserInfos
+	}
+	es.EnInfos,en.EnEntitys = enInfos,entitys
+}
+
+func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		ID 		uint64
+		Value1 SortStoreLightHouse
+		Value2 SortStoreUserInfos
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.CurExchangeID = eb.ID 
+	es.fromSlice(eb.Value1,eb.Value2)
+	return nil
+}
+func (es *EntangleState) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		ID 		uint64
+		Value1 SortStoreLightHouse
+		Value2 SortStoreUserInfos
+	}
+	s1,s2 := es.toSlice()
+	return rlp.Encode(w,&Store1{
+		ID:		es.CurExchangeID,
+		Value1:	s1,
+		Value2: s2,
+	})
+}
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterLightHouse(addr czzutil.Address,amount *big.Int,
