@@ -135,7 +135,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"addnode":                      handleAddNode,
 	"createrawtransaction":         handleCreateRawTransaction,
 	"createrawentangletransaction": handleCreateRawEntangleTransaction,
-	"pledgeregistration":           handlePledgeRegistration,
+	"beaconregistration":           handleBeaconRegistration,
 	"debuglevel":                   handleDebugLevel,
 	"decoderawtransaction":         handleDecodeRawTransaction,
 	"decodescript":                 handleDecodeScript,
@@ -694,7 +694,7 @@ func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan
 	return mtxHex, nil
 }
 
-func handlePledgeRegistration(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.CreatePledgeRegistrationCmd)
 
 	// Validate the locktime, if given.
