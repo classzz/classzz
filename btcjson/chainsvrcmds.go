@@ -12,9 +12,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/wire"
-	"github.com/classzz/czzutil"
 	"math/big"
 )
 
@@ -88,20 +86,32 @@ func (info *EntangleOut) Serialize() []byte {
 	return buf.Bytes()
 }
 
-type PledgeRegistrationOut struct {
+type WhiteUnit struct {
+	AssetType uint32 `json:"asset_type"`
+	Pk        []byte `json:"pk"`
+}
+type BaseAmountUint struct {
+	AssetType uint32   `json:"asset_type"`
+	Amount    *big.Int `json:"amount"`
+}
+
+type EnAssetItem BaseAmountUint
+type FreeQuotaItem BaseAmountUint
+
+type BeaconRegistrationOut struct {
 	ExchangeID     uint64
-	Address        czzutil.Address
-	StakingAmount  *big.Int               // in
-	EntangleAmount *big.Int               // out,express by czz,all amount of user's entangle
-	EnAssets       []*cross.EnAssetItem   // out,the extrinsic asset
-	Frees          []*cross.FreeQuotaItem // extrinsic asset
+	Address        string
+	StakingAmount  *big.Int         // in
+	EntangleAmount *big.Int         // out,express by czz,all amount of user's entangle
+	EnAssets       []*EnAssetItem   // out,the extrinsic asset
+	Frees          []*FreeQuotaItem // extrinsic asset
 	AssetFlag      uint32
 	Fee            uint64
 	KeepTime       uint64 // the time as the block count for finally redeem time
-	WhiteList      []*cross.WhiteUnit
+	WhiteList      []*WhiteUnit
 }
 
-func (info *PledgeRegistrationOut) Serialize() []byte {
+func (info *BeaconRegistrationOut) Serialize() []byte {
 	buf := new(bytes.Buffer)
 	return buf.Bytes()
 }
@@ -114,9 +124,9 @@ type CreateRawEntangleTransactionCmd struct {
 }
 
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
-type CreatePledgeRegistrationCmd struct {
+type BeaconRegistrationCmd struct {
 	Inputs             []TransactionInput
-	PledgeRegistration PledgeRegistrationOut
+	BeaconRegistration BeaconRegistrationOut
 	LockTime           *int64
 }
 
@@ -144,6 +154,19 @@ func NewCreateRawEntangleTransactionCmd(inputs []TransactionInput, entangleOuts 
 		Inputs:       inputs,
 		EntangleOuts: entangleOuts,
 		LockTime:     lockTime,
+	}
+}
+
+// NewCreateRawTransactionCmd returns a new instance which can be used to issue
+// a createrawtransaction JSON-RPC command.
+//
+// Amounts are in BTC.
+func NewBeaconRegistrationCmd(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut,
+	lockTime *int64) *BeaconRegistrationCmd {
+	return &BeaconRegistrationCmd{
+		Inputs:             inputs,
+		BeaconRegistration: beaconRegistrationOut,
+		LockTime:           lockTime,
 	}
 }
 
@@ -895,6 +918,7 @@ func init() {
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("createrawentangletransaction", (*CreateRawEntangleTransactionCmd)(nil), flags)
+	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)

@@ -68,6 +68,18 @@ var helpDescsEnUS = map[string]string{
 	"createrawentangletransaction-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
 	"createrawentangletransaction--result0":       "Hex-encoded bytes of the serialized transaction",
 
+	// handleBeaconRegistration help.
+	"beaconregistration--synopsis": "Returns a new transaction spending the provided inputs and sending to the provided addresses.\n" +
+		"The transaction inputs are not signed in the created transaction.\n" +
+		"The signrawtransaction RPC command provided by wallet must be used to sign the resulting transaction.",
+	"beaconregistration-inputs":         "The inputs to the transaction",
+	"beaconregistration-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"beaconregistration-amounts--key":   "address",
+	"beaconregistration-amounts--value": "n.nnn",
+	"beaconregistration-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"beaconregistration-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"beaconregistration--result0":       "Hex-encoded bytes of the serialized transaction",
+
 	// ScriptSig help.
 	"scriptsig-asm": "Disassembly of the script",
 	"scriptsig-hex": "Hex-encoded bytes of the script",
@@ -716,6 +728,7 @@ var rpcResultTypes = map[string][]interface{}{
 	"addnode":                      nil,
 	"createrawtransaction":         {(*string)(nil)},
 	"createrawentangletransaction": {(*string)(nil)},
+	"beaconregistration":           {(*string)(nil)},
 	"debuglevel":                   {(*string)(nil), (*string)(nil)},
 	"decoderawtransaction":         {(*btcjson.TxRawDecodeResult)(nil)},
 	"decodescript":                 {(*btcjson.DecodeScriptResult)(nil)},

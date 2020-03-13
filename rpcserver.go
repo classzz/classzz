@@ -265,7 +265,7 @@ var rpcLimited = map[string]struct{}{
 	// HTTP/S-only commands
 	"createrawtransaction":         {},
 	"createrawentangletransaction": {},
-	"pledgeregistration":           {},
+	"beaconregistration":           {},
 	"decoderawtransaction":         {},
 	"decodescript":                 {},
 	"estimatefee":                  {},
@@ -695,7 +695,7 @@ func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan
 }
 
 func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*btcjson.CreatePledgeRegistrationCmd)
+	c := cmd.(*btcjson.BeaconRegistrationCmd)
 
 	// Validate the locktime, if given.
 	if c.LockTime != nil &&
@@ -723,7 +723,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		mtx.AddTxIn(txIn)
 	}
 
-	scriptInfo, err := txscript.LighthouseScript(c.PledgeRegistration.Serialize())
+	scriptInfo, err := txscript.LighthouseScript(c.BeaconRegistration.Serialize())
 	if err != nil {
 		return nil, err
 	}

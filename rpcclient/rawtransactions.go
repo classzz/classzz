@@ -303,6 +303,12 @@ func (c *Client) CreateRawTransactionAsync(inputs []btcjson.TransactionInput,
 // function on the returned instance.
 //
 // See CreateRawTransaction for the blocking version and more details.
+func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
+	beaconRegistrationOut btcjson.BeaconRegistrationOut, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewBeaconRegistrationCmd(inputs, beaconRegistrationOut, lockTime)
+	return c.sendCmd(cmd)
+}
+
 func (c *Client) CreateRawEntangleTransactionAsync(inputs []btcjson.TransactionInput,
 	entangleOuts []btcjson.EntangleOut, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewCreateRawEntangleTransactionCmd(inputs, entangleOuts, lockTime)
@@ -323,6 +329,14 @@ func (c *Client) CreateRawEntangleTransaction(inputs []btcjson.TransactionInput,
 	entangleOuts []btcjson.EntangleOut, lockTime *int64) (*wire.MsgTx, error) {
 
 	return c.CreateRawEntangleTransactionAsync(inputs, entangleOuts, lockTime).Receive()
+}
+
+// CreateRawTransaction returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) BeaconRegistration(inputs []btcjson.TransactionInput,
+	beaconRegistrationOut btcjson.BeaconRegistrationOut, lockTime *int64) (*wire.MsgTx, error) {
+
+	return c.BeaconRegistrationAsync(inputs, beaconRegistrationOut, lockTime).Receive()
 }
 
 // FutureSendRawTransactionResult is a future promise to deliver the result
