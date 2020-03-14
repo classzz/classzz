@@ -336,7 +336,7 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 			fmt.Println("cann't found the BeaconAddress id:", lh.ExchangeID)
 		} else {
 			for _, userEntity := range userEntitys {
-				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(lh.KeepTime)))
+				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(height)),big.NewInt(int64(lh.KeepTime)))
 				lh.updateFreeQuota(res)
 			}
 		}

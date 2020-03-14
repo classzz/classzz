@@ -50,15 +50,15 @@ type BurnInfos struct {
 func newBurnInfos() *BurnInfos {
 	return nil
 }
-// GetAllAmount returns all burned amount asset (czz)
-func (b *BurnInfos) GetAllAmount() *big.Int {
+// GetAllAmountByOrigin returns all burned amount asset (czz)
+func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 	amount := big.NewInt(0)
 	for _,v := range b.Items {
 		amount = amount.Add(amount,v.Amount)
 	}
 	return amount
 }
-func (b *BurnInfos) GetAllBurnedAmount() *big.Int {
+func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
 	return b.BurnAmount
 }
 func (b *BurnInfos) GetValidAmount() *big.Int {
@@ -169,35 +169,61 @@ type EntangleEntity struct {
 	AssetType		uint32
 	Height			*big.Int				// newest height for entangle
 	OldHeight		*big.Int				// oldest height for entangle
-	EntangleAmount 	*big.Int				// out asset	
+	LimitHeight 	*big.Int
+	EntangleAmount 	*big.Int				// out asset
+	OriginAmount	*big.Int 				// origin asset(czz) by entangle in	
 	MaxRedeem       *big.Int				// out asset
 	BurnAmount 		*BurnInfos
 }
 type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
-
 /////////////////////////////////////////////////////////////////
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	left := new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmount())
+	left := new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmountByOutside())
 	if left.Sign() >= 0 {
 		return left
 	} 
 	return nil
 }
-func (e *EntangleEntity) updateFreeQuota(limitHeight *big.Int) *big.Int {
+func (e *EntangleEntity) getValidOriginAmount() *big.Int {
+	return new(big.Int).Sub(e.OriginAmount,e.BurnAmount.GetAllAmountByOrigin())
+}
+func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
+	return new(big.Int).Sub(e.EntangleAmount,e.BurnAmount.GetAllBurnedAmountByOutside())
+}
+// updateFreeQuota: update user's quota on the asset type by new entangle
+func (e *EntangleEntity) updateFreeQuotaOfHeight(height,amount *big.Int) {
+	t0,a0,f0 := e.OldHeight,e.getValidOriginAmount(),new(big.Int).Mul(big.NewInt(90),amount)
+	
+	t1 := new(big.Int).Add(new(big.Int).Mul(t0,a0),f0)
+	t2 := new(big.Int).Add(a0,amount)
+	t := new(big.Int).Div(t1,t2)
+	interval := big.NewInt(0)
+	if t.Sign() > 0 {
+		interval = t
+	}
+	e.OldHeight = new(big.Int).Add(e.OldHeight,interval)
+}
+// updateFreeQuota returns the outside asset by user who can redeemable
+func (e *EntangleEntity) updateFreeQuota(curHeight,limitHeight *big.Int) *big.Int {
 	// update user's MaxRedeem,maybe subtraction user's all burned amount
 	// maybe change the GetValidRedeemAmount
-	return nil
+	limit := new(big.Int).Sub(curHeight,e.OldHeight)
+	if limit.Cmp(limitHeight) < 0 {
+		// release user's quota
+		e.MaxRedeem = big.NewInt(0)
+	}
+	return e.getValidOutsideAmount()
 }
 
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(limit *big.Int) []*BaseAmountUint {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight,limit *big.Int) []*BaseAmountUint {
 	res := make([]*BaseAmountUint,0,0)
 	for _,v := range *ee {
 		item := &BaseAmountUint{
 			AssetType: 		v.AssetType,
 		}
-		item.Amount = v.updateFreeQuota(limit)
+		item.Amount = v.updateFreeQuota(curHeight,limit)
 		res = append(res,item)
 	}
 	return res
