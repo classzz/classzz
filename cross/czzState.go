@@ -1,10 +1,9 @@
 package cross
 
 import (
-	//"bytes"
+	"bytes"
 	"io"
 	"log"
-
 	// "encoding/binary"
 	"errors"
 	"fmt"
@@ -39,8 +38,7 @@ func (vs SortStoreBeaconAddress) Len() int {
 	return len(vs)
 }
 func (vs SortStoreBeaconAddress) Less(i, j int) bool {
-	//return bytes.Compare(vs[i].ScriptAddress(),vs[j].ScriptAddress()) == -1
-	return true
+	return bytes.Compare(vs[i].Address.ScriptAddress(),vs[j].Address.ScriptAddress()) == -1
 }
 func (vs SortStoreBeaconAddress) Swap(i, j int) {
 	it := vs[i]
