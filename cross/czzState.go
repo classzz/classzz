@@ -194,15 +194,17 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 			userEntitys = EntangleEntitys(make([]*EntangleEntity, 0, 0))
 		}
 		found := false
+		var userEntity *EntangleEntity
 		for _, v := range userEntitys {
 			if aType == v.AssetType {
 				found = true
 				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
+				userEntity = v
 				break
 			}
 		}
 		if !found {
-			entity := &EntangleEntity{
+			userEntity = &EntangleEntity{
 				ExchangeID:     lightID,
 				Address:        addr,
 				AssetType:      aType,
@@ -210,7 +212,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 				EnOutsideAmount: new(big.Int).Set(amount),
 				BurnAmount:     newBurnInfos(),
 			}
-			userEntitys = append(userEntitys, entity)
+			userEntitys = append(userEntitys, userEntity)
 		}
 
 		// calc the send amount
@@ -219,6 +221,8 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 		if err != nil {
 			return nil, err
 		}
+		userEntity.OriginAmount = new(big.Int).Set(sendAmount)
+		userEntity.updateFreeQuotaOfHeight(height,amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
 		lhEntitys[addr] = userEntitys
