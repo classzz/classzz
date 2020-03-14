@@ -211,6 +211,8 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 				Height:         new(big.Int).Set(height),
 				EnOutsideAmount: new(big.Int).Set(amount),
 				BurnAmount:     newBurnInfos(),
+				MaxRedeem:		big.NewInt(0),
+				OriginAmount:	big.NewInt(0),
 			}
 			userEntitys = append(userEntitys, userEntity)
 		}
@@ -221,7 +223,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 		if err != nil {
 			return nil, err
 		}
-		userEntity.OriginAmount = new(big.Int).Set(sendAmount)
+		userEntity.increaseOriginAmount(sendAmount)
 		userEntity.updateFreeQuotaOfHeight(height,amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)

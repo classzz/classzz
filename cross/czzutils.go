@@ -178,6 +178,10 @@ type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
 /////////////////////////////////////////////////////////////////
+func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
+	e.OriginAmount = new(big.Int).Add(e.OriginAmount,amount)
+	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem,amount)
+}
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
 	left := new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmountByOutside())
 	if left.Sign() >= 0 {
@@ -191,7 +195,7 @@ func (e *EntangleEntity) getValidOriginAmount() *big.Int {
 func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
 	return new(big.Int).Sub(e.EnOutsideAmount,e.BurnAmount.GetAllBurnedAmountByOutside())
 }
-// updateFreeQuota: update user's quota on the asset type by new entangle
+// updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
 func (e *EntangleEntity) updateFreeQuotaOfHeight(height,amount *big.Int) {
 	t0,a0,f0 := e.OldHeight,e.getValidOriginAmount(),new(big.Int).Mul(big.NewInt(90),amount)
 	
@@ -216,6 +220,7 @@ func (e *EntangleEntity) updateFreeQuota(curHeight,limitHeight *big.Int) *big.In
 	return e.getValidOutsideAmount()
 }
 
+/////////////////////////////////////////////////////////////////
 func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight,limit *big.Int) []*BaseAmountUint {
 	res := make([]*BaseAmountUint,0,0)
 	for _,v := range *ee {
@@ -224,6 +229,16 @@ func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight,limit *big.Int) [
 		}
 		item.Amount = v.updateFreeQuota(curHeight,limit)
 		res = append(res,item)
+	}
+	return res
+}
+func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
+	res := big.NewInt(0)
+	for _,v := range *ee {
+		a := v.GetValidRedeemAmount()
+		if a != nil {
+			res = res.Add(res,a)
+		}
 	}
 	return res
 }
