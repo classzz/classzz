@@ -197,7 +197,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 		for _, v := range userEntitys {
 			if aType == v.AssetType {
 				found = true
-				v.EntangleAmount = new(big.Int).Add(v.EntangleAmount, amount)
+				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
 				break
 			}
 		}
@@ -207,7 +207,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 				Address:        addr,
 				AssetType:      aType,
 				Height:         new(big.Int).Set(height),
-				EntangleAmount: new(big.Int).Set(amount),
+				EnOutsideAmount: new(big.Int).Set(amount),
 				BurnAmount:     newBurnInfos(),
 			}
 			userEntitys = append(userEntitys, entity)
@@ -283,7 +283,7 @@ func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint32) *big.I
 		for _, userEntitys := range lhEntitys {
 			for _, vv := range userEntitys {
 				if atype == vv.AssetType {
-					aa = aa.Add(aa, vv.EntangleAmount)
+					aa = aa.Add(aa, vv.EnOutsideAmount)
 					break
 				}
 			}

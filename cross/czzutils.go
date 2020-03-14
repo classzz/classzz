@@ -169,8 +169,7 @@ type EntangleEntity struct {
 	AssetType		uint32
 	Height			*big.Int				// newest height for entangle
 	OldHeight		*big.Int				// oldest height for entangle
-	LimitHeight 	*big.Int
-	EntangleAmount 	*big.Int				// out asset
+	EnOutsideAmount *big.Int				// out asset
 	OriginAmount	*big.Int 				// origin asset(czz) by entangle in	
 	MaxRedeem       *big.Int				// out asset
 	BurnAmount 		*BurnInfos
@@ -190,7 +189,7 @@ func (e *EntangleEntity) getValidOriginAmount() *big.Int {
 	return new(big.Int).Sub(e.OriginAmount,e.BurnAmount.GetAllAmountByOrigin())
 }
 func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
-	return new(big.Int).Sub(e.EntangleAmount,e.BurnAmount.GetAllBurnedAmountByOutside())
+	return new(big.Int).Sub(e.EnOutsideAmount,e.BurnAmount.GetAllBurnedAmountByOutside())
 }
 // updateFreeQuota: update user's quota on the asset type by new entangle
 func (e *EntangleEntity) updateFreeQuotaOfHeight(height,amount *big.Int) {
