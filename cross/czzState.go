@@ -249,6 +249,12 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address, aType uint32, lightID u
 	if !ok1 {
 		return nil, ErrNoUserReg
 	}
+	// self redeem amount, maybe add the free quota in the BeaconAddress
+	validAmount := userEntitys.getAllRedeemableAmount()
+	if amount.Cmp(validAmount) > 0 {
+		return nil, ErrNotEnouthBurn
+	}
+
 	var userEntity *EntangleEntity
 	for _, v := range userEntitys {
 		if aType == v.AssetType {
@@ -258,11 +264,6 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address, aType uint32, lightID u
 	}
 	if userEntity == nil {
 		return nil, ErrNoUserAsset
-	}
-	// self redeem amount, maybe add the free quota in the BeaconAddress
-	validAmount := userEntity.GetValidRedeemAmount()
-	if amount.Cmp(validAmount) > 0 {
-		return nil, ErrNotEnouthBurn
 	}
 	userEntity.BurnAmount.BurnAmount = new(big.Int).Add(userEntity.BurnAmount.BurnAmount, amount)
 	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(light.Fee)))

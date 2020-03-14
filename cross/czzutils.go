@@ -182,12 +182,9 @@ func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount,amount)
 	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem,amount)
 }
+// the returns maybe negative
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	left := new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmountByOutside())
-	if left.Sign() >= 0 {
-		return left
-	} 
-	return nil
+	return new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmountByOutside())
 }
 func (e *EntangleEntity) getValidOriginAmount() *big.Int {
 	return new(big.Int).Sub(e.OriginAmount,e.BurnAmount.GetAllAmountByOrigin())
@@ -210,8 +207,6 @@ func (e *EntangleEntity) updateFreeQuotaOfHeight(height,amount *big.Int) {
 }
 // updateFreeQuota returns the outside asset by user who can redeemable
 func (e *EntangleEntity) updateFreeQuota(curHeight,limitHeight *big.Int) *big.Int {
-	// update user's MaxRedeem,maybe subtraction user's all burned amount
-	// maybe change the GetValidRedeemAmount
 	limit := new(big.Int).Sub(curHeight,e.OldHeight)
 	if limit.Cmp(limitHeight) < 0 {
 		// release user's quota
