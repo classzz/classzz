@@ -350,6 +350,27 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 	}
 	return nil
 }
+func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeOutBurnInfo  {
+	// maybe get cache for recently burned user
+	res := make(map[uint64]UserTimeOutBurnInfo)
+	for k,users :=range es.EnEntitys {
+		userItems := make(map[czzutil.Address]TypeTimeOutBurnInfo)
+		for k1,entitys := range users {
+			items := entitys.getBurnTimeout(height,true)
+			if len(items) > 0 {
+				userItems[k1] = items
+			}
+		}
+		if len(userItems) > 0 {
+			res[k] = UserTimeOutBurnInfo(userItems)
+		}
+	}
+	return res
+}
+func (es *EntangleState) UpdateBurnInfoState(infos map[uint64]UserTimeOutBurnInfo) {
+
+}
+
 func (es *EntangleState) toBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)

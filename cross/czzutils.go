@@ -71,13 +71,29 @@ func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
 	return b.BurnAmount
 }
+func (b *BurnInfos) getBurnTimeout(height uint64,update bool) []*BurnItem {
+	res := make([]*BurnItem,0,0)
+	for _, v := range b.Items {
+		if v.RedeemState == 0 && int64(height-v.Height) >  int64(LimitRedeemHeightForBeaconAddress) {
+			res = append(res,&BurnItem{
+				Amount: 	new(big.Int).Set(v.Amount),
+				Height:		v.Height,
+				RedeemState: v.RedeemState,
+			})
+			if update {
+				v.RedeemState = 2
+			}
+		}
+	} 
+	return res
+}
 
 type TimeOutBurnInfo struct {
 	Items		[]*BurnItem
 	AssetType 	uint32
 }
-type UserTimeOutBurnInfo []TimeOutBurnInfo
-
+type TypeTimeOutBurnInfo []*TimeOutBurnInfo
+type UserTimeOutBurnInfo map[czzutil.Address]TypeTimeOutBurnInfo
 
 type WhiteUnit struct {
 	AssetType uint32
@@ -331,7 +347,19 @@ func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
 	}
 	return res
 }
-
+func (ee *EntangleEntitys) getBurnTimeout(height uint64,update bool) TypeTimeOutBurnInfo {
+	res := make([]*TimeOutBurnInfo,0,0) 
+	for _,entity := range *ee {
+		items := entity.BurnAmount.getBurnTimeout(height,update)
+		if len(items) > 0 {
+			res = append(res,&TimeOutBurnInfo{
+				Items:		items,
+				AssetType:	entity.AssetType,
+			})
+		}
+	}
+	return TypeTimeOutBurnInfo(res)
+}
 /////////////////////////////////////////////////////////////////
 
 func ValidAssetType(utype uint32) bool {
