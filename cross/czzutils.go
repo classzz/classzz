@@ -86,6 +86,24 @@ func (b *BurnInfos) getBurnTimeout(height uint64,update bool) []*BurnItem {
 	}
 	return res
 }
+func (b *BurnInfos) addBurnItem(height uint64,amount *big.Int) {
+	item := &BurnItem{
+		Amount: new(big.Int).Set(amount),
+		Height: height,
+		RedeemState: 0,
+	}
+	found := false
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+			found = true
+			break
+		}
+	} 
+	if !found {
+		b.Items = append(b.Items,item)
+		b.BurnAmount = new(big.Int).Add(b.BurnAmount, amount)
+	}
+}
 
 type TimeOutBurnInfo struct {
 	Items     []*BurnItem
