@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/cross"
+	"github.com/classzz/classzz/rlp"
 	"io"
 	"io/ioutil"
 	"math"
@@ -722,9 +723,9 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		}
 		mtx.AddTxIn(txIn)
 	}
-	a := c.BeaconRegistration.Serialize()
-	fmt.Println("c.BeaconRegistration.Serialize()", a)
-	scriptInfo, err := txscript.LighthouseScript(c.BeaconRegistration.Serialize())
+
+	BeaconByte, err := rlp.EncodeToBytes(c.BeaconRegistration)
+	scriptInfo, err := txscript.BeaconRegistrationScript(BeaconByte)
 	if err != nil {
 		return nil, err
 	}

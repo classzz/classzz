@@ -1,8 +1,6 @@
 package cross
 
 import (
-	"bytes"
-	"encoding/binary"
 	// "bytes"
 	// "encoding/binary"
 	"errors"
@@ -29,9 +27,9 @@ var (
 )
 
 var (
-	MinStakingAmountForBeaconAddress = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
-	MaxWhiteListCount                = 5
-	MAXBASEFEE                       = 10000
+	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
+	MaxWhiteListCount                 = 5
+	MAXBASEFEE                        = 10000
 	LimitRedeemHeightForBeaconAddress = 5000
 )
 
@@ -45,9 +43,9 @@ const (
 )
 
 type BurnItem struct {
-	Amount *big.Int // czz asset amount
-	Height uint64
-	RedeemState byte 		// 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+	Amount      *big.Int // czz asset amount
+	Height      uint64
+	RedeemState byte // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
 type BurnInfos struct {
 	Items      []*BurnItem
@@ -56,10 +54,11 @@ type BurnInfos struct {
 
 func newBurnInfos() *BurnInfos {
 	return &BurnInfos{
-		Items: 	make([]*BurnItem,0,0),
-		BurnAmount:	big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+		BurnAmount: big.NewInt(0),
 	}
 }
+
 // GetAllAmountByOrigin returns all burned amount asset (czz)
 func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 	amount := big.NewInt(0)
@@ -84,28 +83,19 @@ func (b *BurnInfos) getBurnTimeout(height uint64,update bool) []*BurnItem {
 				v.RedeemState = 2
 			}
 		}
-	} 
+	}
 	return res
 }
 
 type TimeOutBurnInfo struct {
-	Items		[]*BurnItem
-	AssetType 	uint32
+	Items     []*BurnItem
+	AssetType uint32
 }
 type TypeTimeOutBurnInfo []*TimeOutBurnInfo
 type UserTimeOutBurnInfo map[czzutil.Address]TypeTimeOutBurnInfo
-
 type WhiteUnit struct {
 	AssetType uint32
 	Pk        []byte
-}
-
-func (base *WhiteUnit) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	buf.Write(base.Pk)
-	return buf.Bytes()
 }
 
 type BaseAmountUint struct {
@@ -115,28 +105,6 @@ type BaseAmountUint struct {
 
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
-
-func (base *EnAssetItem) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	b1 := base.Amount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	return buf.Bytes()
-}
-
-func (base *FreeQuotaItem) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	b1 := base.Amount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	return buf.Bytes()
-}
 
 type BeaconAddressInfo struct {
 	ExchangeID     uint64
@@ -149,53 +117,6 @@ type BeaconAddressInfo struct {
 	Fee            uint64
 	KeepTime       uint64 // the time as the block count for finally redeem time
 	WhiteList      []*WhiteUnit
-}
-
-func (beacon *BeaconAddressInfo) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, beacon.ExchangeID)
-
-	Address := []byte(beacon.Address.String())
-	buf.Write(Address)
-
-	b1 := beacon.StakingAmount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	b2 := beacon.EntangleAmount.Bytes()
-	len2 := uint8(len(b2))
-	buf.WriteByte(len2)
-
-	EnAssetsLen := len(beacon.EnAssets)
-	binary.Write(buf, binary.LittleEndian, EnAssetsLen)
-	for _, v := range beacon.EnAssets {
-		buf.Write(v.Serialize())
-	}
-
-	FreesLen := len(beacon.Frees)
-	binary.Write(buf, binary.LittleEndian, FreesLen)
-	for _, v := range beacon.Frees {
-		buf.Write(v.Serialize())
-	}
-
-	//AssetFlag      uint32
-	binary.Write(buf, binary.LittleEndian, beacon.AssetFlag)
-
-	//Fee            uint64
-	binary.Write(buf, binary.LittleEndian, beacon.Fee)
-
-	//KeepTime       uint64 // the time as the block count for finally redeem time
-	binary.Write(buf, binary.LittleEndian, beacon.KeepTime)
-
-	//WhiteList      []*WhiteUnit
-	WhiteListLen := len(beacon.WhiteList)
-	binary.Write(buf, binary.LittleEndian, WhiteListLen)
-	for _, v := range beacon.WhiteList {
-		buf.Write(v.Serialize())
-	}
-
-	return buf.Bytes()
 }
 
 func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
@@ -348,7 +269,7 @@ func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
 	return res
 }
 func (ee *EntangleEntitys) getBurnTimeout(height uint64,update bool) TypeTimeOutBurnInfo {
-	res := make([]*TimeOutBurnInfo,0,0) 
+	res := make([]*TimeOutBurnInfo,0,0)
 	for _,entity := range *ee {
 		items := entity.BurnAmount.getBurnTimeout(height,update)
 		if len(items) > 0 {

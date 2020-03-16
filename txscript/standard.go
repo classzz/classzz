@@ -57,18 +57,20 @@ const (
 	MultiSigTy                       // Multi signature.
 	NullDataTy                       // Empty data-only (provably prunable).
 	EntangleTy                       //
+	BeaconRegistrationTy
 )
 
 // scriptClassToName houses the human-readable strings which describe each
 // script class.
 var scriptClassToName = []string{
-	NonStandardTy: "nonstandard",
-	PubKeyTy:      "pubkey",
-	PubKeyHashTy:  "pubkeyhash",
-	ScriptHashTy:  "scripthash",
-	MultiSigTy:    "multisig",
-	NullDataTy:    "nulldata",
-	EntangleTy:    "EntangleTy",
+	NonStandardTy:        "nonstandard",
+	PubKeyTy:             "pubkey",
+	PubKeyHashTy:         "pubkeyhash",
+	ScriptHashTy:         "scripthash",
+	MultiSigTy:           "multisig",
+	NullDataTy:           "nulldata",
+	EntangleTy:           "EntangleTy",
+	BeaconRegistrationTy: "BeaconRegistrationTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -181,6 +183,13 @@ func isEntangleTy(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_UNKNOWN193
 }
 
+func isBeaconRegistrationTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN195
+}
+
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
@@ -203,6 +212,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return NullDataTy
 	} else if isEntangleTy(pops) {
 		return EntangleTy
+	} else if isBeaconRegistrationTy(pops) {
+		return EntangleTy
 	}
 	return NonStandardTy
 }
@@ -224,6 +235,14 @@ func IsEntangleTy(script []byte) bool {
 		return false
 	}
 	return isEntangleTy(pops)
+}
+
+func IsBeaconRegistrationTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isBeaconRegistrationTy(pops)
 }
 
 // expectedInputs returns the number of arguments required by a script.
@@ -450,7 +469,7 @@ func EntangleScript(data []byte) ([]byte, error) {
 }
 
 // EntangleScript impl in
-func LighthouseScript(data []byte) ([]byte, error) {
+func BeaconRegistrationScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
@@ -519,6 +538,17 @@ func GetEntangleInfoData(script []byte) ([]byte, error) {
 		return nil, err
 	}
 	if !isEntangleTy(pops) {
+		return nil, errors.New("not Entangle info type")
+	}
+	return pops[2].data, nil
+}
+
+func GetBeaconRegistrationData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isBeaconRegistrationTy(pops) {
 		return nil, errors.New("not Entangle info type")
 	}
 	return pops[2].data, nil

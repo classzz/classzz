@@ -8,8 +8,6 @@
 package btcjson
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
@@ -70,33 +68,9 @@ type EntangleOut struct {
 	ExtTxHash string   `json:"exttxhash"`
 }
 
-func (info *EntangleOut) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	buf.WriteByte(info.ExTxType)
-	binary.Write(buf, binary.LittleEndian, info.Index)
-	binary.Write(buf, binary.LittleEndian, info.Height)
-	b1 := info.Amount.Bytes()
-	len := uint8(len(b1))
-	buf.WriteByte(len)
-
-	buf.Write(b1)
-	ExtTxHash := []byte(info.ExtTxHash)
-	buf.Write(ExtTxHash)
-	return buf.Bytes()
-}
-
 type WhiteUnit struct {
 	AssetType uint32 `json:"asset_type"`
 	Pk        []byte `json:"pk"`
-}
-
-func (base *WhiteUnit) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	buf.Write(base.Pk)
-	return buf.Bytes()
 }
 
 type BaseAmountUint struct {
@@ -106,28 +80,6 @@ type BaseAmountUint struct {
 
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
-
-func (base *EnAssetItem) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	b1 := base.Amount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	return buf.Bytes()
-}
-
-func (base *FreeQuotaItem) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, base.AssetType)
-	b1 := base.Amount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	return buf.Bytes()
-}
 
 type BeaconRegistrationOut struct {
 	ExchangeID     uint64
@@ -140,53 +92,6 @@ type BeaconRegistrationOut struct {
 	Fee            uint64
 	KeepTime       uint64 // the time as the block count for finally redeem time
 	WhiteList      []*WhiteUnit
-}
-
-func (beacon *BeaconRegistrationOut) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, beacon.ExchangeID)
-
-	Address := []byte(beacon.Address)
-	buf.Write(Address)
-
-	b1 := beacon.StakingAmount.Bytes()
-	len1 := uint8(len(b1))
-	buf.WriteByte(len1)
-
-	b2 := beacon.EntangleAmount.Bytes()
-	len2 := uint8(len(b2))
-	buf.WriteByte(len2)
-
-	EnAssetsLen := len(beacon.EnAssets)
-	binary.Write(buf, binary.LittleEndian, EnAssetsLen)
-	for _, v := range beacon.EnAssets {
-		buf.Write(v.Serialize())
-	}
-
-	FreesLen := len(beacon.Frees)
-	binary.Write(buf, binary.LittleEndian, FreesLen)
-	for _, v := range beacon.Frees {
-		buf.Write(v.Serialize())
-	}
-
-	//AssetFlag      uint32
-	binary.Write(buf, binary.LittleEndian, beacon.AssetFlag)
-
-	//Fee            uint64
-	binary.Write(buf, binary.LittleEndian, beacon.Fee)
-
-	//KeepTime       uint64 // the time as the block count for finally redeem time
-	binary.Write(buf, binary.LittleEndian, beacon.KeepTime)
-
-	//WhiteList      []*WhiteUnit
-	WhiteListLen := len(beacon.WhiteList)
-	binary.Write(buf, binary.LittleEndian, WhiteListLen)
-	for _, v := range beacon.WhiteList {
-		buf.Write(v.Serialize())
-	}
-
-	return buf.Bytes()
 }
 
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
