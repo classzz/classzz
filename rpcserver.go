@@ -722,7 +722,8 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		}
 		mtx.AddTxIn(txIn)
 	}
-
+	a := c.BeaconRegistration.Serialize()
+	fmt.Println("c.BeaconRegistration.Serialize()", a)
 	scriptInfo, err := txscript.LighthouseScript(c.BeaconRegistration.Serialize())
 	if err != nil {
 		return nil, err

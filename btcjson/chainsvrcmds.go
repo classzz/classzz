@@ -90,6 +90,15 @@ type WhiteUnit struct {
 	AssetType uint32 `json:"asset_type"`
 	Pk        []byte `json:"pk"`
 }
+
+func (base *WhiteUnit) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	buf.Write(base.Pk)
+	return buf.Bytes()
+}
+
 type BaseAmountUint struct {
 	AssetType uint32   `json:"asset_type"`
 	Amount    *big.Int `json:"amount"`
@@ -97,6 +106,28 @@ type BaseAmountUint struct {
 
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
+
+func (base *EnAssetItem) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	b1 := base.Amount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	return buf.Bytes()
+}
+
+func (base *FreeQuotaItem) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	b1 := base.Amount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	return buf.Bytes()
+}
 
 type BeaconRegistrationOut struct {
 	ExchangeID     uint64
@@ -111,8 +142,50 @@ type BeaconRegistrationOut struct {
 	WhiteList      []*WhiteUnit
 }
 
-func (info *BeaconRegistrationOut) Serialize() []byte {
+func (beacon *BeaconRegistrationOut) Serialize() []byte {
 	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, beacon.ExchangeID)
+
+	Address := []byte(beacon.Address)
+	buf.Write(Address)
+
+	b1 := beacon.StakingAmount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	b2 := beacon.EntangleAmount.Bytes()
+	len2 := uint8(len(b2))
+	buf.WriteByte(len2)
+
+	EnAssetsLen := len(beacon.EnAssets)
+	binary.Write(buf, binary.LittleEndian, EnAssetsLen)
+	for _, v := range beacon.EnAssets {
+		buf.Write(v.Serialize())
+	}
+
+	FreesLen := len(beacon.Frees)
+	binary.Write(buf, binary.LittleEndian, FreesLen)
+	for _, v := range beacon.Frees {
+		buf.Write(v.Serialize())
+	}
+
+	//AssetFlag      uint32
+	binary.Write(buf, binary.LittleEndian, beacon.AssetFlag)
+
+	//Fee            uint64
+	binary.Write(buf, binary.LittleEndian, beacon.Fee)
+
+	//KeepTime       uint64 // the time as the block count for finally redeem time
+	binary.Write(buf, binary.LittleEndian, beacon.KeepTime)
+
+	//WhiteList      []*WhiteUnit
+	WhiteListLen := len(beacon.WhiteList)
+	binary.Write(buf, binary.LittleEndian, WhiteListLen)
+	for _, v := range beacon.WhiteList {
+		buf.Write(v.Serialize())
+	}
+
 	return buf.Bytes()
 }
 

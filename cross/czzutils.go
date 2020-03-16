@@ -1,6 +1,8 @@
 package cross
 
 import (
+	"bytes"
+	"encoding/binary"
 	// "bytes"
 	// "encoding/binary"
 	"errors"
@@ -17,20 +19,21 @@ import (
 )
 
 var (
-	ErrInvalidParam      = errors.New("Invalid Param")
-	ErrLessThanMin		 = errors.New("less than min staking amount for lighthouse")
-	ErrRepeatRegister    = errors.New("repeat register on this address")
-	ErrNoRegister 	     = errors.New("not found the lighthouse")
-	ErrNoUserReg 	     = errors.New("not entangle user in the lighthouse")
-	ErrNoUserAsset 	     = errors.New("user no entangle asset in the lighthouse")
-	ErrNotEnouthBurn 	 = errors.New("not enough burn amount in lighthouse")
+	ErrInvalidParam   = errors.New("Invalid Param")
+	ErrLessThanMin    = errors.New("less than min staking amount for lighthouse")
+	ErrRepeatRegister = errors.New("repeat register on this address")
+	ErrNoRegister     = errors.New("not found the lighthouse")
+	ErrNoUserReg      = errors.New("not entangle user in the lighthouse")
+	ErrNoUserAsset    = errors.New("user no entangle asset in the lighthouse")
+	ErrNotEnouthBurn  = errors.New("not enough burn amount in lighthouse")
 )
 
 var (
-	MinStakingAmountForBeaconAddress = new(big.Int).Mul(big.NewInt(1000000),big.NewInt(1e9))
-	MaxWhiteListCount  = 5
-	MAXBASEFEE 		   = 10000
+	MinStakingAmountForBeaconAddress = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
+	MaxWhiteListCount                = 5
+	MAXBASEFEE                       = 10000
 )
+
 const (
 	LhAssetBTC uint32 = 1 << iota
 	LhAssetBCH
@@ -39,22 +42,25 @@ const (
 	LhAssetUSDT
 	LhAssetDOGE
 )
+
 type BurnItem struct {
-	Amount 	*big.Int			// czz asset amount
-	Height 	uint64	
+	Amount *big.Int // czz asset amount
+	Height uint64
 }
 type BurnInfos struct {
-	Items 	[]*BurnItem
-	BurnAmount *big.Int 		// burned amount for outside asset
+	Items      []*BurnItem
+	BurnAmount *big.Int // burned amount for outside asset
 }
+
 func newBurnInfos() *BurnInfos {
 	return nil
 }
+
 // GetAllAmountByOrigin returns all burned amount asset (czz)
 func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 	amount := big.NewInt(0)
-	for _,v := range b.Items {
-		amount = amount.Add(amount,v.Amount)
+	for _, v := range b.Items {
+		amount = amount.Add(amount, v.Amount)
 	}
 	return amount
 }
@@ -64,64 +70,145 @@ func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
 func (b *BurnInfos) GetValidAmount() *big.Int {
 	return nil
 }
+
 // Update the valid amount for diffence height for entangle info
 func (b *BurnInfos) Update() {
 
 }
+
 type WhiteUnit struct {
-	AssetType 		uint32
-	Pk				[]byte
+	AssetType uint32
+	Pk        []byte
 }
+
+func (base *WhiteUnit) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	buf.Write(base.Pk)
+	return buf.Bytes()
+}
+
 type BaseAmountUint struct {
-	AssetType 		uint32
-	Amount 			*big.Int
+	AssetType uint32
+	Amount    *big.Int
 }
+
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
+func (base *EnAssetItem) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	b1 := base.Amount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	return buf.Bytes()
+}
+
+func (base *FreeQuotaItem) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, base.AssetType)
+	b1 := base.Amount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	return buf.Bytes()
+}
+
 type BeaconAddressInfo struct {
-	ExchangeID		uint64
-	Address 		czzutil.Address
-	StakingAmount 	*big.Int 			// in 
-	EntangleAmount  *big.Int			// out,express by czz,all amount of user's entangle
-	EnAssets		[]*EnAssetItem		// out,the extrinsic asset
-	Frees 			[]*FreeQuotaItem	// extrinsic asset
-	AssetFlag 		uint32
-	Fee 			uint64
-	KeepTime		uint64 				// the time as the block count for finally redeem time
-	WhiteList 		[]*WhiteUnit
+	ExchangeID     uint64
+	Address        czzutil.Address
+	StakingAmount  *big.Int         // in
+	EntangleAmount *big.Int         // out,express by czz,all amount of user's entangle
+	EnAssets       []*EnAssetItem   // out,the extrinsic asset
+	Frees          []*FreeQuotaItem // extrinsic asset
+	AssetFlag      uint32
+	Fee            uint64
+	KeepTime       uint64 // the time as the block count for finally redeem time
+	WhiteList      []*WhiteUnit
+}
+
+func (beacon *BeaconAddressInfo) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, beacon.ExchangeID)
+
+	Address := []byte(beacon.Address.String())
+	buf.Write(Address)
+
+	b1 := beacon.StakingAmount.Bytes()
+	len1 := uint8(len(b1))
+	buf.WriteByte(len1)
+
+	b2 := beacon.EntangleAmount.Bytes()
+	len2 := uint8(len(b2))
+	buf.WriteByte(len2)
+
+	EnAssetsLen := len(beacon.EnAssets)
+	binary.Write(buf, binary.LittleEndian, EnAssetsLen)
+	for _, v := range beacon.EnAssets {
+		buf.Write(v.Serialize())
+	}
+
+	FreesLen := len(beacon.Frees)
+	binary.Write(buf, binary.LittleEndian, FreesLen)
+	for _, v := range beacon.Frees {
+		buf.Write(v.Serialize())
+	}
+
+	//AssetFlag      uint32
+	binary.Write(buf, binary.LittleEndian, beacon.AssetFlag)
+
+	//Fee            uint64
+	binary.Write(buf, binary.LittleEndian, beacon.Fee)
+
+	//KeepTime       uint64 // the time as the block count for finally redeem time
+	binary.Write(buf, binary.LittleEndian, beacon.KeepTime)
+
+	//WhiteList      []*WhiteUnit
+	WhiteListLen := len(beacon.WhiteList)
+	binary.Write(buf, binary.LittleEndian, WhiteListLen)
+	for _, v := range beacon.WhiteList {
+		buf.Write(v.Serialize())
+	}
+
+	return buf.Bytes()
 }
 
 func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
 	found := false
-	for _,val := range lh.EnAssets {
+	for _, val := range lh.EnAssets {
 		if val.AssetType == atype {
 			found = true
-			val.Amount = new(big.Int).Add(val.Amount,amount)			
+			val.Amount = new(big.Int).Add(val.Amount, amount)
 		}
 	}
 	if !found {
-		lh.EnAssets = append(lh.EnAssets,&EnAssetItem{
-			AssetType:		atype,
-			Amount:			amount,
+		lh.EnAssets = append(lh.EnAssets, &EnAssetItem{
+			AssetType: atype,
+			Amount:    amount,
 		})
 	}
 }
 func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
-	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount,amount)
-} 
-func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int,atype uint32) {
-	for _,v := range lh.Frees {
+	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
+}
+func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint32) {
+	for _, v := range lh.Frees {
 		if atype == v.AssetType {
-			v.Amount = new(big.Int).Add(v.Amount,amount)
+			v.Amount = new(big.Int).Add(v.Amount, amount)
 		}
 	}
 }
-func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int,atype uint32) {
-	for _,v := range lh.Frees {
+func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint32) {
+	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
-				v.Amount = new(big.Int).Sub(v.Amount,amount)
+				v.Amount = new(big.Int).Sub(v.Amount, amount)
 			} else {
 				// panic
 				v.Amount = big.NewInt(0)
@@ -129,8 +216,8 @@ func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int,atype uint32) {
 		}
 	}
 }
-func (lh *BeaconAddressInfo) canRedeem(amount *big.Int,atype uint32) bool {
-	for _,v := range lh.Frees {
+func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, atype uint32) bool {
+	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
 				return true
@@ -143,71 +230,75 @@ func (lh *BeaconAddressInfo) canRedeem(amount *big.Int,atype uint32) bool {
 }
 func (lh *BeaconAddressInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	// add free quota for lighthouse
-	for _,val := range res {
+	for _, val := range res {
 		if val.Amount != nil && val.Amount.Sign() > 0 {
 			item := lh.getFreeQuotaInfo(val.AssetType)
 			if item != nil {
-				item.Amount = new(big.Int).Add(item.Amount,val.Amount)
+				item.Amount = new(big.Int).Add(item.Amount, val.Amount)
 			}
 		}
 	}
 	return nil
 }
 func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
-	for _,v := range lh.Frees {
+	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			return v
 		}
 	}
 	return nil
 }
+
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
-	ExchangeID		uint64
-	Address 		czzutil.Address
-	AssetType		uint32
-	Height			*big.Int				// newest height for entangle
-	OldHeight		*big.Int				// oldest height for entangle
-	EnOutsideAmount *big.Int				// out asset
-	OriginAmount	*big.Int 				// origin asset(czz) by entangle in	
-	MaxRedeem       *big.Int				// out asset
-	BurnAmount 		*BurnInfos
+	ExchangeID      uint64
+	Address         czzutil.Address
+	AssetType       uint32
+	Height          *big.Int // newest height for entangle
+	OldHeight       *big.Int // oldest height for entangle
+	EnOutsideAmount *big.Int // out asset
+	OriginAmount    *big.Int // origin asset(czz) by entangle in
+	MaxRedeem       *big.Int // out asset
+	BurnAmount      *BurnInfos
 }
 type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[czzutil.Address]EntangleEntitys
 
 /////////////////////////////////////////////////////////////////
 func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
-	e.OriginAmount = new(big.Int).Add(e.OriginAmount,amount)
-	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem,amount)
+	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
+	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem, amount)
 }
+
 // the returns maybe negative
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	return new(big.Int).Sub(e.MaxRedeem,e.BurnAmount.GetAllBurnedAmountByOutside())
+	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllBurnedAmountByOutside())
 }
 func (e *EntangleEntity) getValidOriginAmount() *big.Int {
-	return new(big.Int).Sub(e.OriginAmount,e.BurnAmount.GetAllAmountByOrigin())
+	return new(big.Int).Sub(e.OriginAmount, e.BurnAmount.GetAllAmountByOrigin())
 }
 func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
-	return new(big.Int).Sub(e.EnOutsideAmount,e.BurnAmount.GetAllBurnedAmountByOutside())
+	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
 }
+
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
-func (e *EntangleEntity) updateFreeQuotaOfHeight(height,amount *big.Int) {
-	t0,a0,f0 := e.OldHeight,e.getValidOriginAmount(),new(big.Int).Mul(big.NewInt(90),amount)
-	
-	t1 := new(big.Int).Add(new(big.Int).Mul(t0,a0),f0)
-	t2 := new(big.Int).Add(a0,amount)
-	t := new(big.Int).Div(t1,t2)
+func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
+	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(big.NewInt(90), amount)
+
+	t1 := new(big.Int).Add(new(big.Int).Mul(t0, a0), f0)
+	t2 := new(big.Int).Add(a0, amount)
+	t := new(big.Int).Div(t1, t2)
 	interval := big.NewInt(0)
 	if t.Sign() > 0 {
 		interval = t
 	}
-	e.OldHeight = new(big.Int).Add(e.OldHeight,interval)
+	e.OldHeight = new(big.Int).Add(e.OldHeight, interval)
 }
+
 // updateFreeQuota returns the outside asset by user who can redeemable
-func (e *EntangleEntity) updateFreeQuota(curHeight,limitHeight *big.Int) *big.Int {
-	limit := new(big.Int).Sub(curHeight,e.OldHeight)
+func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
+	limit := new(big.Int).Sub(curHeight, e.OldHeight)
 	if limit.Cmp(limitHeight) < 0 {
 		// release user's quota
 		e.MaxRedeem = big.NewInt(0)
@@ -216,23 +307,23 @@ func (e *EntangleEntity) updateFreeQuota(curHeight,limitHeight *big.Int) *big.In
 }
 
 /////////////////////////////////////////////////////////////////
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight,limit *big.Int) []*BaseAmountUint {
-	res := make([]*BaseAmountUint,0,0)
-	for _,v := range *ee {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) []*BaseAmountUint {
+	res := make([]*BaseAmountUint, 0, 0)
+	for _, v := range *ee {
 		item := &BaseAmountUint{
-			AssetType: 		v.AssetType,
+			AssetType: v.AssetType,
 		}
-		item.Amount = v.updateFreeQuota(curHeight,limit)
-		res = append(res,item)
+		item.Amount = v.updateFreeQuota(curHeight, limit)
+		res = append(res, item)
 	}
 	return res
 }
 func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
 	res := big.NewInt(0)
-	for _,v := range *ee {
+	for _, v := range *ee {
 		a := v.GetValidRedeemAmount()
 		if a != nil {
-			res = res.Add(res,a)
+			res = res.Add(res, a)
 		}
 	}
 	return res
@@ -241,8 +332,8 @@ func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
 /////////////////////////////////////////////////////////////////
 
 func ValidAssetType(utype uint32) bool {
-	if utype & LhAssetBTC != 0 || utype & LhAssetBCH != 0 || utype & LhAssetBSV != 0 ||
-	utype & LhAssetLTC != 0 || utype & LhAssetUSDT != 0 || utype & LhAssetDOGE != 0 {
+	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
 		return true
 	}
 	return false
@@ -250,6 +341,6 @@ func ValidAssetType(utype uint32) bool {
 func ValidPK(pk []byte) bool {
 	return true
 }
-func isValidAsset(atype,assetAll uint32) bool {
-	return atype & assetAll != 0
+func isValidAsset(atype, assetAll uint32) bool {
+	return atype&assetAll != 0
 }
