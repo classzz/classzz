@@ -32,6 +32,7 @@ var (
 	MinStakingAmountForBeaconAddress = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
 	MaxWhiteListCount                = 5
 	MAXBASEFEE                       = 10000
+	LimitRedeemHeightForBeaconAddress = 5000
 )
 
 const (
@@ -46,6 +47,7 @@ const (
 type BurnItem struct {
 	Amount *big.Int // czz asset amount
 	Height uint64
+	RedeemState byte 		// 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
 type BurnInfos struct {
 	Items      []*BurnItem
@@ -53,9 +55,11 @@ type BurnInfos struct {
 }
 
 func newBurnInfos() *BurnInfos {
-	return nil
+	return &BurnInfos{
+		Items: 	make([]*BurnItem,0,0),
+		BurnAmount:	big.NewInt(0),
+	}
 }
-
 // GetAllAmountByOrigin returns all burned amount asset (czz)
 func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 	amount := big.NewInt(0)
@@ -67,14 +71,13 @@ func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
 func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
 	return b.BurnAmount
 }
-func (b *BurnInfos) GetValidAmount() *big.Int {
-	return nil
-}
 
-// Update the valid amount for diffence height for entangle info
-func (b *BurnInfos) Update() {
-
+type TimeOutBurnInfo struct {
+	Items		[]*BurnItem
+	AssetType 	uint32
 }
+type UserTimeOutBurnInfo []TimeOutBurnInfo
+
 
 type WhiteUnit struct {
 	AssetType uint32
