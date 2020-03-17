@@ -367,10 +367,19 @@ func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeO
 	}
 	return res
 }
-func (es *EntangleState) UpdateBurnInfoState(infos map[uint64]UserTimeOutBurnInfo) {
-
+func (es *EntangleState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurnInfo) {
+	for eid,items := range infos {
+		userEntitys, ok := es.EnEntitys[eid]
+		if ok {
+			// set state=3 after be punished by system consensus
+			userEntitys.updateBurnState(3,items)
+		}
+	}
 }
-
+// FinishHandleUserBurn the BeaconAddress finish the burn item
+func (es *EntangleState) FinishHandleUserBurn(lightID,height uint64,addr czzutil.Address,atype uint32,amount  *big.Int) error {
+	return nil
+}
 func (es *EntangleState) toBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)

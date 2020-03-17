@@ -104,6 +104,14 @@ func (b *BurnInfos) addBurnItem(height uint64,amount *big.Int) {
 		b.BurnAmount = new(big.Int).Add(b.BurnAmount, amount)
 	}
 }
+func (b *BurnInfos) getItem(height uint64,amount *big.Int,state byte) *BurnItem {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
+			return v
+		}
+	}
+	return nil
+}
 
 type TimeOutBurnInfo struct {
 	Items     []*BurnItem
@@ -111,11 +119,13 @@ type TimeOutBurnInfo struct {
 }
 type TypeTimeOutBurnInfo []*TimeOutBurnInfo
 type UserTimeOutBurnInfo map[czzutil.Address]TypeTimeOutBurnInfo
+
+//////////////////////////////////////////////////////////////////////////////
+
 type WhiteUnit struct {
 	AssetType uint32
 	Pk        []byte
 }
-
 type BaseAmountUint struct {
 	AssetType uint32
 	Amount    *big.Int
@@ -228,7 +238,6 @@ func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
 	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem, amount)
 }
-
 // the returns maybe negative
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
 	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllBurnedAmountByOutside())
@@ -239,7 +248,6 @@ func (e *EntangleEntity) getValidOriginAmount() *big.Int {
 func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
 	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
 }
-
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
 func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
 	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(big.NewInt(90), amount)
@@ -263,8 +271,23 @@ func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.I
 	}
 	return e.getValidOutsideAmount()
 }
-
+func (e *EntangleEntity) updateBurnState(state byte,items []*BurnItem) {
+	for _,v := range items {
+		ii := e.BurnAmount.getItem(v.Height,v.Amount,v.RedeemState)
+		if ii != nil {
+			ii.RedeemState = state
+		}
+	}
+}
 /////////////////////////////////////////////////////////////////
+func (ee *EntangleEntitys) getEntityByType(atype uint32) *EntangleEntity {
+	for _, v := range *ee {
+		if atype == v.AssetType {
+			return v
+		}
+	}
+	return nil
+}
 func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) []*BaseAmountUint {
 	res := make([]*BaseAmountUint, 0, 0)
 	for _, v := range *ee {
@@ -299,8 +322,24 @@ func (ee *EntangleEntitys) getBurnTimeout(height uint64,update bool) TypeTimeOut
 	}
 	return TypeTimeOutBurnInfo(res)
 }
+func (ee *EntangleEntitys) updateBurnState(state byte,items TypeTimeOutBurnInfo) {
+	for _,v := range items {
+		entity := ee.getEntityByType(v.AssetType)
+		if entity != nil {
+			entity.updateBurnState(state,v.Items)
+		}
+	}
+}
 /////////////////////////////////////////////////////////////////
-
+func (u UserEntangleInfos) updateBurnState(state byte,items UserTimeOutBurnInfo) {
+	for addr,infos := range items {
+		entitys,ok := u[addr]
+		if ok {
+			entitys.updateBurnState(state,infos)
+		}
+	}
+}
+/////////////////////////////////////////////////////////////////
 func ValidAssetType(utype uint32) bool {
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
 		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
