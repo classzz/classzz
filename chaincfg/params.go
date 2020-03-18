@@ -227,9 +227,9 @@ var MainNetParams = Params{
 	Net:         wire.MainNet,
 	DefaultPort: "18883",
 	DNSSeeds: []DNSSeed{
-		{"3.15.206.33", true},
+		{"18.218.117.48", true},
 		{"18.222.100.56", true},
-		{"3.15.206.49", true},
+		{"18.218.117.48", true},
 	},
 
 	// Chain parameters

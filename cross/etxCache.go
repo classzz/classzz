@@ -1,11 +1,17 @@
 package cross
 
 import (
+	"bytes"
+	"encoding/binary"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/rlp"
+	"log"
 )
 
 var (
-	BucketKey = []byte("entangle-tx")
+	BucketKey        = []byte("entangle-tx")
+	EntangleStateKey = []byte("entanglestate")
 )
 
 type CacheEntangleInfo struct {
@@ -35,4 +41,61 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 	})
 
 	return txExist
+}
+
+func (c *CacheEntangleInfo) SaveEntangleState(height uint64, hash chainhash.Hash, es *EntangleState) error {
+
+	var err error
+	err = c.DB.Update(func(tx database.Tx) error {
+
+		entangleBucket := tx.Metadata().Bucket(EntangleStateKey)
+		if entangleBucket == nil {
+			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(EntangleStateKey); err != nil {
+				return err
+			}
+		}
+
+		buf := new(bytes.Buffer)
+
+		binary.Write(buf, binary.LittleEndian, height)
+		buf.Write(hash.CloneBytes())
+
+		err := entangleBucket.Put(buf.Bytes(), es.toBytes())
+		return err
+	})
+
+	return err
+}
+
+func (c *CacheEntangleInfo) LoadEntangleState(height uint64, hash chainhash.Hash) *EntangleState {
+
+	var err error
+
+	es := &EntangleState{}
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, height)
+	buf.Write(hash.CloneBytes())
+
+	err = c.DB.Update(func(tx database.Tx) error {
+		entangleBucket := tx.Metadata().Bucket(EntangleStateKey)
+		if entangleBucket == nil {
+			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(EntangleStateKey); err != nil {
+				return err
+			}
+		}
+
+		value := entangleBucket.Get(buf.Bytes())
+		if value != nil {
+
+			err := rlp.DecodeBytes(value, es)
+			if err != nil {
+				log.Fatal("Failed to RLP encode EntangleState", "err", err)
+				return err
+			}
+		}
+		return nil
+	})
+
+	return es
 }
