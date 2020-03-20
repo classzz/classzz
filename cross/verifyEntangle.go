@@ -278,15 +278,10 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 }
 
 func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
-	/*
-		1. check entangle tx struct
-		2. check the repeat tx
-		3. check the correct tx
-		4. check the pool reserve enough reward
-	*/
-	einfos, _ := IsEntangleTx(tx)
-	if einfos == nil {
-		return nil, errors.New("not entangle tx")
+
+	br, _ := IsBeaconRegistrationTx(tx)
+	if br == nil {
+		return nil, NoBeaconRegistration
 	}
 	pairs := make([]*TuplePubIndex, 0)
 	amount := int64(0)

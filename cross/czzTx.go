@@ -26,7 +26,8 @@ const (
 )
 
 var (
-	NoEntangle = errors.New("no entangle info in transcation")
+	NoEntangle           = errors.New("no entangle info in transcation")
+	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -271,26 +272,28 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	return nil, NoEntangle
 }
 
-func IsBeaconRegistrationTx(tx *wire.MsgTx) (map[uint32]*BeaconAddressInfo, error) {
+func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	// make sure at least one txout in OUTPUT
-	einfos := make(map[uint32]*BeaconAddressInfo)
-	for i, v := range tx.TxOut {
+	es := &BeaconAddressInfo{}
+
+	for _, v := range tx.TxOut {
 		info, err := BeaconRegistrationTxFromScript(v.PkScript)
 		if err == nil {
 			if v.Value != 0 {
 				return nil, errors.New("the output value must be 0 in entangle tx.")
 			}
-			einfos[uint32(i)] = info
+			es = info
 		}
 	}
-	if len(einfos) > 0 {
-		return einfos, nil
+
+	if es != nil {
+		return es, nil
 	}
-	return nil, NoEntangle
+	return nil, NoBeaconRegistration
 }
 
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
-	data, err := txscript.GetBeaconRegistrationData(script)
+	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
 		return nil, err
 	}
