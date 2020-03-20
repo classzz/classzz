@@ -276,3 +276,42 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 	}
 	return false
 }
+
+func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
+	/*
+		1. check entangle tx struct
+		2. check the repeat tx
+		3. check the correct tx
+		4. check the pool reserve enough reward
+	*/
+	einfos, _ := IsEntangleTx(tx)
+	if einfos == nil {
+		return nil, errors.New("not entangle tx")
+	}
+	pairs := make([]*TuplePubIndex, 0)
+	amount := int64(0)
+	if ev.Cache != nil {
+		for i, v := range einfos {
+			if ok := ev.Cache.FetchEntangleUtxoView(v); ok {
+				errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Height)
+				return nil, errors.New("txid has already entangle:" + errStr)
+			}
+			amount += tx.TxOut[i].Value
+		}
+	}
+
+	for i, v := range einfos {
+		if pub, err := ev.verifyTx(v.ExTxType, v.ExtTxHash, v.Index, v.Height, v.Amount); err != nil {
+			errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Index)
+			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
+		} else {
+			pairs = append(pairs, &TuplePubIndex{
+				EType: v.ExTxType,
+				Index: i,
+				Pub:   pub,
+			})
+		}
+	}
+
+	return pairs, nil
+}

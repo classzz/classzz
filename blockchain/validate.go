@@ -363,6 +363,38 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 	return nil
 }
 
+func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
+	// tmp the cache is nil
+	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
+	curHeight := int64(0)
+	for _, tx := range block.Transactions() {
+		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+		if einfos == nil {
+			continue
+		}
+		max := int64(0)
+		for _, ii := range einfos {
+			if max < int64(ii.Height) {
+				max = int64(ii.Height)
+			}
+		}
+		if curHeight > max {
+			return errors.New("unordered entangle tx in the block")
+		}
+		err := b.checkBeaconRegistrationTx(tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
 	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
@@ -394,6 +426,7 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	}
 	return nil
 }
+
 func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
 	height := block.Height()
 	if chainParams.EntangleHeight >= height {

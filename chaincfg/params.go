@@ -181,6 +181,8 @@ type Params struct {
 
 	EntangleHeight int32
 
+	BeaconHeight int32
+
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 
@@ -245,6 +247,7 @@ var MainNetParams = Params{
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
+	BeaconHeight:   2,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},

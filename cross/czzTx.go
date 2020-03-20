@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"strings"
+	"github.com/classzz/classzz/rlp"
 	"math/big"
+	"strings"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
@@ -270,13 +271,41 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	return nil, NoEntangle
 }
 
+func IsBeaconRegistrationTx(tx *wire.MsgTx) (map[uint32]*BeaconAddressInfo, error) {
+	// make sure at least one txout in OUTPUT
+	einfos := make(map[uint32]*BeaconAddressInfo)
+	for i, v := range tx.TxOut {
+		info, err := BeaconRegistrationTxFromScript(v.PkScript)
+		if err == nil {
+			if v.Value != 0 {
+				return nil, errors.New("the output value must be 0 in entangle tx.")
+			}
+			einfos[uint32(i)] = info
+		}
+	}
+	if len(einfos) > 0 {
+		return einfos, nil
+	}
+	return nil, NoEntangle
+}
+
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
-	data, err := txscript.GetEntangleInfoData(script)
+	data, err := txscript.GetBeaconRegistrationData(script)
 	if err != nil {
 		return nil, err
 	}
 	info := &EntangleTxInfo{}
 	err = info.Parse(data)
+	return info, err
+}
+
+func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
+	data, err := txscript.GetBeaconRegistrationData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &BeaconAddressInfo{}
+	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
 
@@ -471,6 +500,7 @@ func toDoge1(entangled, needed int64) int64 {
 	}
 	return kk
 }
+
 // doge has same precision with czz
 func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -482,11 +512,11 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	l := new(big.Int).Sub(dogeUnit, m)
 
 	if l.Cmp(needed) >= 1 {
-		return new(big.Int).Quo(needed,big.NewInt(rate))
+		return new(big.Int).Quo(needed, big.NewInt(rate))
 	} else {
-		v1 := new(big.Int).Quo(l,big.NewInt(rate))
-		v2 := new(big.Int).Quo(new(big.Int).Sub(needed,l),big.NewInt(rate+1))
-		return new(big.Int).Add(v1,v2)
+		v1 := new(big.Int).Quo(l, big.NewInt(rate))
+		v2 := new(big.Int).Quo(new(big.Int).Sub(needed, l), big.NewInt(rate+1))
+		return new(big.Int).Add(v1, v2)
 	}
 }
 func toDoge(entangled, needed *big.Int) *big.Int {
@@ -543,6 +573,7 @@ func toLtc1(entangled, needed int64) int64 {
 	}
 	return ret
 }
+
 // ltc has same precision with czz
 func toLtc2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -558,18 +589,18 @@ func toLtc2(entangled, needed *big.Int) *big.Int {
 	l := new(big.Int).Sub(fixed, remainder)
 
 	if l.Cmp(needed) >= 1 {
-		exp:= makeExp(countMant(rate,4))
-		mant := new(big.Int).Add(makeMant(rate,4),base1)
-		return new(big.Int).Quo(new(big.Int).Mul(needed,exp),mant)
+		exp := makeExp(countMant(rate, 4))
+		mant := new(big.Int).Add(makeMant(rate, 4), base1)
+		return new(big.Int).Quo(new(big.Int).Mul(needed, exp), mant)
 	} else {
-		exp := makeExp(countMant(rate,4))
-		mant := new(big.Int).Add(makeMant(rate,4),base1)
-		v1 := new(big.Int).Quo(new(big.Int).Mul(l,exp),mant)
+		exp := makeExp(countMant(rate, 4))
+		mant := new(big.Int).Add(makeMant(rate, 4), base1)
+		v1 := new(big.Int).Quo(new(big.Int).Mul(l, exp), mant)
 		// fmt.Println("exp",exp,"mant",mant,"v1",v1,"rate",rate)
-		mant = mant.Add(mant,base)
-		v2 := new(big.Int).Quo(new(big.Int).Mul(new(big.Int).Sub(needed,l),exp),mant)
+		mant = mant.Add(mant, base)
+		v2 := new(big.Int).Quo(new(big.Int).Mul(new(big.Int).Sub(needed, l), exp), mant)
 		// fmt.Println("exp",exp,"mant",mant,"v2",v2,"rate",rate)
-		return new(big.Int).Add(v1,v2)
+		return new(big.Int).Add(v1, v2)
 	}
 }
 func toLtc(entangled, needed *big.Int) *big.Int {
@@ -616,9 +647,9 @@ func fromCzz1(val *big.Int) *big.Float {
 	return fval
 }
 
-func countMant(value *big.Float,prec int) int {
+func countMant(value *big.Float, prec int) int {
 	if !value.Signbit() {
-		str := value.Text('f',prec)
+		str := value.Text('f', prec)
 		return len(strings.Split(fmt.Sprintf("%v", str), ".")[1])
 	}
 	return 0
@@ -626,10 +657,10 @@ func countMant(value *big.Float,prec int) int {
 func makeExp(exp int) *big.Int {
 	return new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(exp)), nil)
 }
-func makeMant(value *big.Float,prec int) *big.Int {
-	base := new(big.Float).SetFloat64(float64(makeExp(countMant(value,prec)).Uint64()))
-	v := new(big.Float).Mul(value,base)
-	val,_ := v.Int64()
+func makeMant(value *big.Float, prec int) *big.Int {
+	base := new(big.Float).SetFloat64(float64(makeExp(countMant(value, prec)).Uint64()))
+	v := new(big.Float).Mul(value, base)
+	val, _ := v.Int64()
 	return big.NewInt(val)
 }
 
