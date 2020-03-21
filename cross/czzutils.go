@@ -4,7 +4,7 @@ import (
 	"bytes"
 	// "encoding/binary"
 	"errors"
-	// "fmt"
+	"fmt"
 	// "strings"
 	"math/big"
 
@@ -18,13 +18,14 @@ import (
 
 var (
 	ErrInvalidParam   = errors.New("Invalid Param")
-	ErrLessThanMin    = errors.New("less than min staking amount for lighthouse")
+	ErrLessThanMin    = errors.New("less than min staking amount for beaconAddress")
 	ErrRepeatRegister = errors.New("repeat register on this address")
-	ErrNoRegister     = errors.New("not found the lighthouse")
+	ErrNoRegister     = errors.New("not found the beaconAddress")
 	ErrAddressInWhiteList = errors.New("the address in the whitelist")
-	ErrNoUserReg      = errors.New("not entangle user in the lighthouse")
-	ErrNoUserAsset    = errors.New("user no entangle asset in the lighthouse")
-	ErrNotEnouthBurn  = errors.New("not enough burn amount in lighthouse")
+	ErrNoUserReg      = errors.New("not entangle user in the beaconAddress")
+	ErrNoUserAsset    = errors.New("user no entangle asset in the beaconAddress")
+	ErrNotEnouthBurn  = errors.New("not enough burn amount in beaconAddress")
+	ErrStakingNotEnough = errors.New("staking not enough")
 )
 
 var (
@@ -42,6 +43,10 @@ const (
 	LhAssetUSDT
 	LhAssetDOGE
 )
+
+func equalAddress(addr1,addr2 czzutil.Address) bool {
+	return bytes.Equal(addr1.ScriptAddress(),addr2.ScriptAddress())
+}
 
 type BurnItem struct {
 	Amount      *big.Int // czz asset amount
@@ -249,8 +254,15 @@ func (lh *BeaconAddressInfo) addressInWhiteList(addr czzutil.Address) bool {
 	}
 	return false
 }
-func equalAddress(addr1,addr2 czzutil.Address) bool {
-	return bytes.Equal(addr1.ScriptAddress(),addr2.ScriptAddress())
+func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
+	var err error
+	if amount.Cmp(lh.StakingAmount) > 0 {
+		err = ErrStakingNotEnough
+		fmt.Println("beacon punished has not enough staking,[current:",
+		lh.StakingAmount.String(),"want:",amount.String())
+	}
+	lh.StakingAmount = new(big.Int).Sub(lh.StakingAmount,amount)
+	return err
 }
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity

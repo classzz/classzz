@@ -119,7 +119,14 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 		Value2: s2,
 	})
 }
-
+func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
+	for _,v := range es.EnInfos {
+		if v.ExchangeID == eid {
+			return v
+		}
+	}
+	return nil
+}
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr czzutil.Address, amount *big.Int,
@@ -402,6 +409,14 @@ func SummayPunishedInfos(infos map[uint64]UserTimeOutBurnInfo) map[uint64]LHPuni
 		res[k] = LHPunishedItems(items)
 	}
 	return res
+}
+func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int) error {
+	beacon := es.getBeaconByID(eid)
+	if beacon == nil {
+		return ErrNoRegister
+	}
+	// get limit staking warnning message
+	return beacon.updatePunished(amount)
 }
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) FinishHandleUserBurn(lightID,height uint64,addr czzutil.Address,atype uint32,amount  *big.Int) error {
