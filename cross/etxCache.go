@@ -67,7 +67,7 @@ func (c *CacheEntangleInfo) SaveEntangleState(height uint64, hash chainhash.Hash
 	return err
 }
 
-func (c *CacheEntangleInfo) LoadEntangleState(height uint64, hash chainhash.Hash) *EntangleState {
+func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash) *EntangleState {
 
 	var err error
 

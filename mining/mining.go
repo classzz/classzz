@@ -618,6 +618,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
+	eState := g.chain.GetEntangleVerify().Cache.LoadEntangleState(cheight, cHash)
+
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
 		return nil, sErr
@@ -847,6 +849,12 @@ mempoolLoop:
 			}
 			entangleAddress[*tx.Hash()] = obj
 		}
+
+		// BeaconRegistrationTx
+		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
+			eState.RegisterBeaconAddress(br.Address, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
+		}
+
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
 			txscript.StandardVerifyFlags, g.sigCache,
 			g.hashCache)
@@ -922,6 +930,13 @@ mempoolLoop:
 			return nil, err
 		}
 	}
+
+	CIDRoot := chainhash.Hash{}
+	// Beacon
+	if g.chainParams.BeaconHeight < nextBlockHeight {
+		CIDRoot = cross.Hash(eState)
+	}
+
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
@@ -931,7 +946,7 @@ mempoolLoop:
 		Version:    nextBlockVersion,
 		PrevBlock:  best.Hash,
 		MerkleRoot: *merkles[len(merkles)-1],
-		CIDRoot:    chainhash.Hash{},
+		CIDRoot:    CIDRoot,
 		Timestamp:  ts,
 		Bits:       reqDifficulty,
 	}
