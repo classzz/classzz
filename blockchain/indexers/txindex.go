@@ -205,6 +205,28 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	return nil
 }
 
+func dbPutBeaconRegistrationTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+	txIndex := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+	var err error
+	if txIndex == nil {
+		if txIndex, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
+			return err
+		}
+	}
+	bai, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+	if bai == nil {
+		return nil
+	}
+	//for _, v := range bai {
+	//	ExTxType := byte(v.ExTxType)
+	//	key := append(v.ExtTxHash, ExTxType)
+	//	if err := txIndex.Put(key, v.Serialize()); err != nil {
+	//		return err
+	//	}
+	//}
+	return nil
+}
+
 // dbRemoveTxIndexEntry uses an existing database transaction to remove the most
 // recent transaction index entry for the given hash.
 func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
@@ -308,6 +330,11 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 		}
 		// Entangle
 		err = dbPutEntangleTxIndexEntry(dbTx, tx)
+		if err != nil {
+			return err
+		}
+		// BeaconRegistration
+		err = dbPutBeaconRegistrationTxIndexEntry(dbTx, tx)
 		if err != nil {
 			return err
 		}
