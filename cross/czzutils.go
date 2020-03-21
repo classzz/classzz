@@ -1,7 +1,7 @@
 package cross
 
 import (
-	// "bytes"
+	"bytes"
 	// "encoding/binary"
 	"errors"
 	// "fmt"
@@ -21,6 +21,7 @@ var (
 	ErrLessThanMin    = errors.New("less than min staking amount for lighthouse")
 	ErrRepeatRegister = errors.New("repeat register on this address")
 	ErrNoRegister     = errors.New("not found the lighthouse")
+	ErrAddressInWhiteList = errors.New("the address in the whitelist")
 	ErrNoUserReg      = errors.New("not entangle user in the lighthouse")
 	ErrNoUserAsset    = errors.New("user no entangle asset in the lighthouse")
 	ErrNotEnouthBurn  = errors.New("not enough burn amount in lighthouse")
@@ -133,6 +134,11 @@ type WhiteUnit struct {
 	AssetType uint32
 	Pk        []byte
 }
+func (w *WhiteUnit) toAddress() czzutil.Address {
+	// pk to czz address 
+	return nil 
+}
+
 type BaseAmountUint struct {
 	AssetType uint32
 	Amount    *big.Int
@@ -223,7 +229,17 @@ func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
 	}
 	return nil
 }
-
+func (lh *BeaconAddressInfo) addressInWhiteList(addr czzutil.Address) bool {
+	for _,val := range lh.WhiteList {
+		if equalAddress(addr,val.toAddress()) {
+			return true
+		}
+	}
+	return false
+}
+func equalAddress(addr1,addr2 czzutil.Address) bool {
+	return bytes.Equal(addr1.ScriptAddress(),addr2.ScriptAddress())
+}
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {

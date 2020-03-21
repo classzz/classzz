@@ -175,6 +175,9 @@ func (es *EntangleState) UnregisterBeaconAddress(addr czzutil.Address) error {
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lightID uint64,
 	height, amount *big.Int) (*big.Int, error) {
+	if es.AddressInWhiteList(addr,true) {
+		return nil,ErrAddressInWhiteList
+	}
 	lh := es.getBeaconAddress(lightID)
 	if lh == nil {
 		return nil, ErrNoRegister
@@ -284,6 +287,17 @@ func redeemAmount(addr czzutil.Address, amount *big.Int) error {
 func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, error) {
 	return nil, nil
 }
+func (es *EntangleState) AddressInWhiteList(addr czzutil.Address,self bool) bool {
+	for k,val := range es.EnInfos {
+		if self && equalAddress(k,addr) {
+			return true
+		}
+		if val.addressInWhiteList(addr) {
+			return true
+		}
+	}
+	return false
+}
 func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint32) *big.Int {
 	aa := big.NewInt(0)
 	if lhEntitys, ok := es.EnEntitys[lightID]; ok {
@@ -318,7 +332,6 @@ func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
 	}
 	return all
 }
-
 // 最低质押额度＝ 100 万 CZZ ＋（累计跨链买入 CZZ －累计跨链卖出 CZZ）x 汇率比
 func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
 	lh := es.getBeaconAddress(eid)
@@ -333,7 +346,6 @@ func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
 	}
 	return nil
 }
-
 //////////////////////////////////////////////////////////////////////
 // UpdateQuotaOnBlock called in insertBlock for update user's quota state
 func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
@@ -350,6 +362,7 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 	}
 	return nil
 }
+// TourAllUserBurnInfo Tours all user's burned asset and check which is timeout to redeem
 func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeOutBurnInfo  {
 	// maybe get cache for recently burned user
 	res := make(map[uint64]UserTimeOutBurnInfo)
