@@ -112,6 +112,13 @@ func (b *BurnInfos) getItem(height uint64,amount *big.Int,state byte) *BurnItem 
 	}
 	return nil
 }
+func (b *BurnInfos) finishBurn(height uint64,amount *big.Int) {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 3 && amount.Cmp(v.Amount) == 0 {
+			v.RedeemState = 1
+		}
+	}
+}
 
 type TimeOutBurnInfo struct {
 	Items     []*BurnItem
@@ -327,6 +334,13 @@ func (ee *EntangleEntitys) updateBurnState(state byte,items TypeTimeOutBurnInfo)
 		entity := ee.getEntityByType(v.AssetType)
 		if entity != nil {
 			entity.updateBurnState(state,v.Items)
+		}
+	}
+}
+func (ee *EntangleEntitys) finishBurnState(height uint64,amount *big.Int,atype uint32) {
+	for _,entity := range *ee {
+		if entity.AssetType == atype {
+			entity.BurnAmount.finishBurn(height,amount)
 		}
 	}
 }
