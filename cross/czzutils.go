@@ -125,9 +125,21 @@ type TimeOutBurnInfo struct {
 	Items     []*BurnItem
 	AssetType uint32
 }
+func (t *TimeOutBurnInfo) getAll() *big.Int {
+	res := big.NewInt(0)
+	for _,v := range t.Items {
+		res = res.Add(res,v.Amount)
+	}
+	return res
+}
 type TypeTimeOutBurnInfo []*TimeOutBurnInfo
 type UserTimeOutBurnInfo map[czzutil.Address]TypeTimeOutBurnInfo
 
+type LHPunishedItem struct {
+	All 	*big.Int		// czz amount(all user burned item in timeout)
+	User czzutil.Address
+}
+type LHPunishedItems []*LHPunishedItem
 //////////////////////////////////////////////////////////////////////////////
 
 type WhiteUnit struct {
@@ -368,6 +380,13 @@ func (u UserEntangleInfos) updateBurnState(state byte,items UserTimeOutBurnInfo)
 			entitys.updateBurnState(state,infos)
 		}
 	}
+}
+func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
+	res := big.NewInt(0)
+	for _,v := range *uu {
+		res = res.Add(res,v.getAll())	
+	}
+	return res
 }
 /////////////////////////////////////////////////////////////////
 func ValidAssetType(utype uint32) bool {

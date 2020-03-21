@@ -389,6 +389,20 @@ func (es *EntangleState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurnI
 		}
 	}
 }
+func SummayPunishedInfos(infos map[uint64]UserTimeOutBurnInfo) map[uint64]LHPunishedItems {
+	res := make(map[uint64]LHPunishedItems)
+	for k,userInfos := range infos {
+		items := make([]*LHPunishedItem,0,0)
+		for addr,val := range userInfos {
+			items = append(items,&LHPunishedItem{
+				User:	addr,
+				All:	val.getAll(),
+			})
+		}
+		res[k] = LHPunishedItems(items)
+	}
+	return res
+}
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) FinishHandleUserBurn(lightID,height uint64,addr czzutil.Address,atype uint32,amount  *big.Int) error {
 	userEntitys, ok := es.EnEntitys[lightID]
