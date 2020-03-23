@@ -668,7 +668,7 @@ func handleCreateRawEntangleTransaction(s *rpcServer, cmd interface{}, closeChan
 	}
 
 	for _, entangle := range c.EntangleOuts {
-		scriptInfo, err := txscript.EntangleScript(entangle)
+		scriptInfo, err := txscript.EntangleScript(entangle.Serialize())
 		if err != nil {
 			return nil, err
 		}

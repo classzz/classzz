@@ -8,6 +8,8 @@
 package btcjson
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
@@ -66,6 +68,22 @@ type EntangleOut struct {
 	Height    uint64   `json:"height"`
 	Amount    *big.Int `json:"amount"`
 	ExtTxHash string   `json:"exttxhash"`
+}
+
+func (info *EntangleOut) Serialize() []byte {
+	buf := new(bytes.Buffer)
+
+	buf.WriteByte(info.ExTxType)
+	binary.Write(buf, binary.LittleEndian, info.Index)
+	binary.Write(buf, binary.LittleEndian, info.Height)
+	b1 := info.Amount.Bytes()
+	len := uint8(len(b1))
+	buf.WriteByte(len)
+
+	buf.Write(b1)
+	ExtTxHash := []byte(info.ExtTxHash)
+	buf.Write(ExtTxHash)
+	return buf.Bytes()
 }
 
 type WhiteUnit struct {
