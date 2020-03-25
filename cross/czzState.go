@@ -219,6 +219,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 				Address:        addr,
 				AssetType:      aType,
 				Height:         new(big.Int).Set(height),
+				OldHeight:		new(big.Int).Set(height),		// init same the Height
 				EnOutsideAmount: new(big.Int).Set(amount),
 				BurnAmount:     newBurnInfos(),
 				MaxRedeem:		big.NewInt(0),
@@ -280,14 +281,9 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address, aType uint32, lightID,h
 
 	return res, nil
 }
-func (es *EntangleState) ConfiscateAsset() error {
-	return nil
-}
-
 //////////////////////////////////////////////////////////////////////
 func redeemAmount(addr czzutil.Address, amount *big.Int) error {
 	if amount.Sign() > 0 {
-
 	}
 	return nil
 }
