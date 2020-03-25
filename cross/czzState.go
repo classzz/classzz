@@ -288,8 +288,16 @@ func redeemAmount(addr czzutil.Address, amount *big.Int) error {
 	return nil
 }
 func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, error) {
-	return nil, nil
+	switch atype {
+	case ExpandedTxEntangle_Doge:
+		return toDoge(reserve, reqAmount),nil
+	case ExpandedTxEntangle_Ltc:
+		return toLtc(reserve, reqAmount),nil
+	default:
+		return nil,ErrNoUserAsset
+	}
 }
+
 func (es *EntangleState) AddressInWhiteList(addr czzutil.Address,self bool) bool {
 	for k,val := range es.EnInfos {
 		if self && equalAddress(k,addr) {
