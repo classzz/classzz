@@ -3,6 +3,7 @@ package cross
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/rlp"
@@ -93,9 +94,12 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 				log.Fatal("Failed to RLP encode EntangleState", "err", err)
 				return err
 			}
+			return nil
 		}
-		return nil
+		return errors.New("value is nil")
 	})
-
+	if err != nil {
+		return nil
+	}
 	return es
 }

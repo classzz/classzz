@@ -933,7 +933,7 @@ mempoolLoop:
 
 	CIDRoot := chainhash.Hash{}
 	// Beacon
-	if g.chainParams.BeaconHeight < nextBlockHeight {
+	if g.chainParams.BeaconHeight <= nextBlockHeight {
 		CIDRoot = cross.Hash(eState)
 	}
 

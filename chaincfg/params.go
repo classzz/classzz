@@ -334,6 +334,7 @@ var RegressionNetParams = Params{
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
+	BeaconHeight:   2,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
