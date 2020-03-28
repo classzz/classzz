@@ -496,18 +496,29 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	var rate int64 = 25
-	z, m := new(big.Int).DivMod(entangled, dogeUnit, new(big.Int).Set(dogeUnit))
-	rate = rate + z.Int64()
-	l := new(big.Int).Sub(dogeUnit, m)
-
-	if l.Cmp(needed) >= 1 {
-		return new(big.Int).Quo(needed, big.NewInt(rate))
-	} else {
-		v1 := new(big.Int).Quo(l, big.NewInt(rate))
-		v2 := new(big.Int).Quo(new(big.Int).Sub(needed, l), big.NewInt(rate+1))
-		return new(big.Int).Add(v1, v2)
+	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	base := big.NewInt(int64(25))
+	loopUnit := new(big.Int).Mul(big.NewInt(1150),baseUnit)
+	res := big.NewInt(0)
+	for {
+		if change.Sign() <= 0 {
+			break
+		}
+		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
+		rate := new(big.Int).Mul(new(big.Int).Add(base,divisor),baseUnit)
+		l := new(big.Int).Sub(loopUnit,remainder)
+		if l.Cmp(change) >= 0 {
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
+			res = res.Add(res,res0)
+			break
+		} else {
+			change = change.Sub(change,l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
+			res = res.Add(res,res0)
+			keep = keep.Add(keep,l)
+		}
 	}
+	return res
 }
 func toDoge(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -568,29 +579,29 @@ func toLtc2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	rate := big.NewFloat(0.0008)
-	base := big.NewInt(1)
-
-	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
-	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
-
-	base1 := new(big.Int).Mul(base, divisor)
-	l := new(big.Int).Sub(fixed, remainder)
-
-	if l.Cmp(needed) >= 1 {
-		exp := makeExp(countMant(rate, 4))
-		mant := new(big.Int).Add(makeMant(rate, 4), base1)
-		return new(big.Int).Quo(new(big.Int).Mul(needed, exp), mant)
-	} else {
-		exp := makeExp(countMant(rate, 4))
-		mant := new(big.Int).Add(makeMant(rate, 4), base1)
-		v1 := new(big.Int).Quo(new(big.Int).Mul(l, exp), mant)
-		// fmt.Println("exp",exp,"mant",mant,"v1",v1,"rate",rate)
-		mant = mant.Add(mant, base)
-		v2 := new(big.Int).Quo(new(big.Int).Mul(new(big.Int).Sub(needed, l), exp), mant)
-		// fmt.Println("exp",exp,"mant",mant,"v2",v2,"rate",rate)
-		return new(big.Int).Add(v1, v2)
+	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	base := big.NewInt(int64(80000))
+	loopUnit := new(big.Int).Mul(big.NewInt(1150),baseUnit)
+	res := big.NewInt(0)
+	for {
+		if change.Sign() <= 0 {
+			break
+		}
+		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
+		rate := new(big.Int).Add(base,divisor)
+		l := new(big.Int).Sub(loopUnit,remainder)
+		if l.Cmp(change) >= 0 {
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
+			res = res.Add(res,res0)
+			break
+		} else {
+			change = change.Sub(change,l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
+			res = res.Add(res,res0)
+			keep = keep.Add(keep,l)
+		}
 	}
+	return res
 }
 func toLtc(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
