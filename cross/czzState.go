@@ -290,9 +290,13 @@ func redeemAmount(addr czzutil.Address, amount *big.Int) error {
 func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
-		return toDoge(reserve, reqAmount),nil
+		return toDoge2(reserve, reqAmount),nil
 	case ExpandedTxEntangle_Ltc:
-		return toLtc(reserve, reqAmount),nil
+		return toLtc2(reserve, reqAmount),nil
+	case ExpandedTxEntangle_Btc:
+		return toBtc(reserve, reqAmount),nil
+	case ExpandedTxEntangle_Bsv,ExpandedTxEntangle_Bch:
+		return toBchOrBsv(reserve, reqAmount),nil
 	default:
 		return nil,ErrNoUserAsset
 	}

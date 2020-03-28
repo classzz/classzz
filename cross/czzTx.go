@@ -23,6 +23,9 @@ const (
 	// Entangle Transcation type
 	ExpandedTxEntangle_Doge = 0xF0
 	ExpandedTxEntangle_Ltc  = 0xF1
+	ExpandedTxEntangle_Btc  = 0xF2
+	ExpandedTxEntangle_Bsv  = 0xF3
+	ExpandedTxEntangle_Bch  = 0xF4
 )
 
 var (
@@ -32,6 +35,9 @@ var (
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
 		ExpandedTxEntangle_Ltc:  64,
+		ExpandedTxEntangle_Btc:  64,
+		ExpandedTxEntangle_Bsv:	 64,
+		ExpandedTxEntangle_Bch:	 64,
 	}
 	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
