@@ -216,3 +216,11 @@ func TestFloat2(t *testing.T) {
 	fmt.Println(makeMant(rate,4))
 	fmt.Println("finish")
 }
+
+func TestBigInt(t *testing.T) {
+	change,rate := big.NewInt(399),big.NewInt(200)
+	c1 := new(big.Int).Mul(change,baseUnit)
+	res0 := new(big.Int).Quo(c1,rate)
+	fmt.Println("res0:",res0.String(),"czz:",fromCzz1(res0).Text('f',6))
+	fmt.Println("finish")
+}

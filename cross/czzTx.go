@@ -343,25 +343,6 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-/*
-MakeMegerTx
-	tx (coinbase tx):
-		in:
-		1 empty hash of coinbase txin
-		2 pooladdr1 of txin
-		3 pooladdr2 of txin
-		out:
-			1. coinbase txout
-			2. pooladdr1 txout
-			3. pooladdr2 txout
-			   '''''''''''''''
-				entangle txout1
-						.
-						.
-						.
-				entangle txoutn
-			   '''''''''''''''
-*/
 func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, lastScriptInfo []byte) error {
 
 	if pool == nil || len(pool.POut) == 0 {
@@ -576,7 +557,6 @@ func toLtc1(entangled, needed int64) int64 {
 	}
 	return ret
 }
-
 // ltc has same precision with czz
 func toLtc2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -635,6 +615,32 @@ func toLtc(entangled, needed *big.Int) *big.Int {
 		return new(big.Int).Add(toCzz(f1), toCzz(f2))
 	}
 }
+func toBtc(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	unit,base := big.NewInt(int64(10)),big.NewInt(int64(200))
+	res := big.NewInt(0)
+	for {
+		if change.Sign() <= 0 {
+			break
+		}
+		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
+		rate := new(big.Int).Add(base,new(big.Int).Mul(unit,divisor))
+		l := new(big.Int).Sub(baseUnit,remainder)
+		if l.Cmp(change) >= 0 {
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
+			res = res.Add(res,res0)
+		} else {
+			change = change.Sub(change,l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
+			res = res.Add(res,res0)
+		}
+	}
+	return res
+}
+
 func toCzz(val *big.Float) *big.Int {
 	val = val.Mul(val, big.NewFloat(float64(baseUnit.Int64())))
 	ii, _ := val.Int64()
