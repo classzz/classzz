@@ -632,10 +632,40 @@ func toBtc(entangled, needed *big.Int) *big.Int {
 		if l.Cmp(change) >= 0 {
 			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
 			res = res.Add(res,res0)
+			break
 		} else {
 			change = change.Sub(change,l)
 			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
 			res = res.Add(res,res0)
+			keep = keep.Add(keep,l)
+		}
+	}
+	return res
+}
+func toBchOrBsv(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	unit,base := big.NewInt(int64(1000)),big.NewInt(int64(10000))
+	loopUnit := new(big.Int).Mul(big.NewInt(300),baseUnit)
+	res := big.NewInt(0)
+	for {
+		if change.Sign() <= 0 {
+			break
+		}
+		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
+		rate := new(big.Int).Add(base,new(big.Int).Mul(unit,divisor))
+		l := new(big.Int).Sub(loopUnit,remainder)
+		if l.Cmp(change) >= 0 {
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
+			res = res.Add(res,res0)
+			break
+		} else {
+			change = change.Sub(change,l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
+			res = res.Add(res,res0)
+			keep = keep.Add(keep,l)
 		}
 	}
 	return res
