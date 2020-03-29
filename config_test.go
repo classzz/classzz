@@ -129,7 +129,7 @@ func TestConvertAddr(t *testing.T) {
 func TestGenesisRegTestAdderss(t *testing.T) {
 
 	key, _ := czzec.NewPrivateKey(czzec.S256())
-	wif, _ := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
+	wif, _ := czzutil.NewWIF(key, &chaincfg.RegressionNetParams, true)
 
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
@@ -146,7 +146,7 @@ func TestGenesisRegTestAdderss(t *testing.T) {
 func TestGenesisSimNetAdderss(t *testing.T) {
 
 	key, _ := czzec.NewPrivateKey(czzec.S256())
-	wif, _ := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
+	wif, _ := czzutil.NewWIF(key, &chaincfg.SimNetParams, true)
 
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))

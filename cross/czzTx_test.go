@@ -1,12 +1,13 @@
 package cross
 
 import (
+	"github.com/classzz/classzz/rlp"
 	// "bytes"
 	// "encoding/binary"
-	"strings"
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -197,7 +198,7 @@ func TestFloat(t *testing.T) {
 	s := rate.String()
 	length := len(strings.Split(fmt.Sprintf("%v", s), ".")[1])
 	base := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(0)), nil)
-	fmt.Println(r1, a1,rate.Prec(),s,length,base)
+	fmt.Println(r1, a1, rate.Prec(), s, length, base)
 	fmt.Println("finish")
 }
 
@@ -205,22 +206,29 @@ func TestFloat2(t *testing.T) {
 	rate := big.NewFloat(0.0008)
 	base := big.NewFloat(0.0001)
 	base1 := new(big.Float).Mul(base, big.NewFloat(float64(75)))
-	fmt.Println("base1",base1)
+	fmt.Println("base1", base1)
 	rate = rate.Add(rate, base1)
-	fmt.Println("rate",rate)
+	fmt.Println("rate", rate)
 
-	str := rate.Text('f',4)
-	fmt.Println(rate.Signbit(),str)
-	pos := countMant(rate,4)
+	str := rate.Text('f', 4)
+	fmt.Println(rate.Signbit(), str)
+	pos := countMant(rate, 4)
 	fmt.Println(pos)
-	fmt.Println(makeMant(rate,4))
+	fmt.Println(makeMant(rate, 4))
 	fmt.Println("finish")
 }
 
 func TestBigInt(t *testing.T) {
-	change,rate := big.NewInt(399),big.NewInt(200)
-	c1 := new(big.Int).Mul(change,baseUnit)
-	res0 := new(big.Int).Quo(c1,rate)
-	fmt.Println("res0:",res0.String(),"czz:",fromCzz1(res0).Text('f',6))
+	change, rate := big.NewInt(399), big.NewInt(200)
+	c1 := new(big.Int).Mul(change, baseUnit)
+	res0 := new(big.Int).Quo(c1, rate)
+	fmt.Println("res0:", res0.String(), "czz:", fromCzz1(res0).Text('f', 6))
 	fmt.Println("finish")
+}
+
+func TestRPl(t *testing.T) {
+	es := NewEntangleState()
+	ee, err := rlp.EncodeToBytes(es)
+	fmt.Println(ee, err)
+
 }

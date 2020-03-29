@@ -44,7 +44,7 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 	return txExist
 }
 
-func (c *CacheEntangleInfo) SaveEntangleState(height uint64, hash chainhash.Hash, es *EntangleState) error {
+func (c *CacheEntangleInfo) SaveEntangleState(height int32, hash chainhash.Hash, es *EntangleState) error {
 
 	var err error
 	err = c.DB.Update(func(tx database.Tx) error {

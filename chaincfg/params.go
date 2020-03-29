@@ -342,8 +342,8 @@ var RegressionNetParams = Params{
 	//
 	// The miner confirmation window is defined as:
 	//   target proof of work timespan / target proof of work spacing
-	RuleChangeActivationThreshold: 108, // 75%  of MinerConfirmationWindow
-	MinerConfirmationWindow:       144,
+	RuleChangeActivationThreshold: 1916, // 95% of MinerConfirmationWindow
+	MinerConfirmationWindow:       2016, //
 	Deployments: [DefinedDeployments]ConsensusDeployment{
 		DeploymentTestDummy: {
 			BitNumber:  28,
@@ -363,7 +363,7 @@ var RegressionNetParams = Params{
 	},
 
 	// Mempool parameters
-	RelayNonStdTxs: true,
+	RelayNonStdTxs: false,
 
 	// The prefix for the cashaddress
 	CashAddressPrefix: "czzreg", // always czzreg for reg testnet
@@ -475,7 +475,7 @@ var SimNetParams = Params{
 	GenesisHash:              &simNetGenesisHash,
 	PowLimit:                 simNetPowLimit,
 	PowLimitBits:             0x207fffff,
-	CoinbaseMaturity:         100,
+	CoinbaseMaturity:         14,
 	SubsidyReductionInterval: 1000000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	TargetTimePerBlock:       30,                  // 10 minutes
@@ -486,6 +486,7 @@ var SimNetParams = Params{
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
+	BeaconHeight:   12,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -494,7 +495,7 @@ var SimNetParams = Params{
 	// The miner confirmation window is defined as:
 	//   target proof of work timespan / target proof of work spacing
 	RuleChangeActivationThreshold: 75, // 75% of MinerConfirmationWindow
-	MinerConfirmationWindow:       100,
+	MinerConfirmationWindow:       14,
 	Deployments: [DefinedDeployments]ConsensusDeployment{
 		DeploymentTestDummy: {
 			BitNumber:  28,

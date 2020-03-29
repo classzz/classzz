@@ -619,6 +619,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	isOver := false
 
 	eState := g.chain.GetEntangleVerify().Cache.LoadEntangleState(cheight, cHash)
+	if g.chainParams.BeaconHeight == nextBlockHeight {
+		eState = cross.NewEntangleState()
+		g.chain.GetEntangleVerify().Cache.SaveEntangleState(cheight, cHash, eState)
+	}
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
@@ -746,7 +750,6 @@ mempoolLoop:
 		blockPlusTxSize := blockSize + txSize
 		if blockPlusTxSize < txSize ||
 			blockPlusTxSize >= g.policy.BlockMaxSize {
-
 			log.Debugf("Skipping tx %s because it would exceed "+
 				"the max block size", tx.Hash())
 			logSkippedDeps(tx, deps)
@@ -933,10 +936,10 @@ mempoolLoop:
 
 	CIDRoot := chainhash.Hash{}
 	// Beacon
-	if g.chainParams.BeaconHeight <= nextBlockHeight {
+
+	if g.chainParams.BeaconHeight <= nextBlockHeight && eState != nil {
 		CIDRoot = cross.Hash(eState)
 	}
-
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
