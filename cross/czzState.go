@@ -78,7 +78,7 @@ func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos) 
 	}
 	sort.Sort(SortStoreBeaconAddress(v1))
 	sort.Sort(SortStoreUserInfos(v2))
-	return nil, nil
+	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2)
 }
 func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos) {
 	enInfos := make(map[czzutil.Address]*BeaconAddressInfo)

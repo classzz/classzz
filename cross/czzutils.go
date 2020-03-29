@@ -5,7 +5,8 @@ import (
 	// "encoding/binary"
 	"errors"
 	"fmt"
-	// "strings"
+	"sort"
+	"io"
 	"math/big"
 
 	// "github.com/classzz/classzz/chaincfg"
@@ -13,6 +14,7 @@ import (
 	// "github.com/classzz/classzz/czzec"
 	// "github.com/classzz/classzz/txscript"
 	// "github.com/classzz/classzz/wire"
+	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
 )
 
@@ -279,7 +281,61 @@ type EntangleEntity struct {
 }
 type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[czzutil.Address]EntangleEntitys
+type StoreUserItme struct {
+	Addr 		czzutil.Address
+	UserInfos 	EntangleEntitys
+}
+type SortStoreUserItems []*StoreUserItme
 
+func (vs SortStoreUserItems) Len() int {
+	return len(vs)
+}
+func (vs SortStoreUserItems) Less(i, j int) bool {
+	return bytes.Compare(vs[i].Addr.ScriptAddress(),vs[j].Addr.ScriptAddress()) == -1
+}
+func (vs SortStoreUserItems) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+func (uinfos *UserEntangleInfos) toSlice() SortStoreUserItems {
+	v1 := make([]*StoreUserItme, 0, 0)
+	for k, v := range *uinfos {
+		v1 = append(v1, &StoreUserItme{
+			Addr: 		k,
+			UserInfos:  v,
+		})
+	}
+	sort.Sort(SortStoreUserItems(v1))
+	return SortStoreUserItems(v1)
+}
+func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems) {
+	userInfos := make(map[czzutil.Address]EntangleEntitys)
+	for _, v := range vv {
+		userInfos[v.Addr] = v.UserInfos
+	}
+	*es = UserEntangleInfos(userInfos)
+}
+func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		Value SortStoreUserItems
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.fromSlice(eb.Value)
+	return nil
+}
+func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		Value SortStoreUserItems
+	}
+	s1 := es.toSlice()
+	return rlp.Encode(w, &Store1{
+		Value: s1,
+	})
+}
 /////////////////////////////////////////////////////////////////
 func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
