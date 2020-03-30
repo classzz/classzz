@@ -1,7 +1,7 @@
 package cross
 
 import (
-	"github.com/classzz/classzz/rlp"
+	// "github.com/classzz/classzz/rlp"
 	// "bytes"
 	// "encoding/binary"
 	"encoding/hex"
@@ -225,10 +225,9 @@ func TestBigInt(t *testing.T) {
 	fmt.Println("res0:", res0.String(), "czz:", fromCzz1(res0).Text('f', 6))
 	fmt.Println("finish")
 }
-
-func TestRPl(t *testing.T) {
-	es := NewEntangleState()
-	ee, err := rlp.EncodeToBytes(es)
-	fmt.Println(ee, err)
-
+func TestStateRlp(t *testing.T) {
+	state := NewEntangleState()
+	l := state.toBytes()
+	fmt.Println("state len:",l)
+	fmt.Println("finish")
 }
