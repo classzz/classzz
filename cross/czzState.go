@@ -21,12 +21,12 @@ import (
 )
 
 type EntangleState struct {
-	EnInfos       map[czzutil.Address]*BeaconAddressInfo
+	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
 	CurExchangeID uint64
 }
 type StoreBeaconAddress struct {
-	Address czzutil.Address
+	Address string
 	Lh      *BeaconAddressInfo
 }
 type StoreUserInfos struct {
@@ -39,7 +39,7 @@ func (vs SortStoreBeaconAddress) Len() int {
 	return len(vs)
 }
 func (vs SortStoreBeaconAddress) Less(i, j int) bool {
-	return bytes.Compare(vs[i].Address.ScriptAddress(), vs[j].Address.ScriptAddress()) == -1
+	return bytes.Compare([]byte(vs[i].Address), []byte(vs[j].Address)) == -1
 }
 func (vs SortStoreBeaconAddress) Swap(i, j int) {
 	it := vs[i]
@@ -82,7 +82,7 @@ func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos) 
 	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2)
 }
 func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos) {
-	enInfos := make(map[czzutil.Address]*BeaconAddressInfo)
+	enInfos := make(map[string]*BeaconAddressInfo)
 	entitys := make(map[uint64]UserEntangleInfos)
 	for _, v := range v1 {
 		enInfos[v.Address] = v.Lh
@@ -131,7 +131,7 @@ func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr czzutil.Address, amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr string, amount *big.Int,
 	fee, keeptime uint64, assetType uint32) error {
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
@@ -153,7 +153,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr czzutil.Address, amount *big
 	es.EnInfos[addr] = info
 	return nil
 }
-func (es *EntangleState) AppendWhiteList(addr czzutil.Address, wlist []*WhiteUnit) error {
+func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		cnt := len(val.WhiteList)
 		if cnt+len(wlist) >= MaxWhiteListCount {
@@ -171,7 +171,7 @@ func (es *EntangleState) AppendWhiteList(addr czzutil.Address, wlist []*WhiteUni
 }
 
 // UnregisterBeaconAddress need to check all the proves and handle all the user's burn coins
-func (es *EntangleState) UnregisterBeaconAddress(addr czzutil.Address) error {
+func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		last := new(big.Int).Sub(val.StakingAmount, val.EntangleAmount)
 		redeemAmount(addr, last)
@@ -182,7 +182,7 @@ func (es *EntangleState) UnregisterBeaconAddress(addr czzutil.Address) error {
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lightID uint64,
+func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint64,
 	height, amount *big.Int) (*big.Int, error) {
 	if es.AddressInWhiteList(addr, true) {
 		return nil, ErrAddressInWhiteList
@@ -198,7 +198,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 	var err error
 	lhEntitys, ok := es.EnEntitys[lightID]
 	if !ok {
-		lhEntitys = UserEntangleInfos(make(map[czzutil.Address]EntangleEntitys))
+		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
 	}
 	if lhEntitys != nil {
 		userEntitys, ok1 := lhEntitys[addr]
@@ -248,7 +248,7 @@ func (es *EntangleState) AddEntangleItem(addr czzutil.Address, aType uint32, lig
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
-func (es *EntangleState) BurnAsset(addr czzutil.Address, aType uint32, lightID, height uint64,
+func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
 	amount *big.Int) (*big.Int, error) {
 	light := es.getBeaconAddress(lightID)
 	if light == nil {
@@ -285,7 +285,7 @@ func (es *EntangleState) BurnAsset(addr czzutil.Address, aType uint32, lightID, 
 }
 
 //////////////////////////////////////////////////////////////////////
-func redeemAmount(addr czzutil.Address, amount *big.Int) error {
+func redeemAmount(addr string, amount *big.Int) error {
 	if amount.Sign() > 0 {
 	}
 	return nil
@@ -305,7 +305,7 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, er
 	}
 }
 
-func (es *EntangleState) AddressInWhiteList(addr czzutil.Address, self bool) bool {
+func (es *EntangleState) AddressInWhiteList(addr string, self bool) bool {
 	for k, val := range es.EnInfos {
 		if self && equalAddress(k, addr) {
 			return true
@@ -388,7 +388,7 @@ func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeO
 	// maybe get cache for recently burned user
 	res := make(map[uint64]UserTimeOutBurnInfo)
 	for k, users := range es.EnEntitys {
-		userItems := make(map[czzutil.Address]TypeTimeOutBurnInfo)
+		userItems := make(map[string]TypeTimeOutBurnInfo)
 		for k1, entitys := range users {
 			items := entitys.getBurnTimeout(height, true)
 			if len(items) > 0 {
@@ -440,7 +440,7 @@ func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzut
 		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", lightID)
 	} else {
 		for addr1, userEntity := range userEntitys {
-			if bytes.Equal(addr.ScriptAddress(), addr1.ScriptAddress()) {
+			if bytes.Equal(addr.ScriptAddress(), []byte(addr1)) {
 				userEntity.finishBurnState(height, amount, atype)
 			}
 		}
@@ -466,7 +466,7 @@ func Hash(es *EntangleState) chainhash.Hash {
 }
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
-		EnInfos:       make(map[czzutil.Address]*BeaconAddressInfo),
+		EnInfos:       make(map[string]*BeaconAddressInfo),
 		EnEntitys:     make(map[uint64]UserEntangleInfos),
 		CurExchangeID: 0,
 	}

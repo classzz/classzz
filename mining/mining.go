@@ -855,6 +855,7 @@ mempoolLoop:
 
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
+			fmt.Println("address:", br.Address)
 			eState.RegisterBeaconAddress(br.Address, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
 		}
 

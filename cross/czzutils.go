@@ -15,7 +15,6 @@ import (
 	// "github.com/classzz/classzz/txscript"
 	// "github.com/classzz/classzz/wire"
 	"github.com/classzz/classzz/rlp"
-	"github.com/classzz/czzutil"
 )
 
 var (
@@ -46,8 +45,8 @@ const (
 	LhAssetDOGE
 )
 
-func equalAddress(addr1, addr2 czzutil.Address) bool {
-	return bytes.Equal(addr1.ScriptAddress(), addr2.ScriptAddress())
+func equalAddress(addr1, addr2 string) bool {
+	return bytes.Equal([]byte(addr1), []byte(addr2))
 }
 
 type BurnItem struct {
@@ -142,11 +141,11 @@ func (t *TimeOutBurnInfo) getAll() *big.Int {
 }
 
 type TypeTimeOutBurnInfo []*TimeOutBurnInfo
-type UserTimeOutBurnInfo map[czzutil.Address]TypeTimeOutBurnInfo
+type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfo
 
 type LHPunishedItem struct {
 	All  *big.Int // czz amount(all user burned item in timeout)
-	User czzutil.Address
+	User string
 }
 type LHPunishedItems []*LHPunishedItem
 
@@ -157,9 +156,9 @@ type WhiteUnit struct {
 	Pk        []byte `json:"pk"`
 }
 
-func (w *WhiteUnit) toAddress() czzutil.Address {
+func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
-	return nil
+	return ""
 }
 
 type BaseAmountUint struct {
@@ -172,7 +171,7 @@ type FreeQuotaItem BaseAmountUint
 
 type BeaconAddressInfo struct {
 	ExchangeID     uint64           `json:"exchange_id"`
-	Address        czzutil.Address  `json:"address"`
+	Address        string           `json:"address"`
 	StakingAmount  *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets       []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
@@ -252,7 +251,7 @@ func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
 	}
 	return nil
 }
-func (lh *BeaconAddressInfo) addressInWhiteList(addr czzutil.Address) bool {
+func (lh *BeaconAddressInfo) addressInWhiteList(addr string) bool {
 	for _, val := range lh.WhiteList {
 		if equalAddress(addr, val.toAddress()) {
 			return true
@@ -274,20 +273,20 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
-	ExchangeID      uint64          `json:"exchange_id"`
-	Address         czzutil.Address `json:"address"`
-	AssetType       uint32          `json:"asset_type"`
-	Height          *big.Int        `json:"height"`            // newest height for entangle
-	OldHeight       *big.Int        `json:"old_height"`        // oldest height for entangle
-	EnOutsideAmount *big.Int        `json:"en_outside_amount"` // out asset
-	OriginAmount    *big.Int        `json:"origin_amount"`     // origin asset(czz) by entangle in
-	MaxRedeem       *big.Int        `json:"max_redeem"`        // out asset
-	BurnAmount      *BurnInfos      `json:"burn_amount"`
+	ExchangeID      uint64     `json:"exchange_id"`
+	Address         string     `json:"address"`
+	AssetType       uint32     `json:"asset_type"`
+	Height          *big.Int   `json:"height"`            // newest height for entangle
+	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
+	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
+	OriginAmount    *big.Int   `json:"origin_amount"`     // origin asset(czz) by entangle in
+	MaxRedeem       *big.Int   `json:"max_redeem"`        // out asset
+	BurnAmount      *BurnInfos `json:"burn_amount"`
 }
 type EntangleEntitys []*EntangleEntity
-type UserEntangleInfos map[czzutil.Address]EntangleEntitys
+type UserEntangleInfos map[string]EntangleEntitys
 type StoreUserItme struct {
-	Addr      czzutil.Address
+	Addr      string
 	UserInfos EntangleEntitys
 }
 type SortStoreUserItems []*StoreUserItme
@@ -296,7 +295,7 @@ func (vs SortStoreUserItems) Len() int {
 	return len(vs)
 }
 func (vs SortStoreUserItems) Less(i, j int) bool {
-	return bytes.Compare(vs[i].Addr.ScriptAddress(), vs[j].Addr.ScriptAddress()) == -1
+	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
 }
 func (vs SortStoreUserItems) Swap(i, j int) {
 	it := vs[i]
@@ -315,7 +314,7 @@ func (uinfos *UserEntangleInfos) toSlice() SortStoreUserItems {
 	return SortStoreUserItems(v1)
 }
 func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems) {
-	userInfos := make(map[czzutil.Address]EntangleEntitys)
+	userInfos := make(map[string]EntangleEntitys)
 	for _, v := range vv {
 		userInfos[v.Addr] = v.UserInfos
 	}

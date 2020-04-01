@@ -205,7 +205,7 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	return nil
 }
 
-func dbPutBeaconRegistrationTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+func dbPutBeaconRegistrationTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx, block *czzutil.Block) error {
 	txIndex := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 	var err error
 	if txIndex == nil {
@@ -217,10 +217,11 @@ func dbPutBeaconRegistrationTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error
 	if bai == nil {
 		return nil
 	}
+
 	//for _, v := range bai {
 	//	ExTxType := byte(v.ExTxType)
 	//	key := append(v.ExtTxHash, ExTxType)
-	//	if err := txIndex.Put(key, v.Serialize()); err != nil {
+	//	if err := txIndex.Put(key, v.Seri0alize()); err != nil {
 	//		return err
 	//	}
 	//}
@@ -334,7 +335,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 			return err
 		}
 		// BeaconRegistration
-		err = dbPutBeaconRegistrationTxIndexEntry(dbTx, tx)
+		err = dbPutBeaconRegistrationTxIndexEntry(dbTx, tx, block)
 		if err != nil {
 			return err
 		}
