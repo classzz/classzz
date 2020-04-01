@@ -481,7 +481,7 @@ func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzut
 	}
 	return nil
 }
-func (es *EntangleState) toBytes() []byte {
+func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)
 	if err != nil {
@@ -496,7 +496,7 @@ func (es *EntangleState) Load() error {
 	return nil
 }
 func Hash(es *EntangleState) chainhash.Hash {
-	return chainhash.HashH(es.toBytes())
+	return chainhash.HashH(es.ToBytes())
 }
 func NewEntangleState() *EntangleState {
 	return &EntangleState{

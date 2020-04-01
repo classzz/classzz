@@ -61,7 +61,7 @@ func (c *CacheEntangleInfo) SaveEntangleState(height int32, hash chainhash.Hash,
 		binary.Write(buf, binary.LittleEndian, height)
 		buf.Write(hash.CloneBytes())
 
-		err := entangleBucket.Put(buf.Bytes(), es.toBytes())
+		err := entangleBucket.Put(buf.Bytes(), es.ToBytes())
 		return err
 	})
 
