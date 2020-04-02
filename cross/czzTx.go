@@ -36,8 +36,8 @@ var (
 		ExpandedTxEntangle_Doge: 64,
 		ExpandedTxEntangle_Ltc:  64,
 		ExpandedTxEntangle_Btc:  64,
-		ExpandedTxEntangle_Bsv:	 64,
-		ExpandedTxEntangle_Bch:	 64,
+		ExpandedTxEntangle_Bsv:  64,
+		ExpandedTxEntangle_Bch:  64,
 	}
 	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
@@ -280,7 +280,7 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 
 func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	// make sure at least one txout in OUTPUT
-	es := &BeaconAddressInfo{}
+	var es *BeaconAddressInfo
 
 	for _, v := range tx.TxOut {
 		info, err := BeaconRegistrationTxFromScript(v.PkScript)
@@ -496,26 +496,26 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
 	base := big.NewInt(int64(25))
-	loopUnit := new(big.Int).Mul(big.NewInt(1150),baseUnit)
+	loopUnit := new(big.Int).Mul(big.NewInt(1150), baseUnit)
 	res := big.NewInt(0)
 	for {
 		if change.Sign() <= 0 {
 			break
 		}
 		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
-		rate := new(big.Int).Mul(new(big.Int).Add(base,divisor),baseUnit)
-		l := new(big.Int).Sub(loopUnit,remainder)
+		rate := new(big.Int).Mul(new(big.Int).Add(base, divisor), baseUnit)
+		l := new(big.Int).Sub(loopUnit, remainder)
 		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
-			res = res.Add(res,res0)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
+			res = res.Add(res, res0)
 			break
 		} else {
-			change = change.Sub(change,l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
-			res = res.Add(res,res0)
-			keep = keep.Add(keep,l)
+			change = change.Sub(change, l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
+			res = res.Add(res, res0)
+			keep = keep.Add(keep, l)
 		}
 	}
 	return res
@@ -574,31 +574,32 @@ func toLtc1(entangled, needed int64) int64 {
 	}
 	return ret
 }
+
 // ltc has same precision with czz
 func toLtc2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
+	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
 	base := big.NewInt(int64(80000))
-	loopUnit := new(big.Int).Mul(big.NewInt(1150),baseUnit)
+	loopUnit := new(big.Int).Mul(big.NewInt(1150), baseUnit)
 	res := big.NewInt(0)
 	for {
 		if change.Sign() <= 0 {
 			break
 		}
 		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
-		rate := new(big.Int).Add(base,divisor)
-		l := new(big.Int).Sub(loopUnit,remainder)
+		rate := new(big.Int).Add(base, divisor)
+		l := new(big.Int).Sub(loopUnit, remainder)
 		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
-			res = res.Add(res,res0)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
+			res = res.Add(res, res0)
 			break
 		} else {
-			change = change.Sub(change,l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
-			res = res.Add(res,res0)
-			keep = keep.Add(keep,l)
+			change = change.Sub(change, l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
+			res = res.Add(res, res0)
+			keep = keep.Add(keep, l)
 		}
 	}
 	return res
@@ -636,25 +637,25 @@ func toBtc(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
-	unit,base := big.NewInt(int64(10)),big.NewInt(int64(200))
+	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
+	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
 	res := big.NewInt(0)
 	for {
 		if change.Sign() <= 0 {
 			break
 		}
 		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
-		rate := new(big.Int).Add(base,new(big.Int).Mul(unit,divisor))
-		l := new(big.Int).Sub(baseUnit,remainder)
+		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+		l := new(big.Int).Sub(baseUnit, remainder)
 		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
-			res = res.Add(res,res0)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
+			res = res.Add(res, res0)
 			break
 		} else {
-			change = change.Sub(change,l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
-			res = res.Add(res,res0)
-			keep = keep.Add(keep,l)
+			change = change.Sub(change, l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
+			res = res.Add(res, res0)
+			keep = keep.Add(keep, l)
 		}
 	}
 	return res
@@ -663,26 +664,26 @@ func toBchOrBsv(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	keep,change := new(big.Int).Set(entangled),new(big.Int).Set(needed)
-	unit,base := big.NewInt(int64(1000)),big.NewInt(int64(10000))
-	loopUnit := new(big.Int).Mul(big.NewInt(300),baseUnit)
+	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
+	unit, base := big.NewInt(int64(1000)), big.NewInt(int64(10000))
+	loopUnit := new(big.Int).Mul(big.NewInt(300), baseUnit)
 	res := big.NewInt(0)
 	for {
 		if change.Sign() <= 0 {
 			break
 		}
 		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
-		rate := new(big.Int).Add(base,new(big.Int).Mul(unit,divisor))
-		l := new(big.Int).Sub(loopUnit,remainder)
+		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+		l := new(big.Int).Sub(loopUnit, remainder)
 		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change,baseUnit),rate)
-			res = res.Add(res,res0)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
+			res = res.Add(res, res0)
 			break
 		} else {
-			change = change.Sub(change,l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l,baseUnit),rate)
-			res = res.Add(res,res0)
-			keep = keep.Add(keep,l)
+			change = change.Sub(change, l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
+			res = res.Add(res, res0)
+			keep = keep.Add(keep, l)
 		}
 	}
 	return res
