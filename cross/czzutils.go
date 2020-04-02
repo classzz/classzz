@@ -34,6 +34,7 @@ var (
 	MaxWhiteListCount                 = 5
 	MAXBASEFEE                        = 10000
 	LimitRedeemHeightForBeaconAddress = 5000
+	MaxCoinBase 					  = 5
 )
 
 const (
@@ -180,6 +181,7 @@ type BeaconAddressInfo struct {
 	Fee            uint64           `json:"fee"`
 	KeepTime       uint64           `json:"keep_time"` // the time as the block count for finally redeem time
 	WhiteList      []*WhiteUnit     `json:"white_list"`
+	CoinBaseAddress []string   `json:"CoinBaseAddress"`
 }
 
 func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {

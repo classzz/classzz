@@ -169,7 +169,41 @@ func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error 
 		return ErrNoRegister
 	}
 }
-
+func (es *EntangleState) AppendCoinbase(addr string,coinbases []string) error {
+	if val, ok := es.EnInfos[addr]; ok {
+		cnt := len(val.CoinBaseAddress)
+		if cnt+len(coinbases) >= MaxCoinBase {
+			return errors.New("more than max coinbase")
+		}
+		for _, v := range coinbases {
+			if v != "" {
+				val.CoinBaseAddress = append(val.CoinBaseAddress,v)
+			}
+		}
+		return nil
+	} else {
+		return ErrNoRegister
+	}
+}
+func (es *EntangleState) UpdateCoinbase(addr, update,newAddr string) error {
+	if val, ok := es.EnInfos[addr]; ok {
+		for i, v := range val.CoinBaseAddress {
+			if v == update {
+				val.CoinBaseAddress[i] = newAddr
+			}
+		}
+		return nil
+	} else {
+		return ErrNoRegister
+	}
+}
+func (es *EntangleState) GetCoinbase(addr string) []string {
+	if val, ok := es.EnInfos[addr]; ok {
+		res := make([]string,0,0)
+		res = append(res,val.CoinBaseAddress[:]...)
+	}
+	return nil
+}
 // UnregisterBeaconAddress need to check all the proves and handle all the user's burn coins
 func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
