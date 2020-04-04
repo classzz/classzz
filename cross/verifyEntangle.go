@@ -25,6 +25,10 @@ const (
 	ltcMaturity  = 12
 )
 
+var (
+	minStakingAmount = big.NewInt(1000000)
+)
+
 type EntangleVerify struct {
 	DogeCoinRPC []*rpcclient.Client
 	LtcCoinRPC  []*rpcclient.Client
@@ -282,6 +286,29 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	br, _ := IsBeaconRegistrationTx(tx)
 	if br == nil {
 		return nil, NoBeaconRegistration
+	}
+
+	//ExchangeID     uint64           `json:"exchange_id"`				灯塔的id   系统分配
+	//Address        string           `json:"address"`					from地址
+	//StakingAmount  *big.Int         `json:"staking_amount"`  // in	抵押金额 czz
+	//EntangleAmount *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle	纠缠金额
+	//EnAssets       []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset		外部资产列表
+	//Frees          []*FreeQuotaItem `json:"frees"`           // extrinsic asset				外部资产表述的自由额度
+	//AssetFlag      uint32           `json:"asset_flag"`		灯塔地址支持那些外部资产
+	//Fee            uint64           `json:"fee"`				燃币手续费
+	//KeepTime       uint64           `json:"keep_time"` // the time as the block count for finally redeem time		多上时间没有燃币，就会变为自由额度
+	//WhiteList      []*WhiteUnit     `json:"white_list"`															白名单地址
+	//CoinBaseAddress []string   `json:"CoinBaseAddress"`															挖矿地址
+
+	czzutil.DecodeCashAddress(br.Address)
+
+	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	if br.EntangleAmount.Cmp() {
+
 	}
 
 	return br, nil

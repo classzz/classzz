@@ -363,38 +363,6 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
-	// tmp the cache is nil
-	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
-	curHeight := int64(0)
-	for _, tx := range block.Transactions() {
-		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-		if einfos == nil {
-			continue
-		}
-		max := int64(0)
-		for _, ii := range einfos {
-			if max < int64(ii.Height) {
-				max = int64(ii.Height)
-			}
-		}
-		if curHeight > max {
-			return errors.New("unordered entangle tx in the block")
-		}
-		err := b.checkBeaconRegistrationTx(tx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
 	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
@@ -403,6 +371,16 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	}
 	return nil
 }
+
+func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
+	// tmp the cache is nil
+	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
@@ -420,6 +398,30 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 			return errors.New("unordered entangle tx in the block")
 		}
 		err := b.checkEntangleTx(tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
+	curHeight := int64(0)
+	for _, tx := range block.Transactions() {
+		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+		if einfos == nil {
+			continue
+		}
+		max := int64(0)
+		for _, ii := range einfos {
+			if max < int64(ii.Height) {
+				max = int64(ii.Height)
+			}
+		}
+		if curHeight > max {
+			return errors.New("unordered BeaconRegistration tx in the block")
+		}
+		err := b.checkBeaconRegistrationTx(tx)
 		if err != nil {
 			return err
 		}
@@ -835,6 +837,7 @@ func (b *BlockChain) checkBlockHeaderContext(header *wire.BlockHeader, prevNode 
 		// Ensure the difficulty specified in the block header matches
 		// the calculated difficulty based on the previous block and
 		// difficulty retarget rules.
+		b.entangleVerify.Cache.LoadEntangleState(blockHeight, header.BlockHash())
 		expectedDifficulty, err := b.calcNextRequiredDifficulty(prevNode, header.Timestamp)
 
 		log.Debug("checkBlockHeaderContext", "blockHeight", blockHeight, "hash", header.BlockHash(), "header", header.Timestamp)
