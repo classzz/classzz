@@ -288,9 +288,9 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 		return nil, NoBeaconRegistration
 	}
 
-	//ExchangeID     uint64           `json:"exchange_id"`				灯塔的id   系统分配
-	//Address        string           `json:"address"`					from地址
-	//StakingAmount  *big.Int         `json:"staking_amount"`  // in	抵押金额 czz
+	//ExchangeID     uint64           `json:"exchange_id"`				灯塔的id   系统分配	(x)
+	//Address        string           `json:"address"`					from地址				(x)
+	//StakingAmount  *big.Int         `json:"staking_amount"`  // in	抵押金额 czz			(x)
 	//EntangleAmount *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle	纠缠金额
 	//EnAssets       []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset		外部资产列表
 	//Frees          []*FreeQuotaItem `json:"frees"`           // extrinsic asset				外部资产表述的自由额度
@@ -298,17 +298,39 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	//Fee            uint64           `json:"fee"`				燃币手续费
 	//KeepTime       uint64           `json:"keep_time"` // the time as the block count for finally redeem time		多上时间没有燃币，就会变为自由额度
 	//WhiteList      []*WhiteUnit     `json:"white_list"`															白名单地址
-	//CoinBaseAddress []string   `json:"CoinBaseAddress"`															挖矿地址
-
-	czzutil.DecodeCashAddress(br.Address)
+	//CoinBaseAddress []string  	  `json:"CoinBaseAddress"`															挖矿地址
 
 	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
 
-	if br.EntangleAmount.Cmp() {
+	if br.EntangleAmount.Cmp(big.NewInt(0)) == 0 {
+		e := fmt.Sprintf("EntangleAmount err")
+		return nil, errors.New(e)
+	}
 
+	if br.AssetFlag > 32 {
+		e := fmt.Sprintf("AssetFlag err")
+		return nil, errors.New(e)
+	}
+
+	for _, whiteAddress := range br.WhiteList {
+		if len(whiteAddress.Pk) != 32 {
+			e := fmt.Sprintf("whiteAddress.Pk err")
+			return nil, errors.New(e)
+		}
+		if whiteAddress.AssetType > 32 {
+			e := fmt.Sprintf("whiteAddress.AssetType err")
+			return nil, errors.New(e)
+		}
+	}
+
+	for _, coinBaseAddress := range br.CoinBaseAddress {
+		if _, _, err := czzutil.DecodeCashAddress(coinBaseAddress); err != nil {
+			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
+			return nil, errors.New(e)
+		}
 	}
 
 	return br, nil

@@ -290,6 +290,11 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 			}
 			es = info
 		}
+
+		info.StakingAmount = big.NewInt(tx.TxOut[0].Value)
+		//Address        string           `json:"address"`					from地址				(x)
+		//StakingAmount  *big.Int
+
 	}
 
 	if es != nil {
