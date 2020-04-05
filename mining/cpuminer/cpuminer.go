@@ -20,6 +20,9 @@ import (
 	"github.com/classzz/classzz/mining"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"github.com/classzz/classzz/cross"
+	"github.com/classzz/classzz/txscript"
+	"math/big"
 )
 
 const (
@@ -295,8 +298,7 @@ func (m *CPUMiner) solveBlock2(msgBlock *wire.MsgBlock, blockHeight int32,
 }
 
 func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
-	ticker *time.Ticker, quit chan struct{}) bool {
-
+	ticker *time.Ticker, quit chan struct{},state *cross.EntangleState) bool {
 	begin, err := wire.RandomUint64()
 	if err != nil {
 		log.Errorf("Unexpected error while generating random "+
@@ -304,11 +306,28 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 		begin = 0
 	}
 	found := false
+	script := msgBlock.Transactions[0].TxOut[0].PkScript
+	targetN := blockchain.CompactToBig(msgBlock.Header.Bits)
+	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
+	found_t := 0
+	for _, eninfo := range state.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if addrs[0].String() == eAddr {
+				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
+				targetN.Div(targetN, result)
+				found_t = 1
+				break
+			}
+		}
+		if found_t == 1 {
+			break
+		}
+	}
 	header := &msgBlock.Header
 	param := consensus.MiningParam{
 		Info: &consensus.CzzConsensusParam{
 			HeadHash: header.BlockHashNoNonce(), // hash no nonce
-			Target:   blockchain.CompactToBig(header.Bits),
+			Target:   targetN,
 			// Height:			uint64(blockHeight),
 		},
 		Begin: begin,
@@ -354,7 +373,6 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 		default:
 			// Non-blocking select to fall through
 		}
-
 		header.Nonce, found = consensus.MineBlock(&param)
 		hashesCompleted += param.Loops
 		if found {
@@ -420,7 +438,7 @@ out:
 		// Create a new block template using the available transactions
 		// in the memory pool as a source of transactions to potentially
 		// include in the block.
-		template, err := m.g.NewBlockTemplate(payToAddr)
+		template, state, err := m.g.NewBlockTemplate(payToAddr)
 		m.submitBlockLock.Unlock()
 		if err != nil {
 			errStr := fmt.Sprintf("Failed to create new block template: %v", err)
@@ -432,7 +450,7 @@ out:
 		// with false when conditions that trigger a stale block, so
 		// a new block template can be generated.  When the return is
 		// true a solution was found, so submit the solved block.
-		if m.solveBlock(template.Block, curHeight+1, ticker, quit) {
+		if m.solveBlock(template.Block, curHeight+1, ticker, quit, state) {
 			block := czzutil.NewBlock(template.Block)
 			m.submitBlock(block)
 		}
@@ -673,7 +691,7 @@ func (m *CPUMiner) GenerateNBlocks(n uint32) ([]*chainhash.Hash, error) {
 		// Create a new block template using the available transactions
 		// in the memory pool as a source of transactions to potentially
 		// include in the block.
-		template, err := m.g.NewBlockTemplate(payToAddr)
+		template, state, err := m.g.NewBlockTemplate(payToAddr)
 		m.submitBlockLock.Unlock()
 		if err != nil {
 			errStr := fmt.Sprintf("Failed to create new block "+
@@ -686,7 +704,7 @@ func (m *CPUMiner) GenerateNBlocks(n uint32) ([]*chainhash.Hash, error) {
 		// with false when conditions that trigger a stale block, so
 		// a new block template can be generated.  When the return is
 		// true a solution was found, so submit the solved block.
-		if m.solveBlock(template.Block, curHeight+1, ticker, nil) {
+		if m.solveBlock(template.Block, curHeight+1, ticker, nil, state) {
 			block := czzutil.NewBlock(template.Block)
 			m.submitBlock(block)
 			blockHashes[i] = block.Hash()

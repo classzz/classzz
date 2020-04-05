@@ -1699,7 +1699,7 @@ func (state *gbtWorkState) updateBlockTemplate(s *rpcServer, useCoinbaseValue bo
 		// block template doesn't include the coinbase, so the caller
 		// will ultimately create their own coinbase which pays to the
 		// appropriate address(es).
-		blkTemplate, err := generator.NewBlockTemplate(payAddr)
+		blkTemplate, _, err := generator.NewBlockTemplate(payAddr)
 		if err != nil {
 			return internalRPCError("Failed to create new block "+
 				"template: "+err.Error(), "")
@@ -4044,7 +4044,10 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
-			err := blockchain.CheckBlockSanity(s.cfg.ChainParams, &prevHeader, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive)
+			state := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
+			script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
+			_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+			err := blockchain.CheckBlockSanity(s.cfg.ChainParams, &prevHeader, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive, state, addrs[0])
 			if err != nil {
 				rpcsLog.Errorf("Verify is unable to validate "+
 					"block at hash %v height %d: %v",
