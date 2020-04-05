@@ -2483,8 +2483,26 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
-
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height,blockTemplate.Block.Header.BlockHash())
+	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
+	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
+	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+	found_t := 0
+	for _, eninfo := range rsState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if addrs[0].String() == eAddr {
+				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
+				targetN.Div(targetN, result)
+				found_t = 1
+				break
+			}
+		}
+		if found_t == 1 {
+			break
+		}
+	}
+	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
+	target := fmt.Sprintf("%064x", targetN.Bytes())
 	ret := &btcjson.GetWorkResult{
 		Hash:   blockTemplate.Block.Header.BlockHashNoNonce().String(),
 		Target: target,
@@ -3921,7 +3939,29 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
-	Target := blockchain.CompactToBig(template.Block.Header.Bits)
+
+
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height,template.Block.Header.BlockHash())
+	script := template.Block.Transactions[0].TxOut[0].PkScript
+	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
+	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+	found_t := 0
+	for _, eninfo := range rsState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if addrs[0].String() == eAddr {
+				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
+				targetN.Div(targetN, result)
+				found_t = 1
+				break
+			}
+		}
+		if found_t == 1 {
+			break
+		}
+	}
+	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
+	Target := targetN
+
 	resultB := new(big.Int).SetBytes(result)
 
 	if resultB.Cmp(Target) >= 0 {
