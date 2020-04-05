@@ -829,7 +829,7 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader,addr czzut
 
 	prevblock, _ := b.HeaderByHash(&header.PrevBlock)
 	height,_ := b.BlockHeightByHash(&header.PrevBlock)
-	state:= b.GetEntangleVerify().Cache.LoadEntangleState(height, header.BlockHash() )
+	state:= b.GetEntangleVerify().Cache.LoadEntangleState(height + 1, header.BlockHash() )
 	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags, state, addr)
 	if err != nil {
 		return err
