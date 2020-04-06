@@ -100,16 +100,12 @@ type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
 type BeaconRegistrationOut struct {
-	ExchangeID     uint64
-	Address        string
-	StakingAmount  *big.Int         // in
-	EntangleAmount *big.Int         // out,express by czz,all amount of user's entangle
-	EnAssets       []*EnAssetItem   // out,the extrinsic asset
-	Frees          []*FreeQuotaItem // extrinsic asset
-	AssetFlag      uint32
-	Fee            uint64
-	KeepTime       uint64 // the time as the block count for finally redeem time
-	WhiteList      []*WhiteUnit
+	ToAddress       string
+	AssetFlag       uint32
+	Fee             uint64
+	KeepTime        uint64 // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit
+	CoinBaseAddress []string
 }
 
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.

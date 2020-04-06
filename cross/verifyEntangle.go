@@ -283,22 +283,22 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 
 func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 
+	if len(tx.TxOut) == 1 {
+		e := fmt.Sprintf("TxOut err")
+		return nil, errors.New(e)
+	}
+
 	br, _ := IsBeaconRegistrationTx(tx)
 	if br == nil {
 		return nil, NoBeaconRegistration
 	}
 
-	//ExchangeID     uint64           `json:"exchange_id"`				灯塔的id   系统分配	(x)
-	//Address        string           `json:"address"`					from地址				(x)
-	//StakingAmount  *big.Int         `json:"staking_amount"`  // in	抵押金额 czz			(x)
-	//EntangleAmount *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle	纠缠金额
-	//EnAssets       []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset		外部资产列表
-	//Frees          []*FreeQuotaItem `json:"frees"`           // extrinsic asset				外部资产表述的自由额度
+	//ToAddress      string
 	//AssetFlag      uint32           `json:"asset_flag"`		灯塔地址支持那些外部资产
 	//Fee            uint64           `json:"fee"`				燃币手续费
 	//KeepTime       uint64           `json:"keep_time"` // the time as the block count for finally redeem time		多上时间没有燃币，就会变为自由额度
-	//WhiteList      []*WhiteUnit     `json:"white_list"`															白名单地址
-	//CoinBaseAddress []string  	  `json:"CoinBaseAddress"`															挖矿地址
+	//WhiteList      []*WhiteUnit     `json:"white_list"`		白名单地址
+	//CoinBaseAddress []string  	  `json:"CoinBaseAddress"`	挖矿地址
 
 	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
@@ -327,7 +327,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	}
 
 	for _, coinBaseAddress := range br.CoinBaseAddress {
-		if _, _, err := czzutil.DecodeCashAddress(coinBaseAddress); err != nil {
+		if _, err := czzutil.DecodeAddress(coinBaseAddress, &chaincfg.MainNetParams); err != nil {
 			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
 			return nil, errors.New(e)
 		}

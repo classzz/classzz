@@ -282,20 +282,40 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BeaconAddressInfo
 
-	for _, v := range tx.TxOut {
-		info, err := BeaconRegistrationTxFromScript(v.PkScript)
-		if err == nil {
-			if v.Value != 0 {
-				return nil, errors.New("the output value must be 0 in entangle tx.")
-			}
-			es = info
+	var pk []byte
+	var err error
+
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
 		}
-
-		info.StakingAmount = big.NewInt(tx.TxOut[0].Value)
-		//Address        string           `json:"address"`					from地址				(x)
-		//StakingAmount  *big.Int
-
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
 	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	txout := tx.TxOut[0]
+	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
+	if err == nil {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in entangle tx.")
+		}
+		es = info
+	}
+
+	info.StakingAmount = big.NewInt(tx.TxOut[0].Value)
+	info.Address = address.String()
 
 	if es != nil {
 		return es, nil
