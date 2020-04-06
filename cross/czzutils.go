@@ -21,6 +21,7 @@ var (
 	ErrInvalidParam       = errors.New("Invalid Param")
 	ErrLessThanMin        = errors.New("less than min staking amount for beaconAddress")
 	ErrRepeatRegister     = errors.New("repeat register on this address")
+	ErrRepeatToAddress    = errors.New("repeat to Address on this register")
 	ErrNoRegister         = errors.New("not found the beaconAddress")
 	ErrAddressInWhiteList = errors.New("the address in the whitelist")
 	ErrNoUserReg          = errors.New("not entangle user in the beaconAddress")
@@ -173,6 +174,7 @@ type FreeQuotaItem BaseAmountUint
 type BeaconAddressInfo struct {
 	ExchangeID     uint64           `json:"exchange_id"`
 	Address        string           `json:"address"`
+	To			   string 			`json:"toAddress"`
 	StakingAmount  *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets       []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
