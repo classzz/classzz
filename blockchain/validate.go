@@ -372,7 +372,7 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx, eState cross.EntangleState) error {
+func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
 	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx())
 	if err != nil {
@@ -406,26 +406,29 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 }
 
 func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
-	curHeight := int64(0)
+
+	eState := b.entangleVerify.Cache.LoadEntangleState(block.Height()-1, *block.Hash())
+
 	for _, tx := range block.Transactions() {
-		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-		if einfos == nil {
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+		if br == nil {
 			continue
 		}
-		max := int64(0)
-		for _, ii := range einfos {
-			if max < int64(ii.Height) {
-				max = int64(ii.Height)
-			}
-		}
-		if curHeight > max {
-			return errors.New("unordered BeaconRegistration tx in the block")
-		}
+
 		err := b.checkBeaconRegistrationTx(tx)
 		if err != nil {
 			return err
 		}
+		err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag)
+		if err != nil {
+			return err
+		}
 	}
+
+	if block.MsgBlock().Header.CIDRoot != cross.Hash(eState) {
+		return errors.New("CIDRoot in the block")
+	}
+
 	return nil
 }
 

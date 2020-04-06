@@ -130,15 +130,16 @@ func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 }
 func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
-		if v.To == to {
+		if v.ToAddress == to {
 			return v
 		}
 	}
 	return nil
 }
+
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr,to string, amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
 	fee, keeptime uint64, assetType uint32) error {
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
@@ -179,7 +180,7 @@ func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error 
 		return ErrNoRegister
 	}
 }
-func (es *EntangleState) AppendCoinbase(addr string,coinbases []string) error {
+func (es *EntangleState) AppendCoinbase(addr string, coinbases []string) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		cnt := len(val.CoinBaseAddress)
 		if cnt+len(coinbases) >= MaxCoinBase {
@@ -187,7 +188,7 @@ func (es *EntangleState) AppendCoinbase(addr string,coinbases []string) error {
 		}
 		for _, v := range coinbases {
 			if v != "" {
-				val.CoinBaseAddress = append(val.CoinBaseAddress,v)
+				val.CoinBaseAddress = append(val.CoinBaseAddress, v)
 			}
 		}
 		return nil
@@ -195,7 +196,7 @@ func (es *EntangleState) AppendCoinbase(addr string,coinbases []string) error {
 		return ErrNoRegister
 	}
 }
-func (es *EntangleState) UpdateCoinbase(addr, update,newAddr string) error {
+func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		for i, v := range val.CoinBaseAddress {
 			if v == update {
@@ -209,11 +210,12 @@ func (es *EntangleState) UpdateCoinbase(addr, update,newAddr string) error {
 }
 func (es *EntangleState) GetCoinbase(addr string) []string {
 	if val, ok := es.EnInfos[addr]; ok {
-		res := make([]string,0,0)
-		res = append(res,val.CoinBaseAddress[:]...)
+		res := make([]string, 0, 0)
+		res = append(res, val.CoinBaseAddress[:]...)
 	}
 	return nil
 }
+
 // UnregisterBeaconAddress need to check all the proves and handle all the user's burn coins
 func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
