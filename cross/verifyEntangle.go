@@ -293,20 +293,18 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 		return nil, NoBeaconRegistration
 	}
 
-	//ToAddress      string
-	//AssetFlag      uint32           `json:"asset_flag"`		灯塔地址支持那些外部资产
-	//Fee            uint64           `json:"fee"`				燃币手续费
-	//KeepTime       uint64           `json:"keep_time"` // the time as the block count for finally redeem time		多上时间没有燃币，就会变为自由额度
-	//WhiteList      []*WhiteUnit     `json:"white_list"`		白名单地址
-	//CoinBaseAddress []string  	  `json:"CoinBaseAddress"`	挖矿地址
-
-	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
+	if br.Fee < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
 
-	if br.EntangleAmount.Cmp(big.NewInt(0)) == 0 {
-		e := fmt.Sprintf("EntangleAmount err")
+	if br.KeepTime < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
 

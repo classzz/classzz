@@ -372,7 +372,7 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
+func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx, eState cross.EntangleState) error {
 	// tmp the cache is nil
 	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx())
 	if err != nil {
