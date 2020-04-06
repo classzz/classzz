@@ -466,19 +466,21 @@ func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags Behavio
 	}
 
 	found_t := 0
+	StakingAmount := big.NewInt(0)
 	for _, eninfo := range state.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addr.String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
-				targetN.Div(targetN, result)
+				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
 		}
-		if found_t == 1 {
-			break
-		}
 	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
+		targetN.Div(targetN, result)
+	}
+
 	target := targetN
 	// The block hash must be less than the claimed target unless the flag
 	// to avoid proof of work checks is set.

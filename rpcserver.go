@@ -2488,19 +2488,21 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 	found_t := 0
+	StakingAmount := big.NewInt(0)
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
-				targetN.Div(targetN, result)
+				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
 		}
-		if found_t == 1 {
-			break
-		}
 	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
+		targetN.Div(targetN, result)
+	}
+
 	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
 	target := fmt.Sprintf("%064x", targetN.Bytes())
 	ret := &btcjson.GetWorkResult{
@@ -3946,18 +3948,19 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 	found_t := 0
+	StakingAmount := big.NewInt(0)
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
-				targetN.Div(targetN, result)
+				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
 		}
-		if found_t == 1 {
-			break
-		}
+	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
+		targetN.Div(targetN, result)
 	}
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
