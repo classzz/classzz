@@ -316,8 +316,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 		es = info
 	}
 
-	info.StakingAmount = big.NewInt(tx.TxOut[0].Value)
-	//info.Address = address.String()
+	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
 
 	if es != nil {
 		return es, nil

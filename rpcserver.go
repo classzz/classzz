@@ -753,7 +753,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		PkScript: scriptInfo,
 	})
 
-	if c.BeaconRegistration.StakingAmount <= 1000000 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
+	if c.BeaconRegistration.StakingAmount <= 100 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCType,
 			Message: "Invalid amount",
