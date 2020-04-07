@@ -101,6 +101,7 @@ type FreeQuotaItem BaseAmountUint
 
 type BeaconRegistrationOut struct {
 	ToAddress       string
+	StakingAmount   float64
 	AssetFlag       uint32
 	Fee             uint64
 	KeepTime        uint64 // the time as the block count for finally redeem time
@@ -119,7 +120,28 @@ type CreateRawEntangleTransactionCmd struct {
 type BeaconRegistrationCmd struct {
 	Inputs             []TransactionInput
 	BeaconRegistration BeaconRegistrationOut
+	Amounts            map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime           *int64
+}
+
+func (w *WhiteUnit) toAddress() string {
+	// pk to czz address
+	return ""
+}
+
+type BeaconAddressInfo struct {
+	ExchangeID      uint64           `json:"exchange_id"`
+	Address         string           `json:"address"`
+	ToAddress       string           `json:"toAddress"`
+	StakingAmount   *big.Int         `json:"staking_amount"`  // in
+	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
+	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
+	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
+	AssetFlag       uint32           `json:"asset_flag"`
+	Fee             uint64           `json:"fee"`
+	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit     `json:"white_list"`
+	CoinBaseAddress []string         `json:"CoinBaseAddress"`
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue

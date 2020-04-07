@@ -216,7 +216,7 @@ func BeaconRegistrationTx(tx *czzutil.Tx, eState *cross.EntangleState) error {
 	}
 
 	if eState != nil {
-		err = eState.RegisterBeaconAddress(br.Address, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
+		err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
 	}
 	return err
 }

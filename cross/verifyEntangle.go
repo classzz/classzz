@@ -283,11 +283,6 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 
 func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 
-	if len(tx.TxOut) == 1 {
-		e := fmt.Sprintf("TxOut err")
-		return nil, errors.New(e)
-	}
-
 	br, _ := IsBeaconRegistrationTx(tx)
 	if br == nil {
 		return nil, NoBeaconRegistration

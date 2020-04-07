@@ -827,6 +827,20 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 			return nil, nil, err
 		}
 	}
+
+	if chaincfg.MainNetParams.BeaconHeight > nextBlockHeight {
+		return nil, nil, errors.New("err entangle tx  BeaconHeight < nextBlockHeight ")
+	} else {
+
+		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
+			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
+		}
+
+		if _, err = mp.cfg.EntangleVerify.VerifyBeaconRegistrationTx(tx.MsgTx()); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Don't allow the transaction if it exists in the main chain and is not
 	// not already fully spent.
 	prevOut := wire.OutPoint{Hash: *txHash}

@@ -724,7 +724,25 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		mtx.AddTxIn(txIn)
 	}
 
-	BeaconByte, err := rlp.EncodeToBytes(c.BeaconRegistration)
+	wls := make([]*btcjson.WhiteUnit, 0)
+	for _, wl := range c.BeaconRegistration.WhiteList {
+		whl := &btcjson.WhiteUnit{
+			AssetType: wl.AssetType,
+			Pk:        wl.Pk,
+		}
+		wls = append(wls, whl)
+	}
+
+	bri := &btcjson.BeaconAddressInfo{
+		ToAddress:       c.BeaconRegistration.ToAddress,
+		AssetFlag:       c.BeaconRegistration.AssetFlag,
+		Fee:             c.BeaconRegistration.Fee,
+		KeepTime:        c.BeaconRegistration.KeepTime,
+		WhiteList:       wls,
+		CoinBaseAddress: c.BeaconRegistration.CoinBaseAddress,
+	}
+
+	BeaconByte, err := rlp.EncodeToBytes(bri)
 	scriptInfo, err := txscript.BeaconRegistrationScript(BeaconByte)
 	if err != nil {
 		return nil, err
@@ -734,6 +752,98 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		Value:    0,
 		PkScript: scriptInfo,
 	})
+
+	if c.BeaconRegistration.StakingAmount <= 1000000 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCType,
+			Message: "Invalid amount",
+		}
+	}
+
+	params := s.cfg.ChainParams
+	pub, err := hex.DecodeString(c.BeaconRegistration.ToAddress)
+	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, params)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidAddressOrKey,
+			Message: "Invalid address or key: " + err.Error(),
+		}
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		context := "Failed to generate pay-to-address script"
+		return nil, internalRPCError(err.Error(), context)
+	}
+
+	// Convert the amount to satoshi.
+	satoshi, err := czzutil.NewAmount(c.BeaconRegistration.StakingAmount)
+	if err != nil {
+		context := "Failed to convert amount"
+		return nil, internalRPCError(err.Error(), context)
+	}
+
+	txOut := wire.NewTxOut(int64(satoshi), pkScript)
+	mtx.AddTxOut(txOut)
+
+	// The change
+	for encodedAddr, amount := range c.Amounts {
+		// Ensure amount is in the valid range for monetary amounts.
+		if amount <= 0 || amount > czzutil.MaxSatoshi {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCType,
+				Message: "Invalid amount",
+			}
+		}
+
+		// Decode the provided address.
+		addr, err := czzutil.DecodeAddress(encodedAddr, params)
+		if err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Invalid address or key: " + err.Error(),
+			}
+		}
+
+		// Ensure the address is one of the supported types and that
+		// the network encoded with the address matches the network the
+		// server is currently on.
+		switch addr.(type) {
+		case *czzutil.AddressPubKeyHash:
+		case *czzutil.AddressScriptHash:
+		case *czzutil.LegacyAddressPubKeyHash:
+		default:
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Invalid address or key",
+			}
+		}
+		if !addr.IsForNet(params) {
+			return nil, &btcjson.RPCError{
+				Code: btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Invalid address: " + encodedAddr +
+					" is for the wrong network",
+			}
+		}
+
+		// Create a new script which pays to the provided address.
+		pkScript, err := txscript.PayToAddrScript(addr)
+		if err != nil {
+			context := "Failed to generate pay-to-address script"
+			return nil, internalRPCError(err.Error(), context)
+		}
+
+		// Convert the amount to satoshi.
+		satoshi, err := czzutil.NewAmount(amount)
+		if err != nil {
+			context := "Failed to convert amount"
+			return nil, internalRPCError(err.Error(), context)
+		}
+
+		txOut := wire.NewTxOut(int64(satoshi), pkScript)
+		mtx.AddTxOut(txOut)
+	}
 
 	// Set the Locktime, if given.
 	if c.LockTime != nil {
@@ -2483,7 +2593,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height,blockTemplate.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height, blockTemplate.Block.Header.BlockHash())
 	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
@@ -2491,7 +2601,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
+				result := big.NewInt(1).Div(eninfo.StakingAmount, big.NewInt(1000000))
 				targetN.Div(targetN, result)
 				found_t = 1
 				break
@@ -3940,8 +4050,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 
-
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height,template.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height, template.Block.Header.BlockHash())
 	script := template.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
@@ -3949,7 +4058,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount , big.NewInt(1000000))
+				result := big.NewInt(1).Div(eninfo.StakingAmount, big.NewInt(1000000))
 				targetN.Div(targetN, result)
 				found_t = 1
 				break
