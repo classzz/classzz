@@ -2295,13 +2295,15 @@ func New(config *Config) (*BlockChain, error) {
 		DB: config.DB,
 	}
 
+	params := config.ChainParams
+
 	entangleVerify := &cross.EntangleVerify{
 		DogeCoinRPC: dogeclients,
 		LtcCoinRPC:  ltcclients,
 		Cache:       cacheEntangleInfo,
+		Params:      params,
 	}
 
-	params := config.ChainParams
 	targetTimespan := int64(params.TargetTimespan / time.Second)
 	adjustmentFactor := params.RetargetAdjustmentFactor
 	b := BlockChain{

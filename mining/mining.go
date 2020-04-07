@@ -856,7 +856,11 @@ mempoolLoop:
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
 			fmt.Println("address:", br.Address)
-			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
+			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				log.Tracef("RegisterBeaconAddress %s due to error in : %v", tx.Hash(), err)
+				logSkippedDeps(tx, deps)
+				continue
+			}
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,

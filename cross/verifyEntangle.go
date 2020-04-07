@@ -26,13 +26,14 @@ const (
 )
 
 var (
-	minStakingAmount = big.NewInt(1000000)
+	minStakingAmount = big.NewInt(100 * czzutil.SatoshiPerBitcoin)
 )
 
 type EntangleVerify struct {
 	DogeCoinRPC []*rpcclient.Client
 	LtcCoinRPC  []*rpcclient.Client
 	Cache       *CacheEntangleInfo
+	Params      *chaincfg.Params
 }
 
 func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
@@ -309,7 +310,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	}
 
 	for _, whiteAddress := range br.WhiteList {
-		if len(whiteAddress.Pk) != 32 {
+		if len(whiteAddress.Pk) != 20 {
 			e := fmt.Sprintf("whiteAddress.Pk err")
 			return nil, errors.New(e)
 		}
@@ -320,7 +321,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	}
 
 	for _, coinBaseAddress := range br.CoinBaseAddress {
-		if _, err := czzutil.DecodeAddress(coinBaseAddress, &chaincfg.MainNetParams); err != nil {
+		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
 			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
 			return nil, errors.New(e)
 		}

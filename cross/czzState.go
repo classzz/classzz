@@ -140,10 +140,10 @@ func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
-	fee, keeptime uint64, assetType uint32) error {
-	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
-		return ErrLessThanMin
-	}
+	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
+	//if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+	//	return ErrLessThanMin
+	//}
 	if _, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	}
@@ -151,15 +151,17 @@ func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
 		return ErrRepeatToAddress
 	}
 	info := &BeaconAddressInfo{
-		ExchangeID:     es.CurExchangeID + 1,
-		Address:        addr,
-		StakingAmount:  new(big.Int).Set(amount),
-		AssetFlag:      assetType,
-		Fee:            fee,
-		KeepTime:       keeptime,
-		EnAssets:       make([]*EnAssetItem, 0, 0),
-		EntangleAmount: big.NewInt(0),
-		WhiteList:      make([]*WhiteUnit, 0, 0),
+		ExchangeID:      es.CurExchangeID + 1,
+		Address:         addr,
+		ToAddress:       to,
+		StakingAmount:   new(big.Int).Set(amount),
+		AssetFlag:       assetType,
+		Fee:             fee,
+		KeepTime:        keeptime,
+		EnAssets:        make([]*EnAssetItem, 0, 0),
+		EntangleAmount:  big.NewInt(0),
+		WhiteList:       wu,
+		CoinBaseAddress: cba,
 	}
 	es.EnInfos[addr] = info
 	return nil
