@@ -198,6 +198,14 @@ func (es *EntangleState) AppendCoinbase(addr string, coinbases []string) error {
 		return ErrNoRegister
 	}
 }
+func (es *EntangleState) AppendAmountForBeaconAddress(addr, to string, amount *big.Int) error {
+	if info, ok := es.EnInfos[addr]; ok {
+		return ErrRepeatRegister
+	} else {
+		info.StakingAmount = new(big.Int).Add(info.StakingAmount,amount)
+		return nil
+	}
+}
 func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		for i, v := range val.CoinBaseAddress {
