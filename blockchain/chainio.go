@@ -1576,6 +1576,13 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 	return indexKey
 }
 
+func (b *BlockChain) CurrentEstate() *cross.EntangleState {
+	hash := b.bestChain.tip().hash
+	height := b.bestChain.tip().height
+	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
+	return eState
+}
+
 // BlockByHeight returns the block at the given height in the main chain.
 //
 // This function is safe for concurrent access.

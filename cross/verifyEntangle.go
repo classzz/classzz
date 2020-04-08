@@ -282,7 +282,7 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 	return false
 }
 
-func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
+func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
 
 	br, _ := IsBeaconRegistrationTx(tx)
 	if br == nil {
@@ -323,6 +323,13 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAdd
 	for _, coinBaseAddress := range br.CoinBaseAddress {
 		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
 			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
+			return nil, errors.New(e)
+		}
+	}
+
+	for _, v := range eState.EnInfos {
+		if v.ToAddress == br.ToAddress {
+			e := fmt.Sprintf("ToAddress err")
 			return nil, errors.New(e)
 		}
 	}

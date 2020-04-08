@@ -82,6 +82,7 @@ type Config struct {
 	// utxo view.
 	CalcSequenceLock func(*czzutil.Tx, *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error)
 
+	CurrentEstate func() *cross.EntangleState
 	// IsDeploymentActive returns true if the target deploymentID is
 	// active, and false otherwise. The mempool uses this function to gauge
 	// if transactions using new to be soft-forked rules should be allowed
@@ -815,7 +816,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	if einfo != nil && chaincfg.MainNetParams.EntangleHeight > nextBlockHeight {
+	if einfo != nil && mp.cfg.ChainParams.EntangleHeight > nextBlockHeight {
 		return nil, nil, errors.New("err entangle tx  EntangleHeight < nextBlockHeight ")
 	} else if einfo != nil {
 
@@ -828,7 +829,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		}
 	}
 
-	if chaincfg.MainNetParams.BeaconHeight > nextBlockHeight {
+	if mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return nil, nil, errors.New("err entangle tx  BeaconHeight < nextBlockHeight ")
 	} else {
 
@@ -836,7 +837,8 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
 		}
 
-		if _, err = mp.cfg.EntangleVerify.VerifyBeaconRegistrationTx(tx.MsgTx()); err != nil {
+		eState := mp.cfg.CurrentEstate()
+		if _, err = mp.cfg.EntangleVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
 			return nil, nil, err
 		}
 	}

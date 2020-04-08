@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/czzrpc"
 	"math"
 	"net"
@@ -3209,6 +3210,7 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		CalcSequenceLock: func(tx *czzutil.Tx, view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {
 			return s.chain.CalcSequenceLock(tx, view, true)
 		},
+		CurrentEstate:      func() *cross.EntangleState { return s.chain.CurrentEstate() },
 		IsDeploymentActive: s.chain.IsDeploymentActive,
 		SigCache:           s.sigCache,
 		HashCache:          s.hashCache,
