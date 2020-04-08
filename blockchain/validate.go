@@ -372,9 +372,9 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx) error {
+func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx, eState *cross.EntangleState) error {
 	// tmp the cache is nil
-	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), b.CurrentEstate())
+	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 
 func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 
-	eState := b.entangleVerify.Cache.LoadEntangleState(block.Height()-1, *block.Hash())
+	eState := b.CurrentEstate()
 
 	for _, tx := range block.Transactions() {
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
@@ -415,7 +415,7 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 			continue
 		}
 
-		err := b.checkBeaconRegistrationTx(tx)
+		err := b.checkBeaconRegistrationTx(tx, eState)
 		if err != nil {
 			return err
 		}

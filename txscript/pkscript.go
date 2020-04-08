@@ -209,7 +209,7 @@ func ComputePk(sigScript []byte) ([]byte, error) {
 	}
 
 	// We'll start by checking the input's signature script, if provided.
-	if len(sigScript) == pubKeyHashSigScriptLen || len(sigScript) == pubKeyHashSigScriptLen+1 {
+	if len(sigScript) == pubKeyHashSigScriptLen || len(sigScript) == pubKeyHashSigScriptLen+1 || (len(sigScript) == 100) {
 
 		// The public key should be found as the last part of the
 		// signature script. We'll attempt to parse it to ensure this is

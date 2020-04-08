@@ -289,6 +289,10 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, NoBeaconRegistration
 	}
 
+	if _, ok := eState.EnInfos[br.Address]; ok {
+		return nil, ErrRepeatRegister
+	}
+
 	if br.Fee < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)

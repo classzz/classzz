@@ -213,7 +213,7 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 	} else if isEntangleTy(pops) {
 		return EntangleTy
 	} else if isBeaconRegistrationTy(pops) {
-		return EntangleTy
+		return BeaconRegistrationTy
 	}
 	return NonStandardTy
 }
