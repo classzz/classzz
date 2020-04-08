@@ -1056,28 +1056,6 @@ func dbPutBestState(dbTx database.Tx, snapshot *BestState, workSum *big.Int) err
 	return dbTx.Metadata().Put(chainStateKeyName, serializedData)
 }
 
-//func dbPutEntangleState(dbTx database.Tx, tx *czzutil.Tx) error {
-//	txIndex := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-//	var err error
-//	if txIndex == nil {
-//		if txIndex, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
-//			return err
-//		}
-//	}
-//	bai, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-//	if bai == nil {
-//		return nil
-//	}
-//	//for _, v := range bai {
-//	//	ExTxType := byte(v.ExTxType)
-//	//	key := append(v.ExtTxHash, ExTxType)
-//	//	if err := txIndex.Put(key, v.Serialize()); err != nil {
-//	//		return err
-//	//	}
-//	//}
-//	return nil
-//}
-
 // -----------------------------------------------------------------------------
 // The utxo state consistency status is stored as the last hash at which the
 // state finished a flush and an indicator whether it was left in the middle
