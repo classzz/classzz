@@ -1056,6 +1056,17 @@ func dbPutBestState(dbTx database.Tx, snapshot *BestState, workSum *big.Int) err
 	return dbTx.Metadata().Put(chainStateKeyName, serializedData)
 }
 
+func dbPutBesteState(esBucket database.Bucket, block *czzutil.Block, eState *cross.EntangleState) error {
+	// Serialize the current best chain state.
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, block.Height())
+	buf.Write(block.Hash().CloneBytes())
+
+	// Store the current best chain state into the database.
+	return esBucket.Put(buf.Bytes(), eState.ToBytes())
+}
+
 // -----------------------------------------------------------------------------
 // The utxo state consistency status is stored as the last hash at which the
 // state finished a flush and an indicator whether it was left in the middle
@@ -1232,6 +1243,7 @@ func (b *BlockChain) createChainState() error {
 		if err != nil {
 			return err
 		}
+
 		err = dbPutVersion(dbTx, utxoSetVersionKeyName,
 			latestUtxoSetBucketVersion)
 		if err != nil {
@@ -1271,6 +1283,16 @@ func (b *BlockChain) createChainState() error {
 			return err
 		}
 
+		esBucket, err := meta.CreateBucket(cross.EntangleStateKey)
+		if err != nil {
+			return err
+		}
+
+		eState := cross.NewEntangleState()
+		err = dbPutBesteState(esBucket, genesisBlock, eState)
+		if err != nil {
+			return err
+		}
 		// Store the genesis block into the database.
 		return dbStoreBlock(dbTx, genesisBlock)
 	})
@@ -1350,6 +1372,7 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 			// in order of height, if the blocks are mostly linear there is a
 			// very good chance the previous header processed is the parent.
 			var parent *blockNode
+
 			if lastNode == nil {
 				blockHash := header.BlockHash()
 				if !blockHash.IsEqual(b.chainParams.GenesisHash) {
@@ -1358,15 +1381,18 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 						"found %s", blockHash))
 				}
 			} else if header.PrevBlock == lastNode.hash {
+				log.Info("1111==>", header.PrevBlock, lastNode.hash, header.BlockHash().String())
 				// Since we iterate block headers in order of height, if the
 				// blocks are mostly linear there is a very good chance the
 				// previous header processed is the parent.
 				parent = lastNode
 			} else {
+				log.Info("2222==>", header.PrevBlock, lastNode.hash, header.BlockHash().String())
 				parent = b.index.LookupNode(&header.PrevBlock)
 				if parent == nil {
+					log.Info(header.BlockHash().String(), &header.PrevBlock)
 					return AssertError(fmt.Sprintf("initChainState: Could "+
-						"not find parent for block %s", header.BlockHash()))
+						"not find parent for block %s %s", header.BlockHash(), &header.PrevBlock))
 				}
 			}
 
@@ -1377,6 +1403,7 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 			node.status = status
 			b.index.addNode(node)
 
+			log.Info(node.height)
 			lastNode = node
 			i++
 		}

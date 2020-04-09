@@ -94,6 +94,8 @@ type blockNode struct {
 	timestamp  int64
 	merkleRoot chainhash.Hash
 
+	CIDRoot chainhash.Hash
+
 	// status is a bitfield representing the validation state of the block. The
 	// status field, unlike the other fields, may be written to and so should
 	// only be accessed using the concurrent-safe NodeStatus method on
@@ -114,6 +116,7 @@ func initBlockNode(node *blockNode, blockHeader *wire.BlockHeader, parent *block
 		nonce:      blockHeader.Nonce,
 		timestamp:  blockHeader.Timestamp.Unix(),
 		merkleRoot: blockHeader.MerkleRoot,
+		CIDRoot:    blockHeader.CIDRoot,
 	}
 	if parent != nil {
 		node.parent = parent
@@ -144,6 +147,7 @@ func (node *blockNode) Header() wire.BlockHeader {
 		Version:    node.version,
 		PrevBlock:  *prevHash,
 		MerkleRoot: node.merkleRoot,
+		CIDRoot:    node.CIDRoot,
 		Timestamp:  time.Unix(node.timestamp, 0),
 		Bits:       node.bits,
 		Nonce:      node.nonce,

@@ -619,10 +619,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	isOver := false
 
 	eState := g.chain.GetEntangleVerify().Cache.LoadEntangleState(cheight, cHash)
-	if g.chainParams.BeaconHeight == nextBlockHeight {
-		eState = cross.NewEntangleState()
-		g.chain.GetEntangleVerify().Cache.SaveEntangleState(cheight, cHash, eState)
-	}
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {

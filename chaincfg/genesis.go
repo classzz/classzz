@@ -96,6 +96,7 @@ var regTestGenesisBlock = wire.MsgBlock{
 		Version:    1,
 		PrevBlock:  chainhash.Hash{},         // 0000000000000000000000000000000000000000000000000000000000000000
 		MerkleRoot: regTestGenesisMerkleRoot, // 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+		CIDRoot:    chainhash.Hash{},
 		Timestamp:  time.Unix(1561895999, 0), // 2019-06-30 59:59:59 +1200 UTC
 		Bits:       0x207fffff,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
 		Nonce:      0,
@@ -134,14 +135,14 @@ var testNet3GenesisBlock = wire.MsgBlock{
 // simNetGenesisHash is the hash of the first block in the block chain for the
 // simulation test network.
 var simNetGenesisHash = chainhash.Hash([chainhash.HashSize]byte{ // Make go vet happy.
-	0xae, 0x3b, 0x39, 0x39,
-	0xff, 0x22, 0x6b, 0xad,
-	0xf1, 0x5e, 0xea, 0x7f,
-	0xf7, 0xdf, 0xe3, 0x98,
-	0x1e, 0xea, 0x73, 0x7b,
-	0xaf, 0x56, 0xf4, 0x87,
-	0x50, 0x9b, 0x82, 0x94,
-	0xbf, 0xeb, 0xb0, 0x2b,
+	0xca, 0x56, 0x8c, 0x3e,
+	0x4d, 0xac, 0x89, 0x95,
+	0xcd, 0x74, 0xbe, 0xef,
+	0x36, 0x06, 0xcb, 0x2b,
+	0xb9, 0x1b, 0x26, 0x43,
+	0x96, 0x65, 0x4a, 0x75,
+	0x12, 0xdd, 0x6f, 0xb9,
+	0x55, 0x26, 0xc6, 0xcf,
 })
 
 // simNetGenesisMerkleRoot is the hash of the first transaction in the genesis
@@ -154,11 +155,12 @@ var simNetGenesisMerkleRoot = genesisMerkleRoot
 var simNetGenesisBlock = wire.MsgBlock{
 	Header: wire.BlockHeader{
 		Version:    1,
-		PrevBlock:  chainhash.Hash{},         // 0000000000000000000000000000000000000000000000000000000000000000
-		MerkleRoot: simNetGenesisMerkleRoot,  // 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+		PrevBlock:  chainhash.Hash{},        // 0000000000000000000000000000000000000000000000000000000000000000
+		MerkleRoot: simNetGenesisMerkleRoot, // 4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+		CIDRoot:    chainhash.Hash{},
 		Timestamp:  time.Unix(1574672932, 0), // 2019-11-25 17:08:52 +1200 UTC
-		Bits:       0x207fffff,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
-		Nonce:      0,
+		Bits:       0x1f0ccccc,               // 545259519 [7fffff0000000000000000000000000000000000000000000000000000000000]
+		Nonce:      1324,
 	},
 	Transactions: []*wire.MsgTx{&genesisCoinbaseTx},
 }

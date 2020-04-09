@@ -26,7 +26,7 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 
 	ExTxType := byte(info.ExTxType)
 	key := append(info.ExtTxHash, ExTxType)
-	err = c.DB.Update(func(tx database.Tx) error {
+	err = c.DB.View(func(tx database.Tx) error {
 		entangleBucket := tx.Metadata().Bucket(BucketKey)
 		if entangleBucket == nil {
 			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(BucketKey); err != nil {
@@ -44,30 +44,6 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 	return txExist
 }
 
-func (c *CacheEntangleInfo) SaveEntangleState(height int32, hash chainhash.Hash, es *EntangleState) error {
-
-	var err error
-	err = c.DB.Update(func(tx database.Tx) error {
-
-		entangleBucket := tx.Metadata().Bucket(EntangleStateKey)
-		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(EntangleStateKey); err != nil {
-				return err
-			}
-		}
-
-		buf := new(bytes.Buffer)
-
-		binary.Write(buf, binary.LittleEndian, height)
-		buf.Write(hash.CloneBytes())
-
-		err := entangleBucket.Put(buf.Bytes(), es.ToBytes())
-		return err
-	})
-
-	return err
-}
-
 func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash) *EntangleState {
 
 	var err error
@@ -80,12 +56,6 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 
 	err = c.DB.Update(func(tx database.Tx) error {
 		entangleBucket := tx.Metadata().Bucket(EntangleStateKey)
-		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(EntangleStateKey); err != nil {
-				return err
-			}
-		}
-
 		value := entangleBucket.Get(buf.Bytes())
 		if value != nil {
 

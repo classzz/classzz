@@ -225,11 +225,6 @@ func dbEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.
 
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	if entangleBucket == nil {
-		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
-			return err
-		}
-	}
 
 	buf := new(bytes.Buffer)
 
@@ -384,13 +379,6 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 	buf.Write(hash.CloneBytes())
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	if entangleBucket == nil {
-		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
-			log.Error("Failed to CreateBucketIfNotExists EntangleState", "err", err)
-			return nil
-		}
-	}
-
 	value := entangleBucket.Get(buf.Bytes())
 	if value != nil {
 		err := rlp.DecodeBytes(value, es)

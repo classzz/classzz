@@ -679,6 +679,8 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			"that extends the main chain")
 	}
 
+	log.Info("connectBlock", prevHash, block.Hash().String(), block.Height())
+
 	// Sanity check the correct number of stxos are provided.
 	if len(stxos) != countSpentOutputs(block) {
 		return AssertError("connectBlock called with inconsistent " +

@@ -2831,7 +2831,6 @@ func (s *server) Stop() error {
 
 		return nil
 	})
-
 	// Signal the remaining goroutines to quit.
 	close(s.quit)
 	return nil
