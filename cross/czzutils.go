@@ -2,6 +2,9 @@ package cross
 
 import (
 	"bytes"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/czzutil"
+
 	// "encoding/binary"
 	"errors"
 	"fmt"
@@ -483,4 +486,29 @@ func ValidPK(pk []byte) bool {
 }
 func isValidAsset(atype, assetAll uint32) bool {
 	return atype&assetAll != 0
+}
+
+func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
+
+	found_t := 0
+	StakingAmount := big.NewInt(0)
+	for _, eninfo := range eState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if address.String() == eAddr {
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
+				found_t = 1
+				break
+			}
+		}
+	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount, big.NewInt(10000000000))
+		target = big.NewInt(0).Div(target, result)
+	}
+
+	if target.Cmp(params.PowLimit) > 0 {
+		target.Set(params.PowLimit)
+	}
+
+	return target
 }

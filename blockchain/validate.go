@@ -451,7 +451,7 @@ func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams 
 // The flags modify the behavior of this function as follows:
 //  - BFNoPoWCheck: The check to ensure the block hash is less than the target
 //    difficulty is not performed.
-func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags BehaviorFlags, state *cross.EntangleState, addr czzutil.Address) error {
+func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimit *big.Int, flags BehaviorFlags, state *cross.EntangleState, addr czzutil.Address) error {
 	// The target difficulty must be larger than zero.
 
 	targetN := CompactToBig(header.Bits)
@@ -473,15 +473,19 @@ func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags Behavio
 		for _, eninfo := range state.EnInfos {
 			for _, eAddr := range eninfo.CoinBaseAddress {
 				if addr.String() == eAddr {
-					StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
+					StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
 					found_t = 1
 					break
 				}
 			}
 		}
 		if found_t == 1 {
-			result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
+			result := big.NewInt(0).Div(StakingAmount, big.NewInt(10000000000))
 			targetN.Div(targetN, result)
+		}
+
+		if targetN.Cmp(params.PowLimit) > 0 {
+			targetN.Set(params.PowLimit)
 		}
 
 	}
@@ -513,7 +517,7 @@ func CheckProofOfWork(block *czzutil.Block, powLimit *big.Int, Params *chaincfg.
 
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, Params)
-	return checkProofOfWork(&block.MsgBlock().Header, powLimit, BFNone, rsState, addrs[0])
+	return checkProofOfWork(Params, &block.MsgBlock().Header, powLimit, BFNone, rsState, addrs[0])
 }
 
 // CountSigOps returns the number of signature operations for all transaction
@@ -622,7 +626,7 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 	// Ensure the proof of work bits in the block header is in min/max range
 	// and the block hash is less than the target value described by the
 	// bits.
-	err := checkProofOfWork(header, powLimit, flags, state, addr)
+	err := checkProofOfWork(params, header, powLimit, flags, state, addr)
 	if err != nil {
 		return err
 	}
