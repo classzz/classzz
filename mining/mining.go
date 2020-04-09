@@ -926,7 +926,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight <= nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.BeaconHeight > nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo)
 		if err != nil {
@@ -1066,7 +1066,7 @@ func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32)
 	if err != nil {
 		return err, nil
 	}
-	if height < g.chainParams.EntangleHeight {
+	if height < g.chainParams.EntangleHeight && height >= g.chainParams.BeaconHeight {
 		return nil, nil
 	}
 	txout := tx.MsgTx().TxOut[3]
