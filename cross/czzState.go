@@ -23,6 +23,8 @@ import (
 type EntangleState struct {
 	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
+	PoolAmount1   *big.Int
+	PoolAmount2   *big.Int	
 	CurExchangeID uint64
 }
 type StoreBeaconAddress struct {
@@ -339,7 +341,19 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 
 	return res, nil
 }
-
+func (es *EntangleState) SetInitPoolAmount(amount1,amount2 *big.Int) {
+	es.PoolAmount1,es.PoolAmount2 = new(big.Int).Set(amount1),new(big.Int).Set(amount2)
+}
+func (es *EntangleState) AddPoolAmount(amount1,amount2 *big.Int) {
+	es.PoolAmount1 = new(big.Int).Add(es.PoolAmount1,amount1)
+	es.PoolAmount2 = new(big.Int).Add(es.PoolAmount2,amount2)
+}
+func (es *EntangleState) SubPoolAmount1(amount *big.Int) {
+	es.PoolAmount1 = new(big.Int).Sub(es.PoolAmount1,amount)
+}
+func (es *EntangleState) SubPoolAmount2(amount *big.Int) {
+	es.PoolAmount2 = new(big.Int).Sub(es.PoolAmount2,amount)
+}
 //////////////////////////////////////////////////////////////////////
 func redeemAmount(addr string, amount *big.Int) error {
 	if amount.Sign() > 0 {
@@ -525,5 +539,7 @@ func NewEntangleState() *EntangleState {
 		EnInfos:       make(map[string]*BeaconAddressInfo),
 		EnEntitys:     make(map[uint64]UserEntangleInfos),
 		CurExchangeID: 0,
+		PoolAmount1:   big.NewInt(0),
+		PoolAmount2:   big.NewInt(0),	
 	}
 }
