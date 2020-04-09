@@ -851,7 +851,6 @@ mempoolLoop:
 
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
-			fmt.Println("address:", br.Address)
 			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 				log.Tracef("RegisterBeaconAddress %s due to error in : %v", tx.Hash(), err)
 				logSkippedDeps(tx, deps)
@@ -965,9 +964,6 @@ mempoolLoop:
 	// chain with no issues.
 	block := czzutil.NewBlock(&msgBlock)
 	block.SetHeight(nextBlockHeight)
-	if err := g.chain.CheckConnectBlockTemplate(block); err != nil {
-		return nil, err
-	}
 
 	log.Debugf("Created new block template (%d transactions, %d in "+
 		"fees, %d signature operations, %d size, target difficulty "+

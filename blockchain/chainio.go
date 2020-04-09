@@ -1381,16 +1381,13 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 						"found %s", blockHash))
 				}
 			} else if header.PrevBlock == lastNode.hash {
-				log.Info("1111==>", header.PrevBlock, lastNode.hash, header.BlockHash().String())
 				// Since we iterate block headers in order of height, if the
 				// blocks are mostly linear there is a very good chance the
 				// previous header processed is the parent.
 				parent = lastNode
 			} else {
-				log.Info("2222==>", header.PrevBlock, lastNode.hash, header.BlockHash().String())
 				parent = b.index.LookupNode(&header.PrevBlock)
 				if parent == nil {
-					log.Info(header.BlockHash().String(), &header.PrevBlock)
 					return AssertError(fmt.Sprintf("initChainState: Could "+
 						"not find parent for block %s %s", header.BlockHash(), &header.PrevBlock))
 				}
