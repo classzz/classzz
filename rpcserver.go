@@ -2593,7 +2593,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height, blockTemplate.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height,blockTemplate.Block.Header.BlockHash())
 	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
@@ -2601,15 +2601,15 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount, big.NewInt(1000000))
-				targetN.Div(targetN, result)
+				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
 		}
-		if found_t == 1 {
-			break
-		}
+	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
+		targetN.Div(targetN, result)
 	}
 	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
 	target := fmt.Sprintf("%064x", targetN.Bytes())
@@ -4050,23 +4050,25 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height, template.Block.Header.BlockHash())
+
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height,template.Block.Header.BlockHash())
 	script := template.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 	found_t := 0
+	StakingAmount := big.NewInt(0)
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				result := big.NewInt(1).Div(eninfo.StakingAmount, big.NewInt(1000000))
-				targetN.Div(targetN, result)
+				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
 		}
-		if found_t == 1 {
-			break
-		}
+	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
+		targetN.Div(targetN, result)
 	}
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
@@ -4153,7 +4155,10 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
-			err := blockchain.CheckBlockSanity(s.cfg.ChainParams, &prevHeader, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive)
+			state := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
+			script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
+			_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+			err := blockchain.CheckBlockSanity(s.cfg.ChainParams, &prevHeader, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive, state, addrs[0])
 			if err != nil {
 				rpcsLog.Errorf("Verify is unable to validate "+
 					"block at hash %v height %d: %v",

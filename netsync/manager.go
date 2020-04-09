@@ -729,8 +729,8 @@ func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
 	index := rand.Intn(len(bmsgs))
 	block := bmsgs[index].block
 	powLimit := sm.chainParams.PowLimit
-
-	err := blockchain.CheckProofOfWork(block, powLimit)
+	rsState := sm.chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
+	err := blockchain.CheckProofOfWork(block, powLimit, sm.chainParams, rsState)
 	if err != nil {
 		sm.syncPeer.Disconnect()
 		return

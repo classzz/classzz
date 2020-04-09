@@ -851,11 +851,8 @@ mempoolLoop:
 
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
-			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
-				log.Tracef("RegisterBeaconAddress %s due to error in : %v", tx.Hash(), err)
-				logSkippedDeps(tx, deps)
-				continue
-			}
+			fmt.Println("address:", br.Address)
+			eState.RegisterBeaconAddress(br.Address, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
@@ -964,12 +961,15 @@ mempoolLoop:
 	// chain with no issues.
 	block := czzutil.NewBlock(&msgBlock)
 	block.SetHeight(nextBlockHeight)
+	if err := g.chain.CheckConnectBlockTemplate(block); err != nil {
+		return nil, err
+	}
 
 	log.Debugf("Created new block template (%d transactions, %d in "+
 		"fees, %d signature operations, %d size, target difficulty "+
 		"%064x)", len(msgBlock.Transactions), totalFees, blockSigOps,
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
-
+	state := g.chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
 	return &BlockTemplate{
 		Block:           &msgBlock,
 		Fees:            txFees,
@@ -978,7 +978,7 @@ mempoolLoop:
 		ValidPayAddress: payToAddress != nil,
 		MaxBlockSize:    uint32(maxBlockSize),
 		MaxSigOps:       uint32(maxSigOps),
-	}, nil
+	}, state, nil
 }
 
 // UpdateBlockTime updates the timestamp in the header of the passed block to

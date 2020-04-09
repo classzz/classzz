@@ -10,6 +10,7 @@ import (
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/czzutil"
+	"github.com/classzz/classzz/txscript"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
@@ -189,9 +190,12 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	if err != nil {
 		return false, false, err
 	}
+	state := b.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
+	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
+	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)
 
 	// Perform preliminary sanity checks on the block and its transactions.
-	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags)
+	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, state, addrs[0])
 	if err != nil {
 		return false, false, err
 	}
