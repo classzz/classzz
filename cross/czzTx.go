@@ -58,6 +58,22 @@ func (ii *EntangleItem) Clone() *EntangleItem {
 	return item
 }
 
+type EntangleItem2 struct {
+	EType ExpandedTxType
+	Value *big.Int
+	Addr  czzutil.Address
+	BID   uint64
+}
+
+func (ii *EntangleItem2) Clone() *EntangleItem2 {
+	item := &EntangleItem2{
+		EType: ii.EType,
+		Value: new(big.Int).Set(ii.Value),
+		Addr:  ii.Addr,
+		BID:   ii.BID, 
+	}
+	return item
+}
 // entangle tx Sequence infomation
 type EtsInfo struct {
 	FeePerKB int64
@@ -424,7 +440,29 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	return nil
 }
-
+func MakeMergerCoinbaseTx2(height *big.Int,tx *wire.MsgTx,items []*EntangleItem2,state *EntangleState) error {
+	if len(items) == 0 || state == nil {
+		return nil
+	}
+	for i := range items {
+		amount,err := state.AddEntangleItem(items[i].Addr.EncodeAddress(),uint32(items[i].EType),
+		items[i].BID,height,items[i].Value)
+		if err != nil {
+			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
+			i,items[i].BID,items[i].EType,items[i].Value.String(),err.Error()))
+		}
+		pkScript, err1 := txscript.PayToAddrScript(items[i].Addr)
+		if err1 != nil {
+			return errors.New("Make Meger tx failed,err: " + err1.Error())
+		}
+		out := &wire.TxOut{
+			Value:    amount.Int64(),
+			PkScript: pkScript,
+		}
+		tx.AddTxOut(out)
+	}
+	return nil
+}
 func updateTxOutValue(out *wire.TxOut, value int64) error {
 	out.Value += value
 	return nil
