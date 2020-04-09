@@ -638,7 +638,7 @@ mempoolLoop:
 		// non-finalized transactions.
 		tx := txDesc.Tx
 		if blockchain.IsCoinBase(tx) {
-			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 && g.chainParams.BeaconHeight > nextBlockHeight {
+			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 {
 				log.Tracef("Skipping coinbase tx %s", tx.Hash())
 				continue
 			} else if len(tx.MsgTx().TxIn) == 1 {
