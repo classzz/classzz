@@ -618,7 +618,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
-	eState := g.chain.CurrentEstate()
+	var eState *cross.EntangleState
+
+	if g.chainParams.BeaconHeight > nextBlockHeight {
+		eState = g.chain.CurrentEstate()
+	}
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {

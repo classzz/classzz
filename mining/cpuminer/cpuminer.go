@@ -307,7 +307,6 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	found := false
 	targetN := blockchain.CompactToBig(msgBlock.Header.Bits)
 	if state != nil {
-
 		script := msgBlock.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
 		targetN = cross.ComputeDiff(m.cfg.ChainParams, targetN, addrs[0], state)
