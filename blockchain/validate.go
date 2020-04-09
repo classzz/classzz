@@ -467,23 +467,24 @@ func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags Behavio
 			"higher than max of %064x", targetN, powLimit)
 		return ruleError(ErrUnexpectedDifficulty, str)
 	}
-
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range state.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addr.String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
+	if state != nil {
+		found_t := 0
+		StakingAmount := big.NewInt(0)
+		for _, eninfo := range state.EnInfos {
+			for _, eAddr := range eninfo.CoinBaseAddress {
+				if addr.String() == eAddr {
+					StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
+					found_t = 1
+					break
+				}
 			}
 		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+		if found_t == 1 {
+			result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
+			targetN.Div(targetN, result)
+		}
 
+	}
 	target := targetN
 	// The block hash must be less than the claimed target unless the flag
 	// to avoid proof of work checks is set.
@@ -666,7 +667,7 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 func checkBlockSanity(params *chaincfg.Params, prevHeader *wire.BlockHeader, block *czzutil.Block, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags, state *cross.EntangleState, addr czzutil.Address) error {
 	msgBlock := block.MsgBlock()
 	header := &msgBlock.Header
-	err := checkBlockHeaderSanity(params, prevHeader, header, powLimit, timeSource, flags, state,  addr)
+	err := checkBlockHeaderSanity(params, prevHeader, header, powLimit, timeSource, flags, state, addr)
 	if err != nil {
 		return err
 	}
@@ -824,7 +825,7 @@ func checkSerializedHeight(coinbaseTx *czzutil.Tx, wantHeight int32) error {
 // along with the next block.
 //
 // This function is safe for concurrent access.
-func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader,addr czzutil.Address) error {
+func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzutil.Address) error {
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 
@@ -833,9 +834,8 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader,addr czzut
 	tip := b.bestChain.Tip()
 
 	prevblock, _ := b.HeaderByHash(&header.PrevBlock)
-	height,_ := b.BlockHeightByHash(&header.PrevBlock)
-	state:= b.GetEntangleVerify().Cache.LoadEntangleState(height + 1, header.BlockHash() )
-	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags, state, addr)
+	eState := b.CurrentEstate()
+	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags, eState, addr)
 	if err != nil {
 		return err
 	}
@@ -1472,14 +1472,11 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 
 	prevHeader, _ := b.HeaderByHash(&block.MsgBlock().Header.PrevBlock)
 
-	state := b.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
-
+	eState := b.CurrentEstate()
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
-
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)
 
-
-	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, state, addrs[0])
+	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, eState, addrs[0])
 	if err != nil {
 		return err
 	}

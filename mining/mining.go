@@ -537,7 +537,7 @@ func NewBlkTmplGenerator(policy *Policy, params *chaincfg.Params,
 //  |  transactions (while block size   |   |
 //  |  <= policy.BlockMinSize)          |   |
 //   -----------------------------------  --
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, *cross.EntangleState, error) {
 	// Extend the most recently known best block.
 	best := g.chain.BestSnapshot()
 	nextBlockHeight := best.Height + 1
@@ -555,12 +555,12 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	extraNonce := uint64(0)
 	coinbaseScript, err := standardCoinbaseScript(nextBlockHeight, extraNonce)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
 		nextBlockHeight, payToAddress)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// TODO: after the fork activates we obviously will need to add the
@@ -613,7 +613,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	cHash, cheight := best.Hash, best.Height
 	lView, lerr := g.chain.FetchPoolUtxoView(&cHash, cheight)
 	if lerr != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
@@ -622,7 +622,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
-		return nil, sErr
+		return nil, nil, sErr
 	}
 
 	log.Debugf("Considering %d transactions for inclusion to new block",
@@ -852,7 +852,7 @@ mempoolLoop:
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
 			fmt.Println("address:", br.Address)
-			eState.RegisterBeaconAddress(br.Address, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag)
+			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
@@ -909,14 +909,14 @@ mempoolLoop:
 	ts := medianAdjustedTime(best, g.timeSource)
 	reqDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Calculate the next expected block version based on the state of the
 	// rule change deployments.
 	nextBlockVersion, err := g.chain.CalcNextBlockVersion()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
@@ -927,7 +927,7 @@ mempoolLoop:
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -952,7 +952,7 @@ mempoolLoop:
 	}
 	for _, tx := range blockTxns {
 		if err := msgBlock.AddTransaction(tx.MsgTx()); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -962,14 +962,14 @@ mempoolLoop:
 	block := czzutil.NewBlock(&msgBlock)
 	block.SetHeight(nextBlockHeight)
 	if err := g.chain.CheckConnectBlockTemplate(block); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.Debugf("Created new block template (%d transactions, %d in "+
 		"fees, %d signature operations, %d size, target difficulty "+
 		"%064x)", len(msgBlock.Transactions), totalFees, blockSigOps,
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
-	state := g.chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height(),block.MsgBlock().Header.BlockHash())
+
 	return &BlockTemplate{
 		Block:           &msgBlock,
 		Fees:            txFees,
@@ -978,7 +978,7 @@ mempoolLoop:
 		ValidPayAddress: payToAddress != nil,
 		MaxBlockSize:    uint32(maxBlockSize),
 		MaxSigOps:       uint32(maxSigOps),
-	}, state, nil
+	}, eState, nil
 }
 
 // UpdateBlockTime updates the timestamp in the header of the passed block to

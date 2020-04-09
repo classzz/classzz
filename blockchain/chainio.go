@@ -1399,8 +1399,6 @@ func (b *BlockChain) initChainState(fastSync bool) error {
 			initBlockNode(node, header, parent)
 			node.status = status
 			b.index.addNode(node)
-
-			log.Info(node.height)
 			lastNode = node
 			i++
 		}
