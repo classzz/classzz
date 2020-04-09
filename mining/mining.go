@@ -618,7 +618,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
-	eState := g.chain.GetEntangleVerify().Cache.LoadEntangleState(cheight, cHash)
+	eState := g.chain.CurrentEstate()
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
@@ -970,6 +970,7 @@ mempoolLoop:
 		"%064x)", len(msgBlock.Transactions), totalFees, blockSigOps,
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
 
+	eState2 := g.chain.CurrentEstate()
 	return &BlockTemplate{
 		Block:           &msgBlock,
 		Fees:            txFees,
@@ -978,7 +979,7 @@ mempoolLoop:
 		ValidPayAddress: payToAddress != nil,
 		MaxBlockSize:    uint32(maxBlockSize),
 		MaxSigOps:       uint32(maxSigOps),
-	}, eState, nil
+	}, eState2, nil
 }
 
 // UpdateBlockTime updates the timestamp in the header of the passed block to

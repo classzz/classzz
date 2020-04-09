@@ -17,11 +17,11 @@ import (
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/consensus"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/mining"
+	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"github.com/classzz/classzz/cross"
-	"github.com/classzz/classzz/txscript"
 	"math/big"
 )
 
@@ -298,7 +298,7 @@ func (m *CPUMiner) solveBlock2(msgBlock *wire.MsgBlock, blockHeight int32,
 }
 
 func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
-	ticker *time.Ticker, quit chan struct{},state *cross.EntangleState) bool {
+	ticker *time.Ticker, quit chan struct{}, state *cross.EntangleState) bool {
 	begin, err := wire.RandomUint64()
 	if err != nil {
 		log.Errorf("Unexpected error while generating random "+
@@ -306,24 +306,28 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 		begin = 0
 	}
 	found := false
-	script := msgBlock.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(msgBlock.Header.Bits)
-	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range state.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
+	if state != nil {
+
+		script := msgBlock.Transactions[0].TxOut[0].PkScript
+		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
+		found_t := 0
+		StakingAmount := big.NewInt(0)
+		for _, eninfo := range state.EnInfos {
+			for _, eAddr := range eninfo.CoinBaseAddress {
+				if addrs[0].String() == eAddr {
+					StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
+					found_t = 1
+					break
+				}
 			}
 		}
+		if found_t == 1 {
+			result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
+			targetN.Div(targetN, result)
+		}
 	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount , big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+
 	header := &msgBlock.Header
 	param := consensus.MiningParam{
 		Info: &consensus.CzzConsensusParam{
