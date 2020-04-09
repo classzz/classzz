@@ -2602,7 +2602,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
@@ -4060,7 +4060,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	for _, eninfo := range rsState.EnInfos {
 		for _, eAddr := range eninfo.CoinBaseAddress {
 			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
 				found_t = 1
 				break
 			}
