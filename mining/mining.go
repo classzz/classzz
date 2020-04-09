@@ -638,7 +638,7 @@ mempoolLoop:
 		// non-finalized transactions.
 		tx := txDesc.Tx
 		if blockchain.IsCoinBase(tx) {
-			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 {
+			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 && g.chainParams.BeaconHeight > nextBlockHeight {
 				log.Tracef("Skipping coinbase tx %s", tx.Hash())
 				continue
 			} else if len(tx.MsgTx().TxIn) == 1 {
@@ -855,7 +855,6 @@ mempoolLoop:
 
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
-			fmt.Println("address:", br.Address)
 			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
 		}
 

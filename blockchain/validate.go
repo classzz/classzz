@@ -434,7 +434,7 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 
 func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
 	height := block.Height()
-	if chainParams.EntangleHeight >= height {
+	if chainParams.EntangleHeight >= height && chainParams.BeaconHeight < height {
 		return nil
 	}
 	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
@@ -1052,7 +1052,7 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	return false, nil
 }
 func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
-	if txHeight <= chainParams.EntangleHeight {
+	if txHeight <= chainParams.EntangleHeight && txHeight > chainParams.BeaconHeight {
 		return nil
 	}
 	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
