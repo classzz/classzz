@@ -1,6 +1,7 @@
 package cross
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -338,7 +339,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	}
 
 	for _, v := range eState.EnInfos {
-		if v.ToAddress == br.ToAddress {
+		if bytes.Equal(v.ToAddress, br.ToAddress) {
 			e := fmt.Sprintf("ToAddress err")
 			return nil, errors.New(e)
 		}
