@@ -2593,25 +2593,13 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height, blockTemplate.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
 	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range rsState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
-			}
-		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+
+	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+
 	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
 	target := fmt.Sprintf("%064x", targetN.Bytes())
 	ret := &btcjson.GetWorkResult{
@@ -4051,25 +4039,13 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height, template.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
 	script := template.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range rsState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
-			}
-		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+
+	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
 

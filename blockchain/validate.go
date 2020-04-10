@@ -468,26 +468,7 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 		return ruleError(ErrUnexpectedDifficulty, str)
 	}
 	if state != nil {
-		found_t := 0
-		StakingAmount := big.NewInt(0)
-		for _, eninfo := range state.EnInfos {
-			for _, eAddr := range eninfo.CoinBaseAddress {
-				if addr.String() == eAddr {
-					StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
-					found_t = 1
-					break
-				}
-			}
-		}
-		if found_t == 1 {
-			result := big.NewInt(0).Div(StakingAmount, big.NewInt(10000000000))
-			targetN.Mul(targetN, result)
-		}
-
-		if targetN.Cmp(params.PowLimit) > 0 {
-			targetN.Set(params.PowLimit)
-		}
-
+		targetN = cross.ComputeDiff(params, targetN, addr, state)
 	}
 	target := targetN
 	// The block hash must be less than the claimed target unless the flag
