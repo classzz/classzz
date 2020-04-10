@@ -761,8 +761,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 	}
 
 	params := s.cfg.ChainParams
-	pub, err := hex.DecodeString(c.BeaconRegistration.ToAddress)
-	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, params)
+	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(c.BeaconRegistration.ToAddress, params)
 	if err != nil {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCInvalidAddressOrKey,

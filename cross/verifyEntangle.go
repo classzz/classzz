@@ -293,13 +293,19 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, ErrRepeatRegister
 	}
 
+	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
+	if toAddress > 9 && toAddress < 100 {
+		e := fmt.Sprintf("toAddress err")
+		return nil, errors.New(e)
+	}
+
 	if br.Fee < 0 {
-		e := fmt.Sprintf("StakingAmount err")
+		e := fmt.Sprintf("Fee err")
 		return nil, errors.New(e)
 	}
 
 	if br.KeepTime < 0 {
-		e := fmt.Sprintf("StakingAmount err")
+		e := fmt.Sprintf("KeepTime err")
 		return nil, errors.New(e)
 	}
 

@@ -177,7 +177,7 @@ type FreeQuotaItem BaseAmountUint
 type BeaconAddressInfo struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
-	ToAddress       string           `json:"toAddress"`
+	ToAddress       []byte           `json:"toAddress"`
 	StakingAmount   *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
