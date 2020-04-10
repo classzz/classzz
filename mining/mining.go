@@ -557,6 +557,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Info("payToAddress:", payToAddress.String())
 	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
 		nextBlockHeight, payToAddress)
 	if err != nil {

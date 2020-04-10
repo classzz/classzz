@@ -329,7 +329,7 @@ var RegressionNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	RetargetAdjustmentFactor: 4,  // 25% less, 400% more
 	ReduceMinDifficulty:      true,
-	NoDifficultyAdjustment:   true,
+	NoDifficultyAdjustment:   false,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
@@ -481,7 +481,7 @@ var SimNetParams = Params{
 	TargetTimePerBlock:       30,                  // 10 minutes
 	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
 	ReduceMinDifficulty:      true,
-	NoDifficultyAdjustment:   true,
+	NoDifficultyAdjustment:   false,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 

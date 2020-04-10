@@ -481,7 +481,7 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 		}
 		if found_t == 1 {
 			result := big.NewInt(0).Div(StakingAmount, big.NewInt(10000000000))
-			targetN.Div(targetN, result)
+			targetN.Mul(targetN, result)
 		}
 
 		if targetN.Cmp(params.PowLimit) > 0 {
