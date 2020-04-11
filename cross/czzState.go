@@ -128,9 +128,9 @@ func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 	}
 	return nil
 }
-func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
+func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
-		if v.ToAddress == to {
+		if bytes.Equal(v.ToAddress, to) {
 			return v
 		}
 	}
@@ -139,7 +139,7 @@ func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
 	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
 	//if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 	//	return ErrLessThanMin
@@ -202,7 +202,7 @@ func (es *EntangleState) AppendAmountForBeaconAddress(addr, to string, amount *b
 	if info, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	} else {
-		info.StakingAmount = new(big.Int).Add(info.StakingAmount,amount)
+		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
 		return nil
 	}
 }
