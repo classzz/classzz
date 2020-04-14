@@ -37,6 +37,7 @@ type GetBlockBaseVerboseResult struct {
 	Version       int32   `json:"version"`
 	VersionHex    string  `json:"versionHex"`
 	MerkleRoot    string  `json:"merkleroot"`
+	CidRoot       string  `json:"cidroot"`
 	Time          int64   `json:"time"`
 	Nonce         uint64  `json:"nonce"`
 	Bits          string  `json:"bits"`
