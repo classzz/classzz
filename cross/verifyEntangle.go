@@ -331,8 +331,8 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		}
 	}
 
-	if len(br.CoinBaseAddress) > 90 {
-		e := fmt.Sprintf("whiteAddress.AssetType err")
+	if len(br.CoinBaseAddress) > MaxCoinBase {
+		e := fmt.Sprintf("whiteAddress.AssetType > MaxCoinBase err")
 		return nil, errors.New(e)
 	}
 
