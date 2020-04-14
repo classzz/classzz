@@ -315,17 +315,17 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if ValidAssetType(br.AssetFlag) {
+	if br.AssetFlag > 63 {
 		e := fmt.Sprintf("AssetFlag err")
 		return nil, errors.New(e)
 	}
 
 	for _, whiteAddress := range br.WhiteList {
-		if len(whiteAddress.Pk) != 64 {
+		if !ValidPK(whiteAddress.Pk) {
 			e := fmt.Sprintf("whiteAddress.Pk err")
 			return nil, errors.New(e)
 		}
-		if ValidAssetType(whiteAddress.AssetType) {
+		if !ValidAssetType(whiteAddress.AssetType) {
 			e := fmt.Sprintf("whiteAddress.AssetType err")
 			return nil, errors.New(e)
 		}
