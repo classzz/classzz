@@ -47,7 +47,6 @@ func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
 func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash) *EntangleState {
 
 	var err error
-
 	es := NewEntangleState()
 	buf := new(bytes.Buffer)
 

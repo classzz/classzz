@@ -621,7 +621,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 
 	var eState *cross.EntangleState
 
-	if g.chainParams.BeaconHeight > nextBlockHeight {
+	if g.chainParams.BeaconHeight < nextBlockHeight {
 		eState = g.chain.CurrentEstate()
 	}
 
