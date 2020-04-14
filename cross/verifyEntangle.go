@@ -315,7 +315,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if br.AssetFlag > 63 {
+	if !ValidAssetType(br.AssetFlag) {
 		e := fmt.Sprintf("AssetFlag err")
 		return nil, errors.New(e)
 	}
