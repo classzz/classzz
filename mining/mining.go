@@ -1067,7 +1067,7 @@ func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32)
 	if err != nil {
 		return err, nil
 	}
-	if height < g.chainParams.EntangleHeight && height >= g.chainParams.BeaconHeight {
+	if height < g.chainParams.EntangleHeight {
 		return nil, nil
 	}
 	txout := tx.MsgTx().TxOut[3]
