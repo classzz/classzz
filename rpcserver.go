@@ -844,6 +844,8 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		mtx.AddTxOut(txOut)
 	}
 
+	fmt.Println(mtx.TxOut)
+
 	// Set the Locktime, if given.
 	if c.LockTime != nil {
 		mtx.LockTime = uint32(*c.LockTime)
