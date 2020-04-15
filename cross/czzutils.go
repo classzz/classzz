@@ -34,7 +34,7 @@ var (
 )
 
 var (
-	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
+	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e9))
 	MaxWhiteListCount                 = 5
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
