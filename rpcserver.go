@@ -754,15 +754,15 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		PkScript: scriptInfo,
 	})
 
-	if c.BeaconRegistration.StakingAmount <= 100 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
+	if c.BeaconRegistration.StakingAmount < 1000000 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCType,
-			Message: "Invalid amount",
+			Message: "Invalid StakingAmount",
 		}
 	}
 
 	params := s.cfg.ChainParams
-	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(c.BeaconRegistration.ToAddress, params)
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(c.BeaconRegistration.ToAddress, params)
 	if err != nil {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCInvalidAddressOrKey,
