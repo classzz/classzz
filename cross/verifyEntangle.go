@@ -327,7 +327,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if validKeepTime(big.NewInt(int64(br.KeepTime))) {
+	if !validKeepTime(big.NewInt(int64(br.KeepTime))) {
 		e := fmt.Sprintf("KeepTime err")
 		return nil, errors.New(e)
 	}
