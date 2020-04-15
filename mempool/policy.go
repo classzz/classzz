@@ -309,6 +309,7 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 	// be "dust" (except when the script is a null data script).
 	numNullDataOutputs := 0
 	numEntangleTyOutputs := 0
+	numBeaconRegistrationOutputs := 0
 	for i, txOut := range msgTx.TxOut {
 		scriptClass := txscript.GetScriptClass(txOut.PkScript)
 		err := checkPkScriptStandard(txOut.PkScript, scriptClass)
@@ -331,6 +332,8 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 			numNullDataOutputs++
 		} else if scriptClass == txscript.EntangleTy {
 			numEntangleTyOutputs++
+		} else if scriptClass == txscript.BeaconRegistrationTy {
+			numEntangleTyOutputs++
 		} else if isDust(txOut, minRelayTxFee) {
 			str := fmt.Sprintf("transaction output %d: payment "+
 				"of %d is dust", i, txOut.Value)
@@ -347,6 +350,11 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 
 	if numEntangleTyOutputs > 1 {
 		str := "more than one transaction output in a EntangleTy script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numBeaconRegistrationOutputs > 1 {
+		str := "more than one transaction output in a BeaconRegistrationTy script"
 		return txRuleError(wire.RejectNonstandard, str)
 	}
 

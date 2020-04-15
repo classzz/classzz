@@ -881,7 +881,7 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 		return nil, err
 	}
 
-	if b.chainParams.EntangleHeight > height+1 || (len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight > height+1) {
+	if (b.chainParams.EntangleHeight > height+1 || (len(tx.MsgTx().TxIn) != 3 && b.chainParams.EntangleHeight > height+1)) && b.chainParams.BeaconHeight > height+1 {
 		return nil, nil
 	}
 	//tx.MsgTx().TxOut[1].PkScript

@@ -22,7 +22,6 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"math/big"
 )
 
 const (
@@ -308,24 +307,9 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	found := false
 	targetN := blockchain.CompactToBig(msgBlock.Header.Bits)
 	if state != nil {
-
 		script := msgBlock.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
-		found_t := 0
-		StakingAmount := big.NewInt(0)
-		for _, eninfo := range state.EnInfos {
-			for _, eAddr := range eninfo.CoinBaseAddress {
-				if addrs[0].String() == eAddr {
-					StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-					found_t = 1
-					break
-				}
-			}
-		}
-		if found_t == 1 {
-			result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-			targetN.Div(targetN, result)
-		}
+		targetN = cross.ComputeDiff(m.cfg.ChainParams, targetN, addrs[0], state)
 	}
 
 	header := &msgBlock.Header
@@ -374,6 +358,14 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 
 			m.g.UpdateBlockTime(msgBlock)
 			param.Info.HeadHash = header.BlockHashNoNonce()
+			targetN := blockchain.CompactToBig(msgBlock.Header.Bits)
+			if state != nil {
+
+				script := msgBlock.Transactions[0].TxOut[0].PkScript
+				_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, m.cfg.ChainParams)
+				targetN = cross.ComputeDiff(m.cfg.ChainParams, targetN, addrs[0], state)
+			}
+			param.Info.Target = targetN
 
 		default:
 			// Non-blocking select to fall through

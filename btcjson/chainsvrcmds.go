@@ -100,7 +100,7 @@ type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
 type BeaconRegistrationOut struct {
-	ToAddress       string
+	ToAddress       []byte
 	StakingAmount   float64
 	AssetFlag       uint32
 	Fee             uint64
@@ -132,7 +132,7 @@ func (w *WhiteUnit) toAddress() string {
 type BeaconAddressInfo struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
-	ToAddress       string           `json:"toAddress"`
+	ToAddress       []byte           `json:"toAddress"`
 	StakingAmount   *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
@@ -579,6 +579,15 @@ func NewGetEntangleInfoCmd() *GetEntangleInfoCmd {
 	return &GetEntangleInfoCmd{}
 }
 
+// GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
+type GetStateInfoCmd struct{}
+
+// NewGetPeerInfoCmd returns a new instance which can be used to issue a getpeer
+// JSON-RPC command.
+func NewGetStateInfoCmd() *GetStateInfoCmd {
+	return &GetStateInfoCmd{}
+}
+
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
 type GetRawMempoolCmd struct {
 	Verbose *bool `jsonrpcdefault:"false"`
@@ -952,6 +961,7 @@ func init() {
 	MustRegisterCmd("getgenerate", (*GetGenerateCmd)(nil), flags)
 	MustRegisterCmd("gethashespersec", (*GetHashesPerSecCmd)(nil), flags)
 	MustRegisterCmd("getinfo", (*GetInfoCmd)(nil), flags)
+	MustRegisterCmd("getstateinfo", (*GetStateInfoCmd)(nil), flags)
 	MustRegisterCmd("getentangleinfo", (*GetEntangleInfoCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)
 	MustRegisterCmd("getmempoolinfo", (*GetMempoolInfoCmd)(nil), flags)

@@ -52,10 +52,10 @@ import (
 
 // API version constants
 const (
-	jsonrpcSemverString = "1.3.1"
-	jsonrpcSemverMajor  = 1
-	jsonrpcSemverMinor  = 3
-	jsonrpcSemverPatch  = 1
+	jsonrpcSemverString = "2.0.0"
+	jsonrpcSemverMajor  = 2
+	jsonrpcSemverMinor  = 0
+	jsonrpcSemverPatch  = 0
 )
 
 const (
@@ -81,6 +81,10 @@ const (
 
 	// maxProtocolVersion is the max protocol version the server supports.
 	maxProtocolVersion = wire.ProtocolVersion
+)
+
+var (
+	MinStakingAmountForBeaconAddress = float64(1000000)
 )
 
 var (
@@ -160,6 +164,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"gethashespersec":              handleGetHashesPerSec,
 	"getheaders":                   handleGetHeaders,
 	"getinfo":                      handleGetInfo,
+	"getstateinfo":                 handleGetStateInfo,
 	"getentangleinfo":              handleGetEntangleInfo,
 	"getwork":                      handleGetWork,
 	"getworktemplate":              handleGetWorkTemplate,
@@ -753,16 +758,15 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		PkScript: scriptInfo,
 	})
 
-	if c.BeaconRegistration.StakingAmount <= 100 || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
+	if c.BeaconRegistration.StakingAmount < MinStakingAmountForBeaconAddress || c.BeaconRegistration.StakingAmount > czzutil.MaxSatoshi {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCType,
-			Message: "Invalid amount",
+			Message: "Invalid StakingAmount",
 		}
 	}
 
 	params := s.cfg.ChainParams
-	pub, err := hex.DecodeString(c.BeaconRegistration.ToAddress)
-	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, params)
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(c.BeaconRegistration.ToAddress, params)
 	if err != nil {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCInvalidAddressOrKey,
@@ -844,6 +848,8 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		txOut := wire.NewTxOut(int64(satoshi), pkScript)
 		mtx.AddTxOut(txOut)
 	}
+
+	fmt.Println(mtx.TxOut)
 
 	// Set the Locktime, if given.
 	if c.LockTime != nil {
@@ -1371,6 +1377,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		Version:       blockHeader.Version,
 		VersionHex:    fmt.Sprintf("%08x", blockHeader.Version),
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
+		CidRoot:       blockHeader.CIDRoot.String(),
 		PreviousHash:  blockHeader.PrevBlock.String(),
 		Nonce:         blockHeader.Nonce,
 		Time:          blockHeader.Timestamp.Unix(),
@@ -2550,6 +2557,27 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	return ret, nil
 }
 
+// handleGetInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	estate := s.cfg.Chain.CurrentEstate()
+	infos := make([]*btcjson.StateInfoChainResult, 0)
+	for _, info := range estate.EnInfos {
+		infor := &btcjson.StateInfoChainResult{
+			ExchangeID:      info.ExchangeID,
+			Address:         info.Address,
+			ToAddress:       hex.EncodeToString(info.ToAddress),
+			StakingAmount:   info.StakingAmount,
+			AssetFlag:       info.AssetFlag,
+			Fee:             info.Fee,
+			KeepTime:        info.KeepTime,
+			CoinBaseAddress: info.CoinBaseAddress,
+		}
+		infos = append(infos, infor)
+	}
+	return infos, nil
+}
+
 func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	best := s.cfg.Chain.BestSnapshot()
 	block, err := s.cfg.Chain.BlockByHash(&best.Hash)
@@ -2593,25 +2621,13 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height, blockTemplate.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
 	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range rsState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
-			}
-		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+
+	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+
 	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
 	target := fmt.Sprintf("%064x", targetN.Bytes())
 	ret := &btcjson.GetWorkResult{
@@ -4051,25 +4067,13 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height, template.Block.Header.BlockHash())
+	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
 	script := template.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range rsState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if addrs[0].String() == eAddr {
-				StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
-			}
-		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-		targetN.Div(targetN, result)
-	}
+
+	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
 

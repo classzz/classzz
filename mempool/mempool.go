@@ -816,8 +816,8 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	if einfo != nil && mp.cfg.ChainParams.EntangleHeight > nextBlockHeight {
-		return nil, nil, errors.New("err entangle tx  EntangleHeight < nextBlockHeight ")
+	if einfo != nil && mp.cfg.ChainParams.EntangleHeight > nextBlockHeight && mp.cfg.ChainParams.BeaconHeight < nextBlockHeight {
+		return nil, nil, errors.New("err entangle tx  EntangleHeight < nextBlockHeight or > BeaconHeight ")
 	} else if einfo != nil {
 
 		if len(tx.MsgTx().TxOut) > 2 || len(tx.MsgTx().TxIn) > 1 {
@@ -829,12 +829,13 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		}
 	}
 
-	if mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-		return nil, nil, errors.New("err entangle tx  BeaconHeight < nextBlockHeight ")
-	} else {
+	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return nil, nil, errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
+	} else if br != nil {
 
 		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxIn) > 1 {
-			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
+			return nil, nil, errors.New("not BeaconRegistration tx TxOut >3 or TxIn >1")
 		}
 
 		eState := mp.cfg.CurrentEstate()

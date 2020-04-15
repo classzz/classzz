@@ -130,9 +130,9 @@ func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 	}
 	return nil
 }
-func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
+func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
-		if v.ToAddress == to {
+		if bytes.Equal(v.ToAddress, to) {
 			return v
 		}
 	}
@@ -141,11 +141,15 @@ func (es *EntangleState) getBeaconAddressFromTo(to string) *BeaconAddressInfo {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
 	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
-	//if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
-	//	return ErrLessThanMin
-	//}
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+		!ValidAssetType(assetType) {
+		return ErrInvalidParam
+	}
+	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+		return ErrLessThanMin
+	}
 	if _, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	}
@@ -165,6 +169,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr, to string, amount *big.Int,
 		WhiteList:       wu,
 		CoinBaseAddress: cba,
 	}
+	es.CurExchangeID = info.ExchangeID
 	es.EnInfos[addr] = info
 	return nil
 }
@@ -204,7 +209,7 @@ func (es *EntangleState) AppendAmountForBeaconAddress(addr, to string, amount *b
 	if info, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	} else {
-		info.StakingAmount = new(big.Int).Add(info.StakingAmount,amount)
+		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
 		return nil
 	}
 }
@@ -219,6 +224,18 @@ func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 	} else {
 		return ErrNoRegister
 	}
+}
+func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keeptime uint64, assetType uint32) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+		!ValidAssetType(assetType) {
+		return ErrInvalidParam
+	}
+	if info, ok := es.EnInfos[addr]; ok {
+		return ErrRepeatRegister
+	} else {
+		info.Fee, info.AssetFlag, info.KeepTime = fee, assetType, keeptime
+	}
+	return nil
 }
 func (es *EntangleState) GetCoinbase(addr string) []string {
 	if val, ok := es.EnInfos[addr]; ok {
@@ -306,6 +323,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
+// returns the amount czz by user's burnned, took out fee by beaconaddress
 func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
 	amount *big.Int) (*big.Int, error) {
 	light := es.getBeaconAddress(lightID)
@@ -337,9 +355,9 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 		return nil, ErrNoUserAsset
 	}
 	userEntity.BurnAmount.addBurnItem(height, amount)
-	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(light.Fee)))
+	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 
-	return res, nil
+	return new(big.Int).Sub(amount, res), nil
 }
 func (es *EntangleState) SetInitPoolAmount(amount1,amount2 *big.Int) {
 	es.PoolAmount1,es.PoolAmount2 = new(big.Int).Set(amount1),new(big.Int).Set(amount2)

@@ -415,12 +415,11 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 			continue
 		}
 
-		err := b.checkBeaconRegistrationTx(tx, eState)
-		if err != nil {
+		if err := b.checkBeaconRegistrationTx(tx, eState); err != nil {
 			return err
 		}
-		err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-		if err != nil {
+
+		if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 			return err
 		}
 	}
@@ -434,7 +433,7 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 
 func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
 	height := block.Height()
-	if chainParams.EntangleHeight >= height {
+	if chainParams.EntangleHeight >= height && chainParams.BeaconHeight < height {
 		return nil
 	}
 	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
@@ -451,7 +450,7 @@ func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams 
 // The flags modify the behavior of this function as follows:
 //  - BFNoPoWCheck: The check to ensure the block hash is less than the target
 //    difficulty is not performed.
-func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags BehaviorFlags, state *cross.EntangleState, addr czzutil.Address) error {
+func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimit *big.Int, flags BehaviorFlags, state *cross.EntangleState, addr czzutil.Address) error {
 	// The target difficulty must be larger than zero.
 
 	targetN := CompactToBig(header.Bits)
@@ -468,22 +467,7 @@ func checkProofOfWork(header *wire.BlockHeader, powLimit *big.Int, flags Behavio
 		return ruleError(ErrUnexpectedDifficulty, str)
 	}
 	if state != nil {
-		found_t := 0
-		StakingAmount := big.NewInt(0)
-		for _, eninfo := range state.EnInfos {
-			for _, eAddr := range eninfo.CoinBaseAddress {
-				if addr.String() == eAddr {
-					StakingAmount = big.NewInt(0).Sub(StakingAmount, eninfo.StakingAmount)
-					found_t = 1
-					break
-				}
-			}
-		}
-		if found_t == 1 {
-			result := big.NewInt(0).Div(StakingAmount, big.NewInt(1000000))
-			targetN.Div(targetN, result)
-		}
-
+		targetN = cross.ComputeDiff(params, targetN, addr, state)
 	}
 	target := targetN
 	// The block hash must be less than the claimed target unless the flag
@@ -513,7 +497,7 @@ func CheckProofOfWork(block *czzutil.Block, powLimit *big.Int, Params *chaincfg.
 
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, Params)
-	return checkProofOfWork(&block.MsgBlock().Header, powLimit, BFNone, rsState, addrs[0])
+	return checkProofOfWork(Params, &block.MsgBlock().Header, powLimit, BFNone, rsState, addrs[0])
 }
 
 // CountSigOps returns the number of signature operations for all transaction
@@ -622,7 +606,7 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 	// Ensure the proof of work bits in the block header is in min/max range
 	// and the block hash is less than the target value described by the
 	// bits.
-	err := checkProofOfWork(header, powLimit, flags, state, addr)
+	err := checkProofOfWork(params, header, powLimit, flags, state, addr)
 	if err != nil {
 		return err
 	}

@@ -557,6 +557,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	if err != nil {
 		return nil, nil, err
 	}
+	log.Info("payToAddress:", payToAddress.String())
 	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
 		nextBlockHeight, payToAddress)
 	if err != nil {
@@ -618,7 +619,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	isOver := false
 
-	eState := g.chain.CurrentEstate()
+	var eState *cross.EntangleState
+
+	if g.chainParams.BeaconHeight < nextBlockHeight {
+		eState = g.chain.CurrentEstate()
+	}
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
 	if sErr != nil {
@@ -851,7 +856,6 @@ mempoolLoop:
 
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
-			fmt.Println("address:", br.Address)
 			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.EntangleAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
 		}
 
@@ -923,7 +927,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight <= nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.BeaconHeight > nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo)
 		if err != nil {

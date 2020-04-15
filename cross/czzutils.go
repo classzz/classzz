@@ -2,6 +2,9 @@ package cross
 
 import (
 	"bytes"
+	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/czzutil"
+
 	// "encoding/binary"
 	"errors"
 	"fmt"
@@ -31,9 +34,10 @@ var (
 )
 
 var (
-	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
+	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
 	MaxWhiteListCount                 = 5
-	MAXBASEFEE                        = 10000
+	MAXBASEFEE                        = 100000
+	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 5
 )
@@ -49,6 +53,18 @@ const (
 
 func equalAddress(addr1, addr2 string) bool {
 	return bytes.Equal([]byte(addr1), []byte(addr2))
+}
+func validFee(fee *big.Int) bool {
+	if fee.Sign() < 0 || fee.Int64() > int64(MAXBASEFEE) {
+		return false
+	}
+	return true
+}
+func validKeepTime(kt *big.Int) bool {
+	if kt.Sign() < 0 || kt.Int64() > int64(MAXFREEQUOTA) {
+		return false
+	}
+	return true
 }
 
 type BurnItem struct {
@@ -174,7 +190,7 @@ type FreeQuotaItem BaseAmountUint
 type BeaconAddressInfo struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
-	ToAddress       string           `json:"toAddress"`
+	ToAddress       []byte           `json:"toAddress"`
 	StakingAmount   *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
@@ -472,6 +488,7 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 
 /////////////////////////////////////////////////////////////////
 func ValidAssetType(utype uint32) bool {
+	fmt.Println(utype, LhAssetBTC, utype&LhAssetBTC)
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
 		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
 		return true
@@ -479,8 +496,36 @@ func ValidAssetType(utype uint32) bool {
 	return false
 }
 func ValidPK(pk []byte) bool {
+	if len(pk) != 64 {
+		return false
+	}
 	return true
 }
 func isValidAsset(atype, assetAll uint32) bool {
 	return atype&assetAll != 0
+}
+
+func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
+
+	found_t := 0
+	StakingAmount := big.NewInt(0)
+	for _, eninfo := range eState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if address.String() == eAddr {
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
+				found_t = 1
+				break
+			}
+		}
+	}
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
+		target = big.NewInt(0).Mul(target, result)
+	}
+
+	if target.Cmp(params.PowLimit) > 0 {
+		target.Set(params.PowLimit)
+	}
+
+	return target
 }

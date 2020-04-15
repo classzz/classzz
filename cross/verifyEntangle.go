@@ -1,6 +1,7 @@
 package cross
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -23,10 +24,6 @@ const (
 	ltcPoolAddr  = "MUy9qiaLQtaqmKBSk27FXrEEfUkRBeddCZ"
 	dogeMaturity = 14
 	ltcMaturity  = 12
-)
-
-var (
-	minStakingAmount = big.NewInt(100 * czzutil.SatoshiPerBitcoin)
 )
 
 type EntangleVerify struct {
@@ -289,39 +286,76 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, NoBeaconRegistration
 	}
 
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
 	if _, ok := eState.EnInfos[br.Address]; ok {
 		return nil, ErrRepeatRegister
 	}
 
-	if br.Fee < 0 {
+	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
+	if toAddress < 9 || toAddress >= 100 {
+		e := fmt.Sprintf("toAddress err")
+		return nil, errors.New(e)
+	}
+
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(br.ToAddress, ev.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != br.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	if !validFee(big.NewInt(int64(br.Fee))) {
+		e := fmt.Sprintf("Fee err")
+		return nil, errors.New(e)
+	}
+
+	if !validKeepTime(big.NewInt(int64(br.KeepTime))) {
+		e := fmt.Sprintf("KeepTime err")
+		return nil, errors.New(e)
+	}
+
+	if br.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
 
-	if br.KeepTime < 0 {
-		e := fmt.Sprintf("StakingAmount err")
-		return nil, errors.New(e)
-	}
-
-	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
-		e := fmt.Sprintf("StakingAmount err")
-		return nil, errors.New(e)
-	}
-
-	if br.AssetFlag > 32 {
+	if !ValidAssetType(br.AssetFlag) {
 		e := fmt.Sprintf("AssetFlag err")
 		return nil, errors.New(e)
 	}
 
 	for _, whiteAddress := range br.WhiteList {
-		if len(whiteAddress.Pk) != 20 {
+		if !ValidPK(whiteAddress.Pk) {
 			e := fmt.Sprintf("whiteAddress.Pk err")
 			return nil, errors.New(e)
 		}
-		if whiteAddress.AssetType > 32 {
+		if !ValidAssetType(whiteAddress.AssetType) {
 			e := fmt.Sprintf("whiteAddress.AssetType err")
 			return nil, errors.New(e)
 		}
+	}
+
+	if len(br.CoinBaseAddress) > MaxCoinBase {
+		e := fmt.Sprintf("whiteAddress.AssetType > MaxCoinBase err")
+		return nil, errors.New(e)
 	}
 
 	for _, coinBaseAddress := range br.CoinBaseAddress {
@@ -332,7 +366,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	}
 
 	for _, v := range eState.EnInfos {
-		if v.ToAddress == br.ToAddress {
+		if bytes.Equal(v.ToAddress, br.ToAddress) {
 			e := fmt.Sprintf("ToAddress err")
 			return nil, errors.New(e)
 		}

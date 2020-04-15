@@ -431,6 +431,9 @@ var helpDescsEnUS = map[string]string{
 	// GetInfoCmd help.
 	"getinfo--synopsis": "Returns a JSON object containing various state info.",
 
+	// GetInfoCmd help.
+	"getstateinfo--synopsis": "Returns a JSON object containing various state info.",
+
 	// GetEntangleInfoCmd help.
 	"getentangleinfo--synopsis": "Returns a JSON object containing various Entangle info.",
 
@@ -752,6 +755,7 @@ var rpcResultTypes = map[string][]interface{}{
 	"gethashespersec":              {(*float64)(nil)},
 	"getheaders":                   {(*[]string)(nil)},
 	"getinfo":                      {(*btcjson.InfoChainResult)(nil)},
+	"getstateinfo":                 {(*map[string]btcjson.BeaconAddressInfo)(nil)},
 	"getentangleinfo":              {(*btcjson.EntangleInfoChainResult)(nil)},
 	"getmempoolinfo":               {(*btcjson.GetMempoolInfoResult)(nil)},
 	"getmininginfo":                {(*btcjson.GetMiningInfoResult)(nil)},

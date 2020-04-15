@@ -247,7 +247,7 @@ var MainNetParams = Params{
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
-	BeaconHeight:   2,
+	BeaconHeight:   100,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
@@ -329,7 +329,7 @@ var RegressionNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	RetargetAdjustmentFactor: 4,  // 25% less, 400% more
 	ReduceMinDifficulty:      true,
-	NoDifficultyAdjustment:   true,
+	NoDifficultyAdjustment:   false,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
@@ -481,7 +481,7 @@ var SimNetParams = Params{
 	TargetTimePerBlock:       30,                  // 10 minutes
 	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
 	ReduceMinDifficulty:      true,
-	NoDifficultyAdjustment:   true,
+	NoDifficultyAdjustment:   false,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
