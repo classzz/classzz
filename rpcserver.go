@@ -2557,7 +2557,21 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 // that are not related to wallet functionality.
 func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	estate := s.cfg.Chain.CurrentEstate()
-	return estate.EnInfos, nil
+	infos := make([]*btcjson.StateInfoChainResult, 0)
+	for _, info := range estate.EnInfos {
+		infor := &btcjson.StateInfoChainResult{
+			ExchangeID:      info.ExchangeID,
+			Address:         info.Address,
+			ToAddress:       hex.EncodeToString(info.ToAddress),
+			StakingAmount:   info.StakingAmount,
+			AssetFlag:       info.AssetFlag,
+			Fee:             info.Fee,
+			KeepTime:        info.KeepTime,
+			CoinBaseAddress: info.CoinBaseAddress,
+		}
+		infos = append(infos, infor)
+	}
+	return infos, nil
 }
 
 func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {

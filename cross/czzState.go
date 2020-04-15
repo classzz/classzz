@@ -163,6 +163,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 		WhiteList:       wu,
 		CoinBaseAddress: cba,
 	}
+	es.CurExchangeID = info.ExchangeID
 	es.EnInfos[addr] = info
 	return nil
 }

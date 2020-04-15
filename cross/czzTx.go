@@ -299,7 +299,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 		}
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)

@@ -6,6 +6,7 @@ package btcjson
 
 import (
 	"encoding/json"
+	"math/big"
 )
 
 // GetBlockHeaderVerboseResult models the data from the getblockheader command when
@@ -474,6 +475,19 @@ type InfoChainResult struct {
 	TestNet         bool    `json:"testnet"`
 	RelayFee        float64 `json:"relayfee"`
 	Errors          string  `json:"errors"`
+}
+
+// InfoChainResult models the data returned by the chain server getinfo command.
+type StateInfoChainResult struct {
+	ExchangeID      uint64       `json:"exchange_id"`
+	Address         string       `json:"address"`
+	ToAddress       string       `json:"toAddress"`
+	StakingAmount   *big.Int     `json:"staking_amount"` // in
+	AssetFlag       uint32       `json:"asset_flag"`
+	Fee             uint64       `json:"fee"`
+	KeepTime        uint64       `json:"keep_time"` // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit `json:"white_list"`
+	CoinBaseAddress []string     `json:"CoinBaseAddress"`
 }
 
 type EntangleInfoChainResult struct {
