@@ -481,7 +481,7 @@ type InfoChainResult struct {
 type StateInfoChainResult struct {
 	ExchangeID      uint64       `json:"exchange_id"`
 	Address         string       `json:"address"`
-	ToAddress       string       `json:"toAddress"`
+	ToAddress       string       `json:"toAddress_pk_hex"`
 	StakingAmount   *big.Int     `json:"staking_amount"` // in
 	AssetFlag       uint32       `json:"asset_flag"`
 	Fee             uint64       `json:"fee"`
