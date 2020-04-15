@@ -305,6 +305,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
+// returns the amount czz by user's burnned, took out fee by beaconaddress
 func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
 	amount *big.Int) (*big.Int, error) {
 	light := es.getBeaconAddress(lightID)
@@ -336,9 +337,9 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 		return nil, ErrNoUserAsset
 	}
 	userEntity.BurnAmount.addBurnItem(height, amount)
-	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(light.Fee)))
+	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 
-	return res, nil
+	return new(big.Int).Sub(amount,res), nil
 }
 
 //////////////////////////////////////////////////////////////////////
