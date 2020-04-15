@@ -160,6 +160,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"gethashespersec":              handleGetHashesPerSec,
 	"getheaders":                   handleGetHeaders,
 	"getinfo":                      handleGetInfo,
+	"getstateinfo":                 handleGetStateInfo,
 	"getentangleinfo":              handleGetEntangleInfo,
 	"getwork":                      handleGetWork,
 	"getworktemplate":              handleGetWorkTemplate,
@@ -2550,6 +2551,13 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	}
 
 	return ret, nil
+}
+
+// handleGetInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	estate := s.cfg.Chain.CurrentEstate()
+	return estate.EnInfos, nil
 }
 
 func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
