@@ -26,10 +26,6 @@ const (
 	ltcMaturity  = 12
 )
 
-var (
-	minStakingAmount = big.NewInt(100 * czzutil.SatoshiPerBitcoin)
-)
-
 type EntangleVerify struct {
 	DogeCoinRPC []*rpcclient.Client
 	LtcCoinRPC  []*rpcclient.Client
@@ -300,17 +296,17 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if br.Fee < 0 {
+	if !validFee(big.NewInt(int64(br.Fee))) {
 		e := fmt.Sprintf("Fee err")
 		return nil, errors.New(e)
 	}
 
-	if br.KeepTime < 0 {
+	if validKeepTime(big.NewInt(int64(br.KeepTime))) {
 		e := fmt.Sprintf("KeepTime err")
 		return nil, errors.New(e)
 	}
 
-	if br.StakingAmount.Cmp(minStakingAmount) < 0 {
+	if br.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}

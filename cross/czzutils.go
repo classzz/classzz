@@ -37,7 +37,7 @@ var (
 	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
 	MaxWhiteListCount                 = 5
 	MAXBASEFEE                        = 100000
-	MAXFREEQUOTA 					  = 100000			// about 30 days
+	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 5
 )
@@ -496,7 +496,7 @@ func ValidAssetType(utype uint32) bool {
 	return false
 }
 func ValidPK(pk []byte) bool {
-	if len(pk) != 32 {
+	if len(pk) != 64 {
 		return false
 	}
 	return true
@@ -519,7 +519,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 		}
 	}
 	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, big.NewInt(10000000000))
+		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
 		target = big.NewInt(0).Mul(target, result)
 	}
 
