@@ -141,7 +141,8 @@ func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
 	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) || 
+	!ValidAssetType(assetType) {
 		return ErrInvalidParam
 	}
 	//if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
@@ -221,6 +222,18 @@ func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 	} else {
 		return ErrNoRegister
 	}
+}
+func (es *EntangleState) UpdateCfgForBeaconAddress(addr string,fee, keeptime uint64, assetType uint32) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) || 
+	!ValidAssetType(assetType) {
+		return ErrInvalidParam
+	}
+	if info, ok := es.EnInfos[addr]; ok {
+		return ErrRepeatRegister
+	} else {
+		info.Fee,info.AssetFlag,info.KeepTime = fee,assetType,keeptime
+	}
+	return nil
 }
 func (es *EntangleState) GetCoinbase(addr string) []string {
 	if val, ok := es.EnInfos[addr]; ok {
