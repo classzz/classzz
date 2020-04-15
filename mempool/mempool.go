@@ -829,16 +829,13 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		}
 	}
 
-	br, err := cross.IsBeaconRegistrationTx(tx.MsgTx())
-	if err != nil {
-		return nil, nil, err
-	}
+	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
 	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-		return nil, nil, errors.New("err entangle tx  BeaconHeight < nextBlockHeight ")
+		return nil, nil, errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
 	} else {
 
 		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxIn) > 1 {
-			return nil, nil, errors.New("not entangle tx TxOut >2 or TxIn >1")
+			return nil, nil, errors.New("not BeaconRegistration tx TxOut >3 or TxIn >1")
 		}
 
 		eState := mp.cfg.CurrentEstate()
