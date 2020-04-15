@@ -415,12 +415,11 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 			continue
 		}
 
-		err := b.checkBeaconRegistrationTx(tx, eState)
-		if err != nil {
+		if err := b.checkBeaconRegistrationTx(tx, eState); err != nil {
 			return err
 		}
-		err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-		if err != nil {
+
+		if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 			return err
 		}
 	}
