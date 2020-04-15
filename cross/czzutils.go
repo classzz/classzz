@@ -37,6 +37,7 @@ var (
 	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e9))
 	MaxWhiteListCount                 = 5
 	MAXBASEFEE                        = 100000
+	MAXFREEQUOTA 					  = 100000			// about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 5
 )
@@ -52,6 +53,18 @@ const (
 
 func equalAddress(addr1, addr2 string) bool {
 	return bytes.Equal([]byte(addr1), []byte(addr2))
+}
+func validFee(fee *big.Int) bool {
+	if fee.Sign() < 0 || fee.Int64() > int64(MAXBASEFEE) {
+		return false
+	}
+	return true
+}
+func validKeepTime(kt *big.Int) bool {
+	if kt.Sign() < 0 || kt.Int64() > int64(MAXFREEQUOTA) {
+		return false
+	}
+	return true
 }
 
 type BurnItem struct {
