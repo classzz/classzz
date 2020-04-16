@@ -295,12 +295,6 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, ErrRepeatRegister
 	}
 
-	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
-	if toAddress < 9 || toAddress >= 100 {
-		e := fmt.Sprintf("toAddress err")
-		return nil, errors.New(e)
-	}
-
 	addr, err := czzutil.NewLegacyAddressPubKeyHash(br.ToAddress, ev.Params)
 	if err != nil {
 		return nil, err
@@ -319,6 +313,12 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 
 	if tx.TxOut[1].Value != br.StakingAmount.Int64() {
 		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
+	if toAddress < 9 || toAddress >= 100 {
+		e := fmt.Sprintf("toAddress err")
 		return nil, errors.New(e)
 	}
 
