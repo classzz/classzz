@@ -9,12 +9,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/classzz/classzz/cross"
-	"github.com/classzz/classzz/rlp"
-
 	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/database"
+	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
@@ -372,13 +371,19 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 //load
 func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
 
-	es := &cross.EntangleState{}
+	es := cross.NewEntangleState()
 	buf := new(bytes.Buffer)
 
 	binary.Write(buf, binary.LittleEndian, height)
 	buf.Write(hash.CloneBytes())
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+	if entangleBucket == nil {
+		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
+			return nil
+		}
+	}
+
 	value := entangleBucket.Get(buf.Bytes())
 	if value != nil {
 		err := rlp.DecodeBytes(value, es)
