@@ -231,7 +231,7 @@ var MainNetParams = Params{
 	DNSSeeds: []DNSSeed{
 		{"18.218.117.48", true},
 		{"18.222.100.56", true},
-		{"18.218.117.48", true},
+		{"52.14.154.71", true},
 	},
 
 	// Chain parameters
@@ -243,11 +243,11 @@ var MainNetParams = Params{
 
 	CoinbaseMaturity:         14,
 	SubsidyReductionInterval: 1000000,
-	TargetTimePerBlock:       30, // 10 minutes
+	TargetTimePerBlock:       30, // 30 seconds
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
-	BeaconHeight:   100,
+	BeaconHeight:   420000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
