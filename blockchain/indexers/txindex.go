@@ -388,12 +388,10 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 	if value != nil {
 		err := rlp.DecodeBytes(value, es)
 		if err != nil {
-			log.Error("Failed to RLP encode EntangleState", "err", err)
 			return nil
 		}
 		return es
 	}
-	log.Error("Failed to RLP is nil", "err", err)
 	return nil
 }
 
