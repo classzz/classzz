@@ -120,7 +120,7 @@ type CreateRawEntangleTransactionCmd struct {
 type BeaconRegistrationCmd struct {
 	Inputs             []TransactionInput
 	BeaconRegistration BeaconRegistrationOut
-	Amounts            map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	Amounts            *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime           *int64
 }
 
