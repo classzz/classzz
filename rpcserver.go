@@ -2627,6 +2627,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	if blockTemplate.Height > s.cfg.ChainParams.BeaconHeight {
+		fmt.Println("blockTemplate.Height", blockTemplate.Height-1, "PrevBlock", blockTemplate.Block.Header.PrevBlock)
 		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
 		script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)

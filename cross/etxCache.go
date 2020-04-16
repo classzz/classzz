@@ -49,8 +49,8 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 
 	var err error
 	es := NewEntangleState()
-	buf := new(bytes.Buffer)
 
+	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
 	buf.Write(hash.CloneBytes())
 
