@@ -383,7 +383,6 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 		}
 	}
 	if height == chaincfg.MainNetParams.BeaconHeight {
-		fmt.Println("dbLoadEntangleState", height, chaincfg.MainNetParams.BeaconHeight)
 		return es
 	}
 	value := entangleBucket.Get(buf.Bytes())
