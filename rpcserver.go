@@ -2625,12 +2625,13 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		blockTemplate = s.gbtWorkState.template
 	}
 
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
-	script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
-	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
-
-	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+	if blockTemplate.Height > s.cfg.ChainParams.BeaconHeight {
+		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
+		script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
+		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+	}
 
 	//target := fmt.Sprintf("%064x", blockchain.CompactToBig(blockTemplate.Block.Header.Bits).Bytes())
 	target := fmt.Sprintf("%064x", targetN.Bytes())
@@ -4070,13 +4071,14 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
-
-	rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
-	script := template.Block.Transactions[0].TxOut[0].PkScript
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
-	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 
-	targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+	if template.Height > s.cfg.ChainParams.BeaconHeight {
+		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
+		script := template.Block.Transactions[0].TxOut[0].PkScript
+		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
+		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+	}
 
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
