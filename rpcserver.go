@@ -4079,7 +4079,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 
 	resultB := new(big.Int).SetBytes(result)
 	fmt.Println(resultB.Uint64(), Target.Uint64(), resultB.Cmp(Target))
-	fmt.Println("result", hex.EncodeToString(result), "target", hex.EncodeToString(targetN.Bytes()))
+	fmt.Println("result", hex.EncodeToString(result), "target", hex.EncodeToString(targetN.Bytes()), "limit", hex.EncodeToString(s.cfg.ChainParams.PowLimit.Bytes()))
 	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCVerify,
