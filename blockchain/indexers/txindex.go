@@ -225,12 +225,14 @@ func dbEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.
 
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+	fmt.Println("dbEntangleStateEntry1 ", eState)
 
 	buf := new(bytes.Buffer)
 
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 
+	fmt.Println("dbEntangleStateEntry2 ", buf.Bytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
 	fmt.Println("dbEntangleStateEntry err ", err)
 	return err
@@ -357,6 +359,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 
 		offset += txEntrySize
 	}
+	fmt.Println("dbAddTxIndexEntries", eState)
 
 	if eState != nil {
 		err = dbEntangleStateEntry(dbTx, block, eState)
