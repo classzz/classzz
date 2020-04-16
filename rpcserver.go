@@ -2627,7 +2627,6 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	if blockTemplate.Height > s.cfg.ChainParams.BeaconHeight {
-		fmt.Println("blockTemplate.Height", blockTemplate.Height-1, "PrevBlock", blockTemplate.Block.Header.PrevBlock)
 		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
 		script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
@@ -4085,8 +4084,6 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	Target := targetN
 
 	resultB := new(big.Int).SetBytes(result)
-	fmt.Println(resultB.Uint64(), Target.Uint64(), resultB.Cmp(Target))
-	fmt.Println("s.cfg.ChainParams", s.cfg.ChainParams.Name, "result", hex.EncodeToString(result), "target", hex.EncodeToString(targetN.Bytes()), "limit", hex.EncodeToString(s.cfg.ChainParams.PowLimit.Bytes()))
 	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCVerify,

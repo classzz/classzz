@@ -225,16 +225,13 @@ func dbEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.
 
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	fmt.Println("dbEntangleStateEntry1 ", eState)
 
 	buf := new(bytes.Buffer)
 
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 
-	fmt.Println("dbEntangleStateEntry2 ", buf.Bytes(), "Height", block.Height(), "Hash", block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
-	fmt.Println("dbEntangleStateEntry err ", err)
 	return err
 }
 
@@ -338,7 +335,6 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	if block.Height() == chaincfg.MainNetParams.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
-	fmt.Println("dbAddTxIndexEntries=======", eState, "pHeight", pHeight, "pHash", pHash)
 	for i, tx := range block.Transactions() {
 		putTxIndexEntry(serializedValues[offset:], blockID, txLocs[i])
 		endOffset := offset + txEntrySize

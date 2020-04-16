@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/rlp"
@@ -72,7 +71,6 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 			}
 			return nil
 		}
-		fmt.Println("value is nil")
 		return errors.New("value is nil")
 	})
 	if err != nil {
