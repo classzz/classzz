@@ -623,6 +623,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	fork := false
 	if g.chainParams.BeaconHeight < nextBlockHeight {
 		eState = g.chain.CurrentEstate()
+		fmt.Println("eState", eState)
 		fork = true
 	}
 
