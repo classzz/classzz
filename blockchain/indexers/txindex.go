@@ -232,7 +232,7 @@ func dbEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 
-	fmt.Println("dbEntangleStateEntry2 ", buf.Bytes())
+	fmt.Println("dbEntangleStateEntry2 ", buf.Bytes(), "Height", block.Height(), "Hash", block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
 	fmt.Println("dbEntangleStateEntry err ", err)
 	return err
