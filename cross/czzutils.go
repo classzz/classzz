@@ -521,7 +521,6 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 	if found_t == 1 {
 		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
 		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
-		fmt.Println("ComputeDiff result1", result1)
 		target = big.NewInt(0).Mul(target, result1)
 	}
 
