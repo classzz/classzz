@@ -1035,6 +1035,10 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	if txHeight <= chainParams.EntangleHeight {
 		return nil
 	}
+	fork := false 
+	if txHeight >= chainParams.BeaconHeight {
+		fork = true
+	}
 	originIncome1, originIncome2 := amountSubsidy*19/100, amountSubsidy/100
 	originIncome3 := amountSubsidy - originIncome1 - originIncome2
 	if txHeight == chainParams.EntangleHeight {
@@ -1043,7 +1047,7 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	}
 	reward1, reward2, reward3 := originIncome1, originIncome2, originIncome3
 	// check sum reward
-	summay, err := summayOfTxsAndCheck(preBlock, block, utxoView, reward3, reward1, reward2)
+	summay, err := summayOfTxsAndCheck(preBlock, block, utxoView, reward3, reward1, reward2,fork)
 	if err != nil {
 		return err
 	}
@@ -1512,7 +1516,8 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 	return err
 }
 
-func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount, infos map[uint32]*cross.EntangleTxInfo) {
+func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount, 
+	infos map[uint32]*cross.EntangleTxInfo,fork bool) {
 	for _, v := range infos {
 		item := &cross.EntangleItem{
 			EType: v.ExTxType,
@@ -1522,12 +1527,13 @@ func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmou
 			ExTxType: item.EType,
 			Amount:   new(big.Int).Set(item.Value),
 		})
-		cross.PreCalcEntangleAmount(item, keepedInfo)
+		cross.PreCalcEntangleAmount(item, keepedInfo,fork)
 		summay.EntangleAmount += item.Value.Int64()
 	}
 }
 
-func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint, subsidy, pool1Amount, pool2Amount int64) (*KeepedInfoSummay, error) {
+func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint, subsidy,
+	 pool1Amount, pool2Amount int64,fork bool) (*KeepedInfoSummay, error) {
 	var totalIn, totalOut, amount1 int64
 	summay := &KeepedInfoSummay{
 		KeepedAmountInBlock: cross.KeepedAmount{
@@ -1562,7 +1568,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			// summay all txout
 			einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 			if einfos != nil {
-				handleSummayEntangle(summay, keepInfo, einfos)
+				handleSummayEntangle(summay, keepInfo, einfos,fork)
 			}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value

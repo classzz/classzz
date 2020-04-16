@@ -39,8 +39,10 @@ var (
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
 	}
-	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit1 = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit1 = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 )
 
 type EntangleItem struct {
@@ -392,7 +394,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, lastScriptInfo []byte) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, 
+	lastScriptInfo []byte,fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -417,12 +420,12 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := EnoughAmount(reserve1, items, keepInfo); !ok {
+	if ok := EnoughAmount(reserve1, items, keepInfo,fork); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
 
 	for i := range items {
-		calcExchange(items[i], &reserve1, keepInfo, true)
+		calcExchange(items[i], &reserve1, keepInfo, true,fork)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
 			return errors.New("Make Meger tx failed,err: " + err.Error())
@@ -468,7 +471,7 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 	return nil
 }
 
-func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change bool) {
+func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change,fork bool) {
 	amount := big.NewInt(0)
 	cur := keepInfo.GetValue(item.EType)
 	if cur != nil {
@@ -482,22 +485,22 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 		keepInfo.Add(kk)
 	}
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = toDoge(amount, item.Value)
+		item.Value = toDoge(amount, item.Value,fork)
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = toLtc(amount, item.Value)
+		item.Value = toLtc(amount, item.Value,fork)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
 
-func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount) {
+func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount,fork bool) {
 	var vv int64
-	calcExchange(item, &vv, keepInfo, true)
+	calcExchange(item, &vv, keepInfo, true,fork)
 }
 
-func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount) bool {
+func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount,fork bool) bool {
 	amount := reserve
 	for _, v := range items {
-		calcExchange(v.Clone(), &amount, keepInfo, false)
+		calcExchange(v.Clone(), &amount, keepInfo, false,fork)
 	}
 	return amount > 0
 }
@@ -585,14 +588,20 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
-func toDoge(entangled, needed *big.Int) *big.Int {
+func toDoge(entangled, needed *big.Int,fork bool) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
+	var du *big.Int = nil 
+	if fork {
+		du = new(big.Int).Set(dogeUnit)
+	} else {
+		du = new(big.Int).Set(dogeUnit1)
+	}
 	var rate int64 = 25
-	z, m := new(big.Int).DivMod(entangled, dogeUnit, new(big.Int).Set(dogeUnit))
+	z, m := new(big.Int).DivMod(entangled, du, new(big.Int).Set(du))
 	rate = rate + z.Int64()
-	l := new(big.Int).Sub(dogeUnit, m)
+	l := new(big.Int).Sub(du, m)
 	base := new(big.Float).SetFloat64(float64(baseUnit.Int64()))
 
 	if l.Cmp(needed) >= 1 {
@@ -669,15 +678,20 @@ func toLtc2(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
-func toLtc(entangled, needed *big.Int) *big.Int {
+func toLtc(entangled, needed *big.Int,fork bool) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
 	rate := big.NewFloat(0.0008)
 	base := big.NewFloat(0.0001)
-
-	u := new(big.Float).SetFloat64(float64(baseUnit.Int64()))
-	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), baseUnit)
+	var du *big.Int = nil 
+	if fork {
+		du = new(big.Int).Set(baseUnit)
+	} else {
+		du = new(big.Int).Set(baseUnit1)
+	}
+	u := new(big.Float).SetFloat64(float64(du.Int64()))
+	fixed := new(big.Int).Mul(big.NewInt(int64(1150)), du)
 	divisor, remainder := new(big.Int).DivMod(entangled, fixed, new(big.Int).Set(fixed))
 
 	base1 := new(big.Float).Mul(base, big.NewFloat(float64(divisor.Int64())))
@@ -849,7 +863,8 @@ func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPai
 
 	return nil, nil
 }
-func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, lastScriptInfo []byte) bool {
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, 
+	lastScriptInfo []byte,fork bool) bool {
 	if items == nil || len(items) == 0 {
 		return false
 	}
@@ -857,6 +872,6 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 		return false
 	} else {
 		all := pool.Amount[0].Int64() + tx.TxOut[1].Value
-		return !EnoughAmount(all, items, keepInfo)
+		return !EnoughAmount(all, items, keepInfo,fork)
 	}
 }
