@@ -2562,6 +2562,10 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	estate := s.cfg.Chain.CurrentEstate()
 	infos := make([]*btcjson.StateInfoChainResult, 0)
+	if s.cfg.Chain.BestSnapshot().Height < s.cfg.ChainParams.BeaconHeight {
+		return infos, nil
+	}
+
 	for _, info := range estate.EnInfos {
 		infor := &btcjson.StateInfoChainResult{
 			ExchangeID:      info.ExchangeID,
