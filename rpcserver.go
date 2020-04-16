@@ -4078,7 +4078,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	Target := targetN
 
 	resultB := new(big.Int).SetBytes(result)
-
+	fmt.Println(resultB.Int64(), Target.Int64())
 	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCVerify,
