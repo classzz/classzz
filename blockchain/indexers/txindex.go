@@ -335,7 +335,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbLoadEntangleState(dbTx, pHeight, pHash)
-
+	fmt.Println("dbAddTxIndexEntries=======", eState, "pHeight", pHeight, "pHash", pHash)
 	for i, tx := range block.Transactions() {
 		putTxIndexEntry(serializedValues[offset:], blockID, txLocs[i])
 		endOffset := offset + txEntrySize
@@ -359,7 +359,6 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 
 		offset += txEntrySize
 	}
-	fmt.Println("dbAddTxIndexEntries", eState)
 
 	if eState != nil {
 		err = dbEntangleStateEntry(dbTx, block, eState)

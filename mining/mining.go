@@ -623,13 +623,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	fork := false
 	if g.chainParams.BeaconHeight < nextBlockHeight {
 		eState = g.chain.CurrentEstate()
-		fmt.Println("eState1", eState)
+		fmt.Println("eState1=====", eState)
 		fork = true
 	}
 
 	if g.chainParams.BeaconHeight == nextBlockHeight {
 		eState = cross.NewEntangleState()
-		fmt.Println("eState2", eState)
+		fmt.Println("eState2======", eState)
 	}
 
 	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
