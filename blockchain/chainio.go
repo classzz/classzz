@@ -1283,16 +1283,6 @@ func (b *BlockChain) createChainState() error {
 			return err
 		}
 
-		esBucket, err := meta.CreateBucket(cross.EntangleStateKey)
-		if err != nil {
-			return err
-		}
-
-		eState := cross.NewEntangleState()
-		err = dbPutBesteState(esBucket, genesisBlock, eState)
-		if err != nil {
-			return err
-		}
 		// Store the genesis block into the database.
 		return dbStoreBlock(dbTx, genesisBlock)
 	})

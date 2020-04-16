@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/blockchain"
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/database"
@@ -328,7 +329,6 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	offset := 0
 	serializedValues := make([]byte, len(block.Transactions())*txEntrySize)
 
-	// 获取之前的状态
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbLoadEntangleState(dbTx, pHeight, pHash)
@@ -373,7 +373,6 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 
 	es := cross.NewEntangleState()
 	buf := new(bytes.Buffer)
-
 	binary.Write(buf, binary.LittleEndian, height)
 	buf.Write(hash.CloneBytes())
 	var err error
@@ -383,7 +382,10 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 			return nil
 		}
 	}
-
+	if height == chaincfg.MainNetParams.BeaconHeight {
+		fmt.Println("dbLoadEntangleState", height, chaincfg.MainNetParams.BeaconHeight)
+		return es
+	}
 	value := entangleBucket.Get(buf.Bytes())
 	if value != nil {
 		err := rlp.DecodeBytes(value, es)
