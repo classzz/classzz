@@ -84,7 +84,7 @@ const (
 )
 
 var (
-	MinStakingAmountForBeaconAddress = float64(100)
+	MinStakingAmountForBeaconAddress = float64(1000000)
 )
 
 var (
