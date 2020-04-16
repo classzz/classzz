@@ -335,6 +335,9 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbLoadEntangleState(dbTx, pHeight, pHash)
+	if block.Height() == chaincfg.MainNetParams.BeaconHeight {
+		eState = cross.NewEntangleState()
+	}
 	fmt.Println("dbAddTxIndexEntries=======", eState, "pHeight", pHeight, "pHash", pHash)
 	for i, tx := range block.Transactions() {
 		putTxIndexEntry(serializedValues[offset:], blockID, txLocs[i])
@@ -384,9 +387,6 @@ func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *c
 		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
 			return nil
 		}
-	}
-	if height == chaincfg.MainNetParams.BeaconHeight {
-		return es
 	}
 	value := entangleBucket.Get(buf.Bytes())
 	if value != nil {
