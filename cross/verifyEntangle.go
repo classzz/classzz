@@ -317,7 +317,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	}
 
 	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
-	if toAddress < 10 || toAddress >= 100 {
+	if toAddress < 10 || toAddress > 99 {
 		e := fmt.Sprintf("toAddress err")
 		return nil, errors.New(e)
 	}
