@@ -845,7 +845,6 @@ func (b *BlockChain) checkBlockHeaderContext(header *wire.BlockHeader, prevNode 
 		// Ensure the difficulty specified in the block header matches
 		// the calculated difficulty based on the previous block and
 		// difficulty retarget rules.
-		b.entangleVerify.Cache.LoadEntangleState(blockHeight, header.BlockHash())
 		expectedDifficulty, err := b.calcNextRequiredDifficulty(prevNode, header.Timestamp)
 
 		log.Debug("checkBlockHeaderContext", "blockHeight", blockHeight, "hash", header.BlockHash(), "header", header.Timestamp)
@@ -1035,7 +1034,7 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	if txHeight <= chainParams.EntangleHeight {
 		return nil
 	}
-	fork := false 
+	fork := false
 	if txHeight >= chainParams.BeaconHeight {
 		fork = true
 	}
@@ -1047,7 +1046,7 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 	}
 	reward1, reward2, reward3 := originIncome1, originIncome2, originIncome3
 	// check sum reward
-	summay, err := summayOfTxsAndCheck(preBlock, block, utxoView, reward3, reward1, reward2,fork)
+	summay, err := summayOfTxsAndCheck(preBlock, block, utxoView, reward3, reward1, reward2, fork)
 	if err != nil {
 		return err
 	}
@@ -1516,8 +1515,8 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 	return err
 }
 
-func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount, 
-	infos map[uint32]*cross.EntangleTxInfo,fork bool) {
+func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
+	infos map[uint32]*cross.EntangleTxInfo, fork bool) {
 	for _, v := range infos {
 		item := &cross.EntangleItem{
 			EType: v.ExTxType,
@@ -1527,13 +1526,13 @@ func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmou
 			ExTxType: item.EType,
 			Amount:   new(big.Int).Set(item.Value),
 		})
-		cross.PreCalcEntangleAmount(item, keepedInfo,fork)
+		cross.PreCalcEntangleAmount(item, keepedInfo, fork)
 		summay.EntangleAmount += item.Value.Int64()
 	}
 }
 
 func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint, subsidy,
-	 pool1Amount, pool2Amount int64,fork bool) (*KeepedInfoSummay, error) {
+	pool1Amount, pool2Amount int64, fork bool) (*KeepedInfoSummay, error) {
 	var totalIn, totalOut, amount1 int64
 	summay := &KeepedInfoSummay{
 		KeepedAmountInBlock: cross.KeepedAmount{
@@ -1568,7 +1567,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			// summay all txout
 			einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 			if einfos != nil {
-				handleSummayEntangle(summay, keepInfo, einfos,fork)
+				handleSummayEntangle(summay, keepInfo, einfos, fork)
 			}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value
