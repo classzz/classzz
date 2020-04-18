@@ -332,7 +332,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbLoadEntangleState(dbTx, pHeight, pHash)
-	if block.Height() == chaincfg.MainNetParams.BeaconHeight {
+	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
 		fmt.Println("block.Height() == chaincfg.MainNetParams.BeaconHeight", block.Height(), chaincfg.MainNetParams.BeaconHeight)
 		eState = cross.NewEntangleState()
 	}

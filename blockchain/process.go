@@ -186,6 +186,8 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	prevHash := &blockHeader.PrevBlock
 	prevHashExists, err := b.blockExists(prevHash)
 	prevHeader, _ := b.HeaderByHash(prevHash)
+	prevHeight, _ := b.BlockHeightByHash(prevHash)
+	blockHeight := prevHeight + 1
 
 	if err != nil {
 		return false, false, err
@@ -208,14 +210,15 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, true, nil
 	}
 
-	if b.chainParams.EntangleHeight < block.Height() && b.chainParams.BeaconHeight > block.Height() {
+	if b.chainParams.EntangleHeight < blockHeight && b.chainParams.BeaconHeight > blockHeight {
 		if err := b.CheckBlockEntangle(block); err != nil {
 			return false, false, err
 		}
 	}
 
 	// Beacon Verify
-	if b.chainParams.BeaconHeight < block.Height() {
+	fmt.Println("block.Height()", blockHeight)
+	if b.chainParams.BeaconHeight <= blockHeight {
 		if err := b.CheckBlockBeaconRegistration(block); err != nil {
 			return false, false, err
 		}

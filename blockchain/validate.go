@@ -425,7 +425,7 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 	}
 
 	if block.MsgBlock().Header.CIDRoot != cross.Hash(eState) {
-		return errors.New("CIDRoot in the block")
+		return errors.New("CIDRoot not in the block")
 	}
 
 	return nil
