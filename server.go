@@ -488,9 +488,9 @@ func (sp *serverPeer) OnVersion(_ *peer.Peer, msg *wire.MsgVersion) *wire.MsgRej
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
-	if strings.Contains(msg.UserAgent, "classzz:1.0") || strings.Contains(msg.UserAgent, "classzz:0.0") {
-		srvrLog.Debugf("Rejecting peer %s for running < v2.0.0", sp.Peer)
-		reason := fmt.Sprint("Not >= v2.0.0 node")
+	if strings.Contains(msg.UserAgent, "classzz:2.0") || strings.Contains(msg.UserAgent, "classzz:1.0") || strings.Contains(msg.UserAgent, "classzz:0.0") {
+		srvrLog.Debugf("Rejecting peer %s for running < v3.0.0", sp.Peer)
+		reason := fmt.Sprint("Not >= v3.0.0 node")
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
@@ -731,7 +731,6 @@ func (sp *serverPeer) processComapactBlock(msg *wire.MsgCmpctBlock) {
 	// relay immediately to other peers without validating the block but
 	// only if the header is valid.
 
-
 	msgBlock, err := sp.server.txMemPool.DecodeCompressedBlock(msg)
 	if err != nil {
 		peerLog.Debugf("Error decoding cmpctblock %v from %v: %v",
@@ -742,7 +741,7 @@ func (sp *serverPeer) processComapactBlock(msg *wire.MsgCmpctBlock) {
 	script := msgBlock.Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, sp.server.chainParams)
 	//(b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, height int32, addr czzutil.Address) error
-	if err := sp.server.chain.CheckBlockHeaderContext(&msg.Header,addrs[0]); err != nil {   //传下  block
+	if err := sp.server.chain.CheckBlockHeaderContext(&msg.Header, addrs[0]); err != nil { //传下  block
 		peerLog.Debugf("Ignoring cmpctblock %v from %v -- "+
 			"invalid header: %v", msg.Header.BlockHash(), sp, err)
 		sp.server.syncManager.QueueBlockError(&targetHash, sp.Peer)
