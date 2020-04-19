@@ -2,7 +2,7 @@
 
 
 ## 1. Interface Introduction
-Pledge mining is through the lighthouse address pledge registration at the same time, add associated miner address, each pledge allows to add 5 miner address, pledge 100 w czz as a ladder, the difficulty will be reduced with the height of the ladder (each ladder, will reduce the current difficulty 10 times ,100 w =10 times ,200 ww =20 times).
+Pledge mining is through the lighthouse address pledge registration at the same time, add associated miner address, each pledge allows to add 4 miner address, pledge 100 w czz as a ladder, the difficulty will be reduced with the height of the ladder (each ladder, will reduce the current difficulty 10 times ,100 w =10 times ,200 ww =20 times).
 
 In the near future there will be pledge information modification, increase pledge, cancel pledge and so on
 
@@ -40,7 +40,7 @@ The above explanation:
 > fee				Cross-chain charges
 > keeptime		The locking time of the amount exchanged (used to burn coins, which becomes a free amount when outdated)
 > whitelist			Cross-chain off-chain asset whitelist address
-> coinbaseaddress	Mining address for pledge mining (5)
+> coinbaseaddress	Mining address for pledge mining (4)
 
 
 #### hex created
