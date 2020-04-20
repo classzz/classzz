@@ -4072,12 +4072,13 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
-
+	fmt.Println("target1", hex.Dump(targetN.Bytes()))
 	if template.Height > s.cfg.ChainParams.BeaconHeight {
 		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
 		script := template.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
+		fmt.Println("target4", hex.Dump(targetN.Bytes()))
 	}
 
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
