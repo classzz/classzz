@@ -2,7 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"encoding/hex"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/czzutil"
 
@@ -507,7 +506,6 @@ func isValidAsset(atype, assetAll uint32) bool {
 }
 
 func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
-	fmt.Println("target2", hex.Dump(target.Bytes()))
 	found_t := 0
 	StakingAmount := big.NewInt(0)
 	for _, eninfo := range eState.EnInfos {
@@ -528,6 +526,5 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 	if target.Cmp(params.PowLimit) > 0 {
 		target.Set(params.PowLimit)
 	}
-	fmt.Println("target3", hex.Dump(target.Bytes()))
 	return target
 }
