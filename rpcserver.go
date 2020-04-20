@@ -4073,20 +4073,16 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
-	fmt.Println("target1", hex.Dump(targetN.Bytes()))
 	if template.Height > s.cfg.ChainParams.BeaconHeight {
 		rsState := s.cfg.Chain.GetEntangleVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
 		script := template.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
-		fmt.Println("target4", hex.Dump(targetN.Bytes()))
 	}
 
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
 
-	fmt.Println("BlockHash", BlockHash.String(), "c.Nonce", c.Nonce)
-	fmt.Println("Target", hex.EncodeToString(Target.Bytes()), "result", hex.EncodeToString(result))
 	resultB := new(big.Int).SetBytes(result)
 	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
@@ -4102,13 +4098,11 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	// is block using the same rules as blocks coming from other
 	// nodes.  This will in turn relay it to the network like normal.
 	_, err := s.cfg.SyncMgr.SubmitBlock(block, blockchain.BFNone)
-	fmt.Println("SubmitBlock err", err)
 	if err != nil {
 		return fmt.Sprintf("rejected: 1 %s", err.Error()), nil
 	}
 
 	err = s.gbtWorkState.updateBlockTemplate(s, false)
-	fmt.Println("updateBlockTemplate err", err)
 	if err != nil {
 		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
