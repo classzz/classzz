@@ -331,7 +331,8 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 	// Check for duplicate transaction inputs.
 	existingTxOut := make(map[wire.OutPoint]struct{})
-	for _, txIn := range msgTx.TxIn {
+	for i, txIn := range msgTx.TxIn {
+		fmt.Println(i)
 		if _, exists := existingTxOut[txIn.PreviousOutPoint]; exists {
 			return ruleError(ErrDuplicateTxInputs, "transaction "+
 				"contains duplicate inputs")
