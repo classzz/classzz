@@ -931,7 +931,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.BeaconHeight > nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
 
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork)
