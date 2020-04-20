@@ -4102,11 +4102,13 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	// is block using the same rules as blocks coming from other
 	// nodes.  This will in turn relay it to the network like normal.
 	_, err := s.cfg.SyncMgr.SubmitBlock(block, blockchain.BFNone)
+	fmt.Println("SubmitBlock err", err)
 	if err != nil {
 		return fmt.Sprintf("rejected: 1 %s", err.Error()), nil
 	}
 
 	err = s.gbtWorkState.updateBlockTemplate(s, false)
+	fmt.Println("updateBlockTemplate err", err)
 	if err != nil {
 		return fmt.Sprintf("rejected: 2 %s", err.Error()), nil
 	}
