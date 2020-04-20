@@ -434,7 +434,7 @@ func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 
 func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
 	height := block.Height()
-	if chainParams.EntangleHeight >= height && chainParams.BeaconHeight < height {
+	if chainParams.EntangleHeight >= height {
 		return nil
 	}
 	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
