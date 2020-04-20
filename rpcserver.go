@@ -4070,6 +4070,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
+	fmt.Println("BlockHash", BlockHash.String())
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	fmt.Println("target1", hex.Dump(targetN.Bytes()))
