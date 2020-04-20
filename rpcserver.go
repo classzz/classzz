@@ -4070,7 +4070,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 
 	BlockHash := template.Block.Header.BlockHashNoNonce()
-	fmt.Println("BlockHash", BlockHash.String(), "c.Nonce", c.Nonce)
+
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	fmt.Println("target1", hex.Dump(targetN.Bytes()))
@@ -4085,6 +4085,8 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	//Target := blockchain.CompactToBig(template.Block.Header.Bits)
 	Target := targetN
 
+	fmt.Println("BlockHash", BlockHash.String(), "c.Nonce", c.Nonce)
+	fmt.Println("Target", hex.EncodeToString(Target.Bytes()), "result", hex.EncodeToString(result))
 	resultB := new(big.Int).SetBytes(result)
 	if resultB.Cmp(Target) >= 0 {
 		return nil, &btcjson.RPCError{
