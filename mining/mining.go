@@ -945,6 +945,7 @@ mempoolLoop:
 
 	if g.chainParams.BeaconHeight <= nextBlockHeight && eState != nil {
 		CIDRoot = cross.Hash(eState)
+		fmt.Println("mining CIDRoot:", CIDRoot.String())
 	}
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
