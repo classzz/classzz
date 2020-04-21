@@ -320,7 +320,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("dbAddTxIndexEntries", "block height", block.Height())
 	// As an optimization, allocate a single slice big enough to hold all
 	// of the serialized transaction index entries for the block and
 	// serialize them directly into the slice.  Then, pass the appropriate
