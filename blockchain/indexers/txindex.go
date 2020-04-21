@@ -5,16 +5,12 @@
 package indexers
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/blockchain"
-	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/database"
-	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
@@ -208,33 +204,6 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	return nil
 }
 
-func BeaconRegistrationTx(tx *czzutil.Tx, eState *cross.EntangleState) error {
-	var err error
-	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-	if br == nil {
-		return nil
-	}
-
-	if eState != nil {
-		err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-	}
-	return err
-}
-
-func dbEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
-
-	var err error
-	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, block.Height())
-	buf.Write(block.Hash().CloneBytes())
-
-	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
-	return err
-}
-
 // dbRemoveTxIndexEntry uses an existing database transaction to remove the most
 // recent transaction index entry for the given hash.
 func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
@@ -320,7 +289,6 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	if err != nil {
 		return err
 	}
-	fmt.Println("dbAddTxIndexEntries", "block height", block.Height())
 	// As an optimization, allocate a single slice big enough to hold all
 	// of the serialized transaction index entries for the block and
 	// serialize them directly into the slice.  Then, pass the appropriate
@@ -329,13 +297,6 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 	offset := 0
 	serializedValues := make([]byte, len(block.Transactions())*txEntrySize)
 
-	pHeight := block.Height() - 1
-	pHash := block.MsgBlock().Header.PrevBlock
-	eState := dbLoadEntangleState(dbTx, pHeight, pHash)
-	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
-		fmt.Println("block.Height() == chaincfg.MainNetParams.BeaconHeight", block.Height(), chaincfg.MainNetParams.BeaconHeight)
-		eState = cross.NewEntangleState()
-	}
 	for i, tx := range block.Transactions() {
 		putTxIndexEntry(serializedValues[offset:], blockID, txLocs[i])
 		endOffset := offset + txEntrySize
@@ -351,48 +312,9 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 			return err
 		}
 
-		// BeaconRegistration
-		err = BeaconRegistrationTx(tx, eState)
-		if err != nil {
-			return err
-		}
-
 		offset += txEntrySize
 	}
 
-	if eState != nil {
-		err = dbEntangleStateEntry(dbTx, block, eState)
-		if err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-}
-
-//load
-func dbLoadEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
-
-	es := cross.NewEntangleState()
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, height)
-	buf.Write(hash.CloneBytes())
-	var err error
-	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	if entangleBucket == nil {
-		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
-			return nil
-		}
-	}
-	value := entangleBucket.Get(buf.Bytes())
-	if value != nil {
-		err := rlp.DecodeBytes(value, es)
-		if err != nil {
-			return nil
-		}
-		return es
-	}
 	return nil
 }
 

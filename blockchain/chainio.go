@@ -8,7 +8,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/cross"
+	"github.com/classzz/classzz/rlp"
 	"math/big"
 	"sync"
 	"time"
@@ -510,6 +512,79 @@ func dbPutSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash, stxos [
 func dbRemoveSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash) error {
 	spendBucket := dbTx.Metadata().Bucket(spendJournalBucketName)
 	return spendBucket.Delete(blockHash[:])
+}
+
+func dbBeaconRegistrationTx(dbTx database.Tx, block *czzutil.Block) error {
+
+	pHeight := block.Height() - 1
+	pHash := block.MsgBlock().Header.PrevBlock
+	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
+	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
+		eState = cross.NewEntangleState()
+	}
+
+	for _, tx := range block.Transactions() {
+		var err error
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+		if br == nil {
+			continue
+		}
+
+		if eState != nil {
+			err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	if eState != nil {
+		var err error
+		err = dbPutEntangleStateEntry(dbTx, block, eState)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+//load
+func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
+
+	es := cross.NewEntangleState()
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, height)
+	buf.Write(hash.CloneBytes())
+	var err error
+	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+	if entangleBucket == nil {
+		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
+			return nil
+		}
+	}
+	value := entangleBucket.Get(buf.Bytes())
+	if value != nil {
+		err := rlp.DecodeBytes(value, es)
+		if err != nil {
+			return nil
+		}
+		return es
+	}
+	return nil
+}
+
+func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
+	var err error
+	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, block.Height())
+	buf.Write(block.Hash().CloneBytes())
+
+	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
+	return err
 }
 
 // -----------------------------------------------------------------------------
