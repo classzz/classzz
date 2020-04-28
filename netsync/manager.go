@@ -1424,20 +1424,14 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 // important because the sync manager controls which blocks are needed and how
 // the fetching should proceed.
 func (sm *SyncManager) blockHandler() {
-	//stallTicker := time.NewTicker(stallSampleInterval)
-	//defer stallTicker.Stop()
-	//var bmsgs []*blockMsg
+	stallTicker := time.NewTicker(stallSampleInterval)
+	defer stallTicker.Stop()
 
 out:
 	for {
 		select {
-		//case <-stallTicker.C:
-		//	sm.handleStallSample()
-		//
-		//	if len(bmsgs) > 0 {
-		//		sm.handleBlocksMsg(bmsgs)
-		//		bmsgs = []*blockMsg{}
-		//	}
+		case <-stallTicker.C:
+			sm.handleStallSample()
 
 		case m := <-sm.msgChan:
 			switch msg := m.(type) {
