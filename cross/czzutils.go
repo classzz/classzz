@@ -522,7 +522,6 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
 		target = big.NewInt(0).Mul(target, result1)
 	}
-	fmt.Println("StakingAmount", StakingAmount.Uint64(), "address", address.String())
 	if target.Cmp(params.PowLimit) > 0 {
 		target.Set(params.PowLimit)
 	}
