@@ -466,13 +466,15 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 			"higher than max of %064x", targetN, powLimit)
 		return ruleError(ErrUnexpectedDifficulty, str)
 	}
-	if state != nil {
-		targetN = cross.ComputeDiff(params, targetN, addr, state)
-	}
-	target := targetN
-	// The block hash must be less than the claimed target unless the flag
-	// to avoid proof of work checks is set.
+
 	if !flags.HasFlag(BFNoPoWCheck) {
+		if state != nil {
+			targetN = cross.ComputeDiff(params, targetN, addr, state)
+		}
+		target := targetN
+		// The block hash must be less than the claimed target unless the flag
+		// to avoid proof of work checks is set.
+
 		// The block hash must be less than the claimed target.
 		hash := header.BlockHashNoNonce()
 		param := &consensus.CzzConsensusParam{
@@ -487,16 +489,6 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 	}
 
 	return nil
-}
-
-// CheckProofOfWork ensures the block header bits which indicate the target
-// difficulty is in min/max range and that the block hash is less than the
-// target difficulty as claimed.
-func CheckProofOfWork(block *czzutil.Block, powLimit *big.Int, Params *chaincfg.Params, rsState *cross.EntangleState) error {
-
-	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
-	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, Params)
-	return checkProofOfWork(Params, &block.MsgBlock().Header, powLimit, BFNone, rsState, addrs[0])
 }
 
 // CountSigOps returns the number of signature operations for all transaction
