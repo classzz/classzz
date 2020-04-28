@@ -6,7 +6,6 @@ package netsync
 
 import (
 	"container/list"
-	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -724,25 +723,25 @@ func (sm *SyncManager) current() bool {
 	return true
 }
 
-func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
-
-	rand.Seed(time.Now().UnixNano())
-	index := rand.Intn(len(bmsgs))
-	block := bmsgs[index].block
-	powLimit := sm.chainParams.PowLimit
-
-	rsState := sm.chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height()-1, block.MsgBlock().Header.PrevBlock)
-	fmt.Println("handleBlocksMsg", block.Height()-1, block.MsgBlock().Header.PrevBlock, rsState)
-	err := blockchain.CheckProofOfWork(block, powLimit, sm.chainParams, rsState)
-	if err != nil {
-		sm.syncPeer.Disconnect()
-		return
-	}
-
-	for _, bmsg := range bmsgs {
-		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
-	}
-}
+//func (sm *SyncManager) handleBlocksMsg(bmsgs []*blockMsg) {
+//
+//	rand.Seed(time.Now().UnixNano())
+//	index := rand.Intn(len(bmsgs))
+//	block := bmsgs[index].block
+//	powLimit := sm.chainParams.PowLimit
+//
+//	rsState := sm.chain.GetEntangleVerify().Cache.LoadEntangleState(block.Height()-1, block.MsgBlock().Header.PrevBlock)
+//	fmt.Println("handleBlocksMsg", block.Height()-1, block.MsgBlock().Header.PrevBlock, rsState)
+//	err := blockchain.CheckProofOfWork(block, powLimit, sm.chainParams, rsState)
+//	if err != nil {
+//		sm.syncPeer.Disconnect()
+//		return
+//	}
+//
+//	for _, bmsg := range bmsgs {
+//		sm.handleBlockMsg(bmsg, blockchain.BFNoPoWCheck)
+//	}
+//}
 
 // handleBlockMsg handles block messages from all peers.
 func (sm *SyncManager) handleBlockMsg(bmsg *blockMsg, behaviorFlags blockchain.BehaviorFlags) {
@@ -1425,20 +1424,20 @@ func (sm *SyncManager) limitMap(m map[chainhash.Hash]struct{}, limit int) {
 // important because the sync manager controls which blocks are needed and how
 // the fetching should proceed.
 func (sm *SyncManager) blockHandler() {
-	stallTicker := time.NewTicker(stallSampleInterval)
-	defer stallTicker.Stop()
-	var bmsgs []*blockMsg
+	//stallTicker := time.NewTicker(stallSampleInterval)
+	//defer stallTicker.Stop()
+	//var bmsgs []*blockMsg
 
 out:
 	for {
 		select {
-		case <-stallTicker.C:
-			sm.handleStallSample()
-
-			if len(bmsgs) > 0 {
-				sm.handleBlocksMsg(bmsgs)
-				bmsgs = []*blockMsg{}
-			}
+		//case <-stallTicker.C:
+		//	sm.handleStallSample()
+		//
+		//	if len(bmsgs) > 0 {
+		//		sm.handleBlocksMsg(bmsgs)
+		//		bmsgs = []*blockMsg{}
+		//	}
 
 		case m := <-sm.msgChan:
 			switch msg := m.(type) {
@@ -1455,21 +1454,21 @@ out:
 				}
 
 			case *blockMsg:
-				if sm.syncPeer == nil {
-					sm.handleBlockMsg(msg, blockchain.BFNone)
-					bmsgs = []*blockMsg{}
-
-				} else if int64(sm.SyncHeight())-int64(sm.chain.BestSnapshot().Height) < int64(checkProofOfWorkNum) {
-
-					sm.handleBlockMsg(msg, blockchain.BFNone)
-					bmsgs = []*blockMsg{}
-				} else {
-					bmsgs = append(bmsgs, msg)
-					if len(bmsgs) == checkProofOfWorkNum {
-						sm.handleBlocksMsg(bmsgs)
-						bmsgs = []*blockMsg{}
-					}
-				}
+				//if sm.syncPeer == nil {
+				sm.handleBlockMsg(msg, blockchain.BFNone)
+				//	bmsgs = []*blockMsg{}
+				//
+				//} else if int64(sm.SyncHeight())-int64(sm.chain.BestSnapshot().Height) < int64(checkProofOfWorkNum) {
+				//
+				//	sm.handleBlockMsg(msg, blockchain.BFNone)
+				//	bmsgs = []*blockMsg{}
+				//} else {
+				//	bmsgs = append(bmsgs, msg)
+				//	if len(bmsgs) == checkProofOfWorkNum {
+				//		sm.handleBlocksMsg(bmsgs)
+				//		bmsgs = []*blockMsg{}
+				//	}
+				//}
 				if msg.reply != nil {
 					msg.reply <- struct{}{}
 				}
