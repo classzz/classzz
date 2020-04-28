@@ -59,9 +59,7 @@ const (
 
 	// stallSampleInterval the interval at which we will check to see if our
 	// sync has stalled.
-	stallSampleInterval = 30 * time.Second
-
-	checkProofOfWorkNum = 128
+	stallSampleInterval = 15 * time.Second
 )
 
 // zeroHash is the zero value hash (all zeros).  It is defined as a convenience.
