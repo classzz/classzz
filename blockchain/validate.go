@@ -813,7 +813,7 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 
-	flags := BFNone
+	flags := BFNoPoWCheck
 
 	tip := b.bestChain.Tip()
 
