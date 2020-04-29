@@ -36,5 +36,5 @@ _testmain.go
 
 .idea/
 *.iml
-/consensus/algorithm.go
-/consensus/consensus.go
+#/consensus/algorithm.gox
+#/consensus/consensus.go

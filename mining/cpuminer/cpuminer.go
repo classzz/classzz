@@ -5,7 +5,6 @@
 package cpuminer
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -328,8 +327,6 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	lastGenerated := time.Now()
 	lastTxUpdate := m.g.TxSource().LastUpdated()
 	hashesCompleted := uint64(0)
-
-	fmt.Println("miner block", "hash", param.Info.HeadHash.String(), "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
 
 	for {
 		select {
