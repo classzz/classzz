@@ -119,7 +119,6 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 		}
 
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
-			fmt.Println(bhash.String())
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
 					e := fmt.Sprintf("doge Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)
@@ -213,7 +212,6 @@ func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big
 		}
 
 		if bhash, err := client.GetBlockHash(int64(height)); err == nil {
-			fmt.Println(bhash.String())
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(ExtTxHash), dblock) {
 					e := fmt.Sprintf("ltc Transactionis %s not in BlockHeight %v", string(ExtTxHash), height)

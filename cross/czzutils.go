@@ -488,7 +488,6 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 
 /////////////////////////////////////////////////////////////////
 func ValidAssetType(utype uint32) bool {
-	fmt.Println(utype, LhAssetBTC, utype&LhAssetBTC)
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
 		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
 		return true

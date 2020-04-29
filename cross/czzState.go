@@ -2,20 +2,14 @@ package cross
 
 import (
 	"bytes"
-	"io"
-	"log"
-
-	// "encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"math/big"
 	"sort"
 
-	// "github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
-	// "github.com/classzz/classzz/czzec"
-	// "github.com/classzz/classzz/txscript"
-	// "github.com/classzz/classzz/wire"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
 )
@@ -24,7 +18,7 @@ type EntangleState struct {
 	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
 	PoolAmount1   *big.Int
-	PoolAmount2   *big.Int	
+	PoolAmount2   *big.Int
 	CurExchangeID uint64
 }
 type StoreBeaconAddress struct {
@@ -359,19 +353,20 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 
 	return new(big.Int).Sub(amount, res), nil
 }
-func (es *EntangleState) SetInitPoolAmount(amount1,amount2 *big.Int) {
-	es.PoolAmount1,es.PoolAmount2 = new(big.Int).Set(amount1),new(big.Int).Set(amount2)
+func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
+	es.PoolAmount1, es.PoolAmount2 = new(big.Int).Set(amount1), new(big.Int).Set(amount2)
 }
-func (es *EntangleState) AddPoolAmount(amount1,amount2 *big.Int) {
-	es.PoolAmount1 = new(big.Int).Add(es.PoolAmount1,amount1)
-	es.PoolAmount2 = new(big.Int).Add(es.PoolAmount2,amount2)
+func (es *EntangleState) AddPoolAmount(amount1, amount2 *big.Int) {
+	es.PoolAmount1 = new(big.Int).Add(es.PoolAmount1, amount1)
+	es.PoolAmount2 = new(big.Int).Add(es.PoolAmount2, amount2)
 }
 func (es *EntangleState) SubPoolAmount1(amount *big.Int) {
-	es.PoolAmount1 = new(big.Int).Sub(es.PoolAmount1,amount)
+	es.PoolAmount1 = new(big.Int).Sub(es.PoolAmount1, amount)
 }
 func (es *EntangleState) SubPoolAmount2(amount *big.Int) {
-	es.PoolAmount2 = new(big.Int).Sub(es.PoolAmount2,amount)
+	es.PoolAmount2 = new(big.Int).Sub(es.PoolAmount2, amount)
 }
+
 //////////////////////////////////////////////////////////////////////
 func redeemAmount(addr string, amount *big.Int) error {
 	if amount.Sign() > 0 {
@@ -439,7 +434,7 @@ func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
 	return all
 }
 
-// 最低质押额度＝ 100 万 CZZ ＋（累计跨链买入 CZZ －累计跨链卖出 CZZ）x 汇率比
+//Minimum pledge amount = 1 million CZZ + (cumulative cross-chain buying CZZ - cumulative cross-chain selling CZZ) x exchange rate ratio
 func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
 	lh := es.getBeaconAddress(eid)
 	if lh != nil {
@@ -558,6 +553,6 @@ func NewEntangleState() *EntangleState {
 		EnEntitys:     make(map[uint64]UserEntangleInfos),
 		CurExchangeID: 0,
 		PoolAmount1:   big.NewInt(0),
-		PoolAmount2:   big.NewInt(0),	
+		PoolAmount2:   big.NewInt(0),
 	}
 }
