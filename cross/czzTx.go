@@ -485,9 +485,23 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 		keepInfo.Add(kk)
 	}
 	if item.EType == ExpandedTxEntangle_Doge {
-		item.Value = toDoge(amount, item.Value,fork)
+		if fork {
+			item.Value = toDoge2(amount, item.Value)
+		} else {
+			item.Value = toDoge(amount, item.Value,fork)
+		}
 	} else if item.EType == ExpandedTxEntangle_Ltc {
-		item.Value = toLtc(amount, item.Value,fork)
+		if fork {
+			item.Value = toLtc2(amount, item.Value)
+		} else {
+			item.Value = toLtc(amount, item.Value,fork)
+		}
+	} else if item.EType == ExpandedTxEntangle_Btc {
+		item.Value = toBtc(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bch {
+		item.Value = toBchOrBsv(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bsv {
+		item.Value = toBchOrBsv(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
