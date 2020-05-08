@@ -878,14 +878,34 @@ func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPai
 	return nil, nil
 }
 func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, 
-	lastScriptInfo []byte,fork bool) bool {
+	lastScriptInfo []byte,fork bool,state *EntangleState) bool {
 	if items == nil || len(items) == 0 {
 		return false
 	}
-	if keepInfo, err := KeepedAmountFromScript(lastScriptInfo); err != nil {
-		return false
-	} else {
-		all := pool.Amount[0].Int64() + tx.TxOut[1].Value
-		return !EnoughAmount(all, items, keepInfo,fork)
+	types := []uint32{}
+	for _,v := range items {
+		types = append(types,uint32(v.EType))
 	}
+	var keepInfo *KeepedAmount
+	var err error
+	if fork {
+		keepInfo = getKeepInfosFromState(state,types)
+	} else {
+		keepInfo, err = KeepedAmountFromScript(lastScriptInfo)
+	}
+	if err != nil || keepInfo == nil {
+		return false
+	}
+	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
+	return !EnoughAmount(all, items, keepInfo,fork)
+}
+func getKeepInfosFromState(state *EntangleState,types []uint32) *KeepedAmount {
+	keepinfo := &KeepedAmount{Items: []KeepedItem{}}
+	for _,v := range types {
+		keepinfo.Add(KeepedItem{
+			ExTxType:	ExpandedTxType(v),
+			Amount:		state.getAllEntangleAmount(v),
+		})
+	}
+	return keepinfo
 }

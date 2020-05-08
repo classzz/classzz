@@ -844,7 +844,7 @@ mempoolLoop:
 		}
 		if isEntangleTx {
 			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork); ok {
+			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork,eState); ok {
 				isOver = true
 				continue
 			}
