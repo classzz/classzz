@@ -882,13 +882,14 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	if items == nil || len(items) == 0 {
 		return false
 	}
-	types := []uint32{}
-	for _,v := range items {
-		types = append(types,uint32(v.EType))
-	}
+	
 	var keepInfo *KeepedAmount
 	var err error
 	if fork {
+		types := []uint32{}
+		for _,v := range items {
+			types = append(types,uint32(v.EType))
+		}
 		keepInfo = getKeepInfosFromState(state,types)
 	} else {
 		keepInfo, err = KeepedAmountFromScript(lastScriptInfo)
@@ -900,6 +901,9 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 	return !EnoughAmount(all, items, keepInfo,fork)
 }
 func getKeepInfosFromState(state *EntangleState,types []uint32) *KeepedAmount {
+	if state == nil {
+		return nil
+	}
 	keepinfo := &KeepedAmount{Items: []KeepedItem{}}
 	for _,v := range types {
 		keepinfo.Add(KeepedItem{
