@@ -8,7 +8,7 @@ import (
 	"github.com/classzz/classzz/rlp"
 	"math/big"
 	"strings"
-
+	"io"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -153,6 +153,32 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	// 	return errors.New(e)
 	// }
 	return nil
+}
+
+type BurnTxInfo struct {
+	ExTxType  ExpandedTxType
+	Address	  string
+	LightID   uint64
+	Amount    *big.Int
+}
+func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		LightID     uint64
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.LightID = eb.LightID
+	return nil
+}
+func (es *BurnTxInfo) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		LightID     uint64
+	}
+	return rlp.Encode(w, &Store1{
+		LightID:     es.LightID,
+	})
 }
 
 type KeepedItem struct {
@@ -342,7 +368,81 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	}
 	return nil, NoBeaconRegistration
 }
+func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
+	// make sure at least one txout in OUTPUT
+	var es *BurnTxInfo
 
+	var pk []byte
+	var err error
+	// get to address
+	if len(tx.TxOut) < 2 {
+		return nil,errors.New("BurnTx Must be at least two TxOut")
+	} 
+	if r,err := IsSendToZeroAddress(tx.TxOut[1].PkScript); err != nil {
+		return nil,err
+	} else {
+		if !r {
+			return nil,errors.New("not send to burn address")
+		} 
+	}
+	// get from address
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	txout := tx.TxOut[0]
+	info, err := BurnInfoFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
+	}
+
+	info.Amount = big.NewInt(tx.TxOut[1].Value)
+	info.Address = address.String()
+
+	if es != nil {
+		return es, nil
+	}
+	return nil, NoBeaconRegistration
+}
+func IsSendToZeroAddress(PkScript []byte) (bool,error) {
+	if pks,err := txscript.ParsePkScript(PkScript); err != nil {
+		return false,err
+	} else {
+		if pks.Class() != txscript.PubKeyHashTy {
+			return false ,errors.New("Burn tx only support PubKeyHashTy")
+		}
+		if t,err := pks.Address(&chaincfg.MainNetParams);err != nil {
+			return false, err
+		} else {
+			toAddress := new(big.Int).SetBytes(t.ScriptAddress()).Uint64()
+			if toAddress != 0 {
+				return false,nil
+			}
+		}
+	}
+	return true,nil
+}
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -352,13 +452,21 @@ func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	err = info.Parse(data)
 	return info, err
 }
-
 func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	data, err := txscript.GetBeaconRegistrationData(script)
 	if err != nil {
 		return nil, err
 	}
 	info := &BeaconAddressInfo{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+func BurnInfoFromScript(script []byte) (*BurnTxInfo,error) {
+	data, err := txscript.GetBurnInfoData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &BurnTxInfo{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }

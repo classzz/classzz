@@ -58,6 +58,7 @@ const (
 	NullDataTy                       // Empty data-only (provably prunable).
 	EntangleTy                       //
 	BeaconRegistrationTy
+	BurnTy
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -71,6 +72,7 @@ var scriptClassToName = []string{
 	NullDataTy:           "nulldata",
 	EntangleTy:           "EntangleTy",
 	BeaconRegistrationTy: "BeaconRegistrationTy",
+	BurnTy:				  "BurnTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -189,7 +191,12 @@ func isBeaconRegistrationTy(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN195
 }
-
+func isBurnTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN196
+}
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
@@ -214,6 +221,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return EntangleTy
 	} else if isBeaconRegistrationTy(pops) {
 		return BeaconRegistrationTy
+	} else if isBurnTy(pops) {
+		return BurnTy
 	}
 	return NonStandardTy
 }
@@ -244,7 +253,13 @@ func IsBeaconRegistrationTy(script []byte) bool {
 	}
 	return isBeaconRegistrationTy(pops)
 }
-
+func IsBurnTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isBurnTy(pops)
+}
 // expectedInputs returns the number of arguments required by a script.
 // If the script is of unknown type such that the number can not be determined
 // then -1 is returned. We are an internal function and thus assume that class
@@ -549,11 +564,20 @@ func GetBeaconRegistrationData(script []byte) ([]byte, error) {
 		return nil, err
 	}
 	if !isBeaconRegistrationTy(pops) {
-		return nil, errors.New("not Entangle info type")
+		return nil, errors.New("not BeaconRegistration type")
 	}
 	return pops[2].data, nil
 }
-
+func GetBurnInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isBurnTy(pops) {
+		return nil, errors.New("not Burn info type")
+	}
+	return pops[2].data, nil
+}
 // PushedData returns an array of byte slices containing any pushed data found
 // in the passed script.  This includes OP_0, but not OP_1 - OP_16.
 func PushedData(script []byte) ([][]byte, error) {
