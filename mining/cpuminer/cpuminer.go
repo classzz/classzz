@@ -5,6 +5,7 @@
 package cpuminer
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -327,6 +328,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	lastGenerated := time.Now()
 	lastTxUpdate := m.g.TxSource().LastUpdated()
 	hashesCompleted := uint64(0)
+	fmt.Println("miner block", "hash", param.Info.HeadHash.String(), "number", blockHeight, "target", hex.EncodeToString(param.Info.Target.Bytes()), "workSum", blockchain.CalcWork(header.Bits))
 
 	for {
 		select {
@@ -464,7 +466,7 @@ func (m *CPUMiner) miningWorkerController() {
 	// workers for generating blocks.
 	var runningWorkers []chan struct{}
 	launchWorkers := func(numWorkers uint32) {
-		for i := uint32(0); i < 1; i++ {
+		for i := uint32(0); i < numWorkers; i++ {
 			quit := make(chan struct{})
 			runningWorkers = append(runningWorkers, quit)
 

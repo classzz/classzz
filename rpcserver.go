@@ -141,6 +141,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"createrawtransaction":         handleCreateRawTransaction,
 	"createrawentangletransaction": handleCreateRawEntangleTransaction,
 	"beaconregistration":           handleBeaconRegistration,
+	"addbeaconpledge":              handleAddBeaconPledge,
 	"debuglevel":                   handleDebugLevel,
 	"decoderawtransaction":         handleDecodeRawTransaction,
 	"decodescript":                 handleDecodeScript,
@@ -865,6 +866,14 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		return nil, err
 	}
 	return mtxHex, nil
+}
+
+func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	//c := cmd.(*btcjson.AddBeaconPledgeCmd)
+
+	//
+
+	return nil, nil
 }
 
 // handleDebugLevel handles debuglevel commands.

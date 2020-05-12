@@ -124,6 +124,14 @@ type BeaconRegistrationCmd struct {
 	LockTime           *int64
 }
 
+// CreatePledgeRegistrationCmd defines JSON-RPC command.
+type AddBeaconPledgeCmd struct {
+	Inputs             []TransactionInput
+	BeaconRegistration BeaconRegistrationOut
+	Amounts            *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime           *int64
+}
+
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""

@@ -829,7 +829,6 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		}
 	}
 
-	fmt.Println("nextBlockHeight======", nextBlockHeight)
 	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
 	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return nil, nil, errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
