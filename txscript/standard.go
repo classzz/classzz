@@ -61,6 +61,12 @@ const (
 	BurnTy
 )
 
+type BeaconClass byte
+
+const (
+	AddBeaconPledgeTy BeaconClass = iota // None of the recognized forms.
+)
+
 // scriptClassToName houses the human-readable strings which describe each
 // script class.
 var scriptClassToName = []string{
@@ -493,6 +499,16 @@ func BeaconRegistrationScript(data []byte) ([]byte, error) {
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN195).AddData(data).Script()
+}
+
+// AddBeaconPledge impl in
+func AddBeaconPledgeScript(data []byte, classCode BeaconClass) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in
