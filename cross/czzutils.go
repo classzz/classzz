@@ -202,6 +202,12 @@ type BeaconAddressInfo struct {
 	CoinBaseAddress []string         `json:"CoinBaseAddress"`
 }
 
+type AddBeaconPledge struct {
+	Address       string   `json:"address"`
+	ToAddress     []byte   `json:"to_address"`
+	StakingAmount *big.Int `json:"staking_amount"`
+}
+
 func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
 	found := false
 	for _, val := range lh.EnAssets {

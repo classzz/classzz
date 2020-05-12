@@ -109,6 +109,12 @@ type BeaconRegistrationOut struct {
 	CoinBaseAddress []string
 }
 
+type AddBeaconPledgeOut struct {
+	Address       string
+	ToAddress     []byte
+	StakingAmount float64
+}
+
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawEntangleTransactionCmd struct {
 	Inputs       []TransactionInput
@@ -126,10 +132,10 @@ type BeaconRegistrationCmd struct {
 
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
 type AddBeaconPledgeCmd struct {
-	Inputs             []TransactionInput
-	BeaconRegistration BeaconRegistrationOut
-	Amounts            *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime           *int64
+	Inputs          []TransactionInput
+	AddBeaconPledge AddBeaconPledgeOut
+	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime        *int64
 }
 
 func (w *WhiteUnit) toAddress() string {
@@ -150,6 +156,12 @@ type BeaconAddressInfo struct {
 	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit     `json:"white_list"`
 	CoinBaseAddress []string         `json:"CoinBaseAddress"`
+}
+
+type AddBeaconPledge struct {
+	Address       string   `json:"address"`
+	ToAddress     []byte   `json:"to_address"`
+	StakingAmount *big.Int `json:"staking_amount"`
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
