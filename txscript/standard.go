@@ -72,7 +72,7 @@ var scriptClassToName = []string{
 	NullDataTy:           "nulldata",
 	EntangleTy:           "EntangleTy",
 	BeaconRegistrationTy: "BeaconRegistrationTy",
-	BurnTy:				  "BurnTy",
+	BurnTy:               "BurnTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -103,7 +103,6 @@ func isPubkeyHash(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_DATA_20 &&
 		pops[3].opcode.value == OP_EQUALVERIFY &&
 		pops[4].opcode.value == OP_CHECKSIG
-
 }
 
 // isMultiSig returns true if the passed script is a multisig transaction, false
@@ -260,6 +259,7 @@ func IsBurnTy(script []byte) bool {
 	}
 	return isBurnTy(pops)
 }
+
 // expectedInputs returns the number of arguments required by a script.
 // If the script is of unknown type such that the number can not be determined
 // then -1 is returned. We are an internal function and thus assume that class
@@ -288,6 +288,8 @@ func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
 		return asSmallInt(pops[0].opcode) + 1
 
 	case EntangleTy:
+		fallthrough
+	case BeaconRegistrationTy:
 		fallthrough
 	case NullDataTy:
 		fallthrough
@@ -483,7 +485,7 @@ func EntangleScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
 }
 
-// EntangleScript impl in
+// BeaconRegistration impl in
 func BeaconRegistrationScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
@@ -578,6 +580,7 @@ func GetBurnInfoData(script []byte) ([]byte, error) {
 	}
 	return pops[2].data, nil
 }
+
 // PushedData returns an array of byte slices containing any pushed data found
 // in the passed script.  This includes OP_0, but not OP_1 - OP_16.
 func PushedData(script []byte) ([][]byte, error) {

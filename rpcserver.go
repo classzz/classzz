@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -904,12 +905,12 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		return nil, internalRPCError(err.Error(), context)
 	}
 
-	bri := &btcjson.AddBeaconPledge{
+	abp := &btcjson.AddBeaconPledge{
 		ToAddress:     c.AddBeaconPledge.ToAddress,
 		StakingAmount: big.NewInt(int64(satoshi)),
 	}
 
-	BeaconByte, err := rlp.EncodeToBytes(bri)
+	BeaconByte, err := rlp.EncodeToBytes(abp)
 	scriptInfo, err := txscript.BeaconRegistrationScript(BeaconByte)
 	if err != nil {
 		return nil, err
@@ -2713,6 +2714,25 @@ func handleGetInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	return ret, nil
 }
 
+type StateList []*btcjson.StateInfoChainResult
+
+func (list StateList) Len() int {
+	return len(list)
+}
+
+func (list StateList) Less(i, j int) bool {
+	if list[i].ExchangeID < list[j].ExchangeID {
+		return true
+	}
+	return false
+}
+
+func (list StateList) Swap(i, j int) {
+	var temp *btcjson.StateInfoChainResult = list[i]
+	list[i] = list[j]
+	list[j] = temp
+}
+
 // handleGetInfo implements the getinfo command. We only return the fields
 // that are not related to wallet functionality.
 func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
@@ -2735,7 +2755,11 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 		}
 		infos = append(infos, infor)
 	}
-	return infos, nil
+
+	pList := StateList(infos)
+	sort.Sort(pList)
+
+	return pList, nil
 }
 
 func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
