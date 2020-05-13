@@ -59,12 +59,13 @@ const (
 	EntangleTy                       //
 	BeaconRegistrationTy
 	BurnTy
+	BeaconTy
 )
 
-type BeaconClass byte
+type BeaconClass [1]byte
 
-const (
-	AddBeaconPledgeTy BeaconClass = iota // None of the recognized forms.
+var (
+	AddBeaconPledgeTy = [1]byte{0}
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -79,6 +80,7 @@ var scriptClassToName = []string{
 	EntangleTy:           "EntangleTy",
 	BeaconRegistrationTy: "BeaconRegistrationTy",
 	BurnTy:               "BurnTy",
+	BeaconTy:             "BeaconTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -196,17 +198,26 @@ func isBeaconRegistrationTy(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN195
 }
+
 func isBurnTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN196
 }
+
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN194
+}
+
+func isBeaconTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN197
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -228,6 +239,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return BeaconRegistrationTy
 	} else if isBurnTy(pops) {
 		return BurnTy
+	} else if isBeaconTy(pops) {
+		return BeaconTy
 	}
 	return NonStandardTy
 }
@@ -258,6 +271,7 @@ func IsBeaconRegistrationTy(script []byte) bool {
 	}
 	return isBeaconRegistrationTy(pops)
 }
+
 func IsBurnTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -508,7 +522,7 @@ func AddBeaconPledgeScript(data []byte, classCode BeaconClass) ([]byte, error) {
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(classCode[:]).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in
@@ -586,6 +600,18 @@ func GetBeaconRegistrationData(script []byte) ([]byte, error) {
 	}
 	return pops[2].data, nil
 }
+
+func GetBeaconRegistrationData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isBeaconRegistrationTy(pops) {
+		return nil, errors.New("not BeaconRegistration type")
+	}
+	return pops[2].data, nil
+}
+
 func GetBurnInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
