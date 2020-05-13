@@ -57,9 +57,7 @@ var helpDescsEnUS = map[string]string{
 	"createrawtransaction--result0":       "Hex-encoded bytes of the serialized transaction",
 
 	// CreateRawTransactionCmd help.
-	"createrawentangletransaction--synopsis": "Returns a new transaction spending the provided inputs and sending to the provided addresses.\n" +
-		"The transaction inputs are not signed in the created transaction.\n" +
-		"The signrawtransaction RPC command provided by wallet must be used to sign the resulting transaction.",
+	"createrawentangletransaction--synopsis":      "",
 	"createrawentangletransaction-inputs":         "The inputs to the transaction",
 	"createrawentangletransaction-amounts":        "JSON object with the destination addresses as keys and amounts as values",
 	"createrawentangletransaction-amounts--key":   "address",
@@ -69,9 +67,7 @@ var helpDescsEnUS = map[string]string{
 	"createrawentangletransaction--result0":       "Hex-encoded bytes of the serialized transaction",
 
 	// handleBeaconRegistration help.
-	"beaconregistration--synopsis": "Returns a new transaction spending the provided inputs and sending to the provided addresses.\n" +
-		"The transaction inputs are not signed in the created transaction.\n" +
-		"The signrawtransaction RPC command provided by wallet must be used to sign the resulting transaction.",
+	"beaconregistration--synopsis":      "",
 	"beaconregistration-inputs":         "The inputs to the transaction",
 	"beaconregistration-amounts":        "JSON object with the destination addresses as keys and amounts as values",
 	"beaconregistration-amounts--key":   "address",
@@ -79,6 +75,16 @@ var helpDescsEnUS = map[string]string{
 	"beaconregistration-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
 	"beaconregistration-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
 	"beaconregistration--result0":       "Hex-encoded bytes of the serialized transaction",
+
+	// handleBeaconRegistration help.
+	"addbeaconpledge--synopsis":      "",
+	"addbeaconpledge-inputs":         "The inputs to the transaction",
+	"addbeaconpledge-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"addbeaconpledge-amounts--key":   "address",
+	"addbeaconpledge-amounts--value": "n.nnn",
+	"addbeaconpledge-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"addbeaconpledge-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"addbeaconpledge--result0":       "Hex-encoded bytes of the serialized transaction",
 
 	// ScriptSig help.
 	"scriptsig-asm": "Disassembly of the script",

@@ -869,6 +869,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 	return mtxHex, nil
 }
 
+// handleAddBeaconPledge
 func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.AddBeaconPledgeCmd)
 
@@ -911,7 +912,7 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abp)
-	scriptInfo, err := txscript.BeaconRegistrationScript(BeaconByte)
+	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte, txscript.AddBeaconPledgeTy)
 	if err != nil {
 		return nil, err
 	}

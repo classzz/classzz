@@ -115,6 +115,19 @@ type AddBeaconPledgeOut struct {
 	StakingAmount float64
 }
 
+// NewCreateRawTransactionCmd returns a new instance which can be used to issue
+// a createrawtransaction JSON-RPC command.
+//
+// Amounts are in BTC.
+func NewAddBeaconPledgeOut(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut,
+	lockTime *int64) *BeaconRegistrationCmd {
+	return &BeaconRegistrationCmd{
+		Inputs:             inputs,
+		BeaconRegistration: beaconRegistrationOut,
+		LockTime:           lockTime,
+	}
+}
+
 // CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
 type CreateRawEntangleTransactionCmd struct {
 	Inputs       []TransactionInput
@@ -195,12 +208,27 @@ func NewCreateRawEntangleTransactionCmd(inputs []TransactionInput, entangleOuts 
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewBeaconRegistrationCmd(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut,
+func NewBeaconRegistrationCmd(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut, amounts *map[string]float64,
 	lockTime *int64) *BeaconRegistrationCmd {
 	return &BeaconRegistrationCmd{
 		Inputs:             inputs,
 		BeaconRegistration: beaconRegistrationOut,
+		Amounts:            amounts,
 		LockTime:           lockTime,
+	}
+}
+
+// NewCreateRawTransactionCmd returns a new instance which can be used to issue
+// a createrawtransaction JSON-RPC command.
+//
+// Amounts are in BTC.
+func NewAddBeaconPledgeCmd(inputs []TransactionInput, addBeaconPledgeOut AddBeaconPledgeOut, amounts *map[string]float64,
+	lockTime *int64) *AddBeaconPledgeCmd {
+	return &AddBeaconPledgeCmd{
+		Inputs:          inputs,
+		AddBeaconPledge: addBeaconPledgeOut,
+		Amounts:         amounts,
+		LockTime:        lockTime,
 	}
 }
 
@@ -962,6 +990,7 @@ func init() {
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("createrawentangletransaction", (*CreateRawEntangleTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
+	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)
