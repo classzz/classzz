@@ -5,16 +5,16 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/classzz/classzz/rlp"
-	"math/big"
-	"strings"
-	"io"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
+	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"io"
+	"math/big"
+	"strings"
 )
 
 type ExpandedTxType uint8
@@ -39,9 +39,9 @@ var (
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
 	}
-	baseUnit = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit  = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1 = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit  = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1 = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 )
 
@@ -72,10 +72,11 @@ func (ii *EntangleItem2) Clone() *EntangleItem2 {
 		EType: ii.EType,
 		Value: new(big.Int).Set(ii.Value),
 		Addr:  ii.Addr,
-		BID:   ii.BID, 
+		BID:   ii.BID,
 	}
 	return item
 }
+
 // entangle tx Sequence infomation
 type EtsInfo struct {
 	FeePerKB int64
@@ -124,7 +125,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	//data = data[4:]
 	info.ExTxType = ExpandedTxType(data[0])
 	switch info.ExTxType {
-	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc:
+	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
 		break
 	default:
 		return errors.New("Parse failed,not entangle tx")
@@ -156,14 +157,15 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 }
 
 type BurnTxInfo struct {
-	ExTxType  ExpandedTxType
-	Address	  string
-	LightID   uint64
-	Amount    *big.Int
+	ExTxType ExpandedTxType
+	Address  string
+	LightID  uint64
+	Amount   *big.Int
 }
+
 func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
 	type Store1 struct {
-		LightID     uint64
+		LightID uint64
 	}
 	var eb Store1
 	if err := s.Decode(&eb); err != nil {
@@ -174,10 +176,10 @@ func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
 }
 func (es *BurnTxInfo) EncodeRLP(w io.Writer) error {
 	type Store1 struct {
-		LightID     uint64
+		LightID uint64
 	}
 	return rlp.Encode(w, &Store1{
-		LightID:     es.LightID,
+		LightID: es.LightID,
 	})
 }
 
@@ -376,14 +378,14 @@ func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 	var err error
 	// get to address
 	if len(tx.TxOut) < 2 {
-		return nil,errors.New("BurnTx Must be at least two TxOut")
-	} 
-	if r,err := IsSendToZeroAddress(tx.TxOut[1].PkScript); err != nil {
-		return nil,err
+		return nil, errors.New("BurnTx Must be at least two TxOut")
+	}
+	if r, err := IsSendToZeroAddress(tx.TxOut[1].PkScript); err != nil {
+		return nil, err
 	} else {
 		if !r {
-			return nil,errors.New("not send to burn address")
-		} 
+			return nil, errors.New("not send to burn address")
+		}
 	}
 	// get from address
 	if tx.TxIn[0].Witness == nil {
@@ -425,23 +427,23 @@ func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 	}
 	return nil, NoBeaconRegistration
 }
-func IsSendToZeroAddress(PkScript []byte) (bool,error) {
-	if pks,err := txscript.ParsePkScript(PkScript); err != nil {
-		return false,err
+func IsSendToZeroAddress(PkScript []byte) (bool, error) {
+	if pks, err := txscript.ParsePkScript(PkScript); err != nil {
+		return false, err
 	} else {
 		if pks.Class() != txscript.PubKeyHashTy {
-			return false ,errors.New("Burn tx only support PubKeyHashTy")
+			return false, errors.New("Burn tx only support PubKeyHashTy")
 		}
-		if t,err := pks.Address(&chaincfg.MainNetParams);err != nil {
+		if t, err := pks.Address(&chaincfg.MainNetParams); err != nil {
 			return false, err
 		} else {
 			toAddress := new(big.Int).SetBytes(t.ScriptAddress()).Uint64()
 			if toAddress != 0 {
-				return false,nil
+				return false, nil
 			}
 		}
 	}
-	return true,nil
+	return true, nil
 }
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
@@ -461,7 +463,7 @@ func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
-func BurnInfoFromScript(script []byte) (*BurnTxInfo,error) {
+func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
 	data, err := txscript.GetBurnInfoData(script)
 	if err != nil {
 		return nil, err
@@ -502,8 +504,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, 
-	lastScriptInfo []byte,fork bool) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+	lastScriptInfo []byte, fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -528,12 +530,12 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := EnoughAmount(reserve1, items, keepInfo,fork); !ok {
+	if ok := EnoughAmount(reserve1, items, keepInfo, fork); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
 
 	for i := range items {
-		calcExchange(items[i], &reserve1, keepInfo, true,fork)
+		calcExchange(items[i], &reserve1, keepInfo, true, fork)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
 			return errors.New("Make Meger tx failed,err: " + err.Error())
@@ -551,16 +553,16 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	return nil
 }
-func MakeMergerCoinbaseTx2(height *big.Int,tx *wire.MsgTx,items []*EntangleItem2,state *EntangleState) error {
+func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*EntangleItem2, state *EntangleState) error {
 	if len(items) == 0 || state == nil {
 		return nil
 	}
 	for i := range items {
-		amount,err := state.AddEntangleItem(items[i].Addr.EncodeAddress(),uint32(items[i].EType),
-		items[i].BID,height,items[i].Value)
+		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint32(items[i].EType),
+			items[i].BID, height, items[i].Value)
 		if err != nil {
 			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
-			i,items[i].BID,items[i].EType,items[i].Value.String(),err.Error()))
+				i, items[i].BID, items[i].EType, items[i].Value.String(), err.Error()))
 		}
 		pkScript, err1 := txscript.PayToAddrScript(items[i].Addr)
 		if err1 != nil {
@@ -579,7 +581,7 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 	return nil
 }
 
-func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change,fork bool) {
+func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change, fork bool) {
 	amount := big.NewInt(0)
 	cur := keepInfo.GetValue(item.EType)
 	if cur != nil {
@@ -596,13 +598,13 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 		if fork {
 			item.Value = toDoge2(amount, item.Value)
 		} else {
-			item.Value = toDoge(amount, item.Value,fork)
+			item.Value = toDoge(amount, item.Value, fork)
 		}
 	} else if item.EType == ExpandedTxEntangle_Ltc {
 		if fork {
 			item.Value = toLtc2(amount, item.Value)
 		} else {
-			item.Value = toLtc(amount, item.Value,fork)
+			item.Value = toLtc(amount, item.Value, fork)
 		}
 	} else if item.EType == ExpandedTxEntangle_Btc {
 		item.Value = toBtc(amount, item.Value)
@@ -614,15 +616,15 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 	*reserve = *reserve - item.Value.Int64()
 }
 
-func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount,fork bool) {
+func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount, fork bool) {
 	var vv int64
-	calcExchange(item, &vv, keepInfo, true,fork)
+	calcExchange(item, &vv, keepInfo, true, fork)
 }
 
-func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount,fork bool) bool {
+func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount, fork bool) bool {
 	amount := reserve
 	for _, v := range items {
-		calcExchange(v.Clone(), &amount, keepInfo, false,fork)
+		calcExchange(v.Clone(), &amount, keepInfo, false, fork)
 	}
 	return amount > 0
 }
@@ -710,11 +712,11 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
-func toDoge(entangled, needed *big.Int,fork bool) *big.Int {
+func toDoge(entangled, needed *big.Int, fork bool) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
-	var du *big.Int = nil 
+	var du *big.Int = nil
 	if fork {
 		du = new(big.Int).Set(dogeUnit)
 	} else {
@@ -800,13 +802,13 @@ func toLtc2(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
-func toLtc(entangled, needed *big.Int,fork bool) *big.Int {
+func toLtc(entangled, needed *big.Int, fork bool) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
 	}
 	rate := big.NewFloat(0.0008)
 	base := big.NewFloat(0.0001)
-	var du *big.Int = nil 
+	var du *big.Int = nil
 	if fork {
 		du = new(big.Int).Set(baseUnit)
 	} else {
@@ -985,20 +987,20 @@ func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPai
 
 	return nil, nil
 }
-func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem, 
-	lastScriptInfo []byte,fork bool,state *EntangleState) bool {
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+	lastScriptInfo []byte, fork bool, state *EntangleState) bool {
 	if items == nil || len(items) == 0 {
 		return false
 	}
-	
+
 	var keepInfo *KeepedAmount
 	var err error
 	if fork {
 		types := []uint32{}
-		for _,v := range items {
-			types = append(types,uint32(v.EType))
+		for _, v := range items {
+			types = append(types, uint32(v.EType))
 		}
-		keepInfo = getKeepInfosFromState(state,types)
+		keepInfo = getKeepInfosFromState(state, types)
 	} else {
 		keepInfo, err = KeepedAmountFromScript(lastScriptInfo)
 	}
@@ -1006,17 +1008,17 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIte
 		return false
 	}
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
-	return !EnoughAmount(all, items, keepInfo,fork)
+	return !EnoughAmount(all, items, keepInfo, fork)
 }
-func getKeepInfosFromState(state *EntangleState,types []uint32) *KeepedAmount {
+func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 	if state == nil {
 		return nil
 	}
 	keepinfo := &KeepedAmount{Items: []KeepedItem{}}
-	for _,v := range types {
+	for _, v := range types {
 		keepinfo.Add(KeepedItem{
-			ExTxType:	ExpandedTxType(v),
-			Amount:		state.getAllEntangleAmount(v),
+			ExTxType: ExpandedTxType(v),
+			Amount:   state.getAllEntangleAmount(v),
 		})
 	}
 	return keepinfo

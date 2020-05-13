@@ -79,6 +79,12 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 		return ev.verifyDogeTx(ExtTxHash, Vout, amount, height)
 	case ExpandedTxEntangle_Ltc:
 		return ev.verifyLtcTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Btc:
+		return ev.verifyLtcTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Bsv:
+		return ev.verifyLtcTx(ExtTxHash, Vout, amount, height)
+	case ExpandedTxEntangle_Bch:
+		return ev.verifyLtcTx(ExtTxHash, Vout, amount, height)
 	}
 	return nil, nil
 }
