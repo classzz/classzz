@@ -407,7 +407,9 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 
 func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
 
-	eState := b.CurrentEstate()
+	hash := block.MsgBlock().Header.PrevBlock
+	height := block.Height()
+	eState := b.GetEstateByHashAndHeight(hash, height-1)
 
 	for _, tx := range block.Transactions() {
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())

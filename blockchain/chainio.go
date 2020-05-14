@@ -1648,6 +1648,11 @@ func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	return eState
 }
 
+func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
+	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
+	return eState
+}
+
 // BlockByHeight returns the block at the given height in the main chain.
 //
 // This function is safe for concurrent access.
