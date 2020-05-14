@@ -220,6 +220,14 @@ func isBeaconTy(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_UNKNOWN197
 }
 
+func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
+	// simple judge
+
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN197
+}
+
 // scriptType returns the type of the script being inspected from the known
 // standard types.
 func typeOfScript(pops []parsedOpcode) ScriptClass {
@@ -601,7 +609,7 @@ func GetBeaconRegistrationData(script []byte) ([]byte, error) {
 	return pops[2].data, nil
 }
 
-func GetBeaconRegistrationData(script []byte) ([]byte, error) {
+func GetAddBeaconPledgeData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
 		return nil, err
