@@ -396,11 +396,10 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	return nil
 }
 
-func (b *BlockChain) CheckBeacon(block *czzutil.Block) error {
+func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 
 	hash := block.MsgBlock().Header.PrevBlock
-	height := block.Height()
-	eState := b.GetEstateByHashAndHeight(hash, height-1)
+	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
 
 	for _, tx := range block.Transactions() {
 
