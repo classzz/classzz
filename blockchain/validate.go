@@ -372,15 +372,6 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx, eState *cross.EntangleState) error {
-	// tmp the cache is nil
-	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
@@ -405,24 +396,39 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	return nil
 }
 
-func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
+func (b *BlockChain) CheckBeacon(block *czzutil.Block) error {
 
 	hash := block.MsgBlock().Header.PrevBlock
 	height := block.Height()
 	eState := b.GetEstateByHashAndHeight(hash, height-1)
 
 	for _, tx := range block.Transactions() {
+
+		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-		if br == nil {
-			continue
+		if br != nil {
+
+			_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
+
+			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				return err
+			}
 		}
 
-		if err := b.checkBeaconRegistrationTx(tx, eState); err != nil {
-			return err
-		}
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx())
+		if bp != nil {
+			_, err := b.GetEntangleVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
 
-		if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
-			return err
+			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				return err
+			}
 		}
 	}
 

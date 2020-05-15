@@ -739,7 +739,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			return err
 		}
 
-		err = dbBeaconRegistrationTx(dbTx, block)
+		err = dbBeaconTx(dbTx, block)
 		if err != nil {
 			return err
 		}

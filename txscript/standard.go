@@ -5,6 +5,7 @@
 package txscript
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -223,9 +224,15 @@ func isBeaconTy(pops []parsedOpcode) bool {
 func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
 	// simple judge
 
-	return len(pops) >= 2 &&
+	if len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN197
+		pops[1].opcode.value == OP_UNKNOWN197 &&
+		pops[2].opcode.value == OP_1 &&
+		bytes.Equal(pops[3].data, AddBeaconPledgeTy[:]) {
+		return true
+	}
+
+	return false
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -614,10 +621,10 @@ func GetAddBeaconPledgeData(script []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !isBeaconRegistrationTy(pops) {
-		return nil, errors.New("not BeaconRegistration type")
+	if !isAddBeaconPledgeTy(pops) {
+		return nil, errors.New("not AddBeaconPledge type")
 	}
-	return pops[2].data, nil
+	return pops[4].data, nil
 }
 
 func GetBurnInfoData(script []byte) ([]byte, error) {

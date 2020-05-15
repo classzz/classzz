@@ -31,6 +31,7 @@ const (
 var (
 	NoEntangle           = errors.New("no entangle info in transcation")
 	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
+	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -370,6 +371,54 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	}
 	return nil, NoBeaconRegistration
 }
+
+func IsAddBeaconPledgeTx(tx *wire.MsgTx) (*AddBeaconPledge, error) {
+	// make sure at least one txout in OUTPUT
+	var bp *AddBeaconPledge
+
+	var pk []byte
+	var err error
+
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	txout := tx.TxOut[0]
+	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		bp = info
+	}
+
+	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
+	info.Address = address.String()
+
+	if bp != nil {
+		return bp, nil
+	}
+	return nil, NoAddBeaconPledge
+}
+
 func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BurnTxInfo
@@ -427,6 +476,7 @@ func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 	}
 	return nil, NoBeaconRegistration
 }
+
 func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	if pks, err := txscript.ParsePkScript(PkScript); err != nil {
 		return false, err
@@ -454,6 +504,8 @@ func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	err = info.Parse(data)
 	return info, err
 }
+
+//  Beacon
 func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	data, err := txscript.GetBeaconRegistrationData(script)
 	if err != nil {
@@ -463,6 +515,17 @@ func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
+
+func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
+	data, err := txscript.GetAddBeaconPledgeData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &AddBeaconPledge{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
 func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
 	data, err := txscript.GetBurnInfoData(script)
 	if err != nil {

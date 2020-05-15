@@ -514,7 +514,7 @@ func dbRemoveSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash) erro
 	return spendBucket.Delete(blockHash[:])
 }
 
-func dbBeaconRegistrationTx(dbTx database.Tx, block *czzutil.Block) error {
+func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
@@ -525,16 +525,26 @@ func dbBeaconRegistrationTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	for _, tx := range block.Transactions() {
 		var err error
+		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-		if br == nil {
-			continue
+		if br != nil {
+			if eState != nil {
+				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+			}
+			if err != nil {
+				return err
+			}
 		}
 
-		if eState != nil {
-			err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-		}
-		if err != nil {
-			return err
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx())
+		if bp != nil {
+			if eState != nil {
+				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 

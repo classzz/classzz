@@ -378,3 +378,61 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 
 	return br, nil
 }
+
+func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
+
+	bp, _ := IsAddBeaconPledgeTx(tx)
+	if bp == nil {
+		return nil, NoAddBeaconPledge
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
+	if _, ok := eState.EnInfos[bp.Address]; ok {
+		return nil, ErrRepeatRegister
+	}
+
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(bp.ToAddress, ev.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != bp.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	toAddress := big.NewInt(0).SetBytes(bp.ToAddress).Uint64()
+	if toAddress < 10 || toAddress > 99 {
+		e := fmt.Sprintf("toAddress err")
+		return nil, errors.New(e)
+	}
+
+	if bp.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	for _, v := range eState.EnInfos {
+		if bytes.Equal(v.ToAddress, bp.ToAddress) {
+			e := fmt.Sprintf("ToAddress err")
+			return nil, errors.New(e)
+		}
+	}
+
+	return bp, nil
+}
