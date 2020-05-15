@@ -489,8 +489,8 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 			Target:   target,
 		}
 		if err := consensus.VerifyBlockSeal(param, header.Nonce); err != nil {
-			str := fmt.Sprintf("block hash of %064x is higher than "+
-				"expected max of %064x", header.BlockHash(), target)
+			str := fmt.Sprintf("block hash of %s is higher than "+
+				"expected max of %064x", header.BlockHash().String(), target)
 			return ruleError(ErrHighHash, str)
 		}
 	}
