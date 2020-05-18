@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/czzutil"
 
@@ -30,6 +31,8 @@ var (
 	ErrNoUserReg          = errors.New("not entangle user in the beaconAddress")
 	ErrNoUserAsset        = errors.New("user no entangle asset in the beaconAddress")
 	ErrNotEnouthBurn      = errors.New("not enough burn amount in beaconAddress")
+	ErrNotMatchUser       = errors.New("cann't find user address")
+	ErrBurnProof          = errors.New("burn proof info not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
 )
 
@@ -111,7 +114,7 @@ func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 	}
 	return res
 }
-func (b *BurnInfos) addBurnItem(height uint64, amount *big.Int) {
+func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
 		Height:      height,
@@ -126,7 +129,7 @@ func (b *BurnInfos) addBurnItem(height uint64, amount *big.Int) {
 	}
 	if !found {
 		b.Items = append(b.Items, item)
-		b.BurnAmount = new(big.Int).Add(b.BurnAmount, amount)
+		b.BurnAmount = new(big.Int).Add(b.BurnAmount, outAmount)
 	}
 }
 func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
@@ -143,6 +146,17 @@ func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
 			v.RedeemState = 1
 		}
 	}
+}
+func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
+	b.BurnAmount = new(big.Int).Sub(b.BurnAmount, amount)
+}
+func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+			return nil
+		}
+	}
+	return ErrBurnProof
 }
 
 type TimeOutBurnInfo struct {
@@ -474,6 +488,14 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, atype
 		}
 	}
 }
+func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo) error {
+	for _, entity := range *ee {
+		if entity.AssetType == info.Atype {
+			entity.BurnAmount.verifyProof(info.Height, info.Amount)
+		}
+	}
+	return ErrNoUserAsset
+}
 
 /////////////////////////////////////////////////////////////////
 func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo) {
@@ -490,6 +512,15 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 		res = res.Add(res, v.getAll())
 	}
 	return res
+}
+
+type BurnProofInfo struct {
+	LightID uint64
+	Height  uint64
+	Amount  *big.Int
+	Address czzutil.Address
+	Atype   uint32
+	TxHash  []byte
 }
 
 /////////////////////////////////////////////////////////////////
