@@ -1017,7 +1017,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 
 func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int32) error {
 
-	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
 	} else if br != nil {
@@ -1033,10 +1033,10 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// AddBeaconPledge
-	bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx())
+	bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if bp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
-	} else if br != nil {
+	} else if bp != nil {
 
 		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
 			return errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")

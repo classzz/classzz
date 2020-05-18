@@ -285,7 +285,7 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 
 func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
 
-	br, _ := IsBeaconRegistrationTx(tx)
+	br, _ := IsBeaconRegistrationTx(tx, ev.Params)
 	if br == nil {
 		return nil, NoBeaconRegistration
 	}
@@ -381,7 +381,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 
 func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
 
-	bp, _ := IsAddBeaconPledgeTx(tx)
+	bp, _ := IsAddBeaconPledgeTx(tx, ev.Params)
 	if bp == nil {
 		return nil, NoAddBeaconPledge
 	}
@@ -391,8 +391,14 @@ func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 		return nil, errors.New(e)
 	}
 
-	if _, ok := eState.EnInfos[bp.Address]; ok {
-		return nil, ErrRepeatRegister
+	var bai *BeaconAddressInfo
+	if bai = eState.EnInfos[bp.Address]; bai == nil {
+		return nil, ErrNotRepeatRegister
+	}
+
+	if bp.Address != bai.Address {
+		e := fmt.Sprintf("AddBeaconPledge Address !=  BeaconRegistration Address")
+		return nil, errors.New(e)
 	}
 
 	addr, err := czzutil.NewLegacyAddressPubKeyHash(bp.ToAddress, ev.Params)
@@ -427,11 +433,16 @@ func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 		return nil, errors.New(e)
 	}
 
+	temp := true
 	for _, v := range eState.EnInfos {
 		if bytes.Equal(v.ToAddress, bp.ToAddress) {
-			e := fmt.Sprintf("ToAddress err")
-			return nil, errors.New(e)
+			temp = false
 		}
+	}
+
+	if temp {
+		e := fmt.Sprintf("not ToAddress err")
+		return nil, errors.New(e)
 	}
 
 	return bp, nil

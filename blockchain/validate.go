@@ -404,7 +404,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 	for _, tx := range block.Transactions() {
 
 		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), b.chainParams)
 		if br != nil {
 
 			_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
@@ -418,7 +418,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 		}
 
 		// AddBeaconPledge
-		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx())
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), b.chainParams)
 		if bp != nil {
 			_, err := b.GetEntangleVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
 			if err != nil {

@@ -325,7 +325,7 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	return nil, NoEntangle
 }
 
-func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
+func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BeaconAddressInfo
 
@@ -346,7 +346,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 		}
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
@@ -372,7 +372,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx) (*BeaconAddressInfo, error) {
 	return nil, NoBeaconRegistration
 }
 
-func IsAddBeaconPledgeTx(tx *wire.MsgTx) (*AddBeaconPledge, error) {
+func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
 	// make sure at least one txout in OUTPUT
 	var bp *AddBeaconPledge
 
@@ -393,7 +393,7 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx) (*AddBeaconPledge, error) {
 		}
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)

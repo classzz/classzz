@@ -844,7 +844,7 @@ mempoolLoop:
 		}
 		if isEntangleTx {
 			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork,eState); ok {
+			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork, eState); ok {
 				isOver = true
 				continue
 			}
@@ -859,8 +859,17 @@ mempoolLoop:
 		}
 
 		// BeaconRegistrationTx
-		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
-			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
+			if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				return nil, nil, err
+			}
+		}
+
+		// AddBeaconPledgeTx
+		if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				return nil, nil, err
+			}
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,

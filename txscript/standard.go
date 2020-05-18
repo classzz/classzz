@@ -5,7 +5,6 @@
 package txscript
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -61,12 +60,6 @@ const (
 	BeaconRegistrationTy
 	BurnTy
 	BeaconTy
-)
-
-type BeaconClass [1]byte
-
-var (
-	AddBeaconPledgeTy = [1]byte{0}
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -223,12 +216,10 @@ func isBeaconTy(pops []parsedOpcode) bool {
 
 func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
 	// simple judge
-
 	if len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN197 &&
-		pops[2].opcode.value == OP_1 &&
-		bytes.Equal(pops[3].data, AddBeaconPledgeTy[:]) {
+		pops[2].opcode.value == OP_1 {
 		return true
 	}
 
@@ -531,13 +522,13 @@ func BeaconRegistrationScript(data []byte) ([]byte, error) {
 }
 
 // AddBeaconPledge impl in
-func AddBeaconPledgeScript(data []byte, classCode BeaconClass) ([]byte, error) {
+func AddBeaconPledgeScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(classCode[:]).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in
@@ -624,7 +615,7 @@ func GetAddBeaconPledgeData(script []byte) ([]byte, error) {
 	if !isAddBeaconPledgeTy(pops) {
 		return nil, errors.New("not AddBeaconPledge type")
 	}
-	return pops[4].data, nil
+	return pops[3].data, nil
 }
 
 func GetBurnInfoData(script []byte) ([]byte, error) {

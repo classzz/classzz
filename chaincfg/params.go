@@ -494,7 +494,7 @@ var SimNetParams = Params{
 	GenerateSupported:        true,
 
 	EntangleHeight: 120000,
-	BeaconHeight:   420000,
+	BeaconHeight:   12,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 

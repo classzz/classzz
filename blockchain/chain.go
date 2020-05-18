@@ -2349,6 +2349,7 @@ func New(config *Config) (*BlockChain, error) {
 		entangleVerify:      entangleVerify,
 	}
 
+	NetParams = params
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.

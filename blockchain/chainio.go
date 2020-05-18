@@ -90,6 +90,8 @@ var (
 	// byteOrder is the preferred byte order used for serializing numeric
 	// fields for storage in the database.
 	byteOrder = binary.LittleEndian
+
+	NetParams *chaincfg.Params
 )
 
 // errNotInMainChain signifies that a block hash or height that is not in the
@@ -519,14 +521,14 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
-	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
+	if block.Height()+1 == NetParams.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
 
 	for _, tx := range block.Transactions() {
 		var err error
 		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
 			if eState != nil {
 				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
@@ -537,7 +539,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// AddBeaconPledge
-		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx())
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
 		if bp != nil {
 			if eState != nil {
 				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
@@ -587,6 +589,7 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
 
+	fmt.Println("dbPutEntangleStateEntry", "Height", block.Height(), "Hash", block.Hash().String())
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, block.Height())
