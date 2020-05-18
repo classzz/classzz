@@ -56,7 +56,7 @@ const (
 	jsonrpcSemverString = "2.0.0"
 	jsonrpcSemverMajor  = 2
 	jsonrpcSemverMinor  = 0
-	jsonrpcSemverPatch  = 0
+	jsonrpcSemverPatch  = 1
 )
 
 const (
