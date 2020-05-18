@@ -860,6 +860,18 @@ mempoolLoop:
 		if sameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
+		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
+			if info != nil {
+				amount, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
+				if err1 != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"SetBurnAsset: %v", tx.Hash(), err1)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount)
+			}
+		}
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
 			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
@@ -1097,12 +1109,12 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	return items
 }
 func sameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
-	info, e := cross.IsBurnTx(tx)
+	info, e := cross.IsBurnTx(tx.MsgTx())
 	if e != nil || info == nil {
 		return false
 	}
 	for _, v := range txs {
-		if info1, err := cross.IsBurnTx(v); err == nil {
+		if info1, err := cross.IsBurnTx(v.MsgTx()); err == nil {
 			if info1 != nil && info1.Address == info.Address {
 				return true
 			}
