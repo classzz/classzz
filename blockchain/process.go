@@ -186,7 +186,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	prevHash := &blockHeader.PrevBlock
 	prevHashExists, err := b.blockExists(prevHash)
 	prevHeader, _ := b.HeaderByHash(prevHash)
-	prevHeight, _ := b.BlockHeightByHash(prevHash)
+	prevHeight, _ := b.BlockHeightByHashAll(prevHash)
 	blockHeight := prevHeight + 1
 
 	if err != nil {
