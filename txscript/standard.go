@@ -59,6 +59,7 @@ const (
 	EntangleTy                       //
 	BeaconRegistrationTy
 	BurnTy
+	BurnProofTy
 	BeaconTy
 )
 
@@ -80,6 +81,7 @@ var scriptClassToName = []string{
 	EntangleTy:           "EntangleTy",
 	BeaconRegistrationTy: "BeaconRegistrationTy",
 	BurnTy:               "BurnTy",
+	BurnProofTy:          "BurnProofTy",
 	BeaconTy:             "BeaconTy",
 }
 
@@ -205,6 +207,12 @@ func isBurnTy(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN196
 }
+func isBurnProofTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN198
+}
 
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
@@ -249,6 +257,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return BurnTy
 	} else if isBeaconTy(pops) {
 		return BeaconTy
+	} else if isBurnProofTy(pops) {
+		return BurnProofTy
 	}
 	return NonStandardTy
 }
@@ -286,6 +296,13 @@ func IsBurnTy(script []byte) bool {
 		return false
 	}
 	return isBurnTy(pops)
+}
+func IsBurnProofTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isBurnProofTy(pops)
 }
 
 // expectedInputs returns the number of arguments required by a script.
@@ -626,6 +643,16 @@ func GetBurnInfoData(script []byte) ([]byte, error) {
 		return nil, err
 	}
 	if !isBurnTy(pops) {
+		return nil, errors.New("not Burn info type")
+	}
+	return pops[2].data, nil
+}
+func GetBurnProofInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isBurnProofTy(pops) {
 		return nil, errors.New("not Burn info type")
 	}
 	return pops[2].data, nil

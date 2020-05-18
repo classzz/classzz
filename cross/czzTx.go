@@ -5,6 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"math/big"
+	"strings"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -12,9 +16,6 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"io"
-	"math/big"
-	"strings"
 )
 
 type ExpandedTxType uint8
@@ -445,6 +446,32 @@ func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	}
 	return true, nil
 }
+func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
+	// make sure at least one txout in OUTPUT
+	var es *BurnProofInfo
+	var err error
+
+	if len(tx.TxOut) < 2 {
+		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
+	}
+
+	txout := tx.TxOut[0]
+	info, err := BurnProofInfoFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
+	}
+
+	if es != nil {
+		return es, nil
+	}
+	return nil, ErrBurnProof
+}
+
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -472,7 +499,15 @@ func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
-
+func BurnProofInfoFromScript(script []byte) (*BurnProofInfo, error) {
+	data, err := txscript.GetBurnProofInfoData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &BurnProofInfo{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
 func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 	h := uint64(0)
 	for _, v := range items {
