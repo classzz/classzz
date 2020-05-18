@@ -739,10 +739,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			return err
 		}
 
-		err = dbBeaconTx(dbTx, block)
-		if err != nil {
-			return err
-		}
 		// Allow the index manager to call each of the currently active
 		// optional indexes with the block being connected so they can
 		// update themselves accordingly.
@@ -1230,6 +1226,19 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.MsgBlock().Header.PrevBlock
+
+	err := b.db.Update(func(dbTx database.Tx) error {
+		err := dbBeaconTx(dbTx, block)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
 	if parentHash.IsEqual(&b.bestChain.Tip().hash) {
 		// Skip checks if node has already been fully validated.
 		fastAdd = fastAdd || b.index.NodeStatus(node).KnownValid()
@@ -1332,7 +1341,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	// Reorganize the chain.
 	log.Infof("REORGANIZE: Block %v is causing a reorganize.", node.hash)
-	err := b.reorganizeChain(detachNodes, attachNodes)
+	err = b.reorganizeChain(detachNodes, attachNodes)
 
 	// Either getReorganizeNodes or reorganizeChain could have made unsaved
 	// changes to the block index, so flush regardless of whether there was an

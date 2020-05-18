@@ -193,6 +193,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, false, err
 	}
 
+	fmt.Println("GetEstateByHashAndHeight", prevHash.String(), prevHeight)
 	eState := b.GetEstateByHashAndHeight(*prevHash, prevHeight)
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)

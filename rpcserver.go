@@ -912,7 +912,7 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abp)
-	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte, txscript.AddBeaconPledgeTy)
+	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte)
 	if err != nil {
 		return nil, err
 	}
