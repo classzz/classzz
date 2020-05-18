@@ -589,7 +589,6 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
 
-	fmt.Println("dbPutEntangleStateEntry", "Height", block.Height(), "Hash", block.Hash().String())
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, block.Height())
