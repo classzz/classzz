@@ -844,7 +844,7 @@ mempoolLoop:
 		}
 		if isEntangleTx {
 			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork,eState); ok {
+			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork, eState); ok {
 				isOver = true
 				continue
 			}
@@ -857,7 +857,9 @@ mempoolLoop:
 			}
 			entangleAddress[*tx.Hash()] = obj
 		}
-
+		if sameHeightTxForBurn(tx, blockTxns) {
+			continue
+		}
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx()); br != nil {
 			eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
@@ -1093,4 +1095,18 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 		}
 	}
 	return items
+}
+func sameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
+	info, e := cross.IsBurnTx(tx)
+	if e != nil || info == nil {
+		return false
+	}
+	for _, v := range txs {
+		if info1, err := cross.IsBurnTx(v); err == nil {
+			if info1 != nil && info1.Address == info.Address {
+				return true
+			}
+		}
+	}
+	return false
 }
