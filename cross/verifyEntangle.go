@@ -285,7 +285,7 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 
 func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
 
-	br, _ := IsBeaconRegistrationTx(tx)
+	br, _ := IsBeaconRegistrationTx(tx, ev.Params)
 	if br == nil {
 		return nil, NoBeaconRegistration
 	}
@@ -377,4 +377,73 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	}
 
 	return br, nil
+}
+
+func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
+
+	bp, _ := IsAddBeaconPledgeTx(tx, ev.Params)
+	if bp == nil {
+		return nil, NoAddBeaconPledge
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
+	var bai *BeaconAddressInfo
+	if bai = eState.EnInfos[bp.Address]; bai == nil {
+		return nil, ErrNotRepeatRegister
+	}
+
+	if bp.Address != bai.Address {
+		e := fmt.Sprintf("AddBeaconPledge Address !=  BeaconRegistration Address")
+		return nil, errors.New(e)
+	}
+
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(bp.ToAddress, ev.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != bp.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	toAddress := big.NewInt(0).SetBytes(bp.ToAddress).Uint64()
+	if toAddress < 10 || toAddress > 99 {
+		e := fmt.Sprintf("toAddress err")
+		return nil, errors.New(e)
+	}
+
+	if bp.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	temp := true
+	for _, v := range eState.EnInfos {
+		if bytes.Equal(v.ToAddress, bp.ToAddress) {
+			temp = false
+		}
+	}
+
+	if temp {
+		e := fmt.Sprintf("not ToAddress err")
+		return nil, errors.New(e)
+	}
+
+	return bp, nil
 }

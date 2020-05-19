@@ -56,7 +56,7 @@ const (
 	jsonrpcSemverString = "2.0.0"
 	jsonrpcSemverMajor  = 2
 	jsonrpcSemverMinor  = 0
-	jsonrpcSemverPatch  = 0
+	jsonrpcSemverPatch  = 1
 )
 
 const (
@@ -912,7 +912,7 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abp)
-	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte, txscript.AddBeaconPledgeTy)
+	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte)
 	if err != nil {
 		return nil, err
 	}
@@ -1506,7 +1506,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	}
 
 	// Get the block height from chain.
-	blockHeight, err := s.cfg.Chain.BlockHeightByHash(hash)
+	blockHeight, err := s.cfg.Chain.BlockHeightByHashAll(hash)
 	if err != nil {
 		context := "Failed to obtain block height"
 		return nil, internalRPCError(err.Error(), context)

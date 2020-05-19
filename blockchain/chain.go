@@ -739,10 +739,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			return err
 		}
 
-		err = dbBeaconRegistrationTx(dbTx, block)
-		if err != nil {
-			return err
-		}
 		// Allow the index manager to call each of the currently active
 		// optional indexes with the block being connected so they can
 		// update themselves accordingly.
@@ -1230,6 +1226,19 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 	// We are extending the main (best) chain with a new block.  This is the
 	// most common case.
 	parentHash := &block.MsgBlock().Header.PrevBlock
+
+	err := b.db.Update(func(dbTx database.Tx) error {
+		err := dbBeaconTx(dbTx, block)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
 	if parentHash.IsEqual(&b.bestChain.Tip().hash) {
 		// Skip checks if node has already been fully validated.
 		fastAdd = fastAdd || b.index.NodeStatus(node).KnownValid()
@@ -1332,7 +1341,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	// Reorganize the chain.
 	log.Infof("REORGANIZE: Block %v is causing a reorganize.", node.hash)
-	err := b.reorganizeChain(detachNodes, attachNodes)
+	err = b.reorganizeChain(detachNodes, attachNodes)
 
 	// Either getReorganizeNodes or reorganizeChain could have made unsaved
 	// changes to the block index, so flush regardless of whether there was an
@@ -1467,6 +1476,20 @@ func (b *BlockChain) BlockHeightByHash(hash *chainhash.Hash) (int32, error) {
 	node := b.index.LookupNode(hash)
 	if node == nil || !b.bestChain.Contains(node) {
 		str := fmt.Sprintf("block %s is not in the main chain", hash)
+		return 0, errNotInMainChain(str)
+	}
+
+	return node.height, nil
+}
+
+// BlockHeightByHash returns the height of the block with the given hash in the
+// main chain.
+//
+// This function is safe for concurrent access.
+func (b *BlockChain) BlockHeightByHashAll(hash *chainhash.Hash) (int32, error) {
+	node := b.index.LookupNode(hash)
+	if node == nil {
+		str := fmt.Sprintf("block %s is not in the chain", hash)
 		return 0, errNotInMainChain(str)
 	}
 
@@ -2335,6 +2358,7 @@ func New(config *Config) (*BlockChain, error) {
 		entangleVerify:      entangleVerify,
 	}
 
+	NetParams = params
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.

@@ -829,19 +829,8 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		}
 	}
 
-	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-		return nil, nil, errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
-	} else if br != nil {
-
-		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
-			return nil, nil, errors.New("not BeaconRegistration tx TxOut >3 or TxIn >1")
-		}
-
-		eState := mp.cfg.CurrentEstate()
-		if _, err = mp.cfg.EntangleVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
-			return nil, nil, err
-		}
+	if err = mp.validateBeaconTransaction(tx, nextBlockHeight); err != nil {
+		return nil, nil, errors.New("validateBeaconTransaction err: " + err.Error())
 	}
 
 	// Don't allow the transaction if it exists in the main chain and is not
@@ -1024,6 +1013,42 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		len(mp.pool))
 
 	return nil, txD, nil
+}
+
+func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int32) error {
+
+	br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
+	} else if br != nil {
+
+		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
+			return errors.New("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		}
+
+		eState := mp.cfg.CurrentEstate()
+		if _, err := mp.cfg.EntangleVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
+			return err
+		}
+	}
+
+	// AddBeaconPledge
+	bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if bp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
+	} else if bp != nil {
+
+		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
+			return errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")
+		}
+
+		eState := mp.cfg.CurrentEstate()
+		if _, err := mp.cfg.EntangleVerify.VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new

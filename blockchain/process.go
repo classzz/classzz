@@ -186,14 +186,14 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	prevHash := &blockHeader.PrevBlock
 	prevHashExists, err := b.blockExists(prevHash)
 	prevHeader, _ := b.HeaderByHash(prevHash)
-	prevHeight, _ := b.BlockHeightByHash(prevHash)
+	prevHeight, _ := b.BlockHeightByHashAll(prevHash)
 	blockHeight := prevHeight + 1
 
 	if err != nil {
 		return false, false, err
 	}
 
-	eState := b.CurrentEstate()
+	eState := b.GetEstateByHashAndHeight(*prevHash, prevHeight)
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)
 
@@ -218,7 +218,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 
 	// Beacon Verify
 	if b.chainParams.BeaconHeight < blockHeight {
-		if err := b.CheckBlockBeaconRegistration(block); err != nil {
+		if err := b.CheckBeacon(block, prevHeight); err != nil {
 			return false, false, err
 		}
 	}

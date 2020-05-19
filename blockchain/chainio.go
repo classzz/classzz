@@ -90,6 +90,8 @@ var (
 	// byteOrder is the preferred byte order used for serializing numeric
 	// fields for storage in the database.
 	byteOrder = binary.LittleEndian
+
+	NetParams *chaincfg.Params
 )
 
 // errNotInMainChain signifies that a block hash or height that is not in the
@@ -514,27 +516,37 @@ func dbRemoveSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash) erro
 	return spendBucket.Delete(blockHash[:])
 }
 
-func dbBeaconRegistrationTx(dbTx database.Tx, block *czzutil.Block) error {
+func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
-	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
+	if block.Height()+1 == NetParams.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
 
 	for _, tx := range block.Transactions() {
 		var err error
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-		if br == nil {
-			continue
+		// BeaconRegistration
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
+		if br != nil {
+			if eState != nil {
+				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+			}
+			if err != nil {
+				return err
+			}
 		}
 
-		if eState != nil {
-			err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-		}
-		if err != nil {
-			return err
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
+		if bp != nil {
+			if eState != nil {
+				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -576,13 +588,12 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 
 func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
+
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-
 	buf := new(bytes.Buffer)
-
 	binary.Write(buf, binary.LittleEndian, block.Height())
-	buf.Write(block.Hash().CloneBytes())
 
+	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
 	return err
 }
@@ -1644,6 +1655,11 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
+	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
+	return eState
+}
+
+func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
 	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }

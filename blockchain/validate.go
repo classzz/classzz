@@ -372,15 +372,6 @@ func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	return nil
 }
 
-func (b *BlockChain) checkBeaconRegistrationTx(tx *czzutil.Tx, eState *cross.EntangleState) error {
-	// tmp the cache is nil
-	_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	curHeight := int64(0)
 	for _, tx := range block.Transactions() {
@@ -405,22 +396,38 @@ func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
 	return nil
 }
 
-func (b *BlockChain) CheckBlockBeaconRegistration(block *czzutil.Block) error {
+func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 
-	eState := b.CurrentEstate()
+	hash := block.MsgBlock().Header.PrevBlock
+	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
 
 	for _, tx := range block.Transactions() {
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx())
-		if br == nil {
-			continue
+
+		// BeaconRegistration
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), b.chainParams)
+		if br != nil {
+
+			_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
+
+			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				return err
+			}
 		}
 
-		if err := b.checkBeaconRegistrationTx(tx, eState); err != nil {
-			return err
-		}
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), b.chainParams)
+		if bp != nil {
+			_, err := b.GetEntangleVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
 
-		if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
-			return err
+			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -482,8 +489,8 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 			Target:   target,
 		}
 		if err := consensus.VerifyBlockSeal(param, header.Nonce); err != nil {
-			str := fmt.Sprintf("block hash of %064x is higher than "+
-				"expected max of %064x", header.BlockHash(), target)
+			str := fmt.Sprintf("block hash of %s is higher than "+
+				"expected max of %064x", header.BlockHash().String(), target)
 			return ruleError(ErrHighHash, str)
 		}
 	}
