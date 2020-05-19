@@ -72,32 +72,37 @@ func validKeepTime(kt *big.Int) bool {
 }
 
 type BurnItem struct {
-	Amount      *big.Int `json:"amount"` // czz asset amount
+	Amount      *big.Int `json:"amount"`  // czz asset amount
+	RAmount     *big.Int `json:"ramount"` // outside asset amount
 	Height      uint64   `json:"height"`
 	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
+
+func (b *BurnItem) equal(o *BurnItem) bool {
+	return b.Height == o.Height &&
+		b.Amount.Cmp(o.Amount) == 0 && b.RAmount.Cmp(o.Amount) == 0
+}
+
 type BurnInfos struct {
 	Items      []*BurnItem
-	BurnAmount *big.Int // burned amount for outside asset
+	RAllAmount *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount *big.Int // all burned asset on czz by the account
 }
 
 func newBurnInfos() *BurnInfos {
 	return &BurnInfos{
 		Items:      make([]*BurnItem, 0, 0),
-		BurnAmount: big.NewInt(0),
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
 	}
 }
 
 // GetAllAmountByOrigin returns all burned amount asset (czz)
 func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
-	amount := big.NewInt(0)
-	for _, v := range b.Items {
-		amount = amount.Add(amount, v.Amount)
-	}
-	return amount
+	return new(big.Int).Set(b.BAllAmount)
 }
 func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
-	return b.BurnAmount
+	return new(big.Int).Set(b.RAllAmount)
 }
 func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 	res := make([]*BurnItem, 0, 0)
@@ -105,6 +110,7 @@ func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 			res = append(res, &BurnItem{
 				Amount:      new(big.Int).Set(v.Amount),
+				RAmount:     new(big.Int).Set(v.RAmount),
 				Height:      v.Height,
 				RedeemState: v.RedeemState,
 			})
@@ -118,19 +124,21 @@ func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
+		RAmount:     new(big.Int).Set(outAmount),
 		Height:      height,
 		RedeemState: 0,
 	}
 	found := false
 	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+		if v.RedeemState == 0 && v.equal(item) {
 			found = true
 			break
 		}
 	}
 	if !found {
 		b.Items = append(b.Items, item)
-		b.BurnAmount = new(big.Int).Add(b.BurnAmount, outAmount)
+		b.RAllAmount = new(big.Int).Add(b.RAllAmount, outAmount)
+		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
 	}
 }
 func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
@@ -149,7 +157,7 @@ func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
 	}
 }
 func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
-	b.BurnAmount = new(big.Int).Sub(b.BurnAmount, amount)
+	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
 func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
 	for _, v := range b.Items {
