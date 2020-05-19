@@ -348,7 +348,13 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 	if userEntity == nil {
 		return nil, ErrNoUserAsset
 	}
-	outAmount := big.NewInt(0) // get out asset for burn czz
+	reserve := es.getEntangledAmount(lightID, aType)
+	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
+	if err != nil {
+		return nil, err
+	}
+	// get out asset for burn czz
+	outAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	userEntity.BurnAmount.addBurnItem(height, amount, outAmount)
 	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 
@@ -387,6 +393,9 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, er
 	default:
 		return nil, ErrNoUserAsset
 	}
+}
+func getRedeemRateByBurnCzz(reserve *big.Int, atype uint32) (*big.Int, *big.Int, error) {
+	return nil, nil, ErrNoUserAsset
 }
 
 func (es *EntangleState) AddressInWhiteList(addr string, self bool) bool {
