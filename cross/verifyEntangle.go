@@ -364,7 +364,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 
 	for _, coinBaseAddress := range br.CoinBaseAddress {
 		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
-			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
+			e := fmt.Sprintf("coinBaseAddress err")
 			return nil, errors.New(e)
 		}
 	}

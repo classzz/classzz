@@ -546,6 +546,7 @@ func ValidPK(pk []byte) bool {
 	}
 	return true
 }
+
 func isValidAsset(atype, assetAll uint32) bool {
 	return atype&assetAll != 0
 }

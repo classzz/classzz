@@ -860,6 +860,7 @@ mempoolLoop:
 		if sameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
+
 		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
 			if info != nil {
 				amount, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
@@ -872,6 +873,7 @@ mempoolLoop:
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount)
 			}
 		}
+
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
 			if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
