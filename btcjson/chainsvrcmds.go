@@ -8,8 +8,6 @@
 package btcjson
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
@@ -62,28 +60,12 @@ type CreateRawTransactionCmd struct {
 	LockTime *int64
 }
 
-type EntangleOut struct {
+type ExChangeOut struct {
 	ExTxType  uint8    `json:"extxtype"`
 	Index     uint32   `json:"index"`
 	Height    uint64   `json:"height"`
 	Amount    *big.Int `json:"amount"`
 	ExtTxHash string   `json:"exttxhash"`
-}
-
-func (info *EntangleOut) Serialize() []byte {
-	buf := new(bytes.Buffer)
-
-	buf.WriteByte(info.ExTxType)
-	binary.Write(buf, binary.LittleEndian, info.Index)
-	binary.Write(buf, binary.LittleEndian, info.Height)
-	b1 := info.Amount.Bytes()
-	len := uint8(len(b1))
-	buf.WriteByte(len)
-
-	buf.Write(b1)
-	ExtTxHash := []byte(info.ExtTxHash)
-	buf.Write(ExtTxHash)
-	return buf.Bytes()
 }
 
 type WhiteUnit struct {
@@ -118,7 +100,7 @@ type AddBeaconPledgeOut struct {
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
-// Amounts are in BTC.
+// Amounts are in CZZ.
 func NewAddBeaconPledgeOut(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut,
 	lockTime *int64) *BeaconRegistrationCmd {
 	return &BeaconRegistrationCmd{
@@ -128,10 +110,11 @@ func NewAddBeaconPledgeOut(inputs []TransactionInput, beaconRegistrationOut Beac
 	}
 }
 
-// CreateRawTransactionCmd defines the createrawtransaction JSON-RPC command.
-type CreateRawEntangleTransactionCmd struct {
+// CreateRawExChangeTransactionCmd defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+type CreateRawExChangeTransactionCmd struct {
 	Inputs       []TransactionInput
-	EntangleOuts []EntangleOut
+	ExChangeOuts []ExChangeOut
+	Amounts      *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime     *int64
 }
 
@@ -195,11 +178,12 @@ func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]fl
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewCreateRawEntangleTransactionCmd(inputs []TransactionInput, entangleOuts []EntangleOut,
-	lockTime *int64) *CreateRawEntangleTransactionCmd {
-	return &CreateRawEntangleTransactionCmd{
+func NewCreateRawExChangeTransactionCmd(inputs []TransactionInput, entangleOuts []ExChangeOut, amounts *map[string]float64,
+	lockTime *int64) *CreateRawExChangeTransactionCmd {
+	return &CreateRawExChangeTransactionCmd{
 		Inputs:       inputs,
-		EntangleOuts: entangleOuts,
+		ExChangeOuts: entangleOuts,
+		Amounts:      amounts,
 		LockTime:     lockTime,
 	}
 }
@@ -988,7 +972,7 @@ func init() {
 
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
-	MustRegisterCmd("createrawentangletransaction", (*CreateRawEntangleTransactionCmd)(nil), flags)
+	MustRegisterCmd("createrawentangletransaction", (*CreateRawExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)

@@ -228,6 +228,6 @@ func TestBigInt(t *testing.T) {
 func TestStateRlp(t *testing.T) {
 	state := NewEntangleState()
 	l := state.toBytes()
-	fmt.Println("state len:",l)
+	fmt.Println("state len:", l)
 	fmt.Println("finish")
 }

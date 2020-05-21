@@ -57,10 +57,12 @@ const (
 	MultiSigTy                       // Multi signature.
 	NullDataTy                       // Empty data-only (provably prunable).
 	EntangleTy                       //
+
 	BeaconRegistrationTy
 	BurnTy
 	BurnProofTy
 	BeaconTy
+	ExChangeTy
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -77,6 +79,7 @@ var scriptClassToName = []string{
 	BurnTy:               "BurnTy",
 	BurnProofTy:          "BurnProofTy",
 	BeaconTy:             "BeaconTy",
+	ExChangeTy:           "ExChangeTy",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -224,14 +227,18 @@ func isBeaconTy(pops []parsedOpcode) bool {
 
 func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
 	// simple judge
-	if len(pops) >= 2 &&
+	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN197 &&
-		pops[2].opcode.value == OP_1 {
-		return true
-	}
+		pops[2].opcode.value == OP_1
+}
 
-	return false
+func isExChangeTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 3 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN198 &&
+		pops[2].opcode.value == OP_1
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -278,6 +285,14 @@ func IsEntangleTy(script []byte) bool {
 		return false
 	}
 	return isEntangleTy(pops)
+}
+
+func IsExChangeTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isExChangeTy(pops)
 }
 
 func IsBeaconRegistrationTy(script []byte) bool {
@@ -536,6 +551,16 @@ func EntangleScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
 }
 
+// ExChangeScript impl in
+func ExChangeScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_5).AddData(data).Script()
+}
+
 // BeaconRegistration impl in
 func BeaconRegistrationScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
@@ -600,6 +625,7 @@ func MultiSigScript(pubkeys []*czzutil.AddressPubKey, nrequired int) ([]byte, er
 
 	return builder.Script()
 }
+
 func GetKeepedAmountData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -610,6 +636,7 @@ func GetKeepedAmountData(script []byte) ([]byte, error) {
 	}
 	return pops[2].data, nil
 }
+
 func GetEntangleInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -653,6 +680,7 @@ func GetBurnInfoData(script []byte) ([]byte, error) {
 	}
 	return pops[2].data, nil
 }
+
 func GetBurnProofInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -662,6 +690,17 @@ func GetBurnProofInfoData(script []byte) ([]byte, error) {
 		return nil, errors.New("not Burn info type")
 	}
 	return pops[2].data, nil
+}
+
+func GetExChangeInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isExChangeTy(pops) {
+		return nil, errors.New("not ExChange info type")
+	}
+	return pops[3].data, nil
 }
 
 // PushedData returns an array of byte slices containing any pushed data found
