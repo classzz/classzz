@@ -111,7 +111,7 @@ func NewAddBeaconPledgeOut(inputs []TransactionInput, beaconRegistrationOut Beac
 }
 
 // CreateRawExChangeTransactionCmd defines the CreateRawExChangeTransactionCmd JSON-RPC command.
-type CreateRawExChangeTransactionCmd struct {
+type ExChangeTransactionCmd struct {
 	Inputs       []TransactionInput
 	ExChangeOuts []ExChangeOut
 	Amounts      *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
@@ -178,9 +178,9 @@ func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]fl
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewCreateRawExChangeTransactionCmd(inputs []TransactionInput, entangleOuts []ExChangeOut, amounts *map[string]float64,
-	lockTime *int64) *CreateRawExChangeTransactionCmd {
-	return &CreateRawExChangeTransactionCmd{
+func NewExChangeTransactionCmd(inputs []TransactionInput, entangleOuts []ExChangeOut, amounts *map[string]float64,
+	lockTime *int64) *ExChangeTransactionCmd {
+	return &ExChangeTransactionCmd{
 		Inputs:       inputs,
 		ExChangeOuts: entangleOuts,
 		Amounts:      amounts,
@@ -972,7 +972,7 @@ func init() {
 
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
-	MustRegisterCmd("createrawentangletransaction", (*CreateRawExChangeTransactionCmd)(nil), flags)
+	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)

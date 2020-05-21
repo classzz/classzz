@@ -309,9 +309,9 @@ func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
-func (c *Client) CreateRawEntangleTransactionAsync(inputs []btcjson.TransactionInput,
-	entangleOuts []btcjson.EntangleOut, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewCreateRawEntangleTransactionCmd(inputs, entangleOuts, lockTime)
+func (c *Client) ExChangeTransactionAsync(inputs []btcjson.TransactionInput,
+	exChangeOuts []btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewExChangeTransactionCmd(inputs, exChangeOuts, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
@@ -319,16 +319,14 @@ func (c *Client) CreateRawEntangleTransactionAsync(inputs []btcjson.TransactionI
 // and sending to the provided addresses.
 func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,
 	amounts map[czzutil.Address]czzutil.Amount, lockTime *int64) (*wire.MsgTx, error) {
-
 	return c.CreateRawTransactionAsync(inputs, amounts, lockTime).Receive()
 }
 
 // CreateRawTransaction returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
-func (c *Client) CreateRawEntangleTransaction(inputs []btcjson.TransactionInput,
-	entangleOuts []btcjson.EntangleOut, lockTime *int64) (*wire.MsgTx, error) {
-
-	return c.CreateRawEntangleTransactionAsync(inputs, entangleOuts, lockTime).Receive()
+func (c *Client) EntangleTransaction(inputs []btcjson.TransactionInput,
+	exChangeOuts []btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.ExChangeTransactionAsync(inputs, exChangeOuts, amounts, lockTime).Receive()
 }
 
 // BeaconRegistration returns a new transaction spending the provided inputs

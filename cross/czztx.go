@@ -1112,7 +1112,7 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 	return items
 }
 
-func ToAddressFromEntangle(tx *czzutil.Tx, ev *EntangleVerify) ([]*TmpAddressPair, error) {
+func ToAddressFromEntangle(tx *czzutil.Tx, ev *ExChangeVerify) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
 	einfo, _ := IsEntangleTx(tx.MsgTx())
 	if einfo != nil {

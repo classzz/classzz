@@ -26,14 +26,14 @@ const (
 	ltcMaturity  = 12
 )
 
-type EntangleVerify struct {
+type ExChangeVerify struct {
 	DogeCoinRPC []*rpcclient.Client
 	LtcCoinRPC  []*rpcclient.Client
 	Cache       *CacheEntangleInfo
 	Params      *chaincfg.Params
 }
 
-func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
+func (ev *ExChangeVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, error) {
 	/*
 		1. check entangle tx struct
 		2. check the repeat tx
@@ -72,7 +72,7 @@ func (ev *EntangleVerify) VerifyEntangleTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 	return pairs, nil
 }
 
-func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32,
+func (ev *ExChangeVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vout uint32,
 	height uint64, amount *big.Int) ([]byte, error) {
 	switch ExTxType {
 	case ExpandedTxEntangle_Doge:
@@ -89,7 +89,7 @@ func (ev *EntangleVerify) verifyTx(ExTxType ExpandedTxType, ExtTxHash []byte, Vo
 	return nil, nil
 }
 
-func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+func (ev *ExChangeVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
@@ -182,7 +182,7 @@ func (ev *EntangleVerify) verifyDogeTx(ExtTxHash []byte, Vout uint32, Amount *bi
 	}
 }
 
-func (ev *EntangleVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
+func (ev *ExChangeVerify) verifyLtcTx(ExtTxHash []byte, Vout uint32, Amount *big.Int, height uint64) ([]byte, error) {
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
@@ -283,7 +283,7 @@ func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) b
 	return false
 }
 
-func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
+func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
 
 	br, _ := IsBeaconRegistrationTx(tx, ev.Params)
 	if br == nil {
@@ -379,7 +379,7 @@ func (ev *EntangleVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	return br, nil
 }
 
-func (ev *EntangleVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
+func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
 
 	bp, _ := IsAddBeaconPledgeTx(tx, ev.Params)
 	if bp == nil {

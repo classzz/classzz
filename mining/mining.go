@@ -857,6 +857,7 @@ mempoolLoop:
 			}
 			entangleAddress[*tx.Hash()] = obj
 		}
+
 		if sameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
