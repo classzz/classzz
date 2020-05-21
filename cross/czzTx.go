@@ -327,6 +327,17 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 }
 
 func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	} else {
+		txout := tx.TxOut[0]
+		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
+			return nil, NoBeaconRegistration
+		}
+	}
+
 	// make sure at least one txout in OUTPUT
 	var es *BeaconAddressInfo
 
@@ -374,6 +385,16 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 }
 
 func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		return nil, errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")
+	} else {
+		txout := tx.TxOut[0]
+		if !txscript.IsAddBeaconPledgeTy(txout.PkScript) {
+			return nil, NoAddBeaconPledge
+		}
+	}
+
 	// make sure at least one txout in OUTPUT
 	var bp *AddBeaconPledge
 

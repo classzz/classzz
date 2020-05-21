@@ -288,6 +288,14 @@ func IsBeaconRegistrationTy(script []byte) bool {
 	return isBeaconRegistrationTy(pops)
 }
 
+func IsAddBeaconPledgeTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isAddBeaconPledgeTy(pops)
+}
+
 func IsBurnTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
