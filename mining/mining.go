@@ -739,6 +739,7 @@ mempoolLoop:
 	blockSigOps := coinbaseSigOps
 	totalFees := int64(0)
 	maxSigOps := blockchain.MaxBlockSigOps(blockSize)
+	exItems := make([]*cross.ExChangeItem, 0)
 
 	// Choose which transactions make it into the block.
 	for priorityQueue.Len() > 0 {
@@ -834,22 +835,11 @@ mempoolLoop:
 			logSkippedDeps(tx, deps)
 			continue
 		}
-		isEntangleTx := false
-		if einfo, _ := cross.IsEntangleTx(tx.MsgTx()); einfo != nil {
-			isEntangleTx = true
-		}
 
-		if isOver && isEntangleTx {
-			continue
-		}
-		if isEntangleTx {
-			eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-			if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork, eState); ok {
-				isOver = true
-				continue
-			}
-			obj, err1 := cross.ToAddressFromEntangle(tx, g.chain.GetEntangleVerify())
-			if err1 != nil {
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
+
+			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify())
+			if err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err)
 				logSkippedDeps(tx, deps)
@@ -930,6 +920,10 @@ mempoolLoop:
 		}
 	}
 
+	//if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork, eState); ok {
+	//
+	//}
+
 	// Now that the actual transactions have been selected, update the
 	// block size for the real transaction count and coinbase value with
 	// the total fees accordingly.
@@ -959,7 +953,6 @@ mempoolLoop:
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
 		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork)
 		if err != nil {
 			return nil, nil, err
@@ -968,7 +961,6 @@ mempoolLoop:
 
 	CIDRoot := chainhash.Hash{}
 	// Beacon
-
 	if g.chainParams.BeaconHeight <= nextBlockHeight && eState != nil {
 		CIDRoot = cross.Hash(eState)
 	}

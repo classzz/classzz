@@ -1142,17 +1142,6 @@ func dbPutBestState(dbTx database.Tx, snapshot *BestState, workSum *big.Int) err
 	return dbTx.Metadata().Put(chainStateKeyName, serializedData)
 }
 
-func dbPutBesteState(esBucket database.Bucket, block *czzutil.Block, eState *cross.EntangleState) error {
-	// Serialize the current best chain state.
-	buf := new(bytes.Buffer)
-
-	binary.Write(buf, binary.LittleEndian, block.Height())
-	buf.Write(block.Hash().CloneBytes())
-
-	// Store the current best chain state into the database.
-	return esBucket.Put(buf.Bytes(), eState.ToBytes())
-}
-
 // -----------------------------------------------------------------------------
 // The utxo state consistency status is stored as the last hash at which the
 // state finished a flush and an indicator whether it was left in the middle

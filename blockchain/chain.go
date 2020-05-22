@@ -229,7 +229,7 @@ type BlockChain struct {
 	fastSyncDone chan struct{}
 
 	//
-	entangleVerify *cross.EntangleVerify
+	exChangeVerify *cross.ExChangeVerify
 }
 
 // HaveBlock returns whether or not the chain instance has the block represented
@@ -2324,7 +2324,7 @@ func New(config *Config) (*BlockChain, error) {
 
 	params := config.ChainParams
 
-	entangleVerify := &cross.EntangleVerify{
+	exChangeVerify := &cross.ExChangeVerify{
 		DogeCoinRPC: dogeclients,
 		LtcCoinRPC:  ltcclients,
 		Cache:       cacheEntangleInfo,
@@ -2355,7 +2355,7 @@ func New(config *Config) (*BlockChain, error) {
 		pruneDepth:          config.PruneDepth,
 		fastSyncDataDir:     config.FastSyncDataDir,
 		fastSyncDone:        make(chan struct{}),
-		entangleVerify:      entangleVerify,
+		exChangeVerify:      exChangeVerify,
 	}
 
 	NetParams = params
@@ -2461,6 +2461,6 @@ func (b *BlockChain) FlushCachedState(mode FlushMode) error {
 	return b.utxoCache.Flush(mode, b.stateSnapshot)
 }
 
-func (b *BlockChain) GetEntangleVerify() *cross.EntangleVerify {
-	return b.entangleVerify
+func (b *BlockChain) GetExChangeVerify() *cross.ExChangeVerify {
+	return b.exChangeVerify
 }

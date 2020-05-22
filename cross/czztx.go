@@ -62,15 +62,15 @@ func (ii *EntangleItem) Clone() *EntangleItem {
 	return item
 }
 
-type EntangleItem2 struct {
+type ExChangeItem struct {
 	EType ExpandedTxType
 	Value *big.Int
 	Addr  czzutil.Address
 	BID   uint64
 }
 
-func (ii *EntangleItem2) Clone() *EntangleItem2 {
-	item := &EntangleItem2{
+func (ii *ExChangeItem) Clone() *ExChangeItem {
+	item := &ExChangeItem{
 		EType: ii.EType,
 		Value: new(big.Int).Set(ii.Value),
 		Addr:  ii.Addr,
@@ -334,11 +334,12 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	return nil, NoEntangle
 }
 
-func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
+func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
+
 	// make sure at least one txout in OUTPUT
-	einfos := make(map[uint32]*EntangleTxInfo)
+	einfos := make(map[uint32]*ExChangeTxInfo)
 	for i, v := range tx.TxOut {
-		info, err := EntangleTxFromScript(v.PkScript)
+		info, err := ExChangeTxFromScript(v.PkScript)
 		if err == nil {
 			if v.Value != 0 {
 				return nil, errors.New("the output value must be 0 in entangle tx.")
@@ -709,7 +710,7 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleIt
 	}
 	return nil
 }
-func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*EntangleItem2, state *EntangleState) error {
+func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeItem, state *EntangleState) error {
 	if len(items) == 0 || state == nil {
 		return nil
 	}
@@ -1112,9 +1113,9 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 	return items
 }
 
-func ToAddressFromEntangle(tx *czzutil.Tx, ev *ExChangeVerify) ([]*TmpAddressPair, error) {
+func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
-	einfo, _ := IsEntangleTx(tx.MsgTx())
+	einfo, _ := IsExChangeTx(tx.MsgTx())
 	if einfo != nil {
 		// verify the entangle tx
 
