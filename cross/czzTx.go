@@ -5,10 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"math/big"
-	"strings"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -16,6 +12,9 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"io"
+	"math/big"
+	"strings"
 )
 
 type ExpandedTxType uint8
@@ -327,23 +326,34 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 }
 
 func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
-
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
-		return nil, errors.New(e)
-	} else {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
 			return nil, NoBeaconRegistration
 		}
+	} else {
+		return nil, NoBeaconRegistration
 	}
 
-	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	}
+
 	var es *BeaconAddressInfo
+	txout := tx.TxOut[0]
+	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
+	}
 
 	var pk []byte
-	var err error
-
 	if tx.TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
 		if err != nil {
@@ -362,17 +372,6 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[0]
-	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
 	}
 
 	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
@@ -385,22 +384,36 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 }
 
 func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
-
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		return nil, errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")
-	} else {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsAddBeaconPledgeTy(txout.PkScript) {
 			return nil, NoAddBeaconPledge
 		}
+	} else {
+		return nil, NoAddBeaconPledge
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
 	}
 
 	// make sure at least one txout in OUTPUT
 	var bp *AddBeaconPledge
 
-	var pk []byte
-	var err error
+	txout := tx.TxOut[0]
+	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		bp = info
+	}
 
+	var pk []byte
 	if tx.TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
 		if err != nil {
@@ -419,17 +432,6 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[0]
-	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		bp = info
 	}
 
 	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
@@ -517,32 +519,6 @@ func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	}
 	return true, nil
 }
-func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
-	// make sure at least one txout in OUTPUT
-	var es *BurnProofInfo
-	var err error
-
-	if len(tx.TxOut) < 2 {
-		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
-	}
-
-	txout := tx.TxOut[0]
-	info, err := BurnProofInfoFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
-	}
-
-	if es != nil {
-		return es, nil
-	}
-	return nil, ErrBurnProof
-}
-
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -583,15 +559,7 @@ func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
-func BurnProofInfoFromScript(script []byte) (*BurnProofInfo, error) {
-	data, err := txscript.GetBurnProofInfoData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &BurnProofInfo{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
+
 func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 	h := uint64(0)
 	for _, v := range items {
