@@ -365,28 +365,6 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 		return nil, NoBeaconRegistration
 	}
 
-	// make sure at least one txout in OUTPUT
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
-			return nil, NoBeaconRegistration
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
-		return nil, errors.New(e)
-	}
-
-	var es *BeaconAddressInfo
-	txout := tx.TxOut[0]
-	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
-	}
-
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
 		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
 		return nil, errors.New(e)
