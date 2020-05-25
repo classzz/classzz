@@ -403,7 +403,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 
 	for _, coinBaseAddress := range br.CoinBaseAddress {
 		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
-			e := fmt.Sprintf("coinBaseAddress err")
+			e := fmt.Sprintf("DecodeCashAddress.AssetType err")
 			return nil, errors.New(e)
 		}
 	}
@@ -430,14 +430,8 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 		return nil, errors.New(e)
 	}
 
-	var bai *BeaconAddressInfo
-	if bai = eState.EnInfos[bp.Address]; bai == nil {
-		return nil, ErrNotRepeatRegister
-	}
-
-	if bp.Address != bai.Address {
-		e := fmt.Sprintf("AddBeaconPledge Address !=  BeaconRegistration Address")
-		return nil, errors.New(e)
+	if _, ok := eState.EnInfos[bp.Address]; ok {
+		return nil, ErrRepeatRegister
 	}
 
 	addr, err := czzutil.NewLegacyAddressPubKeyHash(bp.ToAddress, ev.Params)
@@ -472,16 +466,11 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 		return nil, errors.New(e)
 	}
 
-	temp := true
 	for _, v := range eState.EnInfos {
 		if bytes.Equal(v.ToAddress, bp.ToAddress) {
-			temp = false
+			e := fmt.Sprintf("ToAddress err")
+			return nil, errors.New(e)
 		}
-	}
-
-	if temp {
-		e := fmt.Sprintf("not ToAddress err")
-		return nil, errors.New(e)
 	}
 
 	return bp, nil

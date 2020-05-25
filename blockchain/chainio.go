@@ -521,7 +521,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
-	if block.Height()+1 == NetParams.BeaconHeight {
+	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
 
@@ -588,12 +588,13 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 
 func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
-
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, block.Height())
 
+	buf := new(bytes.Buffer)
+
+	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
+
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
 	return err
 }

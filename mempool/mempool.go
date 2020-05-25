@@ -1026,10 +1026,6 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		return errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
 	} else if br != nil {
 
-		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
-			return errors.New("not BeaconRegistration tx TxOut >3 or TxIn >1")
-		}
-
 		eState := mp.cfg.CurrentEstate()
 		if _, err := mp.cfg.ExChangeVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
 			return err
@@ -1037,18 +1033,13 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// AddBeaconPledge
-	bp, err := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
-	if err != cross.NoAddBeaconPledge {
-		return err
+	bp, err1 := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if err1 != cross.NoAddBeaconPledge {
+		return err1
 	}
-
 	if bp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
-	} else if bp != nil {
-
-		if len(tx.MsgTx().TxOut) > 3 || len(tx.MsgTx().TxOut) < 2 || len(tx.MsgTx().TxIn) > 1 {
-			return errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")
-		}
+	} else if br != nil {
 
 		eState := mp.cfg.CurrentEstate()
 		if _, err := mp.cfg.ExChangeVerify.VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {

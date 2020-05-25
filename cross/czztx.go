@@ -5,10 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"math/big"
-	"strings"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -16,6 +12,9 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"io"
+	"math/big"
+	"strings"
 )
 
 type ExpandedTxType uint8
@@ -356,13 +355,36 @@ func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 
 // BeaconRegistration
 func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
-
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
 			return nil, NoBeaconRegistration
 		}
+	} else {
+		return nil, NoBeaconRegistration
+	}
+
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
+			return nil, NoBeaconRegistration
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	}
+
+	var es *BeaconAddressInfo
+	txout := tx.TxOut[0]
+	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
 	}
 
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
@@ -414,22 +436,36 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 }
 
 func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
-
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		return nil, errors.New("not AddBeaconPledge tx TxOut >3 or TxIn >1")
-	} else {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsAddBeaconPledgeTy(txout.PkScript) {
 			return nil, NoAddBeaconPledge
 		}
+	} else {
+		return nil, NoAddBeaconPledge
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
 	}
 
 	// make sure at least one txout in OUTPUT
 	var bp *AddBeaconPledge
 
-	var pk []byte
-	var err error
+	txout := tx.TxOut[0]
+	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		bp = info
+	}
 
+	var pk []byte
 	if tx.TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
 		if err != nil {
@@ -448,17 +484,6 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[0]
-	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		bp = info
 	}
 
 	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
