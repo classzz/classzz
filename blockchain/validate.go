@@ -365,7 +365,7 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
-	_, err := b.GetEntangleVerify().VerifyEntangleTx(tx.MsgTx())
+	_, err := b.GetExChangeVerify().VerifyEntangleTx(tx.MsgTx())
 	if err != nil {
 		return err
 	}
@@ -407,7 +407,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), b.chainParams)
 		if br != nil {
 
-			_, err := b.GetEntangleVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
+			_, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
 			if err != nil {
 				return err
 			}
@@ -420,7 +420,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 		// AddBeaconPledge
 		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), b.chainParams)
 		if bp != nil {
-			_, err := b.GetEntangleVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
+			_, err := b.GetExChangeVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
 			if err != nil {
 				return err
 			}

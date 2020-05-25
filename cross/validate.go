@@ -87,7 +87,7 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx) ([]*TuplePubIndex, er
 	amount := int64(0)
 	if ev.Cache != nil {
 		for i, v := range einfos {
-			if ok := ev.Cache.FetchEntangleUtxoView(v); ok {
+			if ok := ev.Cache.FetchExChangeUtxoView(v); ok {
 				errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Height)
 				return nil, errors.New("txid has already entangle:" + errStr)
 			}

@@ -616,7 +616,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		return nil, nil, err
 	}
 	poolItem := toPoolAddrItems(lView)
-	isOver := false
 
 	var eState *cross.EntangleState
 	fork := false
@@ -837,7 +836,6 @@ mempoolLoop:
 		}
 
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
-
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify())
 			if err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -920,9 +918,9 @@ mempoolLoop:
 		}
 	}
 
-	//if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork, eState); ok {
-	//
-	//}
+	if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); ok {
+
+	}
 
 	// Now that the actual transactions have been selected, update the
 	// block size for the real transaction count and coinbase value with
@@ -952,8 +950,8 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
-		eItems := cross.ToEntangleItems(blockTxns, entangleAddress)
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork)
+		exItems = cross.ToEntangleItems(blockTxns, entangleAddress)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -661,7 +661,7 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
 	lastScriptInfo []byte, fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
@@ -738,7 +738,7 @@ func updateTxOutValue(out *wire.TxOut, value int64) error {
 	return nil
 }
 
-func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change, fork bool) {
+func calcExchange(item *ExChangeItem, reserve *int64, keepInfo *KeepedAmount, change, fork bool) {
 	amount := big.NewInt(0)
 	cur := keepInfo.GetValue(item.EType)
 	if cur != nil {
@@ -773,12 +773,12 @@ func calcExchange(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, ch
 	*reserve = *reserve - item.Value.Int64()
 }
 
-func PreCalcEntangleAmount(item *EntangleItem, keepInfo *KeepedAmount, fork bool) {
+func PreCalcEntangleAmount(item *ExChangeItem, keepInfo *KeepedAmount, fork bool) {
 	var vv int64
 	calcExchange(item, &vv, keepInfo, true, fork)
 }
 
-func EnoughAmount(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount, fork bool) bool {
+func EnoughAmount(reserve int64, items []*ExChangeItem, keepInfo *KeepedAmount, fork bool) bool {
 	amount := reserve
 	for _, v := range items {
 		calcExchange(v.Clone(), &amount, keepInfo, false, fork)
@@ -1087,13 +1087,13 @@ type TmpAddressPair struct {
 	address czzutil.Address
 }
 
-func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*EntangleItem {
-	items := make([]*EntangleItem, 0)
+func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
+	items := make([]*ExChangeItem, 0)
 	for _, v := range txs {
-		einfos, _ := IsEntangleTx(v.MsgTx())
+		einfos, _ := IsExChangeTx(v.MsgTx())
 		if einfos != nil {
 			for i, out := range einfos {
-				item := &EntangleItem{
+				item := &ExChangeItem{
 					EType: out.ExTxType,
 					Value: new(big.Int).Set(out.Amount),
 					Addr:  nil,
@@ -1144,7 +1144,7 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify) ([]*TmpAddressPai
 
 	return nil, nil
 }
-func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
 	lastScriptInfo []byte, fork bool, state *EntangleState) bool {
 	if items == nil || len(items) == 0 {
 		return false

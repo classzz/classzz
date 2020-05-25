@@ -1644,12 +1644,12 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
 func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
-	eState := b.entangleVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
