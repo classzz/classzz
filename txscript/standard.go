@@ -237,7 +237,7 @@ func isExChangeTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN198 &&
+		pops[1].opcode.value == OP_UNKNOWN199 &&
 		pops[2].opcode.value == OP_1
 }
 
@@ -264,6 +264,8 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return BeaconTy
 	} else if isBurnProofTy(pops) {
 		return BurnProofTy
+	} else if isExChangeTy(pops) {
+		return ExChangeTy
 	}
 	return NonStandardTy
 }
@@ -558,7 +560,7 @@ func ExChangeScript(data []byte) ([]byte, error) {
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_5).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN199).AddOp(OP_5).AddData(data).Script()
 }
 
 // BeaconRegistration impl in

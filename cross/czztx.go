@@ -31,6 +31,7 @@ const (
 
 var (
 	NoEntangle           = errors.New("no entangle info in transcation")
+	NoExChange           = errors.New("no NoExChange info in transcation")
 	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
 	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
 
@@ -342,7 +343,7 @@ func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 		info, err := ExChangeTxFromScript(v.PkScript)
 		if err == nil {
 			if v.Value != 0 {
-				return nil, errors.New("the output value must be 0 in entangle tx.")
+				return nil, errors.New("the output value must be 0 in ExChange tx.")
 			}
 			einfos[uint32(i)] = info
 		}
@@ -350,7 +351,7 @@ func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 	if len(einfos) > 0 {
 		return einfos, nil
 	}
-	return nil, NoEntangle
+	return nil, NoExChange
 }
 
 // BeaconRegistration

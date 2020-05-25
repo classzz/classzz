@@ -189,7 +189,13 @@ func addTxOuts(view utxoView, tx *czzutil.Tx, blockHeight int32, overwrite bool)
 		if txscript.IsEntangleTy(txOut.PkScript) {
 			continue
 		}
+		if txscript.IsExChangeTy(txOut.PkScript) {
+			continue
+		}
 		if txscript.IsBeaconRegistrationTy(txOut.PkScript) {
+			continue
+		}
+		if txscript.IsAddBeaconPledgeTy(txOut.PkScript) {
 			continue
 		}
 
