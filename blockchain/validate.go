@@ -1516,7 +1516,7 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
 	infos map[uint32]*cross.EntangleTxInfo, fork bool) {
 	for _, v := range infos {
-		item := &cross.EntangleItem{
+		item := &cross.ExChangeItem{
 			EType: v.ExTxType,
 			Value: new(big.Int).Set(v.Amount),
 		}
