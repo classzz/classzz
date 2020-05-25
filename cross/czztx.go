@@ -839,6 +839,12 @@ func toDoge1(entangled, needed int64) int64 {
 	}
 	return kk
 }
+func reverseToDoge(keeped *big.Int) (*big.Int, *big.Int) {
+	base, divisor := big.NewInt(int64(25)), big.NewInt(1)
+	loopUnit := new(big.Int).Mul(big.NewInt(1150), baseUnit)
+	divisor0, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
+	return base.Add(base, divisor0), divisor
+}
 
 // doge has same precision with czz
 func toDoge2(entangled, needed *big.Int) *big.Int {
@@ -929,6 +935,12 @@ func toLtc1(entangled, needed int64) int64 {
 	}
 	return ret
 }
+func reverseToLtc(keeped *big.Int) (base, divisor *big.Int) {
+	base, divisor = big.NewInt(int64(80000)), big.NewInt(1)
+	loopUnit := new(big.Int).Mul(big.NewInt(1150), baseUnit)
+	divisor0, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
+	return base.Add(base, divisor0), divisor
+}
 
 // ltc has same precision with czz
 func toLtc2(entangled, needed *big.Int) *big.Int {
@@ -993,6 +1005,12 @@ func toLtc(entangled, needed *big.Int, fork bool) *big.Int {
 		return new(big.Int).Add(toCzz(f1), toCzz(f2))
 	}
 }
+func reverseToBtc(keeped *big.Int) (*big.Int, *big.Int) {
+	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
+	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
+	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+	return rate, big.NewInt(1)
+}
 func toBtc(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
@@ -1019,6 +1037,13 @@ func toBtc(entangled, needed *big.Int) *big.Int {
 		}
 	}
 	return res
+}
+func reverseToBchOrBsv(keeped *big.Int) (*big.Int, *big.Int) {
+	unit, base := big.NewInt(int64(1000)), big.NewInt(int64(10000))
+	loopUnit := new(big.Int).Mul(big.NewInt(300), baseUnit)
+	divisor, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
+	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+	return rate, big.NewInt(1)
 }
 func toBchOrBsv(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {

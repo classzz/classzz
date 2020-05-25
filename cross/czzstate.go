@@ -395,7 +395,22 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, er
 	}
 }
 func getRedeemRateByBurnCzz(reserve *big.Int, atype uint32) (*big.Int, *big.Int, error) {
-	return nil, nil, ErrNoUserAsset
+	switch atype {
+	case ExpandedTxEntangle_Doge:
+		base, divisor := reverseToDoge(reserve)
+		return base, divisor, nil
+	case ExpandedTxEntangle_Ltc:
+		base, divisor := reverseToLtc(reserve)
+		return base, divisor, nil
+	case ExpandedTxEntangle_Btc:
+		base, divisor := reverseToBtc(reserve)
+		return base, divisor, nil
+	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
+		base, divisor := reverseToBchOrBsv(reserve)
+		return base, divisor, nil
+	default:
+		return nil, nil, ErrNoUserAsset
+	}
 }
 
 func (es *EntangleState) AddressInWhiteList(addr string, self bool) bool {
