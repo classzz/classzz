@@ -521,7 +521,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
-	if block.Height()+1 == chaincfg.MainNetParams.BeaconHeight {
+	if block.Height()+1 == NetParams.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
 

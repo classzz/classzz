@@ -21,22 +21,27 @@ type EntangleState struct {
 	PoolAmount2   *big.Int
 	CurExchangeID uint64
 }
+
 type StoreBeaconAddress struct {
 	Address string
 	Lh      *BeaconAddressInfo
 }
+
 type StoreUserInfos struct {
 	EID       uint64
 	UserInfos UserEntangleInfos
 }
+
 type SortStoreBeaconAddress []*StoreBeaconAddress
 
 func (vs SortStoreBeaconAddress) Len() int {
 	return len(vs)
 }
+
 func (vs SortStoreBeaconAddress) Less(i, j int) bool {
 	return bytes.Compare([]byte(vs[i].Address), []byte(vs[j].Address)) == -1
 }
+
 func (vs SortStoreBeaconAddress) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
@@ -48,9 +53,11 @@ type SortStoreUserInfos []*StoreUserInfos
 func (vs SortStoreUserInfos) Len() int {
 	return len(vs)
 }
+
 func (vs SortStoreUserInfos) Less(i, j int) bool {
 	return vs[i].EID < vs[j].EID
 }
+
 func (vs SortStoreUserInfos) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]

@@ -494,7 +494,7 @@ var SimNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
-	EntangleHeight: 120000,
+	EntangleHeight: 10,
 	BeaconHeight:   12,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,

@@ -112,7 +112,7 @@ func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 		return false
 	}
 
-	if height >= chaincfg.MainNetParams.EntangleHeight {
+	if height >= NetParams.EntangleHeight {
 		if len(msgTx.TxIn) != 3 {
 			return false
 		}

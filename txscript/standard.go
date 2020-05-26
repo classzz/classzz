@@ -238,7 +238,7 @@ func isExChangeTy(pops []parsedOpcode) bool {
 	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN199 &&
-		pops[2].opcode.value == OP_1
+		pops[2].opcode.value == OP_5
 }
 
 // scriptType returns the type of the script being inspected from the known
