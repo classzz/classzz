@@ -365,10 +365,10 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
-	_, err := b.GetExChangeVerify().VerifyEntangleTx(tx.MsgTx())
-	if err != nil {
-		return err
-	}
+	//_, err := b.GetExChangeVerify().VerifyEntangleTx(tx.MsgTx())
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 

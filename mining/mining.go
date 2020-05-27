@@ -836,7 +836,7 @@ mempoolLoop:
 		}
 
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
-			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify())
+			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
 			if err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err)

@@ -222,7 +222,7 @@ type BeaconAddressInfo struct {
 	Fee             uint64           `json:"fee"`
 	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit     `json:"white_list"`
-	CoinBaseAddress []string         `json:"CoinBaseAddress"`
+	CoinBaseAddress []string         `json:"coin_base_address"`
 }
 
 type AddBeaconPledge struct {

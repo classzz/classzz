@@ -66,6 +66,7 @@ type ExChangeOut struct {
 	Height    uint64   `json:"height"`
 	Amount    *big.Int `json:"amount"`
 	ExtTxHash string   `json:"exttxhash"`
+	BID       uint64   `json:"bid"`
 }
 
 type WhiteUnit struct {

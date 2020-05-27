@@ -103,6 +103,7 @@ type ExChangeTxInfo struct {
 	Height    uint64
 	Amount    *big.Int
 	ExtTxHash []byte
+	BID       uint64
 }
 
 type EntangleTxInfo struct {
@@ -1142,14 +1143,14 @@ func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPa
 	return items
 }
 
-func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify) ([]*TmpAddressPair, error) {
+func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
 	einfo, _ := IsExChangeTx(tx.MsgTx())
 	if einfo != nil {
 		// verify the entangle tx
 
 		pairs := make([]*TmpAddressPair, 0)
-		tt, err := ev.VerifyEntangleTx(tx.MsgTx())
+		tt, err := ev.VerifyExChangeTx(tx.MsgTx(), eState)
 		if err != nil {
 			return nil, err
 		}
