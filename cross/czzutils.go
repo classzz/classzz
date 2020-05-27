@@ -2,23 +2,15 @@ package cross
 
 import (
 	"bytes"
-
-	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/czzutil"
-
-	// "encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
 	"sort"
 
-	// "github.com/classzz/classzz/chaincfg"
-	// "github.com/classzz/classzz/chaincfg/chainhash"
-	// "github.com/classzz/classzz/czzec"
-	// "github.com/classzz/classzz/txscript"
-	// "github.com/classzz/classzz/wire"
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/rlp"
+	"github.com/classzz/czzutil"
 )
 
 var (

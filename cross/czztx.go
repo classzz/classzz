@@ -858,7 +858,7 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	}
 	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
 	base := big.NewInt(int64(25))
-	loopUnit := new(big.Int).Mul(big.NewInt(1150), baseUnit)
+	loopUnit := new(big.Int).Mul(big.NewInt(12500000), baseUnit)
 	res := big.NewInt(0)
 	for {
 		if change.Sign() <= 0 {

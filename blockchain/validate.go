@@ -1514,7 +1514,7 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 }
 
 func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
-	infos map[uint32]*cross.EntangleTxInfo, fork bool) {
+	infos map[uint32]*cross.ExChangeTxInfo, fork bool) {
 	for _, v := range infos {
 		item := &cross.ExChangeItem{
 			EType: v.ExTxType,
@@ -1563,7 +1563,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+			einfos, _ := cross.IsExChangeTx(tx.MsgTx())
 			if einfos != nil {
 				handleSummayEntangle(summay, keepInfo, einfos, fork)
 			}
