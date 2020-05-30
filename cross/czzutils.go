@@ -443,8 +443,8 @@ type BurnItem struct {
 }
 
 func (b *BurnItem) equal(o *BurnItem) bool {
-	return b.Height == o.Height &&
-		b.Amount.Cmp(o.Amount) == 0 && b.RAmount.Cmp(o.Amount) == 0
+	return b.Height == o.Height && b.Amount.Cmp(o.Amount) == 0 &&
+		 b.RAmount.Cmp(o.Amount) == 0
 }
 
 type BurnInfos struct {
@@ -490,6 +490,7 @@ func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
 		Amount:      new(big.Int).Set(amount),
 		RAmount:     new(big.Int).Set(outAmount),
 		Height:      height,
+		Proof:		 nil,
 		RedeemState: 0,
 	}
 	found := false
@@ -584,6 +585,7 @@ type BurnProofInfo struct {
 	Address czzutil.Address		
 	Atype   uint32
 	TxHash  []byte				// the tx hash of outside
+	IsBeacon bool				
 }
 
 type LHPunishedItem struct {

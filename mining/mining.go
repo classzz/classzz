@@ -849,7 +849,24 @@ mempoolLoop:
 		if sameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
-
+		if info,err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+			oHeight,err1 := cross.VerifyBurnProof(info,g.chain.GetExChangeVerify(), eState)
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"BurnProofTx: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			if info.IsBeacon{
+				eState.FinishHandleUserBurn(info,&cross.BurnProofItem{
+					Height:			oHeight,
+					TxHash:			append([]byte{},info.TxHash...),
+				})
+			} else {
+				// send reward to the robot and Punished the beacon address
+				// estate.
+			}
+		}
 		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
 			if info != nil {
 				amount,fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
@@ -859,6 +876,7 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
+				// now will be seed fee to beacon address
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount,"fee:",fee)
 			}
 		}

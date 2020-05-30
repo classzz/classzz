@@ -989,16 +989,16 @@ func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 	return keepinfo
 }
 //////////////////////////////////////////////////////////////////////////////
-func VerifyBurnProof(info *BurnProofInfo,ev *ExChangeVerify,state *EntangleState) error {
+func VerifyBurnProof(info *BurnProofInfo,ev *ExChangeVerify,state *EntangleState) (uint64,error) {
 	oHeight := uint64(0)
 	err := ev.verifyBurnProof(info,state)
 	if err != nil {
-		return err
+		return 0,err
 	}
 	if err := state.verifyBurnProof(info,oHeight); err != nil {
-		return err
+		return 0,err
 	}
-	return nil
+	return oHeight,nil
 }
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {

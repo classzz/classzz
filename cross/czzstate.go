@@ -11,7 +11,7 @@ import (
 
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rlp"
-	"github.com/classzz/czzutil"
+	// "github.com/classzz/czzutil"
 )
 
 type EntangleState struct {
@@ -566,16 +566,15 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo,outHeight uint64) e
 }
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
-func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzutil.Address, 
-	atype uint32, amount *big.Int,proof *BurnProofItem) error {
-	userEntitys, ok := es.EnEntitys[lightID]
+func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo,proof *BurnProofItem) error {
+	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
-		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", lightID)
+		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.LightID)
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
-			if bytes.Equal(addr.ScriptAddress(), []byte(addr1)) {
-				userEntity.finishBurnState(height, amount, atype,proof)
+			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
+				userEntity.finishBurnState(info.Height, info.Amount, info.Atype,proof)
 			}
 		}
 	}
