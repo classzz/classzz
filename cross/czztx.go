@@ -33,6 +33,7 @@ var (
 	NoExChange           = errors.New("no NoExChange info in transcation")
 	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
 	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
+	NoAddBeaconCoinbase  = errors.New("no AddBeaconCoinbase info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -474,6 +475,65 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	return nil, NoAddBeaconPledge
 }
 
+func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconCoinbase, error) {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsAddBeaconCoinbaseTy(txout.PkScript) {
+			return nil, NoAddBeaconCoinbase
+		}
+	} else {
+		return nil, NoAddBeaconCoinbase
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	}
+
+	// make sure at least one txout in OUTPUT
+	var bp *AddBeaconCoinbase
+
+	txout := tx.TxOut[0]
+	info, err := AddBeaconCoinbaseTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		bp = info
+	}
+
+	var pk []byte
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	info.Address = address.String()
+
+	if bp != nil {
+		return bp, nil
+	}
+	return nil, NoAddBeaconCoinbase
+}
+
 func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BurnTxInfo
@@ -613,6 +673,16 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 		return nil, err
 	}
 	info := &AddBeaconPledge{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
+func AddBeaconCoinbaseTxFromScript(script []byte) (*AddBeaconCoinbase, error) {
+	data, err := txscript.GetAddBeaconCoinbaseData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &AddBeaconCoinbase{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
@@ -1117,7 +1187,7 @@ type TmpAddressPair struct {
 	address czzutil.Address
 }
 
-func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
+func ToExChangeItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
 	items := make([]*ExChangeItem, 0)
 	for _, v := range txs {
 		einfos, _ := IsExChangeTx(v.MsgTx())
@@ -1197,6 +1267,7 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIte
 	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
 	return !EnoughAmount(all, items, keepInfo, fork)
 }
+
 func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 	if state == nil {
 		return nil

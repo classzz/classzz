@@ -354,6 +354,24 @@ func (c *Client) AddBeaconPledge(inputs []btcjson.TransactionInput,
 	return c.AddBeaconPledgeAsync(inputs, beaconRegistrationOut, amounts, lockTime).Receive()
 }
 
+// BeaconRegistrationAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See BeaconRegistrationAsync for the blocking version and more details.
+func (c *Client) AddBeaconCoinbaseAsync(inputs []btcjson.TransactionInput,
+	out btcjson.AddBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewAddBeaconCoinbaseCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
+// BeaconRegistration returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) AddBeaconCoinbase(inputs []btcjson.TransactionInput,
+	out btcjson.AddBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.AddBeaconCoinbaseAsync(inputs, out, amounts, lockTime).Receive()
+}
+
 // FutureSendRawTransactionResult is a future promise to deliver the result
 // of a SendRawTransactionAsync RPC invocation (or an applicable error).
 type FutureSendRawTransactionResult chan *response

@@ -918,8 +918,9 @@ mempoolLoop:
 		}
 	}
 
-	if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); ok {
-
+	if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); !ok {
+		//e := fmt.Sprintf("cross.OverEntangleAmount err")
+		//return nil, nil, errors.New(e)
 	}
 
 	// Now that the actual transactions have been selected, update the
@@ -949,8 +950,8 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight <= nextBlockHeight {
-		exItems = cross.ToEntangleItems(blockTxns, entangleAddress)
+	if g.chainParams.ExChangeHeight <= nextBlockHeight {
+		exItems = cross.ToExChangeItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork)
 		if err != nil {
 			return nil, nil, err

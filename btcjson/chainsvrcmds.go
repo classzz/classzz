@@ -98,6 +98,12 @@ type AddBeaconPledgeOut struct {
 	StakingAmount float64
 }
 
+type AddBeaconCoinbaseOut struct {
+	Address         string
+	ToAddress       []byte
+	CoinBaseAddress []string
+}
+
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
@@ -135,6 +141,14 @@ type AddBeaconPledgeCmd struct {
 	LockTime        *int64
 }
 
+// AddBeaconCoinbase defines JSON-RPC command.
+type AddBeaconCoinbaseCmd struct {
+	Inputs            []TransactionInput
+	AddBeaconCoinbase AddBeaconCoinbaseOut
+	Amounts           *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime          *int64
+}
+
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""
@@ -152,13 +166,19 @@ type BeaconAddressInfo struct {
 	Fee             uint64           `json:"fee"`
 	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit     `json:"white_list"`
-	CoinBaseAddress []string         `json:"CoinBaseAddress"`
+	CoinBaseAddress []string         `json:"coinbase_address"`
 }
 
 type AddBeaconPledge struct {
 	Address       string   `json:"address"`
 	ToAddress     []byte   `json:"to_address"`
 	StakingAmount *big.Int `json:"staking_amount"`
+}
+
+type AddBeaconCoinbase struct {
+	Address         string   `json:"address"`
+	ToAddress       []byte   `json:"to_address"`
+	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
@@ -214,6 +234,20 @@ func NewAddBeaconPledgeCmd(inputs []TransactionInput, addBeaconPledgeOut AddBeac
 		AddBeaconPledge: addBeaconPledgeOut,
 		Amounts:         amounts,
 		LockTime:        lockTime,
+	}
+}
+
+// NewCreateRawTransactionCmd returns a new instance which can be used to issue
+// a createrawtransaction JSON-RPC command.
+//
+// Amounts are in BTC.
+func NewAddBeaconCoinbaseCmd(inputs []TransactionInput, outs AddBeaconCoinbaseOut, amounts *map[string]float64,
+	lockTime *int64) *AddBeaconCoinbaseCmd {
+	return &AddBeaconCoinbaseCmd{
+		Inputs:            inputs,
+		AddBeaconCoinbase: outs,
+		Amounts:           amounts,
+		LockTime:          lockTime,
 	}
 }
 
@@ -976,6 +1010,7 @@ func init() {
 	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
+	MustRegisterCmd("addbeaconcoinbase", (*AddBeaconCoinbaseCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)
