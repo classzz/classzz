@@ -407,17 +407,18 @@ func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo
 		}
 	}
 }
-func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, atype uint32,tx []byte) {
+func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, 
+	atype uint32,proof *BurnProofItem) {
 	for _, entity := range *ee {
 		if entity.AssetType == atype {
-			entity.BurnAmount.finishBurn(height, amount,tx)
+			entity.BurnAmount.finishBurn(height, amount,proof)
 		}
 	}
 }
-func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo) error {
+func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo,outHeight uint64) error {
 	for _, entity := range *ee {
 		if entity.AssetType == info.Atype {
-			entity.BurnAmount.verifyProof(info.Height, info.Amount)
+			entity.BurnAmount.verifyProof(info,outHeight)
 		}
 	}
 	return ErrNoUserAsset
@@ -437,7 +438,7 @@ type BurnItem struct {
 	Amount      *big.Int `json:"amount"`  // czz asset amount
 	RAmount     *big.Int `json:"ramount"` // outside asset amount
 	Height      uint64   `json:"height"`
-	Proof 		[]byte   `json:"proof"`		// the tx of outside
+	Proof 		*BurnProofItem   `json:"proof"`		// the tx of outside
 	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
 
@@ -512,21 +513,35 @@ func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnIte
 	}
 	return nil
 }
-func (b *BurnInfos) finishBurn(height uint64, amount *big.Int,tx []byte) {
+func (b *BurnInfos) finishBurn(height uint64, amount *big.Int,proof *BurnProofItem) {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState != 1 && 
 		amount.Cmp(v.Amount) == 0 {
-			v.RedeemState,v.Proof = 1,tx
+			v.RedeemState,v.Proof = 1,proof
 		}
 	}
 }
 func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
 	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
-func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 0 && 
-		amount.Cmp(v.Amount) == 0 && len(v.Proof) == 0 {
+func (b *BurnInfos) EarliestHeightAndUsedTx(tx []byte) (uint64,bool) {
+	height,used := uint64(0),false
+	for _,v := range b.Items {
+		if v.Proof != nil {
+			if height == 0 || height < v.Proof.Height {
+				height = v.Proof.Height
+			}
+			if bytes.Equal(v.Proof.TxHash,tx) {
+				used = true
+			}
+		}
+	}
+	return height,used
+}
+func (b *BurnInfos) verifyProof(info *BurnProofInfo,outHeight uint64) error {
+	eHeight,used := b.EarliestHeightAndUsedTx(info.TxHash)
+	if outHeight >= eHeight && !used{
+		if i := b.getItem(info.Height,info.Amount,byte(0)); i != nil {
 			return nil
 		}
 	}
@@ -555,6 +570,11 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 		res = res.Add(res, v.getAll())
 	}
 	return res
+}
+
+type BurnProofItem struct {
+	Height uint64
+	TxHash []byte
 }
 
 type BurnProofInfo struct {

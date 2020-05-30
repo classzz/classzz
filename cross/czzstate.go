@@ -548,7 +548,7 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 	// get limit staking warnning message
 	return beacon.updatePunished(amount)
 }
-func (es *EntangleState) verifyBurnProof(info *BurnProofInfo) error {
+func (es *EntangleState) verifyBurnProof(info *BurnProofInfo,outHeight uint64) error {
 	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
 		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
@@ -556,7 +556,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo) error {
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
-				return userEntity.verifyBurnProof(info)
+				return userEntity.verifyBurnProof(info,outHeight)
 			} else {
 				return ErrNotMatchUser
 			}
@@ -567,7 +567,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo) error {
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzutil.Address, 
-	atype uint32, amount *big.Int,tx []byte) error {
+	atype uint32, amount *big.Int,proof *BurnProofItem) error {
 	userEntitys, ok := es.EnEntitys[lightID]
 	if !ok {
 		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", lightID)
@@ -575,7 +575,7 @@ func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzut
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if bytes.Equal(addr.ScriptAddress(), []byte(addr1)) {
-				userEntity.finishBurnState(height, amount, atype,tx)
+				userEntity.finishBurnState(height, amount, atype,proof)
 			}
 		}
 	}

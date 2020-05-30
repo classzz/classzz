@@ -990,10 +990,12 @@ func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 }
 //////////////////////////////////////////////////////////////////////////////
 func VerifyBurnProof(info *BurnProofInfo,ev *ExChangeVerify,state *EntangleState) error {
-	if err := ev.verifyBurnProof(info,state); err != nil {
+	oHeight := uint64(0)
+	err := ev.verifyBurnProof(info,state)
+	if err != nil {
 		return err
 	}
-	if err := state.verifyBurnProof(info); err != nil {
+	if err := state.verifyBurnProof(info,oHeight); err != nil {
 		return err
 	}
 	return nil
