@@ -210,12 +210,6 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, true, nil
 	}
 
-	if b.chainParams.EntangleHeight < blockHeight && b.chainParams.BeaconHeight > blockHeight {
-		if err := b.CheckBlockEntangle(block); err != nil {
-			return false, false, err
-		}
-	}
-
 	// Beacon Verify
 	if b.chainParams.BeaconHeight < blockHeight {
 		if err := b.CheckBeacon(block, prevHeight); err != nil {
