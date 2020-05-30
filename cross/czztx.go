@@ -989,7 +989,15 @@ func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 	return keepinfo
 }
 //////////////////////////////////////////////////////////////////////////////
-
+func VerifyBurnProof(info *BurnProofInfo,ev *ExChangeVerify,state *EntangleState) error {
+	if err := ev.verifyBurnProof(info,state); err != nil {
+		return err
+	}
+	if err := state.verifyBurnProof(info); err != nil {
+		return err
+	}
+	return nil
+}
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {
@@ -1022,7 +1030,6 @@ func reverseToDoge(keeped *big.Int) (*big.Int, *big.Int) {
 	divisor0, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
 	return base.Add(base, divisor0), divisor
 }
-
 // doge has same precision with czz
 func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {

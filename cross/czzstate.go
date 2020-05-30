@@ -566,7 +566,8 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo) error {
 }
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
-func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzutil.Address, atype uint32, amount *big.Int) error {
+func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzutil.Address, 
+	atype uint32, amount *big.Int,tx []byte) error {
 	userEntitys, ok := es.EnEntitys[lightID]
 	if !ok {
 		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", lightID)
@@ -574,7 +575,7 @@ func (es *EntangleState) FinishHandleUserBurn(lightID, height uint64, addr czzut
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if bytes.Equal(addr.ScriptAddress(), []byte(addr1)) {
-				userEntity.finishBurnState(height, amount, atype)
+				userEntity.finishBurnState(height, amount, atype,tx)
 			}
 		}
 	}

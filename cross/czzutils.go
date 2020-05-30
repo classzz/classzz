@@ -407,10 +407,10 @@ func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo
 		}
 	}
 }
-func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, atype uint32) {
+func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, atype uint32,tx []byte) {
 	for _, entity := range *ee {
 		if entity.AssetType == atype {
-			entity.BurnAmount.finishBurn(height, amount)
+			entity.BurnAmount.finishBurn(height, amount,tx)
 		}
 	}
 }
@@ -512,10 +512,11 @@ func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnIte
 	}
 	return nil
 }
-func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
+func (b *BurnInfos) finishBurn(height uint64, amount *big.Int,tx []byte) {
 	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 3 && amount.Cmp(v.Amount) == 0 {
-			v.RedeemState = 1
+		if v.Height == height && v.RedeemState != 1 && 
+		amount.Cmp(v.Amount) == 0 {
+			v.RedeemState,v.Proof = 1,tx
 		}
 	}
 }
@@ -524,7 +525,8 @@ func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
 }
 func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
 	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+		if v.Height == height && v.RedeemState == 0 && 
+		amount.Cmp(v.Amount) == 0 && len(v.Proof) == 0 {
 			return nil
 		}
 	}
