@@ -573,7 +573,7 @@ func ExChangeScript(data []byte) ([]byte, error) {
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN199).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddData(data).Script()
 }
 
 // BeaconRegistration impl in
