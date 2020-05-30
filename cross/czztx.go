@@ -819,6 +819,118 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 	return keepInfo, err
 }
 
+func VerifyBurnProofs(info *BurnProofInfo,state *EntangleState,ev *ExChangeVerify) error {
+	if err := ev.verifyBurnProof(info,state); err != nil {
+		return err
+	}
+	if err := state.verifyBurnProof(info); err != nil {
+		return err
+	}
+	// verifty the tx in the infos
+	return nil
+}
+/////////////////////////////////////////////////////////////////
+// the tool function for entangle tx
+type TmpAddressPair struct {
+	index   uint32
+	address czzutil.Address
+}
+
+func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
+	items := make([]*ExChangeItem, 0)
+	for _, v := range txs {
+		einfos, _ := IsExChangeTx(v.MsgTx())
+		if einfos != nil {
+			for i, out := range einfos {
+				item := &ExChangeItem{
+					EType: out.ExTxType,
+					Value: new(big.Int).Set(out.Amount),
+					Addr:  nil,
+				}
+				pairs, ok := addrs[*v.Hash()]
+				if ok {
+					for _, vv := range pairs {
+						if i == vv.index {
+							item.Addr = vv.address
+						}
+					}
+				}
+				items = append(items, item)
+			}
+		}
+	}
+	return items
+}
+
+func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
+	// txhash := tx.Hash()
+	einfo, _ := IsExChangeTx(tx.MsgTx())
+	if einfo != nil {
+		// verify the entangle tx
+
+		pairs := make([]*TmpAddressPair, 0)
+		tt, err := ev.VerifyExChangeTx(tx.MsgTx(), eState)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range tt {
+			pub, err1 := RecoverPublicFromBytes(v.Pub, v.EType)
+			if err1 != nil {
+				return nil, err1
+			}
+			err2, addr := MakeAddress(*pub)
+			if err2 != nil {
+				return nil, err2
+			}
+			pairs = append(pairs, &TmpAddressPair{
+				index:   v.Index,
+				address: addr,
+			})
+		}
+
+		return pairs, nil
+	}
+
+	return nil, nil
+}
+func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
+	lastScriptInfo []byte, fork bool, state *EntangleState) bool {
+	if items == nil || len(items) == 0 {
+		return false
+	}
+
+	var keepInfo *KeepedAmount
+	var err error
+	if fork {
+		types := []uint32{}
+		for _, v := range items {
+			types = append(types, uint32(v.EType))
+		}
+		keepInfo = getKeepInfosFromState(state, types)
+	} else {
+		keepInfo, err = KeepedAmountFromScript(lastScriptInfo)
+	}
+	if err != nil || keepInfo == nil {
+		return false
+	}
+	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
+	return !EnoughAmount(all, items, keepInfo, fork)
+}
+func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
+	if state == nil {
+		return nil
+	}
+	keepinfo := &KeepedAmount{Items: []KeepedItem{}}
+	for _, v := range types {
+		keepinfo.Add(KeepedItem{
+			ExTxType: ExpandedTxType(v),
+			Amount:   state.getAllEntangleAmount(v),
+		})
+	}
+	return keepinfo
+}
+
+////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {
 		return 0
@@ -850,7 +962,6 @@ func reverseToDoge(keeped *big.Int) (*big.Int, *big.Int) {
 	divisor0, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
 	return base.Add(base, divisor0), divisor
 }
-
 // doge has same precision with czz
 func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -1110,103 +1221,4 @@ func makeMant(value *big.Float, prec int) *big.Int {
 	val, _ := v.Int64()
 	return big.NewInt(val)
 }
-
-// the tool function for entangle tx
-type TmpAddressPair struct {
-	index   uint32
-	address czzutil.Address
-}
-
-func ToEntangleItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
-	items := make([]*ExChangeItem, 0)
-	for _, v := range txs {
-		einfos, _ := IsExChangeTx(v.MsgTx())
-		if einfos != nil {
-			for i, out := range einfos {
-				item := &ExChangeItem{
-					EType: out.ExTxType,
-					Value: new(big.Int).Set(out.Amount),
-					Addr:  nil,
-				}
-				pairs, ok := addrs[*v.Hash()]
-				if ok {
-					for _, vv := range pairs {
-						if i == vv.index {
-							item.Addr = vv.address
-						}
-					}
-				}
-				items = append(items, item)
-			}
-		}
-	}
-	return items
-}
-
-func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
-	// txhash := tx.Hash()
-	einfo, _ := IsExChangeTx(tx.MsgTx())
-	if einfo != nil {
-		// verify the entangle tx
-
-		pairs := make([]*TmpAddressPair, 0)
-		tt, err := ev.VerifyExChangeTx(tx.MsgTx(), eState)
-		if err != nil {
-			return nil, err
-		}
-		for _, v := range tt {
-			pub, err1 := RecoverPublicFromBytes(v.Pub, v.EType)
-			if err1 != nil {
-				return nil, err1
-			}
-			err2, addr := MakeAddress(*pub)
-			if err2 != nil {
-				return nil, err2
-			}
-			pairs = append(pairs, &TmpAddressPair{
-				index:   v.Index,
-				address: addr,
-			})
-		}
-
-		return pairs, nil
-	}
-
-	return nil, nil
-}
-func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
-	lastScriptInfo []byte, fork bool, state *EntangleState) bool {
-	if items == nil || len(items) == 0 {
-		return false
-	}
-
-	var keepInfo *KeepedAmount
-	var err error
-	if fork {
-		types := []uint32{}
-		for _, v := range items {
-			types = append(types, uint32(v.EType))
-		}
-		keepInfo = getKeepInfosFromState(state, types)
-	} else {
-		keepInfo, err = KeepedAmountFromScript(lastScriptInfo)
-	}
-	if err != nil || keepInfo == nil {
-		return false
-	}
-	all := pool.Amount[0].Int64() + tx.TxOut[1].Value
-	return !EnoughAmount(all, items, keepInfo, fork)
-}
-func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
-	if state == nil {
-		return nil
-	}
-	keepinfo := &KeepedAmount{Items: []KeepedItem{}}
-	for _, v := range types {
-		keepinfo.Add(KeepedItem{
-			ExTxType: ExpandedTxType(v),
-			Amount:   state.getAllEntangleAmount(v),
-		})
-	}
-	return keepinfo
-}
+////////////////////////////////////////////////////////////////

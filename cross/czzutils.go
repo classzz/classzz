@@ -427,20 +427,11 @@ func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo
 	}
 }
 /////////////////////////////////////////////////////////////////
-
-
-type BurnProofInfo struct {
-	LightID uint64				// 
-	Height  uint64
-	Amount  *big.Int
-	Address czzutil.Address
-	Atype   uint32
-	TxHash  []byte
-}
 type BurnItem struct {
 	Amount      *big.Int `json:"amount"`  // czz asset amount
 	RAmount     *big.Int `json:"ramount"` // outside asset amount
 	Height      uint64   `json:"height"`
+	Proof 		[]byte   `json:"proof"`		// the tx of outside
 	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
 
@@ -556,6 +547,15 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 		res = res.Add(res, v.getAll())
 	}
 	return res
+}
+
+type BurnProofInfo struct {
+	LightID uint64				// the lightid for beaconAddress of user burn's asset
+	Height  uint64				// the height include the tx of user burn's asset 
+	Amount  *big.Int			// the amount of burned asset (czz)
+	Address czzutil.Address		
+	Atype   uint32
+	TxHash  []byte				// the tx hash of outside
 }
 
 type LHPunishedItem struct {
