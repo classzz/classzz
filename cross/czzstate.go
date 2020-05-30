@@ -326,7 +326,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 // verify the txid,keep equal amount czz
 // returns the amount czz by user's burnned, took out fee by beaconaddress
 func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
-	amount *big.Int) (*big.Int, error) {
+	amount *big.Int) (*big.Int,*big.Int, error) {
 	light := es.getBeaconAddress(lightID)
 	if light == nil {
 		return nil, ErrNoRegister
@@ -363,10 +363,11 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 	// get out asset for burn czz
 	outAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	userEntity.BurnAmount.addBurnItem(height, amount, outAmount)
-	res := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
+	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 
-	return new(big.Int).Sub(amount, res), nil
+	return new(big.Int).Sub(amount, fee), fee,nil
 }
+
 func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
 	es.PoolAmount1, es.PoolAmount2 = new(big.Int).Set(amount1), new(big.Int).Set(amount2)
 }

@@ -852,14 +852,14 @@ mempoolLoop:
 
 		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
 			if info != nil {
-				amount, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
+				amount,fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
 				if err1 != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"SetBurnAsset: %v", tx.Hash(), err1)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount)
+				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount,"fee:",fee)
 			}
 		}
 
