@@ -62,125 +62,44 @@ func validKeepTime(kt *big.Int) bool {
 	}
 	return true
 }
-
-type BurnItem struct {
-	Amount      *big.Int `json:"amount"`  // czz asset amount
-	RAmount     *big.Int `json:"ramount"` // outside asset amount
-	Height      uint64   `json:"height"`
-	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
-}
-
-func (b *BurnItem) equal(o *BurnItem) bool {
-	return b.Height == o.Height &&
-		b.Amount.Cmp(o.Amount) == 0 && b.RAmount.Cmp(o.Amount) == 0
-}
-
-type BurnInfos struct {
-	Items      []*BurnItem
-	RAllAmount *big.Int // redeem asset for outside asset by burned czz
-	BAllAmount *big.Int // all burned asset on czz by the account
-}
-
-func newBurnInfos() *BurnInfos {
-	return &BurnInfos{
-		Items:      make([]*BurnItem, 0, 0),
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
+func ValidAssetType(utype uint32) bool {
+	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
+		return true
 	}
+	return false
 }
-
-// GetAllAmountByOrigin returns all burned amount asset (czz)
-func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
-	return new(big.Int).Set(b.BAllAmount)
+func ValidPK(pk []byte) bool {
+	if len(pk) != 64 {
+		return false
+	}
+	return true
 }
-func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
-	return new(big.Int).Set(b.RAllAmount)
+func isValidAsset(atype, assetAll uint32) bool {
+	return atype&assetAll != 0
 }
-func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
-	res := make([]*BurnItem, 0, 0)
-	for _, v := range b.Items {
-		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
-			res = append(res, &BurnItem{
-				Amount:      new(big.Int).Set(v.Amount),
-				RAmount:     new(big.Int).Set(v.RAmount),
-				Height:      v.Height,
-				RedeemState: v.RedeemState,
-			})
-			if update {
-				v.RedeemState = 2
+func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
+	found_t := 0
+	StakingAmount := big.NewInt(0)
+	for _, eninfo := range eState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if address.String() == eAddr {
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
+				found_t = 1
+				break
 			}
 		}
 	}
-	return res
-}
-func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
-	item := &BurnItem{
-		Amount:      new(big.Int).Set(amount),
-		RAmount:     new(big.Int).Set(outAmount),
-		Height:      height,
-		RedeemState: 0,
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
+		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
+		target = big.NewInt(0).Mul(target, result1)
 	}
-	found := false
-	for _, v := range b.Items {
-		if v.RedeemState == 0 && v.equal(item) {
-			found = true
-			break
-		}
+	if target.Cmp(params.PowLimit) > 0 {
+		target.Set(params.PowLimit)
 	}
-	if !found {
-		b.Items = append(b.Items, item)
-		b.RAllAmount = new(big.Int).Add(b.RAllAmount, outAmount)
-		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
-	}
+	return target
 }
-func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
-			return v
-		}
-	}
-	return nil
-}
-func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 3 && amount.Cmp(v.Amount) == 0 {
-			v.RedeemState = 1
-		}
-	}
-}
-func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
-	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
-}
-func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
-			return nil
-		}
-	}
-	return ErrBurnProof
-}
-
-type TimeOutBurnInfo struct {
-	Items     []*BurnItem
-	AssetType uint32
-}
-
-func (t *TimeOutBurnInfo) getAll() *big.Int {
-	res := big.NewInt(0)
-	for _, v := range t.Items {
-		res = res.Add(res, v.Amount)
-	}
-	return res
-}
-
-type TypeTimeOutBurnInfo []*TimeOutBurnInfo
-type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfo
-
-type LHPunishedItem struct {
-	All  *big.Int // czz amount(all user burned item in timeout)
-	User string
-}
-type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -507,6 +426,130 @@ func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo
 		}
 	}
 }
+/////////////////////////////////////////////////////////////////
+
+
+type BurnProofInfo struct {
+	LightID uint64				// 
+	Height  uint64
+	Amount  *big.Int
+	Address czzutil.Address
+	Atype   uint32
+	TxHash  []byte
+}
+type BurnItem struct {
+	Amount      *big.Int `json:"amount"`  // czz asset amount
+	RAmount     *big.Int `json:"ramount"` // outside asset amount
+	Height      uint64   `json:"height"`
+	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+}
+
+func (b *BurnItem) equal(o *BurnItem) bool {
+	return b.Height == o.Height &&
+		b.Amount.Cmp(o.Amount) == 0 && b.RAmount.Cmp(o.Amount) == 0
+}
+
+type BurnInfos struct {
+	Items      []*BurnItem
+	RAllAmount *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount *big.Int // all burned asset on czz by the account
+}
+
+func newBurnInfos() *BurnInfos {
+	return &BurnInfos{
+		Items:      make([]*BurnItem, 0, 0),
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+	}
+}
+
+// GetAllAmountByOrigin returns all burned amount asset (czz)
+func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
+	return new(big.Int).Set(b.BAllAmount)
+}
+func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
+	return new(big.Int).Set(b.RAllAmount)
+}
+func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
+	res := make([]*BurnItem, 0, 0)
+	for _, v := range b.Items {
+		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
+			res = append(res, &BurnItem{
+				Amount:      new(big.Int).Set(v.Amount),
+				RAmount:     new(big.Int).Set(v.RAmount),
+				Height:      v.Height,
+				RedeemState: v.RedeemState,
+			})
+			if update {
+				v.RedeemState = 2
+			}
+		}
+	}
+	return res
+}
+func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
+	item := &BurnItem{
+		Amount:      new(big.Int).Set(amount),
+		RAmount:     new(big.Int).Set(outAmount),
+		Height:      height,
+		RedeemState: 0,
+	}
+	found := false
+	for _, v := range b.Items {
+		if v.RedeemState == 0 && v.equal(item) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		b.Items = append(b.Items, item)
+		b.RAllAmount = new(big.Int).Add(b.RAllAmount, outAmount)
+		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
+	}
+}
+func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
+			return v
+		}
+	}
+	return nil
+}
+func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 3 && amount.Cmp(v.Amount) == 0 {
+			v.RedeemState = 1
+		}
+	}
+}
+func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
+	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
+}
+func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+			return nil
+		}
+	}
+	return ErrBurnProof
+}
+
+type TimeOutBurnInfo struct {
+	Items     []*BurnItem
+	AssetType uint32
+}
+
+func (t *TimeOutBurnInfo) getAll() *big.Int {
+	res := big.NewInt(0)
+	for _, v := range t.Items {
+		res = res.Add(res, v.Amount)
+	}
+	return res
+}
+
+type TypeTimeOutBurnInfo []*TimeOutBurnInfo
+type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfo
+
 func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 	res := big.NewInt(0)
 	for _, v := range *uu {
@@ -515,53 +558,11 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 	return res
 }
 
-type BurnProofInfo struct {
-	LightID uint64
-	Height  uint64
-	Amount  *big.Int
-	Address czzutil.Address
-	Atype   uint32
-	TxHash  []byte
+type LHPunishedItem struct {
+	All  *big.Int // czz amount(all user burned item in timeout)
+	User string
 }
+type LHPunishedItems []*LHPunishedItem
 
+//////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
-func ValidAssetType(utype uint32) bool {
-	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
-		return true
-	}
-	return false
-}
-func ValidPK(pk []byte) bool {
-	if len(pk) != 64 {
-		return false
-	}
-	return true
-}
-
-func isValidAsset(atype, assetAll uint32) bool {
-	return atype&assetAll != 0
-}
-
-func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range eState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if address.String() == eAddr {
-				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
-			}
-		}
-	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
-		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
-		target = big.NewInt(0).Mul(target, result1)
-	}
-	if target.Cmp(params.PowLimit) > 0 {
-		target.Set(params.PowLimit)
-	}
-	return target
-}
