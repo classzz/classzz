@@ -280,6 +280,35 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("ltc PkScript err")
+			return nil, errors.New(e)
+		}
+
+		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		if err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "ltc Invalid address or key: " + err.Error(),
+			}
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("ltc addr err")
+			return nil, errors.New(e)
+		}
+
+		addr2Str := addr2.String()
+		addr3Str := addr3.String()
+		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+
+		//if addr3.String() != addr2.String() {
+		//	e := fmt.Sprintf("doge dogePoolPub err")
+		//	return nil, errors.New(e)
+		//}
+
 		if addr.String() != ltcPoolAddr {
 			e := fmt.Sprintf("ltc PoolAddr err")
 			return nil, errors.New(e)
@@ -292,6 +321,369 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 				return pk, nil
 			} else {
 				e := fmt.Sprintf("ltc Maturity err")
+				return nil, errors.New(e)
+			}
+		}
+	}
+}
+
+func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
+
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+
+	// Get the current block count.
+	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+		return nil, err
+	} else {
+
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("btc Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
+			return nil, errors.New("btc TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputePk err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+				return nil, errors.New(e)
+			}
+		}
+
+		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+					e := fmt.Sprintf("btc Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					return nil, errors.New(e)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		if eInfo.Amount.Int64() < 0 || tx.MsgTx().TxOut[eInfo.Index].Value != eInfo.Amount.Int64() {
+			e := fmt.Sprintf("btc amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
+			return nil, errors.New(e)
+		}
+
+		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
+			e := fmt.Sprintf("btc PkScript err")
+			return nil, errors.New(e)
+		}
+
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x32,
+		}
+
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("btc addr err")
+			return nil, errors.New(e)
+		}
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("btc PkScript err")
+			return nil, errors.New(e)
+		}
+
+		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		if err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Invalid address or key: " + err.Error(),
+			}
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("btc addr err")
+			return nil, errors.New(e)
+		}
+
+		addr2Str := addr2.String()
+		addr3Str := addr3.String()
+		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+
+		//if addr3.String() != addr2.String() {
+		//	e := fmt.Sprintf("doge dogePoolPub err")
+		//	return nil, errors.New(e)
+		//}
+
+		if addr.String() != ltcPoolAddr {
+			e := fmt.Sprintf("btc PoolAddr err")
+			return nil, errors.New(e)
+		}
+
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
+		} else {
+			if count-int64(eInfo.Height) > ltcMaturity {
+				return pk, nil
+			} else {
+				e := fmt.Sprintf("btc Maturity err")
+				return nil, errors.New(e)
+			}
+		}
+	}
+}
+
+func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
+
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+
+	// Get the current block count.
+	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+		return nil, err
+	} else {
+
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("Bch Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
+			return nil, errors.New("Bch TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("Bch ComputePk err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("Bch ComputeWitnessPk err %s", err)
+				return nil, errors.New(e)
+			}
+		}
+
+		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+					e := fmt.Sprintf("Bch Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					return nil, errors.New(e)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		if eInfo.Amount.Int64() < 0 || tx.MsgTx().TxOut[eInfo.Index].Value != eInfo.Amount.Int64() {
+			e := fmt.Sprintf("Bch amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
+			return nil, errors.New(e)
+		}
+
+		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
+			e := fmt.Sprintf("Bch PkScript err")
+			return nil, errors.New(e)
+		}
+
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x32,
+		}
+
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("Bch addr err")
+			return nil, errors.New(e)
+		}
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("Bch PkScript err")
+			return nil, errors.New(e)
+		}
+
+		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		if err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Bch Invalid address or key: " + err.Error(),
+			}
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("Bch addr err")
+			return nil, errors.New(e)
+		}
+
+		addr2Str := addr2.String()
+		addr3Str := addr3.String()
+		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+
+		//if addr3.String() != addr2.String() {
+		//	e := fmt.Sprintf("doge dogePoolPub err")
+		//	return nil, errors.New(e)
+		//}
+
+		if addr.String() != ltcPoolAddr {
+			e := fmt.Sprintf("Bch PoolAddr err")
+			return nil, errors.New(e)
+		}
+
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
+		} else {
+			if count-int64(eInfo.Height) > ltcMaturity {
+				return pk, nil
+			} else {
+				e := fmt.Sprintf("Bch Maturity err")
+				return nil, errors.New(e)
+			}
+		}
+	}
+}
+
+func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
+
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+
+	// Get the current block count.
+	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+		return nil, err
+	} else {
+
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("Bsv Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
+			return nil, errors.New("Bsv TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("Bsv ComputePk err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("Bsv ComputeWitnessPk err %s", err)
+				return nil, errors.New(e)
+			}
+		}
+
+		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+					e := fmt.Sprintf("Bsv Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					return nil, errors.New(e)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		if eInfo.Amount.Int64() < 0 || tx.MsgTx().TxOut[eInfo.Index].Value != eInfo.Amount.Int64() {
+			e := fmt.Sprintf("Bsv amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
+			return nil, errors.New(e)
+		}
+
+		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
+			e := fmt.Sprintf("Bsv PkScript err")
+			return nil, errors.New(e)
+		}
+
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		if err != nil {
+			return nil, err
+		}
+
+		ltcparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x32,
+		}
+
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("Bsv addr err")
+			return nil, errors.New(e)
+		}
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("Bsv PkScript err")
+			return nil, errors.New(e)
+		}
+
+		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		if err != nil {
+			return nil, &btcjson.RPCError{
+				Code:    btcjson.ErrRPCInvalidAddressOrKey,
+				Message: "Bsv Invalid address or key: " + err.Error(),
+			}
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("Bsv addr err")
+			return nil, errors.New(e)
+		}
+
+		addr2Str := addr2.String()
+		addr3Str := addr3.String()
+		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+
+		//if addr3.String() != addr2.String() {
+		//	e := fmt.Sprintf("doge dogePoolPub err")
+		//	return nil, errors.New(e)
+		//}
+
+		if addr.String() != ltcPoolAddr {
+			e := fmt.Sprintf("Bsv PoolAddr err")
+			return nil, errors.New(e)
+		}
+
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
+		} else {
+			if count-int64(eInfo.Height) > ltcMaturity {
+				return pk, nil
+			} else {
+				e := fmt.Sprintf("Bsv Maturity err")
 				return nil, errors.New(e)
 			}
 		}
@@ -508,7 +900,7 @@ func (ev *ExChangeVerify) VerifyAddBeaconCoinbaseTx(tx *wire.MsgTx, eState *Enta
 
 	return bp, nil
 }
-func (ev *ExChangeVerify) verifyBurnProof(info *BurnProofInfo,eState *EntangleState) error {
+func (ev *ExChangeVerify) verifyBurnProof(info *BurnProofInfo, eState *EntangleState) error {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
