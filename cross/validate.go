@@ -80,11 +80,11 @@ func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState)
 	case ExpandedTxEntangle_Ltc:
 		return ev.verifyLtcTx(eInfo, eState)
 	case ExpandedTxEntangle_Btc:
-		return ev.verifyLtcTx(eInfo, eState)
+		return ev.verifyBtcTx(eInfo, eState)
 	case ExpandedTxEntangle_Bsv:
-		return ev.verifyLtcTx(eInfo, eState)
+		return ev.verifyBsvTx(eInfo, eState)
 	case ExpandedTxEntangle_Bch:
-		return ev.verifyLtcTx(eInfo, eState)
+		return ev.verifyBchTx(eInfo, eState)
 	}
 	return nil, nil
 }

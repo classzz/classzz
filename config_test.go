@@ -159,3 +159,23 @@ func TestGenesisSimNetAdderss(t *testing.T) {
 	}
 	fmt.Println(address.String())
 }
+
+func TestNewAddressFromPub(t *testing.T) {
+
+	// btc 0x00
+	// bsv 0x00
+	// bch 0x00
+
+	pub, _ := hex.DecodeString("1fad1e999a021ffbe97556f2b7b6ab4ac25c95fd")
+	params := &chaincfg.Params{
+		LegacyScriptHashAddrID: 0x00,
+	}
+
+	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, params)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
+	}
+
+	fmt.Println("address: ", addr.String())
+
+}

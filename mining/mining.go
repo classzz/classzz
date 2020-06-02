@@ -636,11 +636,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	log.Debugf("Considering %d transactions for inclusion to new block",
 		len(sourceTxns))
 
+	txkeys := make(map[chainhash.Hash]string)
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		// A block can't have more than one coinbase or contain
 		// non-finalized transactions.
 		tx := txDesc.Tx
+		txkeys[*tx.Hash()] = ""
 		if blockchain.IsCoinBase(tx) {
 			if g.chainParams.EntangleHeight > nextBlockHeight && len(tx.MsgTx().TxIn) == 3 {
 				log.Tracef("Skipping coinbase tx %s", tx.Hash())
@@ -750,6 +752,20 @@ mempoolLoop:
 		// Grab any transactions which depend on this one.
 		deps := dependers[*tx.Hash()]
 
+		key := false
+		for _, in := range tx.MsgTx().TxIn {
+			if _, ok := txkeys[in.PreviousOutPoint.Hash]; ok {
+				key = true
+			}
+		}
+
+		if key {
+			log.Debugf("Skipping tx %s because it would exceed "+
+				"the max block size", tx.Hash())
+			logSkippedDeps(tx, deps)
+			continue
+		}
+
 		// Enforce maximum block size.  Also check for overflow.
 		txSize := uint32(tx.MsgTx().SerializeSize())
 		blockPlusTxSize := blockSize + txSize
@@ -849,18 +865,18 @@ mempoolLoop:
 		if sameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
-		if info,err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			oHeight,err1 := cross.VerifyBurnProof(info,g.chain.GetExChangeVerify(), eState)
+		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+			oHeight, err1 := cross.VerifyBurnProof(info, g.chain.GetExChangeVerify(), eState)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"BurnProofTx: %v", tx.Hash(), err1)
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			if info.IsBeacon{
-				eState.FinishHandleUserBurn(info,&cross.BurnProofItem{
-					Height:			oHeight,
-					TxHash:			append([]byte{},info.TxHash...),
+			if info.IsBeacon {
+				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+					Height: oHeight,
+					TxHash: append([]byte{}, info.TxHash...),
 				})
 			} else {
 				// send reward to the robot and Punished the beacon address
@@ -869,7 +885,7 @@ mempoolLoop:
 		}
 		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
 			if info != nil {
-				amount,fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
+				amount, fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
 				if err1 != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"SetBurnAsset: %v", tx.Hash(), err1)
@@ -877,7 +893,7 @@ mempoolLoop:
 					continue
 				}
 				// now will be seed fee to beacon address
-				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount,"fee:",fee)
+				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
 		}
 
