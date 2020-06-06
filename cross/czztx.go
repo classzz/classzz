@@ -5,6 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"math/big"
+	"strings"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -12,9 +16,6 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"io"
-	"math/big"
-	"strings"
 )
 
 type ExpandedTxType uint8
@@ -888,6 +889,7 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 	err := keepInfo.Parse(data)
 	return keepInfo, err
 }
+
 // the tool function for entangle tx
 type TmpAddressPair struct {
 	index   uint32
@@ -988,18 +990,20 @@ func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 	}
 	return keepinfo
 }
+
 //////////////////////////////////////////////////////////////////////////////
-func VerifyBurnProof(info *BurnProofInfo,ev *ExChangeVerify,state *EntangleState) (uint64,error) {
+func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleState, curHeight uint64) (uint64, error) {
 	oHeight := uint64(0)
-	err := ev.verifyBurnProof(info,state)
+	err := ev.verifyBurnProof(info, state)
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
-	if err := state.verifyBurnProof(info,oHeight); err != nil {
-		return 0,err
+	if err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
+		return 0, err
 	}
-	return oHeight,nil
+	return oHeight, nil
 }
+
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {
@@ -1032,6 +1036,7 @@ func reverseToDoge(keeped *big.Int) (*big.Int, *big.Int) {
 	divisor0, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
 	return base.Add(base, divisor0), divisor
 }
+
 // doge has same precision with czz
 func toDoge2(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
@@ -1291,4 +1296,3 @@ func makeMant(value *big.Float, prec int) *big.Int {
 	val, _ := v.Int64()
 	return big.NewInt(val)
 }
-

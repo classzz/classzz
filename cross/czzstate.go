@@ -326,23 +326,23 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 // verify the txid,keep equal amount czz
 // returns the amount czz by user's burnned, took out fee by beaconaddress
 func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
-	amount *big.Int) (*big.Int,*big.Int, error) {
+	amount *big.Int) (*big.Int, *big.Int, error) {
 	light := es.getBeaconAddress(lightID)
 	if light == nil {
-		return nil, nil,ErrNoRegister
+		return nil, nil, ErrNoRegister
 	}
 	lhEntitys, ok := es.EnEntitys[lightID]
 	if !ok {
-		return nil, nil,ErrNoRegister
+		return nil, nil, ErrNoRegister
 	}
 	userEntitys, ok1 := lhEntitys[addr]
 	if !ok1 {
-		return nil, nil,ErrNoUserReg
+		return nil, nil, ErrNoUserReg
 	}
 	// self redeem amount, maybe add the free quota in the BeaconAddress
 	validAmount := userEntitys.getAllRedeemableAmount()
 	if amount.Cmp(validAmount) > 0 {
-		return nil, nil,ErrNotEnouthBurn
+		return nil, nil, ErrNotEnouthBurn
 	}
 
 	var userEntity *EntangleEntity
@@ -353,19 +353,19 @@ func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height ui
 		}
 	}
 	if userEntity == nil {
-		return nil, nil,ErrNoUserAsset
+		return nil, nil, ErrNoUserAsset
 	}
 	reserve := es.getEntangledAmount(lightID, aType)
 	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
 	if err != nil {
-		return nil,nil, err
+		return nil, nil, err
 	}
 	// get out asset for burn czz
 	outAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	userEntity.BurnAmount.addBurnItem(height, amount, outAmount)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 
-	return new(big.Int).Sub(amount, fee), fee,nil
+	return new(big.Int).Sub(amount, fee), fee, nil
 }
 
 func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
@@ -548,7 +548,7 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 	// get limit staking warnning message
 	return beacon.updatePunished(amount)
 }
-func (es *EntangleState) verifyBurnProof(info *BurnProofInfo,outHeight uint64) error {
+func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) error {
 	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
 		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
@@ -556,7 +556,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo,outHeight uint64) e
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
-				return userEntity.verifyBurnProof(info,outHeight)
+				return userEntity.verifyBurnProof(info, outHeight, curHeight)
 			} else {
 				return ErrNotMatchUser
 			}
@@ -566,7 +566,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo,outHeight uint64) e
 }
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
-func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo,proof *BurnProofItem) error {
+func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
 	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
 		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.LightID)
@@ -574,7 +574,7 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo,proof *BurnPro
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
-				userEntity.finishBurnState(info.Height, info.Amount, info.Atype,proof)
+				userEntity.finishBurnState(info.Height, info.Amount, info.Atype, proof)
 			}
 		}
 	}
