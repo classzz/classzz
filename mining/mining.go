@@ -866,7 +866,7 @@ mempoolLoop:
 			continue
 		}
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			oHeight, err1 := cross.VerifyBurnProof(info, g.chain.GetExChangeVerify(), eState, uint64(nextBlockHeight))
+			oHeight, item, err1 := cross.VerifyBurnProof(info, g.chain.GetExChangeVerify(), eState, uint64(nextBlockHeight))
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"BurnProofTx: %v", tx.Hash(), err1)
@@ -881,6 +881,7 @@ mempoolLoop:
 			} else {
 				// send reward to the robot and Punished the beacon address
 				// estate.
+				cross.CloseProofForPunished(info, item, eState)
 			}
 		}
 		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {

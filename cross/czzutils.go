@@ -415,10 +415,18 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 		}
 	}
 }
-func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) error {
+func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, entity := range *ee {
 		if entity.AssetType == info.Atype {
-			entity.BurnAmount.verifyProof(info, outHeight, curHeight)
+			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
+		}
+	}
+	return nil, ErrNoUserAsset
+}
+func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint32) error {
+	for _, entity := range *ee {
+		if entity.AssetType == atype {
+			return entity.BurnAmount.closeProofForPunished(item)
 		}
 	}
 	return ErrNoUserAsset
@@ -446,6 +454,18 @@ type BurnItem struct {
 func (b *BurnItem) equal(o *BurnItem) bool {
 	return b.Height == o.Height && b.Amount.Cmp(o.Amount) == 0 &&
 		b.RAmount.Cmp(o.Amount) == 0
+}
+func (b *BurnItem) clone() *BurnItem {
+	return &BurnItem{
+		Amount:  new(big.Int).Set(b.Amount),
+		RAmount: new(big.Int).Set(b.RAmount),
+		Height:  b.Height,
+		Proof: &BurnProofItem{
+			Height: b.Proof.Height,
+			TxHash: append([]byte{}, b.Proof.TxHash...),
+		},
+		RedeemState: b.RedeemState,
+	}
 }
 
 type BurnInfos struct {
@@ -549,14 +569,14 @@ func (b *BurnInfos) EarliestHeightAndUsedTx(tx []byte) (uint64, bool) {
 	}
 	return height, used
 }
-func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) error {
+func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
 	if info.IsBeacon {
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
 					if info.Amount.Cmp(v.Amount) >= 0 && v.Proof == nil {
-						return nil
+						return v.clone(), nil
 					}
 				}
 			}
@@ -566,13 +586,19 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 			for _, v := range items {
 				if info.Amount.Cmp(v.Amount) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 					// deficiency or timeout
-					return nil
+					return v.clone(), nil
 				}
 			}
 		}
 	}
 
-	return ErrBurnProof
+	return nil, ErrBurnProof
+}
+func (b *BurnInfos) closeProofForPunished(item *BurnItem) error {
+	if v := b.getItem(item.Height, item.Amount, item.RedeemState); v != nil {
+		v.RedeemState = 2
+	}
+	return nil
 }
 
 type TimeOutBurnInfo struct {
