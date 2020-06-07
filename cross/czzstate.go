@@ -25,16 +25,20 @@ type EntangleState struct {
 	PoolAmount2   *big.Int
 	CurExchangeID uint64
 }
-
+/////////////////////////////////////////////////////////////////
 type StoreBeaconAddress struct {
 	Address string
 	Lh      *BeaconAddressInfo
 }
-
 type StoreUserInfos struct {
 	EID       uint64
 	UserInfos UserEntangleInfos
 }
+type StoreBeaconExInfos struct {
+	EID       uint64
+	EItem     *ExBeaconInfo
+}
+
 
 type SortStoreBeaconAddress []*StoreBeaconAddress
 
@@ -68,10 +72,22 @@ func (vs SortStoreUserInfos) Swap(i, j int) {
 	vs[j] = it
 }
 
-/////////////////////////////////////////////////////////////////
+type SortStoreBeaconExInfos []*StoreBeaconExInfos
 
-func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos) {
-	v1, v2 := make([]*StoreBeaconAddress, 0, 0), make([]*StoreUserInfos, 0, 0)
+func (vs SortStoreBeaconExInfos) Len() int {
+	return len(vs)
+}
+func (vs SortStoreBeaconExInfos) Less(i, j int) bool {
+	return vs[i].EID < vs[j].EID
+}
+func (vs SortStoreBeaconExInfos) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+/////////////////////////////////////////////////////////////////
+func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos,SortStoreBeaconExInfos) {
+	v1, v2,v3 := make([]*StoreBeaconAddress, 0, 0), make([]*StoreUserInfos, 0, 0),make([]*StoreBeaconExInfos, 0, 0)
 	for k, v := range es.EnInfos {
 		v1 = append(v1, &StoreBeaconAddress{
 			Address: k,
@@ -84,20 +100,31 @@ func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos) 
 			UserInfos: v,
 		})
 	}
+	for k,v := range es.BaExInfo {
+		v3 = append(v3, &StoreBeaconExInfos{
+			EID:    k,
+			EItem: 	v,
+		})
+	}
 	sort.Sort(SortStoreBeaconAddress(v1))
 	sort.Sort(SortStoreUserInfos(v2))
-	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2)
+	sort.Sort(SortStoreBeaconExInfos(v3))
+	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2),SortStoreBeaconExInfos(v3)
 }
-func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos) {
+func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos,v3 SortStoreBeaconExInfos) {
 	enInfos := make(map[string]*BeaconAddressInfo)
 	entitys := make(map[uint64]UserEntangleInfos)
+	exInfos := make(map[uint64]*ExBeaconInfo)
 	for _, v := range v1 {
 		enInfos[v.Address] = v.Lh
 	}
 	for _, v := range v2 {
 		entitys[v.EID] = v.UserInfos
 	}
-	es.EnInfos, es.EnEntitys = enInfos, entitys
+	for _,v := range v3 {
+		exInfos[v.EID] = v.EItem
+	}
+	es.EnInfos, es.EnEntitys,es.BaExInfo = enInfos, entitys,exInfos
 }
 
 func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
@@ -105,13 +132,14 @@ func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 		ID     uint64
 		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
+		Value3 SortStoreBeaconExInfos
 	}
 	var eb Store1
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
 	es.CurExchangeID = eb.ID
-	es.fromSlice(eb.Value1, eb.Value2)
+	es.fromSlice(eb.Value1, eb.Value2,eb.Value3)
 	return nil
 }
 func (es *EntangleState) EncodeRLP(w io.Writer) error {
@@ -119,14 +147,19 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 		ID     uint64
 		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
+		Value3 SortStoreBeaconExInfos
 	}
-	s1, s2 := es.toSlice()
+	s1, s2,s3 := es.toSlice()
 	return rlp.Encode(w, &Store1{
 		ID:     es.CurExchangeID,
 		Value1: s1,
 		Value2: s2,
+		Value3: s3,
 	})
 }
+
+/////////////////////////////////////////////////////////////////
+
 func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
 		if v.ExchangeID == eid {
