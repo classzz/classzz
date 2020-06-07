@@ -1009,6 +1009,33 @@ func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleS
 }
 
 //////////////////////////////////////////////////////////////////////////////
+func ScanTxForBeaconOnSpecHeight(beacon map[uint64][]byte) {
+	
+}
+// just fetch the outpoint info for beacon address's regsiter and append tx 
+func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *EntangleState,
+	params *chaincfg.Params) map[uint64][]*wire.OutPoint {
+	res := make(map[uint64][]*wire.OutPoint)
+	for _,v := range txs {
+		_,e1 := IsAddBeaconPledgeTx(v.MsgTx(),params)
+		_,e2 := IsBeaconRegistrationTx(v.MsgTx(),params)
+		if e1 != nil || e2 != nil {
+			_,addrs,_, err := txscript.ExtractPkScriptAddrs(v.MsgTx().TxOut[1].PkScript,params)
+			if err != nil {
+				to := addrs[0].ScriptAddress()
+				id := state.getBeaconIdByTo(to)
+				if id != 0 {
+					toAddress := big.NewInt(0).SetBytes(to).Uint64()
+					if toAddress >= 10 && toAddress <= 99 {
+						res[id] = append(res[id],wire.NewOutPoint(v.Hash(), 1))
+					}
+				}	
+			}
+		}
+	}
+	return res
+}
+//////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {
 		return 0

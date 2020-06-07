@@ -235,7 +235,9 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 	lh.StakingAmount = new(big.Int).Sub(lh.StakingAmount, amount)
 	return err
 }
-
+func (lh *BeaconAddressInfo) getToAddress() []byte {
+	return lh.ToAddress
+}
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
@@ -647,4 +649,4 @@ type LHPunishedItem struct {
 type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
+

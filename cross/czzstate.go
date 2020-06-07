@@ -11,12 +11,16 @@ import (
 
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rlp"
+	"github.com/classzz/classzz/wire"
 	// "github.com/classzz/czzutil"
 )
-
+type ExBeaconInfo struct {
+	EnItems 	[]*wire.OutPoint
+}
 type EntangleState struct {
 	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
+	BaExInfo 	  map[uint64]*ExBeaconInfo			// merge tx(outpoint) in every lid
 	PoolAmount1   *big.Int
 	PoolAmount2   *big.Int
 	CurExchangeID uint64
@@ -139,7 +143,19 @@ func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 	}
 	return nil
 }
-
+func (es *EntangleState) getBeaconIdByTo(to []byte) uint64 {
+	info := es.getBeaconAddressFromTo(to)
+	if info != nil {
+		return info.ExchangeID
+	}
+	return 0
+}
+func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
+	if info := es.getBeaconByID(i); info != nil {
+		return info.getToAddress()
+	}
+	return nil
+}
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
