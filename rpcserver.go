@@ -144,6 +144,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"beaconregistration":    handleBeaconRegistration,
 	"addbeaconpledge":       handleAddBeaconPledge,
 	"addbeaconcoinbase":     handleAddBeaconCoinbase,
+	"burntransaction":       handleBurnTransaction,
 	"debuglevel":            handleDebugLevel,
 	"decoderawtransaction":  handleDecodeRawTransaction,
 	"decodescript":          handleDecodeScript,
@@ -1135,6 +1136,132 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	txOut := wire.NewTxOut(int64(satoshi), pkScript)
 	mtx.AddTxOut(txOut)
 
+	// The change
+	if c.Amounts != nil {
+		for encodedAddr, amount := range *c.Amounts {
+			// Ensure amount is in the valid range for monetary amounts.
+			if amount <= 0 || amount > czzutil.MaxSatoshi {
+				return nil, &btcjson.RPCError{
+					Code:    btcjson.ErrRPCType,
+					Message: "Invalid amount",
+				}
+			}
+
+			// Decode the provided address.
+			addr, err := czzutil.DecodeAddress(encodedAddr, params)
+			if err != nil {
+				return nil, &btcjson.RPCError{
+					Code:    btcjson.ErrRPCInvalidAddressOrKey,
+					Message: "Invalid address or key: " + err.Error(),
+				}
+			}
+
+			// Ensure the address is one of the supported types and that
+			// the network encoded with the address matches the network the
+			// server is currently on.
+			switch addr.(type) {
+			case *czzutil.AddressPubKeyHash:
+			case *czzutil.AddressScriptHash:
+			case *czzutil.LegacyAddressPubKeyHash:
+			default:
+				return nil, &btcjson.RPCError{
+					Code:    btcjson.ErrRPCInvalidAddressOrKey,
+					Message: "Invalid address or key",
+				}
+			}
+			if !addr.IsForNet(params) {
+				return nil, &btcjson.RPCError{
+					Code: btcjson.ErrRPCInvalidAddressOrKey,
+					Message: "Invalid address: " + encodedAddr +
+						" is for the wrong network",
+				}
+			}
+
+			// Create a new script which pays to the provided address.
+			pkScript, err := txscript.PayToAddrScript(addr)
+			if err != nil {
+				context := "Failed to generate pay-to-address script"
+				return nil, internalRPCError(err.Error(), context)
+			}
+
+			// Convert the amount to satoshi.
+			satoshi, err := czzutil.NewAmount(amount)
+			if err != nil {
+				context := "Failed to convert amount"
+				return nil, internalRPCError(err.Error(), context)
+			}
+
+			txOut := wire.NewTxOut(int64(satoshi), pkScript)
+			mtx.AddTxOut(txOut)
+		}
+	}
+
+	// Set the Locktime, if given.
+	if c.LockTime != nil {
+		mtx.LockTime = uint32(*c.LockTime)
+	}
+
+	// Return the serialized and hex-encoded transaction.  Note that this
+	// is intentionally not directly returning because the first return
+	// value is a string and it would result in returning an empty string to
+	// the client instead of nothing (nil) in the case of an error.
+	mtxHex, err := messageToHex(mtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return mtxHex, nil
+}
+
+// handleAddBeaconCoinbase
+func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.BurnTransactionCmd)
+
+	// Validate the locktime, if given.
+	if c.LockTime != nil &&
+		(*c.LockTime < 0 || *c.LockTime > int64(wire.MaxTxInSequenceNum)) {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "Locktime out of range",
+		}
+	}
+
+	// Add all transaction inputs to a new transaction after performing
+	// some validity checks.
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	for _, input := range c.Inputs {
+		txHash, err := chainhash.NewHashFromStr(input.Txid)
+		if err != nil {
+			return nil, rpcDecodeHexError(input.Txid)
+		}
+
+		prevOut := wire.NewOutPoint(txHash, input.Vout)
+		txIn := wire.NewTxIn(prevOut, []byte{})
+		if c.LockTime != nil && *c.LockTime != 0 {
+			txIn.Sequence = wire.MaxTxInSequenceNum - 1
+		}
+		mtx.AddTxIn(txIn)
+	}
+
+	bi := &btcjson.BurnInfo{
+		ExTxType: c.BurnTransaction.ExTxType,
+		Address:  c.BurnTransaction.Address,
+		LightID:  c.BurnTransaction.LightID,
+		Amount:   c.BurnTransaction.Amount,
+	}
+
+	biByte, err := rlp.EncodeToBytes(bi)
+	scriptInfo, err := txscript.BurnScript(biByte)
+	if err != nil {
+		return nil, err
+	}
+
+	mtx.AddTxOut(&wire.TxOut{
+		Value:    0,
+		PkScript: scriptInfo,
+	})
+
+	params := s.cfg.ChainParams
 	// The change
 	if c.Amounts != nil {
 		for encodedAddr, amount := range *c.Amounts {

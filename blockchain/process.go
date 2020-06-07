@@ -6,7 +6,6 @@ package blockchain
 
 import (
 	"fmt"
-
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/txscript"

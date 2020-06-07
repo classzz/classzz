@@ -5,10 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"math/big"
-	"strings"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -16,6 +12,9 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"io"
+	"math/big"
+	"strings"
 )
 
 type ExpandedTxType uint8
@@ -889,7 +888,6 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 	err := keepInfo.Parse(data)
 	return keepInfo, err
 }
-
 // the tool function for entangle tx
 type TmpAddressPair struct {
 	index   uint32
@@ -998,21 +996,23 @@ func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleSta
 	if err != nil {
 		return 0, nil, err
 	}
-	if item, err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
+	if item,err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
 		return 0, nil, err
 	} else {
 		return oHeight, item, nil
 	}
+	return oHeight, nil
 }
+
 func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleState) error {
 	return state.CloseProofForPunished(info, item)
 }
 
 //////////////////////////////////////////////////////////////////////////////
 func ScanTxForBeaconOnSpecHeight(beacon map[uint64][]byte) {
-	
+
 }
-// just fetch the outpoint info for beacon address's regsiter and append tx 
+// just fetch the outpoint info for beacon address's regsiter and append tx
 func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *EntangleState,
 	params *chaincfg.Params) map[uint64][]*wire.OutPoint {
 	res := make(map[uint64][]*wire.OutPoint)
@@ -1029,7 +1029,7 @@ func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *Enta
 					if toAddress >= 10 && toAddress <= 99 {
 						res[id] = append(res[id],wire.NewOutPoint(v.Hash(), 1))
 					}
-				}	
+				}
 			}
 		}
 	}
@@ -1327,3 +1327,4 @@ func makeMant(value *big.Float, prec int) *big.Int {
 	val, _ := v.Int64()
 	return big.NewInt(val)
 }
+

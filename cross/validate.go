@@ -900,7 +900,15 @@ func (ev *ExChangeVerify) VerifyAddBeaconCoinbaseTx(tx *wire.MsgTx, eState *Enta
 
 	return bp, nil
 }
-func (ev *ExChangeVerify) verifyBurnProof(info *BurnProofInfo, eState *EntangleState) error {
+
+func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) error {
+	// 1. check the from address is equal beacon address
+	// 2. check the to address is equal the user's address within the info obj
+	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+	return nil
+}
+
+func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleState) error {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)

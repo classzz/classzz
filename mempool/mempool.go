@@ -1059,6 +1059,20 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		}
 	}
 
+	// BeaconRegistration
+	info, _ := cross.IsBurnTx(tx.MsgTx())
+	if info != nil {
+
+		err := mp.cfg.ExChangeVerify.VerifyBurn(info, eState)
+		if err != nil {
+			return err
+		}
+
+		if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

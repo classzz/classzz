@@ -185,6 +185,8 @@ type Params struct {
 
 	ExChangeHeight int32
 
+	BurnHeight int32
+
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 

@@ -606,6 +606,16 @@ func AddBeaconCoinbaseScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_2).AddData(data).Script()
 }
 
+// AddBeaconCoinbase impl in
+func BurnScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddData(data).Script()
+}
+
 // KeepedAmountScript impl in
 func KeepedAmountScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {

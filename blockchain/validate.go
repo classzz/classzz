@@ -429,6 +429,21 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 				return err
 			}
 		}
+
+		// BeaconRegistration
+		info, _ := cross.IsBurnTx(tx.MsgTx())
+		if info != nil {
+
+			err := b.GetExChangeVerify().VerifyBurn(info, eState)
+			if err != nil {
+				return err
+			}
+
+			if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(prevHeight+2), info.Amount); err != nil {
+				return err
+			}
+		}
+
 	}
 
 	if block.MsgBlock().Header.CIDRoot != cross.Hash(eState) {

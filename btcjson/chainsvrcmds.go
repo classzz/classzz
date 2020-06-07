@@ -104,6 +104,13 @@ type AddBeaconCoinbaseOut struct {
 	CoinBaseAddress []string
 }
 
+type BurnTransactionOut struct {
+	ExTxType uint8
+	Address  string
+	LightID  uint64
+	Amount   *big.Int
+}
+
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
@@ -149,6 +156,14 @@ type AddBeaconCoinbaseCmd struct {
 	LockTime          *int64
 }
 
+// AddBeaconCoinbase defines JSON-RPC command.
+type BurnTransactionCmd struct {
+	Inputs          []TransactionInput
+	BurnTransaction BurnTransactionOut
+	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime        *int64
+}
+
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""
@@ -179,6 +194,13 @@ type AddBeaconCoinbase struct {
 	Address         string   `json:"address"`
 	ToAddress       []byte   `json:"to_address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
+type BurnInfo struct {
+	ExTxType uint8
+	Address  string
+	LightID  uint64
+	Amount   *big.Int
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
