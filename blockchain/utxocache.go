@@ -849,7 +849,7 @@ func (s *utxoCache) InitConsistentState(tip *blockNode, fastSync bool, interrupt
 
 	return nil
 }
-func (s *utxoCache) FetchPoolAddrView(outs []*wire.OutPoint) (*UtxoViewpoint, error) {
+func (s *utxoCache) FetchUxtoByOutPoint(outs []*wire.OutPoint) (*UtxoViewpoint, error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -866,7 +866,6 @@ func (s *utxoCache) FetchPoolAddrView(outs []*wire.OutPoint) (*UtxoViewpoint, er
 
 	return view, nil
 }
-
 func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*UtxoViewpoint, error) {
 
 	block, err := b.BlockByHash(hash)
@@ -890,5 +889,11 @@ func (b *BlockChain) FetchPoolUtxoView(hash *chainhash.Hash, height int32) (*Utx
 	//outs := []*wire.OutPoint{&tx.MsgTx().TxIn[1].PreviousOutPoint, &tx.MsgTx().TxIn[2].PreviousOutPoint}
 	b.chainLock.RLock()
 	defer b.chainLock.RUnlock()
-	return b.utxoCache.FetchPoolAddrView(outs)
+	return b.utxoCache.FetchUxtoByOutPoint(outs)
+}
+func (b *BlockChain) FetchUtxoForBeacon(outs []*wire.OutPoint) (*UtxoViewpoint, error) {
+	if outs == nil {
+		return nil,errors.New("outs is nil")
+	}
+	return b.utxoCache.FetchUxtoByOutPoint(outs)
 }

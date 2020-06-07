@@ -616,6 +616,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		return nil, nil, err
 	}
 	poolItem := toPoolAddrItems(lView)
+	rewards := make([]*cross.PunishedRewardItem,0,0)
 
 	var eState *cross.EntangleState
 	fork := false
@@ -881,6 +882,29 @@ mempoolLoop:
 			} else {
 				// send reward to the robot and Punished the beacon address
 				// estate.
+				fromAddress,toAddress := getAddressFromProofTx(tx,g.chainParams),eState.GetBeaconToAddrByID(info.LightID)
+				exInfos := eState.GetExInfosByID(info.LightID)
+				if fromAddress == nil || toAddress == nil || exInfos == nil {
+					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
+					logSkippedDeps(tx, deps)
+					continue
+				}
+				if view,err1:= g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+					"FetchUtxoForBeacon: %v", tx.Hash(), err1)
+					logSkippedDeps(tx, deps)
+					continue
+				} else {
+					if item, err2 := toRewardsByPunished(info,view,eState,fromAddress,toAddress); err2 != nil {
+						log.Tracef("Skipping tx %s due to error in "+
+						"toRewardsByPunished: %v", tx.Hash(), err2)
+						logSkippedDeps(tx, deps)
+						continue
+					} else {
+						rewards = append(rewards,item)
+					}
+				}
+				// reset the amount in beacon
 				cross.CloseProofForPunished(info, item, eState)
 			}
 		}
@@ -987,7 +1011,7 @@ mempoolLoop:
 	// make entangle tx if it exist
 	if g.chainParams.ExChangeHeight <= nextBlockHeight {
 		exItems = cross.ToExChangeItems(blockTxns, entangleAddress)
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo,rewards, fork)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1145,6 +1169,31 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 		}
 	}
 	return items
+}
+func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint, 
+	state *cross.EntangleState,rewardAddress,toAddress czzutil.Address) (*cross.PunishedRewardItem,error) {
+	if view == nil {
+		return nil, errors.New("view is nil")
+	}
+	res := &cross.PunishedRewardItem{
+		Amount:			new(big.Int).Mul(big.NewInt(2),info.Amount),
+		Addr1:			rewardAddress,
+		Addr2:			cross.ZeroAddrsss,
+		Addr3:			toAddress,
+	}
+	m := view.Entries()
+	for k, v := range m {
+		res.POut,res.Script,res.OriginAmount = k,v.PkScript(),new(big.Int).SetInt64(v.Amount())
+		break
+	}
+	return res,nil
+}
+func getAddressFromProofTx(tx *czzutil.Tx,params *chaincfg.Params) czzutil.Address {
+	_,addrs,_, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[1].PkScript,params)
+	if err == nil {
+		return nil
+	}
+	return addrs[0]
 }
 func sameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
 	info, e := cross.IsBurnTx(tx.MsgTx())

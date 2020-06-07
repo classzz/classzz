@@ -46,6 +46,9 @@ var (
 	baseUnit1 = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit  = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1 = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
+	MinPunished	= new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
+
+	ZeroAddrsss,_ = czzutil.NewLegacyAddressPubKeyHash([]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, &chaincfg.MainNetParams)
 )
 
 type EntangleItem struct {
@@ -96,6 +99,15 @@ type PoolAddrItem struct {
 	POut   []wire.OutPoint
 	Script [][]byte
 	Amount []*big.Int
+}
+type PunishedRewardItem struct {
+	POut 	wire.OutPoint
+	Script 	[]byte
+	OriginAmount *big.Int
+	Addr1 	czzutil.Address
+	Addr2   czzutil.Address
+	Addr3 	czzutil.Address
+	Amount  *big.Int
 }
 
 type ExChangeTxInfo struct {
@@ -737,7 +749,7 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 }
 
 func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
-	lastScriptInfo []byte, fork bool) error {
+	lastScriptInfo []byte,rewards []*PunishedRewardItem, fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil

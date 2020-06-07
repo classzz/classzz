@@ -36,6 +36,7 @@ var (
 	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 4
+	
 )
 
 const (

@@ -8,11 +8,11 @@ import (
 	"log"
 	"math/big"
 	"sort"
-
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/wire"
-	// "github.com/classzz/czzutil"
+	"github.com/classzz/czzutil"
 )
 type ExBeaconInfo struct {
 	EnItems 	[]*wire.OutPoint
@@ -189,7 +189,16 @@ func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
 	}
 	return nil
 }
-func (es *EntangleState) getExInfosByID(id uint64) *ExBeaconInfo {
+func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
+	if b := es.getBeaconToAddressByID(i); b != nil {
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(b,&chaincfg.MainNetParams)
+		if err != nil {
+			return addr
+		}
+	}
+	return nil
+}
+func (es *EntangleState) GetExInfosByID(id uint64) *ExBeaconInfo {
 	if v,ok := es.BaExInfo[id]; ok {
 		return v
 	}
