@@ -189,6 +189,12 @@ func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
 	}
 	return nil
 }
+func (es *EntangleState) getExInfosByID(id uint64) *ExBeaconInfo {
+	if v,ok := es.BaExInfo[id]; ok {
+		return v
+	}
+	return nil
+}
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,

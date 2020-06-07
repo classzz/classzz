@@ -992,7 +992,7 @@ func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
 //////////////////////////////////////////////////////////////////////////////
 func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 	oHeight := uint64(0)
-	err := ev.verifyBurnProof(info, state)
+	err := ev.VerifyBurnProof(info, state)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -1001,7 +1001,6 @@ func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleSta
 	} else {
 		return oHeight, item, nil
 	}
-	return oHeight, nil
 }
 
 func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleState) error {
