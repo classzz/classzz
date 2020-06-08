@@ -47,7 +47,7 @@ var (
 	dogeUnit  = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1 = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 	MinPunished	= new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-
+	StartMergeBeaconUtxoHeight uint64 = 100000 
 	ZeroAddrsss,_ = czzutil.NewLegacyAddressPubKeyHash([]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, &chaincfg.MainNetParams)
 )
 
@@ -108,6 +108,12 @@ type PunishedRewardItem struct {
 	Addr2   czzutil.Address
 	Addr3 	czzutil.Address
 	Amount  *big.Int
+}
+type BeaconMergeItem struct {
+	POut 	wire.OutPoint
+	Script 	[]byte
+	Amount *big.Int
+	ToAddress czzutil.Address
 }
 
 type ExChangeTxInfo struct {
@@ -748,8 +754,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
-	lastScriptInfo []byte,rewards []*PunishedRewardItem, fork bool) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,lastScriptInfo []byte,
+	rewards []*PunishedRewardItem,mergeItem map[uint64][]*BeaconMergeItem, fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -1034,7 +1040,7 @@ func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *Enta
 			_,addrs,_, err := txscript.ExtractPkScriptAddrs(v.MsgTx().TxOut[1].PkScript,params)
 			if err != nil {
 				to := addrs[0].ScriptAddress()
-				id := state.getBeaconIdByTo(to)
+				id := state.GetBeaconIdByTo(to)
 				if id != 0 {
 					toAddress := big.NewInt(0).SetBytes(to).Uint64()
 					if toAddress >= 10 && toAddress <= 99 {

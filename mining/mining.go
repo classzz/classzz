@@ -617,6 +617,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	}
 	poolItem := toPoolAddrItems(lView)
 	rewards := make([]*cross.PunishedRewardItem,0,0)
+	mergeItems := make(map[uint64][]*cross.BeaconMergeItem)
 
 	var eState *cross.EntangleState
 	fork := false
@@ -922,18 +923,44 @@ mempoolLoop:
 			}
 		}
 
+		beaconMerge,beaconID,txAmount := false,uint64(0),big.NewInt(0)
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
 			if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 				return nil, nil, err
 			}
+			beaconMerge,beaconID,txAmount = true,br.ExchangeID,new(big.Int).Set(br.StakingAmount)
 		}
-
 		// AddBeaconPledgeTx
 		if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
 			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
 				return nil, nil, err
 			}
+			beaconMerge,beaconID,txAmount = true,eState.GetBeaconIdByTo(bp.ToAddress),new(big.Int).Set(bp.StakingAmount)
+		}
+		if beaconMerge {
+			beaconMerge = false
+			exInfos := eState.GetExInfosByID(beaconID)
+			if exInfos == nil {
+				return nil, nil, errors.New(fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v",tx.Hash,beaconID))
+			}
+			if view,err1:= g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+				return nil, nil, errors.New(fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v",tx.Hash,beaconID))
+			} else {
+				if mergeItem,to := toMergeBeaconItems(view,beaconID,eState); mergeItem == nil {
+					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,tx:%s,id:%v",tx.Hash,beaconID))
+				} else {
+					mergeItems[beaconID] = append(mergeItems[beaconID],mergeItem)
+					mergeItems[beaconID] = append(mergeItems[beaconID],&cross.BeaconMergeItem{
+						POut:		wire.OutPoint{
+							Hash:	*tx.Hash(),
+							Index: 	1,
+						},
+						ToAddress:	to,
+						Amount: 	txAmount,
+					})
+				}
+			}	
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,
@@ -1011,7 +1038,7 @@ mempoolLoop:
 	// make entangle tx if it exist
 	if g.chainParams.ExChangeHeight <= nextBlockHeight {
 		exItems = cross.ToExChangeItems(blockTxns, entangleAddress)
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo,rewards, fork)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo,rewards,mergeItems,fork)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1169,6 +1196,24 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 		}
 	}
 	return items
+}
+func toMergeBeaconItems(view *blockchain.UtxoViewpoint,id uint64,state *cross.EntangleState) (*cross.BeaconMergeItem,czzutil.Address) {
+	if view == nil {
+		return nil,nil
+	}
+	to := state.GetBeaconToAddrByID(id)
+	if to == nil {
+		return nil,to
+	}
+	items := &cross.BeaconMergeItem{
+		ToAddress:  to,
+	}
+	m := view.Entries()
+	for k, v := range m {
+		items.POut,items.Script,items.Amount = k,v.PkScript(),new(big.Int).SetInt64(v.Amount())
+		break
+	}
+	return items,to
 }
 func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint, 
 	state *cross.EntangleState,rewardAddress,toAddress czzutil.Address) (*cross.PunishedRewardItem,error) {

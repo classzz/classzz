@@ -176,7 +176,7 @@ func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 	}
 	return nil
 }
-func (es *EntangleState) getBeaconIdByTo(to []byte) uint64 {
+func (es *EntangleState) GetBeaconIdByTo(to []byte) uint64 {
 	info := es.getBeaconAddressFromTo(to)
 	if info != nil {
 		return info.ExchangeID
@@ -202,6 +202,10 @@ func (es *EntangleState) GetExInfosByID(id uint64) *ExBeaconInfo {
 	if v,ok := es.BaExInfo[id]; ok {
 		return v
 	}
+	return nil
+}
+func (es *EntangleState) SetExBeaconInfo(id uint64,info *ExBeaconInfo) error {
+	es.BaExInfo[id] = info
 	return nil
 }
 /////////////////////////////////////////////////////////////////
