@@ -5,6 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"math/big"
+	"strings"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
@@ -12,9 +16,6 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
-	"io"
-	"math/big"
-	"strings"
 )
 
 type ExpandedTxType uint8
@@ -42,13 +43,13 @@ var (
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
 	}
-	baseUnit  = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
-	baseUnit1 = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit  = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
-	dogeUnit1 = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
-	MinPunished	= new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	StartMergeBeaconUtxoHeight uint64 = 100000 
-	ZeroAddrsss,_ = czzutil.NewLegacyAddressPubKeyHash([]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, &chaincfg.MainNetParams)
+	baseUnit                          = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit1                         = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	dogeUnit                          = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit1                         = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
+	MinPunished                       = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
+	StartMergeBeaconUtxoHeight uint64 = 100000
+	ZeroAddrsss, _                    = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.MainNetParams)
 )
 
 type EntangleItem struct {
@@ -101,18 +102,18 @@ type PoolAddrItem struct {
 	Amount []*big.Int
 }
 type PunishedRewardItem struct {
-	POut 	wire.OutPoint
-	Script 	[]byte
+	POut         wire.OutPoint
+	Script       []byte
 	OriginAmount *big.Int
-	Addr1 	czzutil.Address
-	Addr2   czzutil.Address
-	Addr3 	czzutil.Address
-	Amount  *big.Int
+	Addr1        czzutil.Address
+	Addr2        czzutil.Address
+	Addr3        czzutil.Address
+	Amount       *big.Int
 }
 type BeaconMergeItem struct {
-	POut 	wire.OutPoint
-	Script 	[]byte
-	Amount *big.Int
+	POut      wire.OutPoint
+	Script    []byte
+	Amount    *big.Int
 	ToAddress czzutil.Address
 }
 
@@ -754,8 +755,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,lastScriptInfo []byte,
-	rewards []*PunishedRewardItem,mergeItem map[uint64][]*BeaconMergeItem, fork bool) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, lastScriptInfo []byte,
+	rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem, fork bool) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -801,8 +802,57 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 	if reserve1 < reserve2 {
 		fmt.Println("as")
 	}
+	// reward the proof ,txin>3
+	for _, v := range rewards {
+		tx.AddTxIn(&wire.TxIn{
+			PreviousOutPoint: v.POut,
+			SignatureScript:  v.Script,
+			Sequence:         wire.MaxTxInSequenceNum,
+		})
+		pkScript1, err1 := txscript.PayToAddrScript(v.Addr1) // reward to robot
+		pkScript2, err2 := txscript.PayToAddrScript(v.Addr2) // punished to zero address
+		pkScript3, err3 := txscript.PayToAddrScript(v.Addr3) // change address
+		if err1 != nil || err2 != nil || err3 != nil {
+			return errors.New("PayToAddrScript failed, in reward the proof")
+		}
+		tx.AddTxOut(&wire.TxOut{
+			Value:    new(big.Int).Set(v.Amount).Int64(),
+			PkScript: pkScript1,
+		})
+		tx.AddTxOut(&wire.TxOut{
+			Value:    new(big.Int).Set(v.Amount).Int64(),
+			PkScript: pkScript2,
+		})
+		tx.AddTxOut(&wire.TxOut{
+			Value:    new(big.Int).Sub(v.OriginAmount, new(big.Int).Mul(big.NewInt(2), v.Amount)).Int64(),
+			PkScript: pkScript3,
+		})
+	}
+	// merge beacon utxo
+	var to czzutil.Address
+	for _, Items := range mergeItem {
+		allAmount := big.NewInt(0)
+		for _, v := range Items {
+			to = v.ToAddress
+			tx.AddTxIn(&wire.TxIn{
+				PreviousOutPoint: v.POut,
+				SignatureScript:  v.Script,
+				Sequence:         wire.MaxTxInSequenceNum,
+			})
+			allAmount = new(big.Int).Add(allAmount, v.Amount)
+		}
+		pkScript1, err1 := txscript.PayToAddrScript(to) // change address
+		if err1 != nil {
+			return errors.New("PayToAddrScript failed, in merge beacon utxo")
+		}
+		tx.AddTxOut(&wire.TxOut{
+			Value:    new(big.Int).Set(allAmount).Int64(),
+			PkScript: pkScript1,
+		})
+	}
 	return nil
 }
+
 func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeItem, state *EntangleState) error {
 	if len(items) == 0 || state == nil {
 		return nil
@@ -906,6 +956,7 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 	err := keepInfo.Parse(data)
 	return keepInfo, err
 }
+
 // the tool function for entangle tx
 type TmpAddressPair struct {
 	index   uint32
@@ -1014,7 +1065,7 @@ func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleSta
 	if err != nil {
 		return 0, nil, err
 	}
-	if item,err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
+	if item, err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
 		return 0, nil, err
 	} else {
 		return oHeight, item, nil
@@ -1029,22 +1080,23 @@ func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleS
 func ScanTxForBeaconOnSpecHeight(beacon map[uint64][]byte) {
 
 }
+
 // just fetch the outpoint info for beacon address's regsiter and append tx
-func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *EntangleState,
+func fetchOutPointFromTxs(txs []*czzutil.Tx, beacon map[uint64][]byte, state *EntangleState,
 	params *chaincfg.Params) map[uint64][]*wire.OutPoint {
 	res := make(map[uint64][]*wire.OutPoint)
-	for _,v := range txs {
-		_,e1 := IsAddBeaconPledgeTx(v.MsgTx(),params)
-		_,e2 := IsBeaconRegistrationTx(v.MsgTx(),params)
+	for _, v := range txs {
+		_, e1 := IsAddBeaconPledgeTx(v.MsgTx(), params)
+		_, e2 := IsBeaconRegistrationTx(v.MsgTx(), params)
 		if e1 != nil || e2 != nil {
-			_,addrs,_, err := txscript.ExtractPkScriptAddrs(v.MsgTx().TxOut[1].PkScript,params)
+			_, addrs, _, err := txscript.ExtractPkScriptAddrs(v.MsgTx().TxOut[1].PkScript, params)
 			if err != nil {
 				to := addrs[0].ScriptAddress()
 				id := state.GetBeaconIdByTo(to)
 				if id != 0 {
 					toAddress := big.NewInt(0).SetBytes(to).Uint64()
 					if toAddress >= 10 && toAddress <= 99 {
-						res[id] = append(res[id],wire.NewOutPoint(v.Hash(), 1))
+						res[id] = append(res[id], wire.NewOutPoint(v.Hash(), 1))
 					}
 				}
 			}
@@ -1052,6 +1104,7 @@ func fetchOutPointFromTxs(txs []*czzutil.Tx,beacon map[uint64][]byte,state *Enta
 	}
 	return res
 }
+
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {
@@ -1344,4 +1397,3 @@ func makeMant(value *big.Float, prec int) *big.Int {
 	val, _ := v.Int64()
 	return big.NewInt(val)
 }
-
