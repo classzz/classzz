@@ -394,11 +394,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		ltcparams := &chaincfg.Params{
-			LegacyScriptHashAddrID: 0x32,
-		}
-
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
@@ -418,7 +414,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			}
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
@@ -515,11 +511,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		ltcparams := &chaincfg.Params{
-			LegacyScriptHashAddrID: 0x32,
-		}
-
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bch addr err")
 			return nil, errors.New(e)
@@ -539,7 +531,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			}
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bch addr err")
 			return nil, errors.New(e)
@@ -636,11 +628,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		ltcparams := &chaincfg.Params{
-			LegacyScriptHashAddrID: 0x32,
-		}
-
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
 			return nil, errors.New(e)
@@ -660,7 +648,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			}
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
 			return nil, errors.New(e)
