@@ -19,31 +19,6 @@ type CacheEntangleInfo struct {
 	DB database.DB
 }
 
-func (c *CacheEntangleInfo) FetchEntangleUtxoView(info *EntangleTxInfo) bool {
-
-	var err error
-	txExist := false
-
-	ExTxType := byte(info.ExTxType)
-	key := append(info.ExtTxHash, ExTxType)
-	err = c.DB.View(func(tx database.Tx) error {
-		entangleBucket := tx.Metadata().Bucket(BucketKey)
-		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(BucketKey); err != nil {
-				return err
-			}
-		}
-
-		value := entangleBucket.Get(key)
-		if value != nil {
-			txExist = true
-		}
-		return nil
-	})
-
-	return txExist
-}
-
 func (c *CacheEntangleInfo) FetchExChangeUtxoView(info *ExChangeTxInfo) bool {
 
 	var err error

@@ -2325,10 +2325,10 @@ func New(config *Config) (*BlockChain, error) {
 	}
 
 	var btcclients []*rpcclient.Client
-	for _, ltcrpc := range config.BtcCoinRPC {
+	for _, btcrpc := range config.BtcCoinRPC {
 		// Connect to local bitcoin core RPC server using HTTP POST mode.
 		connCfg := &rpcclient.ConnConfig{
-			Host:         ltcrpc,
+			Host:         btcrpc,
 			Endpoint:     "ws",
 			User:         config.BtcCoinRPCUser,
 			Pass:         config.BtcCoinRPCPass,
@@ -2349,10 +2349,10 @@ func New(config *Config) (*BlockChain, error) {
 	}
 
 	var bchclients []*rpcclient.Client
-	for _, ltcrpc := range config.BchCoinRPC {
+	for _, bchrpc := range config.BchCoinRPC {
 		// Connect to local bitcoin core RPC server using HTTP POST mode.
 		connCfg := &rpcclient.ConnConfig{
-			Host:         ltcrpc,
+			Host:         bchrpc,
 			Endpoint:     "ws",
 			User:         config.BchCoinRPCUser,
 			Pass:         config.BchCoinRPCPass,
@@ -2373,10 +2373,10 @@ func New(config *Config) (*BlockChain, error) {
 	}
 
 	var bsvclients []*rpcclient.Client
-	for _, ltcrpc := range config.BsvCoinRPC {
+	for _, bsvrpc := range config.BsvCoinRPC {
 		// Connect to local bitcoin core RPC server using HTTP POST mode.
 		connCfg := &rpcclient.ConnConfig{
-			Host:         ltcrpc,
+			Host:         bsvrpc,
 			Endpoint:     "ws",
 			User:         config.BsvCoinRPCUser,
 			Pass:         config.BsvCoinRPCPass,
