@@ -194,13 +194,26 @@ type config struct {
 	LtcCoinRPC              []string      `long:"ltccoinrpc" description:""`
 	LtcCoinRPCUser          string        `long:"ltccoinrpcuser" description:""`
 	LtcCoinRPCPass          string        `long:"ltccoinrpcpass" description:""`
-	lookup                  func(string) ([]net.IP, error)
-	oniondial               func(string, string, time.Duration) (net.Conn, error)
-	dial                    func(string, string, time.Duration) (net.Conn, error)
-	addCheckpoints          []chaincfg.Checkpoint
-	miningAddrs             []czzutil.Address
-	minRelayTxFee           czzutil.Amount
-	whitelists              []*net.IPNet
+
+	BtcCoinRPC     []string `long:"btccoinrpc" description:""`
+	BtcCoinRPCUser string   `long:"btccoinrpcuser" description:""`
+	BtcCoinRPCPass string   `long:"btccoinrpcpass" description:""`
+
+	BchCoinRPC     []string `long:"bchcoinrpc" description:""`
+	BchCoinRPCUser string   `long:"bchcoinrpcuser" description:""`
+	BchCoinRPCPass string   `long:"bchcoinrpcpass" description:""`
+
+	BsvCoinRPC     []string `long:"bsvcoinrpc" description:""`
+	BsvCoinRPCUser string   `long:"bsvcoinrpcuser" description:""`
+	BsvCoinRPCPass string   `long:"bsvcoinrpcpass" description:""`
+
+	lookup         func(string) ([]net.IP, error)
+	oniondial      func(string, string, time.Duration) (net.Conn, error)
+	dial           func(string, string, time.Duration) (net.Conn, error)
+	addCheckpoints []chaincfg.Checkpoint
+	miningAddrs    []czzutil.Address
+	minRelayTxFee  czzutil.Amount
+	whitelists     []*net.IPNet
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on

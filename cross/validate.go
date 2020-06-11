@@ -30,6 +30,9 @@ const (
 type ExChangeVerify struct {
 	DogeCoinRPC []*rpcclient.Client
 	LtcCoinRPC  []*rpcclient.Client
+	BtcCoinRPC  []*rpcclient.Client
+	BchCoinRPC  []*rpcclient.Client
+	BsvCoinRPC  []*rpcclient.Client
 	Cache       *CacheEntangleInfo
 	Params      *chaincfg.Params
 }
