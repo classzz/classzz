@@ -334,7 +334,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+	client := ev.BtcCoinRPC[rand.Intn(len(ev.BtcCoinRPC))]
 
 	// Get the current block count.
 	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
@@ -455,7 +455,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+	client := ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
 
 	// Get the current block count.
 	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
@@ -576,7 +576,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+	client := ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
 
 	// Get the current block count.
 	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
