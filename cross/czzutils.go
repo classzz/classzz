@@ -26,6 +26,7 @@ var (
 	ErrNotEnouthBurn      = errors.New("not enough burn amount in beaconAddress")
 	ErrNotMatchUser       = errors.New("cann't find user address")
 	ErrBurnProof          = errors.New("burn proof info not match")
+	ErrWhiteListProof     = errors.New("white list proof not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
 )
 
@@ -36,7 +37,7 @@ var (
 	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 4
-	
+	ChechWhiteListProof               = true
 )
 
 const (
@@ -239,6 +240,7 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 func (lh *BeaconAddressInfo) getToAddress() []byte {
 	return lh.ToAddress
 }
+
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
@@ -643,6 +645,13 @@ type BurnProofInfo struct {
 	IsBeacon bool
 }
 
+type WhiteListProof struct {
+	LightID uint64   // the lightid for beaconAddress
+	Height  uint64   // the height of outside chain
+	Amount  *big.Int // the amount of outside chain
+	Atype   uint32
+}
+
 type LHPunishedItem struct {
 	All  *big.Int // czz amount(all user burned item in timeout)
 	User string
@@ -650,4 +659,3 @@ type LHPunishedItem struct {
 type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
-

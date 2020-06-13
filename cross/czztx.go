@@ -654,7 +654,28 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	}
 	return nil, ErrBurnProof
 }
-
+func IsWhiteListProofTx(tx *wire.MsgTx) (*WhiteListProof, error) {
+	// make sure at least one txout in OUTPUT
+	var es *WhiteListProof
+	var err error
+	if len(tx.TxOut) < 2 {
+		return nil, errors.New("WhiteListProof Must be at least two TxOut")
+	}
+	txout := tx.TxOut[0]
+	info, err := WhiteListProofFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
+	}
+	if es != nil {
+		return es, nil
+	}
+	return nil, ErrWhiteListProof
+}
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -724,6 +745,18 @@ func BurnProofInfoFromScript(script []byte) (*BurnProofInfo, error) {
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
+func WhiteListProofFromScript(script []byte) (*WhiteListProof, error) {
+	data, err := txscript.GetWhiteListProofData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &WhiteListProof{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
 func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
 	h := uint64(0)
 	for _, v := range items {
