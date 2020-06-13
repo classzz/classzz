@@ -8,23 +8,26 @@ import (
 	"log"
 	"math/big"
 	"sort"
+
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
+
 type ExBeaconInfo struct {
-	EnItems 	[]*wire.OutPoint
+	EnItems []*wire.OutPoint
 }
 type EntangleState struct {
 	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
-	BaExInfo 	  map[uint64]*ExBeaconInfo			// merge tx(outpoint) in every lid
+	BaExInfo      map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
 	PoolAmount1   *big.Int
 	PoolAmount2   *big.Int
 	CurExchangeID uint64
 }
+
 /////////////////////////////////////////////////////////////////
 type StoreBeaconAddress struct {
 	Address string
@@ -35,10 +38,9 @@ type StoreUserInfos struct {
 	UserInfos UserEntangleInfos
 }
 type StoreBeaconExInfos struct {
-	EID       uint64
-	EItem     *ExBeaconInfo
+	EID   uint64
+	EItem *ExBeaconInfo
 }
-
 
 type SortStoreBeaconAddress []*StoreBeaconAddress
 
@@ -85,9 +87,10 @@ func (vs SortStoreBeaconExInfos) Swap(i, j int) {
 	vs[i] = vs[j]
 	vs[j] = it
 }
+
 /////////////////////////////////////////////////////////////////
-func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos,SortStoreBeaconExInfos) {
-	v1, v2,v3 := make([]*StoreBeaconAddress, 0, 0), make([]*StoreUserInfos, 0, 0),make([]*StoreBeaconExInfos, 0, 0)
+func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos, SortStoreBeaconExInfos) {
+	v1, v2, v3 := make([]*StoreBeaconAddress, 0, 0), make([]*StoreUserInfos, 0, 0), make([]*StoreBeaconExInfos, 0, 0)
 	for k, v := range es.EnInfos {
 		v1 = append(v1, &StoreBeaconAddress{
 			Address: k,
@@ -100,18 +103,18 @@ func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos,S
 			UserInfos: v,
 		})
 	}
-	for k,v := range es.BaExInfo {
+	for k, v := range es.BaExInfo {
 		v3 = append(v3, &StoreBeaconExInfos{
-			EID:    k,
-			EItem: 	v,
+			EID:   k,
+			EItem: v,
 		})
 	}
 	sort.Sort(SortStoreBeaconAddress(v1))
 	sort.Sort(SortStoreUserInfos(v2))
 	sort.Sort(SortStoreBeaconExInfos(v3))
-	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2),SortStoreBeaconExInfos(v3)
+	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2), SortStoreBeaconExInfos(v3)
 }
-func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos,v3 SortStoreBeaconExInfos) {
+func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos, v3 SortStoreBeaconExInfos) {
 	enInfos := make(map[string]*BeaconAddressInfo)
 	entitys := make(map[uint64]UserEntangleInfos)
 	exInfos := make(map[uint64]*ExBeaconInfo)
@@ -121,10 +124,10 @@ func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserIn
 	for _, v := range v2 {
 		entitys[v.EID] = v.UserInfos
 	}
-	for _,v := range v3 {
+	for _, v := range v3 {
 		exInfos[v.EID] = v.EItem
 	}
-	es.EnInfos, es.EnEntitys,es.BaExInfo = enInfos, entitys,exInfos
+	es.EnInfos, es.EnEntitys, es.BaExInfo = enInfos, entitys, exInfos
 }
 
 func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
@@ -139,7 +142,7 @@ func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	es.CurExchangeID = eb.ID
-	es.fromSlice(eb.Value1, eb.Value2,eb.Value3)
+	es.fromSlice(eb.Value1, eb.Value2, eb.Value3)
 	return nil
 }
 func (es *EntangleState) EncodeRLP(w io.Writer) error {
@@ -149,7 +152,7 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 		Value2 SortStoreUserInfos
 		Value3 SortStoreBeaconExInfos
 	}
-	s1, s2,s3 := es.toSlice()
+	s1, s2, s3 := es.toSlice()
 	return rlp.Encode(w, &Store1{
 		ID:     es.CurExchangeID,
 		Value1: s1,
@@ -191,7 +194,7 @@ func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
 }
 func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
 	if b := es.getBeaconToAddressByID(i); b != nil {
-		addr, err := czzutil.NewLegacyAddressPubKeyHash(b,&chaincfg.MainNetParams)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(b, &chaincfg.MainNetParams)
 		if err != nil {
 			return addr
 		}
@@ -199,15 +202,16 @@ func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
 	return nil
 }
 func (es *EntangleState) GetExInfosByID(id uint64) *ExBeaconInfo {
-	if v,ok := es.BaExInfo[id]; ok {
+	if v, ok := es.BaExInfo[id]; ok {
 		return v
 	}
 	return nil
 }
-func (es *EntangleState) SetExBeaconInfo(id uint64,info *ExBeaconInfo) error {
+func (es *EntangleState) SetExBeaconInfo(id uint64, info *ExBeaconInfo) error {
 	es.BaExInfo[id] = info
 	return nil
 }
+
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
@@ -614,7 +618,8 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 		return ErrNoRegister
 	}
 	// get limit staking warnning message
-	return beacon.updatePunished(amount)
+	slashingAmount := new(big.Int).Mul(big.NewInt(2), amount)
+	return beacon.updatePunished(slashingAmount)
 }
 func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	userEntitys, ok := es.EnEntitys[info.LightID]
@@ -633,6 +638,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeig
 	return nil, nil
 }
 func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnItem) error {
+	es.FinishBeaconAddressPunished(info.LightID, info.Amount)
 	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
 		fmt.Println("CloseProofForPunished:cann't found the BeaconAddress id:", info.LightID)
