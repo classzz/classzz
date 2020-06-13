@@ -1104,7 +1104,10 @@ func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleSta
 		return oHeight, item, nil
 	}
 }
-
+// the return value is beacon's balance of it was staking amount 
+func VerifyWhiteListProof(info *WhiteListProof,ev *ExChangeVerify, state *EntangleState) error {
+	return nil
+}
 func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleState) error {
 	return state.CloseProofForPunished(info, item)
 }

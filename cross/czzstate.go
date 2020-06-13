@@ -670,6 +670,13 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 	}
 	return nil
 }
+////////////////////////////////////////////////////////////////////////////
+// calc the punished amount by outside asset in the height
+// the return value(flag by czz) will be mul * 2
+func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int,atype uint32,height uint64) *big.Int {
+	return nil
+}
+////////////////////////////////////////////////////////////////////////////
 func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)

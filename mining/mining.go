@@ -922,6 +922,36 @@ mempoolLoop:
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
 		}
+		if info,err := cross.IsWhiteListProofTx(tx.MsgTx()); err == nil {
+			if err1 := cross.VerifyWhiteListProof(info, g.chain.GetExChangeVerify(), eState); err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"VerifyWhiteListProof: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			fromAddress, toAddress := getAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
+			exInfos := eState.GetExInfosByID(info.LightID)
+			if fromAddress == nil || toAddress == nil || exInfos == nil {
+				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+				log.Tracef("White proof:Skipping tx %s due to error in "+
+					"FetchUtxoForBeacon: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			} else {
+				if item, err2 := toRewardsByWhiteListPunished(info, view,uint64(nextBlockHeight),eState, fromAddress, toAddress); err2 != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"toRewardsByWhiteListPunished: %v", tx.Hash(), err2)
+					logSkippedDeps(tx, deps)
+					continue
+				} else {
+					rewards = append(rewards, item)
+				}
+			}		
+		}
 
 		beaconMerge, beaconID, txAmount := false, uint64(0), big.NewInt(0)
 		// BeaconRegistrationTx
@@ -1222,6 +1252,25 @@ func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoi
 	}
 	res := &cross.PunishedRewardItem{
 		Amount: new(big.Int).Mul(big.NewInt(2), info.Amount),
+		Addr1:  rewardAddress,
+		Addr2:  cross.ZeroAddrsss,
+		Addr3:  toAddress,
+	}
+	m := view.Entries()
+	for k, v := range m {
+		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+		break
+	}
+	return res, nil
+}
+func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint,height uint64,
+	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
+	if view == nil {
+		return nil, errors.New("view is nil")
+	}
+	amount := state.CalcSlashingForWhiteListProof(info.Amount,info.Atype,height)
+	res := &cross.PunishedRewardItem{
+		Amount: new(big.Int).Mul(big.NewInt(2), amount),
 		Addr1:  rewardAddress,
 		Addr2:  cross.ZeroAddrsss,
 		Addr3:  toAddress,
