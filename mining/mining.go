@@ -1268,7 +1268,7 @@ func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.U
 	if view == nil {
 		return nil, errors.New("view is nil")
 	}
-	amount := state.CalcSlashingForWhiteListProof(info.Amount,info.Atype,height)
+	amount := state.CalcSlashingForWhiteListProof(info.Amount,info.Atype,info.LightID)
 	res := &cross.PunishedRewardItem{
 		Amount: new(big.Int).Mul(big.NewInt(2), amount),
 		Addr1:  rewardAddress,
