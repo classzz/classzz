@@ -129,7 +129,6 @@ func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserIn
 	}
 	es.EnInfos, es.EnEntitys, es.BaExInfo = enInfos, entitys, exInfos
 }
-
 func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 	type Store1 struct {
 		ID     uint64
@@ -162,7 +161,6 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 }
 
 /////////////////////////////////////////////////////////////////
-
 func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
 		if v.ExchangeID == eid {
@@ -210,6 +208,27 @@ func (es *EntangleState) GetExInfosByID(id uint64) *ExBeaconInfo {
 func (es *EntangleState) SetExBeaconInfo(id uint64, info *ExBeaconInfo) error {
 	es.BaExInfo[id] = info
 	return nil
+}
+func (es *EntangleState) GetOutSideAsset(id uint64, atype uint32) *big.Int {
+	lh := es.getBeaconByID(id)
+	if lh == nil {
+		return nil
+	}
+	return lh.getOutSideAsset(atype)
+}
+func (es *EntangleState) GetWhiteList(id uint64) []*WhiteUnit {
+	lh := es.getBeaconByID(id)
+	if lh == nil {
+		return nil
+	}
+	return lh.getWhiteList()
+}
+func (es *EntangleState) getBeaconAddressByID(id uint64) string {
+	lh := es.getBeaconByID(id)
+	if lh == nil {
+		return ""
+	}
+	return lh.Address
 }
 
 /////////////////////////////////////////////////////////////////
@@ -670,18 +689,20 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 	}
 	return nil
 }
+
 ////////////////////////////////////////////////////////////////////////////
 // calc the punished amount by outside asset in the height
 // the return value(flag by czz) will be mul * 2
-func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int,atype uint32,lightID uint64) *big.Int {
+func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint32, lightID uint64) *big.Int {
 	// get current rate with czz and outside asset in heigth
 	reserve := es.getEntangledAmount(lightID, atype)
 	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)
 	if err != nil {
 		return nil
-	}		
+	}
 	return sendAmount
 }
+
 ////////////////////////////////////////////////////////////////////////////
 func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode

@@ -240,6 +240,18 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 func (lh *BeaconAddressInfo) getToAddress() []byte {
 	return lh.ToAddress
 }
+func (lh *BeaconAddressInfo) getOutSideAsset(atype uint32) *big.Int {
+	all := big.NewInt(0)
+	for _, v := range lh.EnAssets {
+		if v.AssetType == atype {
+			all = new(big.Int).Add(all, v.Amount)
+		}
+	}
+	return all
+}
+func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
+	return lh.WhiteList
+}
 
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity

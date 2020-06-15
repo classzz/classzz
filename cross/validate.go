@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
+	"math/rand"
+
 	"github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/czzutil"
-	"math/big"
-	"math/rand"
 
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
@@ -903,5 +904,9 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+	return nil
+}
+
+func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, atype uint32, wlist []*WhiteUnit, cur_addr string) error {
 	return nil
 }
