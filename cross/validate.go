@@ -897,6 +897,33 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+
+	uei := eState.EnEntitys[info.LightID]
+	if uei == nil {
+		return errors.New("EnEntitys is nil")
+	}
+
+	ees := uei[info.Address]
+	if ees == nil {
+		return errors.New("UserEntangleInfos is nil")
+	}
+
+	var ee *EntangleEntity
+	for _, e := range ees {
+		if e.AssetType == info.ExTxType.ToAssetType() {
+			ee = e
+			break
+		}
+	}
+
+	if ee == nil {
+		return errors.New("AssetType is nil")
+	}
+
+	if info.Amount.Cmp(ee.OriginAmount) > 0 {
+		return errors.New("Amount > OriginAmount")
+	}
+
 	return nil
 }
 
@@ -904,6 +931,7 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+
 	return nil
 }
 

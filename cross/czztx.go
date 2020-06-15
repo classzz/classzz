@@ -29,6 +29,22 @@ const (
 	ExpandedTxEntangle_Bch  = 0xF4
 )
 
+func (et ExpandedTxType) ToAssetType() uint32 {
+	switch et {
+	case ExpandedTxEntangle_Doge:
+		return LhAssetDOGE
+	case ExpandedTxEntangle_Ltc:
+		return LhAssetLTC
+	case ExpandedTxEntangle_Btc:
+		return LhAssetBTC
+	case ExpandedTxEntangle_Bch:
+		return LhAssetBCH
+	case ExpandedTxEntangle_Bsv:
+		return LhAssetBSV
+	}
+	return 0
+}
+
 var (
 	NoEntangle           = errors.New("no entangle info in transcation")
 	NoExChange           = errors.New("no NoExChange info in transcation")

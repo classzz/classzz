@@ -65,7 +65,7 @@ type Config struct {
 	// transaction output information.
 	FetchUtxoView func(*czzutil.Tx) (*blockchain.UtxoViewpoint, error)
 
-	FetchEntangleUtxoView func(info *cross.EntangleTxInfo) bool
+	FetchExChangeUtxoView func(info *cross.ExChangeTxInfo) bool
 
 	ExChangeVerify *cross.ExChangeVerify
 	// BestHeight defines the function to use to access the block height of
@@ -654,26 +654,26 @@ func (mp *TxPool) fetchInputUtxos(tx *czzutil.Tx) (*blockchain.UtxoViewpoint, er
 	return utxoView, nil
 }
 
-func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (map[uint32]*cross.EntangleTxInfo, error) {
-
-	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-	if einfos != nil {
-		for _, v := range einfos {
-			ExTxType := byte(v.ExTxType)
-			key := append(v.ExtTxHash, ExTxType)
-
-			if _, exists := mp.entanglepool[string(key)]; exists {
-				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
-				return einfos, errors.New("txid has already entangle:" + errStr)
-			}
-			if ok := mp.cfg.FetchEntangleUtxoView(v); ok {
-				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
-				return einfos, errors.New("txid has already entangle:" + errStr)
-			}
-		}
-	}
-	return einfos, nil
-}
+//func (mp *TxPool) fetchEntangleUtxos(tx *czzutil.Tx) (map[uint32]*cross.EntangleTxInfo, error) {
+//
+//	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
+//	if einfos != nil {
+//		for _, v := range einfos {
+//			ExTxType := byte(v.ExTxType)
+//			key := append(v.ExtTxHash, ExTxType)
+//
+//			if _, exists := mp.entanglepool[string(key)]; exists {
+//				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+//				return einfos, errors.New("txid has already entangle:" + errStr)
+//			}
+//			if ok := mp.cfg.FetchExChangeUtxoView(v); ok {
+//				errStr := fmt.Sprintf("[txid:%v, height:%v]", v.ExtTxHash, v.Height)
+//				return einfos, errors.New("txid has already entangle:" + errStr)
+//			}
+//		}
+//	}
+//	return einfos, nil
+//}
 
 // FetchTransaction returns the requested transaction from the transaction pool.
 // This only fetches from the main transaction pool and does not include
