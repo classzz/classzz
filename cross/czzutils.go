@@ -654,6 +654,7 @@ type BurnProofInfo struct {
 	Address  czzutil.Address
 	Atype    uint32
 	TxHash   []byte // the tx hash of outside
+	OutIndex int64
 	IsBeacon bool
 }
 

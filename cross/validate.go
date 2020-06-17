@@ -931,8 +931,74 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+	uei := eState.EnEntitys[info.LightID]
+	if uei == nil {
+		return errors.New("VerifyBurnProof EnEntitys is nil")
+	}
+	var client *rpcclient.Client
+	switch info.Atype {
+	case LhAssetDOGE:
+		client = ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
+	case LhAssetLTC:
+		client = ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+	case LhAssetBTC:
+		client = ev.BtcCoinRPC[rand.Intn(len(ev.BtcCoinRPC))]
+	case LhAssetBCH:
+		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
+	case LhAssetBSV:
+		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
+	}
 
+	bai := eState.getBeaconAddress(info.LightID)
+
+	tx, bAdd, err := ev.GetTxInAddress(info, client)
+	if err != nil {
+		return err
+	}
+
+	if bai.Address != bAdd.String() {
+		e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
+		return errors.New(e)
+	}
+
+	if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64() {
+		e := fmt.Sprintf("VerifyBurnProof Value != Amount")
+		return errors.New(e)
+	}
+
+	info.IsBeacon = true
 	return nil
+}
+
+func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.Client) (*czzutil.Tx, czzutil.Address, error) {
+
+	if tx, err := client.GetWitnessRawTransaction(string(info.TxHash)); err != nil {
+		return nil, nil, err
+	} else {
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputePk err %s", err)
+				return nil, nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+				return nil, nil, errors.New(e)
+			}
+		}
+
+		_, addrs, _, err := txscript.ExtractPkScriptAddrs(
+			pk, ev.Params)
+
+		if err != nil {
+			e := fmt.Sprintf("doge addr err")
+			return nil, nil, errors.New(e)
+		}
+		return tx, addrs[0], nil
+	}
 }
 
 func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, atype uint32, wlist []*WhiteUnit, cur_addr string) error {
