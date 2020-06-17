@@ -922,7 +922,7 @@ mempoolLoop:
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
 		}
-		if info,err := cross.IsWhiteListProofTx(tx.MsgTx()); err == nil {
+		if info, err := cross.IsWhiteListProofTx(tx.MsgTx()); err == nil {
 			if err1 := cross.VerifyWhiteListProof(info, g.chain.GetExChangeVerify(), eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"VerifyWhiteListProof: %v", tx.Hash(), err1)
@@ -942,7 +942,7 @@ mempoolLoop:
 				logSkippedDeps(tx, deps)
 				continue
 			} else {
-				if item, err2 := toRewardsByWhiteListPunished(info, view,uint64(nextBlockHeight),eState, fromAddress, toAddress); err2 != nil {
+				if item, err2 := toRewardsByWhiteListPunished(info, view, uint64(nextBlockHeight), eState, fromAddress, toAddress); err2 != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toRewardsByWhiteListPunished: %v", tx.Hash(), err2)
 					logSkippedDeps(tx, deps)
@@ -950,7 +950,7 @@ mempoolLoop:
 				} else {
 					rewards = append(rewards, item)
 				}
-			}		
+			}
 		}
 
 		beaconMerge, beaconID, txAmount := false, uint64(0), big.NewInt(0)
@@ -1066,7 +1066,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	// make entangle tx if it exist
-	if g.chainParams.ExChangeHeight <= nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight {
 		exItems = cross.ToExChangeItems(blockTxns, entangleAddress)
 		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, rewards, mergeItems, fork)
 		if err != nil {
@@ -1263,12 +1263,12 @@ func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoi
 	}
 	return res, nil
 }
-func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint,height uint64,
+func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint, height uint64,
 	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
 	if view == nil {
 		return nil, errors.New("view is nil")
 	}
-	amount := state.CalcSlashingForWhiteListProof(info.Amount,info.Atype,info.LightID)
+	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.Atype, info.LightID)
 	res := &cross.PunishedRewardItem{
 		Amount: new(big.Int).Mul(big.NewInt(2), amount),
 		Addr1:  rewardAddress,
