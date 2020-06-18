@@ -1161,7 +1161,20 @@ func fetchOutPointFromTxs(txs []*czzutil.Tx, beacon map[uint64][]byte, state *En
 	}
 	return res
 }
-
+func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
+	info, e := IsBurnTx(tx.MsgTx())
+	if e != nil || info == nil {
+		return false
+	}
+	for _, v := range txs {
+		if info1, err := IsBurnTx(v.MsgTx()); err == nil {
+			if info1 != nil && info1.Address == info.Address {
+				return true
+			}
+		}
+	}
+	return false
+} 
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {

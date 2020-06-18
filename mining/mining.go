@@ -864,7 +864,7 @@ mempoolLoop:
 			entangleAddress[*tx.Hash()] = obj
 		}
 
-		if sameHeightTxForBurn(tx, blockTxns) {
+		if cross.SameHeightTxForBurn(tx, blockTxns) {
 			continue
 		}
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
@@ -1289,17 +1289,4 @@ func getAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Addr
 	}
 	return addrs[0]
 }
-func sameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
-	info, e := cross.IsBurnTx(tx.MsgTx())
-	if e != nil || info == nil {
-		return false
-	}
-	for _, v := range txs {
-		if info1, err := cross.IsBurnTx(v.MsgTx()); err == nil {
-			if info1 != nil && info1.Address == info.Address {
-				return true
-			}
-		}
-	}
-	return false
-}
+

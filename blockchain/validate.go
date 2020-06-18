@@ -361,7 +361,25 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 	return nil
 }
-
+func (b *BlockChain) checkBurnOrPunishTx(tx *czzutil.Tx) error {
+	return nil
+}
+func (b *BlockChain) CheckBlockBurnOrPunish(block *czzutil.Block) error {
+	// curHeight := int64(block.Height())  // maybe get 0
+	burnTxs := []*czzutil.Tx{}
+	for _, tx := range block.Transactions() {
+		if info1, _ := cross.IsBurnTx(tx.MsgTx()); info1 != nil {
+			if cross.SameHeightTxForBurn(tx,burnTxs) {
+				return errors.New("same height in burnTx at same address")
+			}
+			if err := b.checkBurnOrPunishTx(tx); err != nil {
+				return err
+			}
+			burnTxs = append(burnTxs,tx)
+		}
+	}
+	return nil
+}
 func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
 	// tmp the cache is nil
 	//_, err := b.GetExChangeVerify().VerifyEntangleTx(tx.MsgTx())
