@@ -1175,6 +1175,13 @@ func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
 	}
 	return false
 } 
+func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Address {
+	_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[1].PkScript, params)
+	if err == nil {
+		return nil
+	}
+	return addrs[0]
+}
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {

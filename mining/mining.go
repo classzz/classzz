@@ -883,7 +883,7 @@ mempoolLoop:
 			} else {
 				// send reward to the robot and Punished the beacon address
 				// estate.
-				fromAddress, toAddress := getAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
+				fromAddress, toAddress := cross.GetAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
 				exInfos := eState.GetExInfosByID(info.LightID)
 				if fromAddress == nil || toAddress == nil || exInfos == nil {
 					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
@@ -929,7 +929,7 @@ mempoolLoop:
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			fromAddress, toAddress := getAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
+			fromAddress, toAddress := cross.GetAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
 			exInfos := eState.GetExInfosByID(info.LightID)
 			if fromAddress == nil || toAddress == nil || exInfos == nil {
 				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
@@ -1246,7 +1246,7 @@ func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.
 	return items, to
 }
 func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint,
-	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
+	state *cross.EntangleState, rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
 	if view == nil {
 		return nil, errors.New("view is nil")
 	}
@@ -1254,7 +1254,7 @@ func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoi
 		Amount: new(big.Int).Mul(big.NewInt(2), info.Amount),
 		Addr1:  rewardAddress,
 		Addr2:  cross.ZeroAddrsss,
-		Addr3:  toAddress,
+		Addr3:  changeAddress,
 	}
 	m := view.Entries()
 	for k, v := range m {
@@ -1282,11 +1282,5 @@ func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.U
 	}
 	return res, nil
 }
-func getAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Address {
-	_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[1].PkScript, params)
-	if err == nil {
-		return nil
-	}
-	return addrs[0]
-}
+
 

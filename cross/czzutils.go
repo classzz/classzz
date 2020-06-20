@@ -672,3 +672,14 @@ type LHPunishedItem struct {
 type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
+type ResCoinBaseItem struct {
+	Amount 		*big.Int
+	Address 	czzutil.Address
+}
+type ResCoinBaseInfo struct {
+	Items 				[]*ResCoinBaseItem
+	Atype 				uint32
+	IndexInBlock  		int
+	Btype 	 			int
+}
+//////////////////////////////////////////////////////////////////////////////
