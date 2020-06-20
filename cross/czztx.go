@@ -126,6 +126,29 @@ type PunishedRewardItem struct {
 	Addr3        czzutil.Address
 	Amount       *big.Int
 }
+func (p *PunishedRewardItem) PkScript(pos int) []byte {
+	addr := p.Addr3
+	if pos == 0 {
+		addr = p.Addr1
+	} else if pos == 1 {
+		addr = p.Addr2
+	} 
+	b,e := txscript.PayToAddrScript(addr)
+	if e != nil {
+		return nil
+	}
+	return b
+}
+func (p *PunishedRewardItem) EqualPkScript(pb []byte,pos int) bool {
+	b := p.PkScript(pos)
+	if b == nil {
+		return false
+	}
+	return bytes.Equal(b,pb)
+}
+func (p *PunishedRewardItem) Change() *big.Int {
+	return new(big.Int).Sub(p.OriginAmount, new(big.Int).Mul(big.NewInt(2), p.Amount))
+}
 type BeaconMergeItem struct {
 	POut      wire.OutPoint
 	Script    []byte

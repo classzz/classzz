@@ -681,5 +681,10 @@ type ResCoinBaseInfo struct {
 	Atype 				uint32
 	IndexInBlock  		int
 	Btype 	 			int
+	LightID				uint64
+}
+type ResCoinBaseFlag struct {
+	In 		int
+	Out   	[]int
 }
 //////////////////////////////////////////////////////////////////////////////

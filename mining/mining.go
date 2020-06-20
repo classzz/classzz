@@ -1251,7 +1251,7 @@ func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoi
 		return nil, errors.New("view is nil")
 	}
 	res := &cross.PunishedRewardItem{
-		Amount: new(big.Int).Mul(big.NewInt(2), info.Amount),
+		Amount: new(big.Int).Mul(big.NewInt(1), info.Amount),
 		Addr1:  rewardAddress,
 		Addr2:  cross.ZeroAddrsss,
 		Addr3:  changeAddress,
@@ -1270,7 +1270,7 @@ func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.U
 	}
 	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.Atype, info.LightID)
 	res := &cross.PunishedRewardItem{
-		Amount: new(big.Int).Mul(big.NewInt(2), amount),
+		Amount: new(big.Int).Mul(big.NewInt(1), amount),
 		Addr1:  rewardAddress,
 		Addr2:  cross.ZeroAddrsss,
 		Addr3:  toAddress,

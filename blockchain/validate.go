@@ -361,18 +361,18 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 	return nil
 }
-func (b *BlockChain) getPoolAmount(lid uint64,eState *cross.EntangleState) (*big.Int,error) {
+func (b *BlockChain) getPoolAmount(lid uint64,eState *cross.EntangleState) (*big.Int,*wire.OutPoint,error) {
 	exInfos := eState.GetExInfosByID(lid)
 	if exInfos == nil {
-		return nil,cross.ErrNoRegister
+		return nil,nil,cross.ErrNoRegister
 	}
 	if view, err:= b.FetchUtxoForBeacon(exInfos.EnItems); (err != nil || view == nil) {
-		return nil,err
+		return nil,nil,err
 	} else {
-		for _, v := range view.Entries() {
-			return new(big.Int).SetInt64(v.Amount()),nil
+		for o, v := range view.Entries() {
+			return new(big.Int).SetInt64(v.Amount()),&o,nil
 		}
-		return nil,errors.New(fmt.Sprintf("can't find view,from lid: %v",lid))
+		return nil,nil,errors.New(fmt.Sprintf("can't find view,from lid: %v",lid))
 	}
 }
 func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo,estate *cross.EntangleState,height uint64) (uint64,*cross.BurnItem,error) {
@@ -381,19 +381,56 @@ func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo,estate *cross
 func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof,estate *cross.EntangleState) error {
 	return cross.VerifyWhiteListProof(info,b.GetExChangeVerify(),estate)
 }
-func (b *BlockChain) checkCoinBaseInCross(infos *cross.ResCoinBaseInfo) error {
+// make sure only one proof tx in a block
+func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,coinTx *czzutil.Tx) error {
+	if len(coinTx.MsgTx().TxIn) <= 3 {
+		return errors.New("wrong coinbase tx for proof of robot")
+	}
+	bOut,bIn := false,false
+	// find from address
+	for i,v := range coinTx.MsgTx().TxIn {
+		if i > 3 && v.PreviousOutPoint == infos.POut {
+			bOut = true 
+			break
+		}
+	}
+	if !bOut {
+		return errors.New("not match txin in coinbase tx")
+	} 
+	for i,v := range coinTx.MsgTx().TxOut {
+		if i > 4 {
+			if v.Value == infos.Amount.Int64() && infos.EqualPkScript(v.PkScript,0) {
+				if len(coinTx.MsgTx().TxOut) > i+1 && coinTx.MsgTx().TxOut[i+1].Value == infos.Amount.Int64() &&
+				 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+1].PkScript,1) {
+					if len(coinTx.MsgTx().TxOut) > i+2 && coinTx.MsgTx().TxOut[i+2].Value == infos.Change().Int64() &&
+					 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+2].PkScript,2) {
+						bIn = true
+						break
+					}
+				}
+			}
+		}
+	}
+	if !bIn {
+		return errors.New("not match txOut in coinbase tx")
+	} 
 	return nil
 }
 func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
-
+	proof1,proof2,proofError := 0,0,errors.New("only one proof in block")
 	burnTxs := []*czzutil.Tx{}
-	for i, tx := range block.Transactions() {
+	coinBaseTx,_ := block.Tx(0)
+	for _, tx := range block.Transactions() {
 		if info0,_ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil {
 			continue
 		}
-		if info2,_ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {			
+		if info2,_ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {	
+			proof1++
+			if proof1 > 1 {
+				return proofError
+			}		
 			if h,item,e := b.checkBurnOrPunishTx(info2,eState,uint64(prevHeight+1)); e != nil {
 				return e
 			} else {
@@ -404,21 +441,17 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 					})
 				} else {
 					from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info2.LightID)
-					if all,err := b.getPoolAmount(info2.LightID,eState); err != nil {
+					res := &cross.PunishedRewardItem{
+						Addr1:			from,
+						Addr2:			cross.ZeroAddrsss,
+						Addr3:			to,
+						Amount:			new(big.Int).Set(info2.Amount),
+					}
+					if all,out,err := b.getPoolAmount(info2.LightID,eState); err != nil {
 						return err
 					} else {
-						change := new(big.Int).Sub(all,new(big.Int).Mul(big.NewInt(2), info2.Amount))
-						res := &cross.ResCoinBaseInfo{
-							Items:			[]*cross.ResCoinBaseItem{
-								&cross.ResCoinBaseItem{Address:from,Amount:new(big.Int).Set(info2.Amount)},
-								&cross.ResCoinBaseItem{Address:cross.ZeroAddrsss,Amount:new(big.Int).Set(info2.Amount)},
-								&cross.ResCoinBaseItem{Address:to,Amount:change},
-							},
-							Atype:			info2.Atype,
-							IndexInBlock:	i,
-							Btype:			0, 			// burn proof by robot
-						}
-						if err := b.checkCoinBaseInCross(res); err != nil {
+						res.OriginAmount,res.POut = all,*out
+						if err := b.checkCoinBaseInCrossProof(res,coinBaseTx); err != nil {
 							return err
 						}
 						cross.CloseProofForPunished(info2, item, eState)
@@ -439,26 +472,27 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 			continue
 		}
 		if info3,_ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
+			proof2++
+			if proof2 > 1 {
+				return proofError
+			}	
 			if e := b.checkWhiteListProof(info3,eState); e != nil {
 				return e
 			} else {
 				from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)
-				if all,err := b.getPoolAmount(info3.LightID,eState); err != nil {
+				res := &cross.PunishedRewardItem{
+					Addr1:			from,
+					Addr2:			cross.ZeroAddrsss,
+					Addr3:			to,
+					Amount:			new(big.Int).Set(info3.Amount),
+				}
+				if all,out,err := b.getPoolAmount(info3.LightID,eState); err != nil {
 					return err
 				} else {
 					amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
-					change := new(big.Int).Sub(all,new(big.Int).Mul(big.NewInt(2), amount))
-					res := &cross.ResCoinBaseInfo{
-						Items:			[]*cross.ResCoinBaseItem{
-							&cross.ResCoinBaseItem{Address:from,Amount:new(big.Int).Set(amount)},
-							&cross.ResCoinBaseItem{Address:cross.ZeroAddrsss,Amount:new(big.Int).Set(amount)},
-							&cross.ResCoinBaseItem{Address:to,Amount:change},
-						},
-						Atype:			info3.Atype,
-						IndexInBlock:	i,
-						Btype:			1, 			// whitelist proof by robot
-					}
-					if err := b.checkCoinBaseInCross(res); err != nil {
+					res.OriginAmount,res.POut = all,*out
+					res.Amount = amount
+					if err := b.checkCoinBaseInCrossProof(res,coinBaseTx); err != nil {
 						return err
 					}
 					// cross.CloseProofForPunished(info2, item, eState)
