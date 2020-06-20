@@ -375,11 +375,11 @@ func (b *BlockChain) getPoolAmount(lid uint64,eState *cross.EntangleState) (*big
 		return nil,errors.New(fmt.Sprintf("can't find view,from lid: %v",lid))
 	}
 }
-func (b *BlockChain) checkBurnOrPunishTx(tx *czzutil.Tx,estate *cross.EntangleState) (uint64,*cross.BurnItem,error) {
-	return 0,nil,nil
+func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo,estate *cross.EntangleState,height uint64) (uint64,*cross.BurnItem,error) {
+	return cross.VerifyBurnProof(info,b.GetExChangeVerify(),estate,height)
 }
-func (b *BlockChain) checkWhiteListProof(tx *czzutil.Tx,estate *cross.EntangleState) error {
-	return nil
+func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof,estate *cross.EntangleState) error {
+	return cross.VerifyWhiteListProof(info,b.GetExChangeVerify(),estate)
 }
 func (b *BlockChain) checkCoinBaseInCross(infos *cross.ResCoinBaseInfo) error {
 	return nil
@@ -394,7 +394,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 			continue
 		}
 		if info2,_ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {			
-			if h,item,e := b.checkBurnOrPunishTx(tx,eState); e != nil {
+			if h,item,e := b.checkBurnOrPunishTx(info2,eState,uint64(prevHeight+1)); e != nil {
 				return e
 			} else {
 				if info2.IsBeacon {
@@ -431,14 +431,15 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 			if cross.SameHeightTxForBurn(tx,burnTxs) {
 				return errors.New("same height in burnTx at same address")
 			}
-			if _,_,err := b.checkBurnOrPunishTx(tx,eState); err != nil {
+			// update the state
+			if _,_,err := eState.BurnAsset(info1.Address, uint32(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
 				return err
 			}
 			burnTxs = append(burnTxs,tx)
 			continue
 		}
 		if info3,_ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
-			if e := b.checkWhiteListProof(tx,eState); e != nil {
+			if e := b.checkWhiteListProof(info3,eState); e != nil {
 				return e
 			} else {
 				from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)
