@@ -1033,6 +1033,7 @@ func init() {
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("addbeaconcoinbase", (*AddBeaconCoinbaseCmd)(nil), flags)
+	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)

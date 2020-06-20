@@ -278,19 +278,13 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			LegacyScriptHashAddrID: 0x32,
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
-		if err != nil {
-			e := fmt.Sprintf("ltc addr err")
-			return nil, errors.New(e)
-		}
-
 		bai := eState.getBeaconAddress(eInfo.BID)
 		if bai == nil {
 			e := fmt.Sprintf("ltc PkScript err")
 			return nil, errors.New(e)
 		}
 
-		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
 		if err != nil {
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCInvalidAddressOrKey,
@@ -298,7 +292,13 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			}
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ltcparams)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(addr.ScriptAddress(), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("ltc addr err")
+			return nil, errors.New(e)
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltc addr err")
 			return nil, errors.New(e)
@@ -313,10 +313,10 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		//	return nil, errors.New(e)
 		//}
 
-		if addr.String() != ltcPoolAddr {
-			e := fmt.Sprintf("ltc PoolAddr err")
-			return nil, errors.New(e)
-		}
+		//if addr.String() != ltcPoolAddr {
+		//	e := fmt.Sprintf("ltc PoolAddr err")
+		//	return nil, errors.New(e)
+		//}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
@@ -395,19 +395,13 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
-		if err != nil {
-			e := fmt.Sprintf("btc addr err")
-			return nil, errors.New(e)
-		}
-
 		bai := eState.getBeaconAddress(eInfo.BID)
 		if bai == nil {
 			e := fmt.Sprintf("btc PkScript err")
 			return nil, errors.New(e)
 		}
 
-		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
+		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
 		if err != nil {
 			return nil, &btcjson.RPCError{
 				Code:    btcjson.ErrRPCInvalidAddressOrKey,
@@ -415,7 +409,13 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			}
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(addr.ScriptAddress(), ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("btc addr err")
+			return nil, errors.New(e)
+		}
+
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
@@ -429,11 +429,6 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		//	e := fmt.Sprintf("doge dogePoolPub err")
 		//	return nil, errors.New(e)
 		//}
-
-		if addr.String() != ltcPoolAddr {
-			e := fmt.Sprintf("btc PoolAddr err")
-			return nil, errors.New(e)
-		}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err

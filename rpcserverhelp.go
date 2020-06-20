@@ -96,6 +96,16 @@ var helpDescsEnUS = map[string]string{
 	"addbeaconcoinbase-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
 	"addbeaconcoinbase--result0":       "Hex-encoded bytes of the serialized transaction",
 
+	// burntransaction help.
+	"burntransaction--synopsis":      "",
+	"burntransaction-inputs":         "The inputs to the transaction",
+	"burntransaction-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"burntransaction-amounts--key":   "address",
+	"burntransaction-amounts--value": "n.nnn",
+	"burntransaction-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"burntransaction-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"burntransaction--result0":       "Hex-encoded bytes of the serialized transaction",
+
 	// ScriptSig help.
 	"scriptsig-asm": "Disassembly of the script",
 	"scriptsig-hex": "Hex-encoded bytes of the script",
