@@ -393,14 +393,14 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	}
 	return nil, NoEntangle
 }
-
+// Only txOut[0] is valid 
 func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 
 	// make sure at least one txout in OUTPUT
 	einfos := make(map[uint32]*ExChangeTxInfo)
 	for i, v := range tx.TxOut {
 		info, err := ExChangeTxFromScript(v.PkScript)
-		if err == nil {
+		if err == nil && i == 0 {
 			if v.Value != 0 {
 				return nil, errors.New("the output value must be 0 in ExChange tx.")
 			}
@@ -1033,8 +1033,8 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 type TmpAddressPair struct {
 	index   uint32
 	Address czzutil.Address
-	OutAsset *big.Int
 }
+// only pairs[0] is valid
 func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
 	einfo, _ := IsExChangeTx(tx.MsgTx())

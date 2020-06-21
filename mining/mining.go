@@ -590,7 +590,6 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleAddress := make(map[chainhash.Hash][]*cross.TmpAddressPair)
 	entangleItems := make([]*cross.ExChangeItem,0,0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
@@ -853,15 +852,16 @@ mempoolLoop:
 			continue
 		}
 
-		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); (einfo != nil && einfo[0] != nil) {
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
-			if err != nil {
+			if err != nil && len(obj) > 0 {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err)
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			OutAsset,err1 := eState.AddEntangleItem(obj.Address.String(),uint32(einfo.ExTxType),einfo.BID,einfo.Height,einfo.Amount)
+			height := big.NewInt(int64(einfo[0].Height))
+			OutAsset,err1 := eState.AddEntangleItem(obj[0].Address.String(),uint32(einfo[0].ExTxType),einfo[0].BID,height,einfo[0].Amount)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
@@ -869,10 +869,10 @@ mempoolLoop:
 				continue
 			}
 			entangleItems = append(entangleItems,&cross.ExChangeItem{
-				EType:		einfo.ExTxType,
-				Addr:		obj.Address,
+				EType:		einfo[0].ExTxType,
+				Addr:		obj[0].Address,
 				Value:		OutAsset,
-				BID:		einfo.BID,
+				BID:		einfo[0].BID,
 			})
 		}
 
