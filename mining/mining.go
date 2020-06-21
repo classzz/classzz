@@ -591,7 +591,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
 	entangleAddress := make(map[chainhash.Hash][]*cross.TmpAddressPair)
-
+	entangleItems := make([]*cross.ExChangeItem,0,0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
 	// dependsOn map kept with each dependent transaction helps quickly
@@ -861,7 +861,19 @@ mempoolLoop:
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			entangleAddress[*tx.Hash()] = obj
+			OutAsset,err1 := eState.AddEntangleItem(obj.Address.String(),uint32(einfo.ExTxType),einfo.BID,einfo.Height,einfo.Amount)
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"toAddressFromEntangle: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			entangleItems = append(entangleItems,&cross.ExChangeItem{
+				EType:		einfo.ExTxType,
+				Addr:		obj.Address,
+				Value:		OutAsset,
+				BID:		einfo.BID,
+			})
 		}
 
 		if cross.SameHeightTxForBurn(tx, blockTxns) {
@@ -1067,8 +1079,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
-		exItems = cross.ToExChangeItems(blockTxns, entangleAddress)
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, rewards, mergeItems, fork)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, entangleItems, lastScriptInfo, rewards, mergeItems, fork)
 		if err != nil {
 			return nil, nil, err
 		}

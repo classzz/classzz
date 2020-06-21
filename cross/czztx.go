@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/chaincfg/chainhash"
+	// "github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/txscript"
@@ -1032,35 +1032,9 @@ func KeepedAmountFromScript(script []byte) (*KeepedAmount, error) {
 // the tool function for entangle tx
 type TmpAddressPair struct {
 	index   uint32
-	address czzutil.Address
+	Address czzutil.Address
+	OutAsset *big.Int
 }
-
-func ToExChangeItems(txs []*czzutil.Tx, addrs map[chainhash.Hash][]*TmpAddressPair) []*ExChangeItem {
-	items := make([]*ExChangeItem, 0)
-	for _, v := range txs {
-		einfos, _ := IsExChangeTx(v.MsgTx())
-		if einfos != nil {
-			for i, out := range einfos {
-				item := &ExChangeItem{
-					EType: out.ExTxType,
-					Value: new(big.Int).Set(out.Amount),
-					Addr:  nil,
-				}
-				pairs, ok := addrs[*v.Hash()]
-				if ok {
-					for _, vv := range pairs {
-						if i == vv.index {
-							item.Addr = vv.address
-						}
-					}
-				}
-				items = append(items, item)
-			}
-		}
-	}
-	return items
-}
-
 func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
 	einfo, _ := IsExChangeTx(tx.MsgTx())
@@ -1083,7 +1057,7 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleS
 			}
 			pairs = append(pairs, &TmpAddressPair{
 				index:   v.Index,
-				address: addr,
+				Address: addr,
 			})
 		}
 

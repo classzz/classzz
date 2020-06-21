@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/chaincfg/chainhash"
+	// "github.com/classzz/classzz/chaincfg/chainhash"
 
 	// "github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/txscript"
@@ -158,19 +158,19 @@ func makeTxIncludeEntx() *czzutil.Tx {
 	return czzutil.NewTx(mstx)
 }
 func TestToolFunc1(t *testing.T) {
-	entangleAddress := make(map[chainhash.Hash][]*TmpAddressPair)
-	tx := makeTxIncludeEntx()
-	if tx == nil {
-		fmt.Println("make tx include entangle info failed")
-		return
-	}
-	txs := []*czzutil.Tx{tx}
-	infos := ToEntangleItems(txs, entangleAddress)
-	if infos != nil {
-		for i, v := range infos {
-			fmt.Println(i, v)
-		}
-	}
+	// entangleAddress := make(map[chainhash.Hash][]*TmpAddressPair)
+	// tx := makeTxIncludeEntx()
+	// if tx == nil {
+	// 	fmt.Println("make tx include entangle info failed")
+	// 	return
+	// }
+	// txs := []*czzutil.Tx{tx}
+	// infos := ToEntangleItems(txs, entangleAddress)
+	// if infos != nil {
+	// 	for i, v := range infos {
+	// 		fmt.Println(i, v)
+	// 	}
+	// }
 }
 
 func TestAddrTrans(t *testing.T) {
@@ -227,7 +227,7 @@ func TestBigInt(t *testing.T) {
 }
 func TestStateRlp(t *testing.T) {
 	state := NewEntangleState()
-	l := state.toBytes()
+	l := state.ToBytes()
 	fmt.Println("state len:", l)
 	fmt.Println("finish")
 }
