@@ -861,7 +861,7 @@ mempoolLoop:
 				continue
 			}
 			height := big.NewInt(int64(einfo[0].Height))
-			OutAsset,err1 := eState.AddEntangleItem(obj[0].Address.String(),uint32(einfo[0].ExTxType),einfo[0].BID,height,einfo[0].Amount)
+			czzAsset,err1 := eState.AddEntangleItem(obj[0].Address.String(),uint32(einfo[0].ExTxType),einfo[0].BID,height,einfo[0].Amount)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
@@ -871,7 +871,7 @@ mempoolLoop:
 			entangleItems = append(entangleItems,&cross.ExChangeItem{
 				EType:		einfo[0].ExTxType,
 				Addr:		obj[0].Address,
-				Value:		OutAsset,
+				Value:		czzAsset,
 				BID:		einfo[0].BID,
 			})
 		}

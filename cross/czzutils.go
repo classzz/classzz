@@ -672,19 +672,14 @@ type LHPunishedItem struct {
 type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
-type ResCoinBaseItem struct {
-	Amount 		*big.Int
-	Address 	czzutil.Address
-}
-type ResCoinBaseInfo struct {
-	Items 				[]*ResCoinBaseItem
-	Atype 				uint32
-	IndexInBlock  		int
-	Btype 	 			int
-	LightID				uint64
-}
-type ResCoinBaseFlag struct {
-	In 		int
-	Out   	[]int
+type ResCoinBasePos []int
+
+func (p ResCoinBasePos) IsIn(i int) bool {
+	for _,v := range p {
+		if v == i {
+			return true
+		}
+	} 
+	return false
 }
 //////////////////////////////////////////////////////////////////////////////

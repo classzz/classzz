@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"bytes"
 	"time"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -390,11 +391,11 @@ func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,c
 	// find from address
 	for i,v := range coinTx.MsgTx().TxIn {
 		if i > 3 && v.PreviousOutPoint == infos.POut {
-			bOut = true 
+			bIn = true 
 			break
 		}
 	}
-	if !bOut {
+	if !bIn {
 		return errors.New("not match txin in coinbase tx")
 	} 
 	for i,v := range coinTx.MsgTx().TxOut {
@@ -404,14 +405,14 @@ func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,c
 				 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+1].PkScript,1) {
 					if len(coinTx.MsgTx().TxOut) > i+2 && coinTx.MsgTx().TxOut[i+2].Value == infos.Change().Int64() &&
 					 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+2].PkScript,2) {
-						bIn = true
+						bOut = true
 						break
 					}
 				}
 			}
 		}
 	}
-	if !bIn {
+	if !bOut {
 		return errors.New("not match txOut in coinbase tx")
 	} 
 	return nil
@@ -420,10 +421,30 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 	hash := block.MsgBlock().Header.PrevBlock
 	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
 	proof1,proof2,proofError := 0,0,errors.New("only one proof in block")
-	burnTxs := []*czzutil.Tx{}
+	burnTxs,in,out := []*czzutil.Tx{},[]int{},[]int{}
+
 	coinBaseTx,_ := block.Tx(0)
 	for _, tx := range block.Transactions() {
-		if info0,_ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil {
+		if info0,_ := cross.IsExChangeTx(tx.MsgTx()); (info0 != nil && info0[0] != nil) {
+			if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); (err != nil && len(obj) > 0) {
+				return err
+			} else {
+				height := big.NewInt(int64(info0[0].Height))
+				if czzAsset,err := eState.AddEntangleItem(obj[0].Address.String(),uint32(info0[0].ExTxType),
+				info0[0].BID,height,info0[0].Amount); err != nil {
+					return err
+				} else {
+					item := &cross.ExChangeItem{
+						EType:		info0[0].ExTxType,
+						Addr:		obj[0].Address,
+						Value:		czzAsset,
+						BID:		info0[0].BID,
+					}
+					if err := b.checkCoinBaseForEntangle(item,coinBaseTx,in,out); err != nil {
+						return err
+					}
+				}
+			}
 			continue
 		}
 		if info2,_ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {	
@@ -504,36 +525,21 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 	// check the coinbase Tx
 	return nil
 }
-func (b *BlockChain) checkEntangleTx(tx *czzutil.Tx) error {
-	// tmp the cache is nil
-	//_, err := b.GetExChangeVerify().VerifyEntangleTx(tx.MsgTx())
-	//if err != nil {
-	//	return err
-	//}
-	return nil
-}
-
-func (b *BlockChain) CheckBlockEntangle(block *czzutil.Block) error {
-	curHeight := int64(0)
-	for _, tx := range block.Transactions() {
-		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-		if einfos == nil {
-			continue
-		}
-		max := int64(0)
-		for _, ii := range einfos {
-			if max < int64(ii.Height) {
-				max = int64(ii.Height)
-			}
-		}
-		if curHeight > max {
-			return errors.New("unordered entangle tx in the block")
-		}
-		err := b.checkEntangleTx(tx)
-		if err != nil {
-			return err
+func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
+	bOut := false
+	for i,v := range coinTx.MsgTx().TxOut {
+		if !Out.IsIn(i) && v.Value == item.Value.Int64() {
+			if pkScript, err := txscript.PayToAddrScript(item.Addr); err == nil {
+				if bytes.Equal(pkScript,v.PkScript) {
+					bOut = true
+					break
+				}
+			} 
 		}
 	}
+	if !bOut {
+		return errors.New("not match txin in coinbase tx for entangle")
+	} 
 	return nil
 }
 
