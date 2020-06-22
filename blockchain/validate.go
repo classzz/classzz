@@ -551,13 +551,18 @@ func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *c
 	} 
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
-	// check txin count
-	if len(coinTx.MsgTx().TxIn) != in.GetInCount() + 3 {
-		return errors.New("wrong coinbase tx txin count")
-	}
-	if len(coinTx.MsgTx().TxOut) != out.GetOutCount() + 3 {
-		return errors.New("wrong coinbase tx txout count")
+func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx,in,out cross.ResCoinBasePos,height uint64) error {
+	if cross.StartMergeBeaconUtxoHeight == height {
+		// include merge utxo for lid
+	} else {
+		// check pool address merge
+		// check txin count
+		if len(coinTx.MsgTx().TxIn) != in.GetInCount() + 3 {
+			return errors.New("wrong coinbase tx txin count")
+		}
+		if len(coinTx.MsgTx().TxOut) != out.GetOutCount() + 3 {
+			return errors.New("wrong coinbase tx txout count")
+		}
 	}
 	return nil
 }

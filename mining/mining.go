@@ -733,7 +733,6 @@ mempoolLoop:
 	blockSigOps := coinbaseSigOps
 	totalFees := int64(0)
 	maxSigOps := blockchain.MaxBlockSigOps(blockSize)
-	exItems := make([]*cross.ExChangeItem, 0)
 
 	// Choose which transactions make it into the block.
 	for priorityQueue.Len() > 0 {
@@ -972,7 +971,7 @@ mempoolLoop:
 			}
 			beaconMerge, beaconID, txAmount = true, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
-		if beaconMerge && uint64(nextBlockHeight) == cross.StartMergeBeaconUtxoHeight+1 {
+		if beaconMerge && uint64(nextBlockHeight) > cross.StartMergeBeaconUtxoHeight+1 {
 			beaconMerge = false
 			exInfos := eState.GetExInfosByID(beaconID)
 			if exInfos == nil {
