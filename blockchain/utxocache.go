@@ -897,3 +897,15 @@ func (b *BlockChain) FetchUtxoForBeacon(outs []*wire.OutPoint) (*UtxoViewpoint, 
 	}
 	return b.utxoCache.FetchUxtoByOutPoint(outs)
 }
+func (b *BlockChain) GetTxInAmount(txin *wire.TxIn) (int64,error) {
+	out := []*wire.OutPoint{&txin.PreviousOutPoint}
+	utxo,err := b.FetchUtxoForBeacon(out)
+	if err != nil {
+		return 0,err
+	}
+	m := utxo.Entries()
+	for _, v := range m {
+		return v.Amount(),nil
+	}
+	return 0,errors.New("not find")
+}

@@ -672,14 +672,32 @@ type LHPunishedItem struct {
 type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
-type ResCoinBasePos []int
-
+type ResItem struct {
+	Index 		int
+	Amount 		*big.Int
+}
+type ResCoinBasePos []*ResItem 
+func NewResCoinBasePos() ResCoinBasePos {
+	return []*ResItem {}
+}
+func (p *ResCoinBasePos) Put(i int, amount *big.Int) {
+	*p = append(*p,&ResItem{
+		Index: 	i,
+		Amount: new(big.Int).Set(amount),
+	})
+}
 func (p ResCoinBasePos) IsIn(i int) bool {
 	for _,v := range p {
-		if v == i {
+		if v.Index == i {
 			return true
 		}
 	} 
 	return false
+}
+func (p ResCoinBasePos) GetInCount() int {
+	return 0
+}
+func (p ResCoinBasePos) GetOutCount() int {
+	return 0
 }
 //////////////////////////////////////////////////////////////////////////////
