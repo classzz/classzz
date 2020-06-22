@@ -210,12 +210,21 @@ func isBurnProofTy(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_UNKNOWN196 &&
 		pops[2].opcode.value == OP_1
 }
-func isWhiteListProofTy(pops []parsedOpcode) bool {
+
+func isBurnReportTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN196 &&
 		pops[2].opcode.value == OP_2
+}
+
+func isBurnReportWhiteListTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 3 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN196 &&
+		pops[2].opcode.value == OP_3
 }
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
@@ -339,6 +348,7 @@ func IsBurnTy(script []byte) bool {
 	}
 	return isBurnTy(pops)
 }
+
 func IsBurnProofTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -346,12 +356,21 @@ func IsBurnProofTy(script []byte) bool {
 	}
 	return isBurnProofTy(pops)
 }
-func IsWhiteListProofTy(script []byte) bool {
+
+func IsBurnReportTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
 		return false
 	}
-	return isWhiteListProofTy(pops)
+	return isBurnReportTy(pops)
+}
+
+func IsBurnReportWhiteListTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isBurnReportWhiteListTy(pops)
 }
 
 // expectedInputs returns the number of arguments required by a script.
@@ -639,14 +658,24 @@ func BurnProofScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_1).AddData(data).Script()
 }
 
-// Add white list Proof for robot, impl in
-func WhiteListProofScript(data []byte) ([]byte, error) {
+// Add Burn Proof for robot or beacon, impl in
+func BurnReportScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_2).AddData(data).Script()
+}
+
+// Add white list Proof for robot, impl in
+func BurnReportWhiteListScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_3).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in
@@ -775,7 +804,7 @@ func GetWhiteListProofData(script []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !isWhiteListProofTy(pops) {
+	if !isBurnReportWhiteListTy(pops) {
 		return nil, errors.New("not Burn info type")
 	}
 	return pops[3].data, nil

@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
 	"math/big"
 )
 
@@ -111,6 +112,17 @@ type BurnTransactionOut struct {
 	Amount   *big.Int
 }
 
+type BurnProofOut struct {
+	LightID  uint64   // the lightid for beaconAddress of user burn's asset
+	Height   uint64   // the height include the tx of user burn's asset
+	Amount   *big.Int // the amount of burned asset (czz)
+	Address  string
+	Atype    uint32
+	TxHash   []byte // the tx hash of outside
+	OutIndex int64
+	IsBeacon bool
+}
+
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
@@ -164,6 +176,13 @@ type BurnTransactionCmd struct {
 	LockTime        *int64
 }
 
+type BurnProofCmd struct {
+	Inputs    []TransactionInput
+	BurnProof BurnProofOut
+	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime  *int64
+}
+
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""
@@ -201,6 +220,17 @@ type BurnInfo struct {
 	Address  string
 	LightID  uint64
 	Amount   *big.Int
+}
+
+type BurnProofInfo struct {
+	LightID  uint64   // the lightid for beaconAddress of user burn's asset
+	Height   uint64   // the height include the tx of user burn's asset
+	Amount   *big.Int // the amount of burned asset (czz)
+	Address  czzutil.Address
+	Atype    uint32
+	TxHash   []byte // the tx hash of outside
+	OutIndex int64
+	IsBeacon bool
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
