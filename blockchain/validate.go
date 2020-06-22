@@ -449,7 +449,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						Value: czzAsset,
 						BID:   info0[0].BID,
 					}
-					if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
+					if err := b.checkCoinBaseForEntangle(item, coinBaseTx, in, out); err != nil {
 						return err
 					}
 				}
@@ -522,7 +522,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
 					res.OriginAmount, res.POut = all, *out
 					res.Amount = amount
-					if err := b.checkCoinBaseInCrossProof(res, coinBaseTx); err != nil {
+					if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
 						return err
 					}
 					// cross.CloseProofForPunished(info2, item, eState)
