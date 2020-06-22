@@ -126,29 +126,31 @@ type PunishedRewardItem struct {
 	Addr3        czzutil.Address
 	Amount       *big.Int
 }
+
 func (p *PunishedRewardItem) PkScript(pos int) []byte {
 	addr := p.Addr3
 	if pos == 0 {
 		addr = p.Addr1
 	} else if pos == 1 {
 		addr = p.Addr2
-	} 
-	b,e := txscript.PayToAddrScript(addr)
+	}
+	b, e := txscript.PayToAddrScript(addr)
 	if e != nil {
 		return nil
 	}
 	return b
 }
-func (p *PunishedRewardItem) EqualPkScript(pb []byte,pos int) bool {
+func (p *PunishedRewardItem) EqualPkScript(pb []byte, pos int) bool {
 	b := p.PkScript(pos)
 	if b == nil {
 		return false
 	}
-	return bytes.Equal(b,pb)
+	return bytes.Equal(b, pb)
 }
 func (p *PunishedRewardItem) Change() *big.Int {
 	return new(big.Int).Sub(p.OriginAmount, new(big.Int).Mul(big.NewInt(2), p.Amount))
 }
+
 type BeaconMergeItem struct {
 	POut      wire.OutPoint
 	Script    []byte
@@ -157,6 +159,7 @@ type BeaconMergeItem struct {
 }
 
 type ExChangeTxInfo struct {
+	Address   string
 	ExTxType  ExpandedTxType
 	Index     uint32
 	Height    uint64
@@ -393,7 +396,8 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	}
 	return nil, NoEntangle
 }
-// Only txOut[0] is valid 
+
+// Only txOut[0] is valid
 func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 
 	// make sure at least one txout in OUTPUT
@@ -827,8 +831,8 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,rewards []*PunishedRewardItem,
-	 mergeItem map[uint64][]*BeaconMergeItem) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, rewards []*PunishedRewardItem,
+	mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -1027,6 +1031,7 @@ type TmpAddressPair struct {
 	index   uint32
 	Address czzutil.Address
 }
+
 // only pairs[0] is valid
 func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
 	// txhash := tx.Hash()
@@ -1164,7 +1169,7 @@ func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
 		}
 	}
 	return false
-} 
+}
 func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Address {
 	_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[1].PkScript, params)
 	if err == nil {
@@ -1172,6 +1177,7 @@ func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Addr
 	}
 	return addrs[0]
 }
+
 //////////////////////////////////////////////////////////////////////////////
 func toDoge1(entangled, needed int64) int64 {
 	if needed <= 0 {

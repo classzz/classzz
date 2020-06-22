@@ -106,6 +106,36 @@ var helpDescsEnUS = map[string]string{
 	"burntransaction-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
 	"burntransaction--result0":       "Hex-encoded bytes of the serialized transaction",
 
+	// burntransaction help.
+	"burnprooft--synopsis":      "",
+	"burnprooft-inputs":         "The inputs to the transaction",
+	"burnprooft-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"burnprooft-amounts--key":   "address",
+	"burnprooft-amounts--value": "n.nnn",
+	"burnprooft-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"burnprooft-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"burnprooft--result0":       "Hex-encoded bytes of the serialized transaction",
+
+	// burntransaction help.
+	"burnreport--synopsis":      "",
+	"burnreport-inputs":         "The inputs to the transaction",
+	"burnreport-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"burnreport-amounts--key":   "address",
+	"burnreport-amounts--value": "n.nnn",
+	"burnreport-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"burnreport-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"burnreport--result0":       "Hex-encoded bytes of the serialized transaction",
+
+	// burntransaction help.
+	"burnreportwhitelist--synopsis":      "",
+	"burnreportwhitelist-inputs":         "The inputs to the transaction",
+	"burnreportwhitelist-amounts":        "JSON object with the destination addresses as keys and amounts as values",
+	"burnreportwhitelist-amounts--key":   "address",
+	"burnreportwhitelist-amounts--value": "n.nnn",
+	"burnreportwhitelist-amounts--desc":  "The destination address as the key and the amount in BTC as the value",
+	"burnreportwhitelist-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
+	"burnreportwhitelist--result0":       "Hex-encoded bytes of the serialized transaction",
+
 	// ScriptSig help.
 	"scriptsig-asm": "Disassembly of the script",
 	"scriptsig-hex": "Hex-encoded bytes of the script",
@@ -758,6 +788,12 @@ var rpcResultTypes = map[string][]interface{}{
 	"createrawtransaction":         {(*string)(nil)},
 	"createrawentangletransaction": {(*string)(nil)},
 	"beaconregistration":           {(*string)(nil)},
+	"addbeaconpledge":              {(*string)(nil)},
+	"addbeaconcoinbase":            {(*string)(nil)},
+	"burntransaction":              {(*string)(nil)},
+	"burnprooft":                   {(*string)(nil)},
+	"burnreport":                   {(*string)(nil)},
+	"burnreportwhitelist":          {(*string)(nil)},
 	"debuglevel":                   {(*string)(nil), (*string)(nil)},
 	"decoderawtransaction":         {(*btcjson.TxRawDecodeResult)(nil)},
 	"decodescript":                 {(*btcjson.DecodeScriptResult)(nil)},

@@ -53,7 +53,7 @@ import (
 
 // API version constants
 const (
-	jsonrpcSemverString = "2.0.0"
+	jsonrpcSemverString = "2.0.1"
 	jsonrpcSemverMajor  = 2
 	jsonrpcSemverMinor  = 0
 	jsonrpcSemverPatch  = 1
@@ -85,7 +85,7 @@ const (
 )
 
 var (
-	MinStakingAmountForBeaconAddress = float64(1000000)
+	MinStakingAmountForBeaconAddress = float64(100)
 )
 
 var (
@@ -1482,12 +1482,12 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 }
 
 func handleBurnReport(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*btcjson.BurnTransactionCmd)
+	//c := cmd.(*btcjson.BurnTransactionCmd)
 	return nil, nil
 }
 
 func handleBurnReportWhiteList(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*btcjson.BurnTransactionCmd)
+	//c := cmd.(*btcjson.BurnTransactionCmd)
 	return nil, nil
 }
 

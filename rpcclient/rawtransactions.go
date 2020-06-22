@@ -372,6 +372,19 @@ func (c *Client) AddBeaconCoinbase(inputs []btcjson.TransactionInput,
 	return c.AddBeaconCoinbaseAsync(inputs, out, amounts, lockTime).Receive()
 }
 
+func (c *Client) BurnTransactionAsync(inputs []btcjson.TransactionInput,
+	out btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewBurnTransactionCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
+// BurnTransaction returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) BurnTransaction(inputs []btcjson.TransactionInput,
+	out btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.BurnTransactionAsync(inputs, out, amounts, lockTime).Receive()
+}
+
 // FutureSendRawTransactionResult is a future promise to deliver the result
 // of a SendRawTransactionAsync RPC invocation (or an applicable error).
 type FutureSendRawTransactionResult chan *response

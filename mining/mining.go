@@ -590,7 +590,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleItems := make([]*cross.ExChangeItem,0,0)
+	entangleItems := make([]*cross.ExChangeItem, 0, 0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
 	// dependsOn map kept with each dependent transaction helps quickly
@@ -733,6 +733,7 @@ mempoolLoop:
 	blockSigOps := coinbaseSigOps
 	totalFees := int64(0)
 	maxSigOps := blockchain.MaxBlockSigOps(blockSize)
+	//exItems := make([]*cross.ExChangeItem, 0)
 
 	// Choose which transactions make it into the block.
 	for priorityQueue.Len() > 0 {
@@ -843,7 +844,7 @@ mempoolLoop:
 			continue
 		}
 
-		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); (einfo != nil && einfo[0] != nil) {
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
 			if err != nil && len(obj) > 0 {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -852,18 +853,18 @@ mempoolLoop:
 				continue
 			}
 			height := big.NewInt(int64(einfo[0].Height))
-			czzAsset,err1 := eState.AddEntangleItem(obj[0].Address.String(),uint32(einfo[0].ExTxType),einfo[0].BID,height,einfo[0].Amount)
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint32(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			entangleItems = append(entangleItems,&cross.ExChangeItem{
-				EType:		einfo[0].ExTxType,
-				Addr:		obj[0].Address,
-				Value:		czzAsset,
-				BID:		einfo[0].BID,
+			entangleItems = append(entangleItems, &cross.ExChangeItem{
+				EType: einfo[0].ExTxType,
+				Addr:  obj[0].Address,
+				Value: czzAsset,
+				BID:   einfo[0].BID,
 			})
 		}
 
@@ -971,7 +972,7 @@ mempoolLoop:
 			}
 			beaconMerge, beaconID, txAmount = true, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
-		if beaconMerge && uint64(nextBlockHeight) > cross.StartMergeBeaconUtxoHeight+1 {
+		if beaconMerge && uint64(nextBlockHeight) == cross.StartMergeBeaconUtxoHeight+1 {
 			beaconMerge = false
 			exInfos := eState.GetExInfosByID(beaconID)
 			if exInfos == nil {
@@ -1284,5 +1285,3 @@ func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.U
 	}
 	return res, nil
 }
-
-
