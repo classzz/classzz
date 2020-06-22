@@ -5,12 +5,12 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
 	"math/big"
-	"bytes"
 	"time"
 
 	"github.com/classzz/classzz/chaincfg"
@@ -362,58 +362,59 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 
 	return nil
 }
-func (b *BlockChain) getPoolAmount(lid uint64,eState *cross.EntangleState) (*big.Int,*wire.OutPoint,error) {
+func (b *BlockChain) getPoolAmount(lid uint64, eState *cross.EntangleState) (*big.Int, *wire.OutPoint, error) {
 	exInfos := eState.GetExInfosByID(lid)
 	if exInfos == nil {
-		return nil,nil,cross.ErrNoRegister
+		return nil, nil, cross.ErrNoRegister
 	}
-	if view, err:= b.FetchUtxoForBeacon(exInfos.EnItems); (err != nil || view == nil) {
-		return nil,nil,err
+	if view, err := b.FetchUtxoForBeacon(exInfos.EnItems); err != nil || view == nil {
+		return nil, nil, err
 	} else {
 		for o, v := range view.Entries() {
-			return new(big.Int).SetInt64(v.Amount()),&o,nil
+			return new(big.Int).SetInt64(v.Amount()), &o, nil
 		}
-		return nil,nil,errors.New(fmt.Sprintf("can't find view,from lid: %v",lid))
+		return nil, nil, errors.New(fmt.Sprintf("can't find view,from lid: %v", lid))
 	}
 }
-func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo,estate *cross.EntangleState,height uint64) (uint64,*cross.BurnItem,error) {
-	return cross.VerifyBurnProof(info,b.GetExChangeVerify(),estate,height)
+func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo, estate *cross.EntangleState, height uint64) (uint64, *cross.BurnItem, error) {
+	return cross.VerifyBurnProof(info, b.GetExChangeVerify(), estate, height)
 }
-func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof,estate *cross.EntangleState) error {
-	return cross.VerifyWhiteListProof(info,b.GetExChangeVerify(),estate)
+func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof, estate *cross.EntangleState) error {
+	return cross.VerifyWhiteListProof(info, b.GetExChangeVerify(), estate)
 }
+
 // make sure only one proof tx in a block
-func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,coinTx *czzutil.Tx,in,out *cross.ResCoinBasePos) error {
+func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) error {
 	if len(coinTx.MsgTx().TxIn) <= 3 {
 		return errors.New("wrong coinbase tx for proof of robot")
 	}
-	bOut,bIn := false,false
+	bOut, bIn := false, false
 	// find from address
-	for i,v := range coinTx.MsgTx().TxIn {
+	for i, v := range coinTx.MsgTx().TxIn {
 		if i > 3 && v.PreviousOutPoint == infos.POut {
-			amount,err := b.GetTxInAmount(v)
+			amount, err := b.GetTxInAmount(v)
 			if err != nil {
 				return err
 			}
 			bIn = true
-			in.Put(i,big.NewInt(amount))
+			in.Put(i, big.NewInt(amount))
 			break
 		}
 	}
 	if !bIn {
 		return errors.New("not match txin in coinbase tx")
-	} 
-	for i,v := range coinTx.MsgTx().TxOut {
+	}
+	for i, v := range coinTx.MsgTx().TxOut {
 		if i > 4 {
-			if v.Value == infos.Amount.Int64() && infos.EqualPkScript(v.PkScript,0) {
+			if v.Value == infos.Amount.Int64() && infos.EqualPkScript(v.PkScript, 0) {
 				if len(coinTx.MsgTx().TxOut) > i+1 && coinTx.MsgTx().TxOut[i+1].Value == infos.Amount.Int64() &&
-				 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+1].PkScript,1) {
+					infos.EqualPkScript(coinTx.MsgTx().TxOut[i+1].PkScript, 1) {
 					if len(coinTx.MsgTx().TxOut) > i+2 && coinTx.MsgTx().TxOut[i+2].Value == infos.Change().Int64() &&
-					 infos.EqualPkScript(coinTx.MsgTx().TxOut[i+2].PkScript,2) {
+						infos.EqualPkScript(coinTx.MsgTx().TxOut[i+2].PkScript, 2) {
 						bOut = true
-						out.Put(i,big.NewInt(v.Value))
-						out.Put(i+1,big.NewInt(coinTx.MsgTx().TxOut[i+1].Value))
-						out.Put(i+2,big.NewInt(coinTx.MsgTx().TxOut[i+2].Value))
+						out.Put(i, big.NewInt(v.Value))
+						out.Put(i+1, big.NewInt(coinTx.MsgTx().TxOut[i+1].Value))
+						out.Put(i+2, big.NewInt(coinTx.MsgTx().TxOut[i+2].Value))
 						break
 					}
 				}
@@ -422,45 +423,45 @@ func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,c
 	}
 	if !bOut {
 		return errors.New("not match txOut in coinbase tx")
-	} 
+	}
 	return nil
 }
-func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) error {
+func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
-	proof1,proof2,proofError := 0,0,errors.New("only one proof in block")
-	burnTxs,in,out := []*czzutil.Tx{},cross.NewResCoinBasePos(),cross.NewResCoinBasePos()
+	proof1, proof2, proofError := 0, 0, errors.New("only one proof in block")
+	burnTxs, in, out := []*czzutil.Tx{}, cross.NewResCoinBasePos(), cross.NewResCoinBasePos()
 
-	coinBaseTx,_ := block.Tx(0)
+	coinBaseTx, _ := block.Tx(0)
 	for _, tx := range block.Transactions() {
-		if info0,_ := cross.IsExChangeTx(tx.MsgTx()); (info0 != nil && info0[0] != nil) {
-			if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); (err != nil && len(obj) > 0) {
+		if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0[0] != nil {
+			if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 				return err
 			} else {
 				height := big.NewInt(int64(info0[0].Height))
-				if czzAsset,err := eState.AddEntangleItem(obj[0].Address.String(),uint32(info0[0].ExTxType),
-				info0[0].BID,height,info0[0].Amount); err != nil {
+				if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint32(info0[0].ExTxType),
+					info0[0].BID, height, info0[0].Amount); err != nil {
 					return err
 				} else {
 					item := &cross.ExChangeItem{
-						EType:		info0[0].ExTxType,
-						Addr:		obj[0].Address,
-						Value:		czzAsset,
-						BID:		info0[0].BID,
+						EType: info0[0].ExTxType,
+						Addr:  obj[0].Address,
+						Value: czzAsset,
+						BID:   info0[0].BID,
 					}
-					if err := b.checkCoinBaseForEntangle(item,coinBaseTx,&in,&out); err != nil {
+					if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
 						return err
 					}
 				}
 			}
 			continue
 		}
-		if info2,_ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {	
+		if info2, _ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {
 			proof1++
 			if proof1 > 1 {
 				return proofError
-			}		
-			if h,item,e := b.checkBurnOrPunishTx(info2,eState,uint64(prevHeight+1)); e != nil {
+			}
+			if h, item, e := b.checkBurnOrPunishTx(info2, eState, uint64(prevHeight+1)); e != nil {
 				return e
 			} else {
 				if info2.IsBeacon {
@@ -471,16 +472,16 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 				} else {
 					from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info2.LightID)
 					res := &cross.PunishedRewardItem{
-						Addr1:			from,
-						Addr2:			cross.ZeroAddrsss,
-						Addr3:			to,
-						Amount:			new(big.Int).Set(info2.Amount),
+						Addr1:  from,
+						Addr2:  cross.ZeroAddrsss,
+						Addr3:  to,
+						Amount: new(big.Int).Set(info2.Amount),
 					}
-					if all,outPoint,err := b.getPoolAmount(info2.LightID,eState); err != nil {
+					if all, outPoint, err := b.getPoolAmount(info2.LightID, eState); err != nil {
 						return err
 					} else {
-						res.OriginAmount,res.POut = all,*outPoint
-						if err := b.checkCoinBaseInCrossProof(res,coinBaseTx,&in,&out); err != nil {
+						res.OriginAmount, res.POut = all, *outPoint
+						if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
 							return err
 						}
 						cross.CloseProofForPunished(info2, item, eState)
@@ -490,42 +491,42 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 			continue
 		}
 		if info1, _ := cross.IsBurnTx(tx.MsgTx()); info1 != nil {
-			if cross.SameHeightTxForBurn(tx,burnTxs) {
+			if cross.SameHeightTxForBurn(tx, burnTxs) {
 				return errors.New("same height in burnTx at same address")
 			}
 			// update the state
-			if _,_,err := eState.BurnAsset(info1.Address, uint32(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
+			if _, _, err := eState.BurnAsset(info1.Address, uint32(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
 				return err
 			}
-			burnTxs = append(burnTxs,tx)
+			burnTxs = append(burnTxs, tx)
 			continue
 		}
-		if info3,_ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
+		if info3, _ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
 			proof2++
 			if proof2 > 1 {
 				return proofError
-			}	
-			if e := b.checkWhiteListProof(info3,eState); e != nil {
+			}
+			if e := b.checkWhiteListProof(info3, eState); e != nil {
 				return e
 			} else {
 				from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)
 				res := &cross.PunishedRewardItem{
-					Addr1:			from,
-					Addr2:			cross.ZeroAddrsss,
-					Addr3:			to,
-					Amount:			new(big.Int).Set(info3.Amount),
+					Addr1:  from,
+					Addr2:  cross.ZeroAddrsss,
+					Addr3:  to,
+					Amount: new(big.Int).Set(info3.Amount),
 				}
-				if all,out,err := b.getPoolAmount(info3.LightID,eState); err != nil {
+				if all, out, err := b.getPoolAmount(info3.LightID, eState); err != nil {
 					return err
 				} else {
 					amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
-					res.OriginAmount,res.POut = all,*out
+					res.OriginAmount, res.POut = all, *out
 					res.Amount = amount
-					if err := b.checkCoinBaseInCrossProof(res,coinBaseTx); err != nil {
+					if err := b.checkCoinBaseInCrossProof(res, coinBaseTx); err != nil {
 						return err
 					}
 					// cross.CloseProofForPunished(info2, item, eState)
-				}	
+				}
 			}
 			continue
 		}
@@ -533,21 +534,21 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 	// check the coinbase Tx
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
+func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem, coinTx *czzutil.Tx, in, out cross.ResCoinBasePos) error {
 	bOut := false
-	for i,v := range coinTx.MsgTx().TxOut {
+	for i, v := range coinTx.MsgTx().TxOut {
 		if !out.IsIn(i) && v.Value == item.Value.Int64() {
 			if pkScript, err := txscript.PayToAddrScript(item.Addr); err == nil {
-				if bytes.Equal(pkScript,v.PkScript) {
+				if bytes.Equal(pkScript, v.PkScript) {
 					bOut = true
 					break
 				}
-			} 
+			}
 		}
 	}
 	if !bOut {
 		return errors.New("not match txin in coinbase tx for entangle")
-	} 
+	}
 	return nil
 }
 func (b *BlockChain) checkCoinBaseForMergeUxto() error {
@@ -599,6 +600,19 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 			if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(prevHeight+2), info.Amount); err != nil {
 				return err
 			}
+		}
+
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
+			obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState)
+			if err != nil && len(obj) > 0 {
+				return err
+			}
+			height := big.NewInt(int64(einfo[0].Height))
+			_, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint32(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)
+			if err1 != nil {
+				return err
+			}
+
 		}
 
 	}
