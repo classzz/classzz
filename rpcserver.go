@@ -145,6 +145,9 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"addbeaconpledge":       handleAddBeaconPledge,
 	"addbeaconcoinbase":     handleAddBeaconCoinbase,
 	"burntransaction":       handleBurnTransaction,
+	"burnprooft":            handleBurnProoft,
+	"burnreport":            handleBurnReport,
+	"burnreportwhitelist":   handleBurnReportWhiteList,
 	"debuglevel":            handleDebugLevel,
 	"decoderawtransaction":  handleDecodeRawTransaction,
 	"decodescript":          handleDecodeScript,
@@ -1337,6 +1340,21 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 
 	return mtxHex, nil
+}
+
+func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.BurnTransactionCmd)
+	return nil, nil
+}
+
+func handleBurnReport(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.BurnTransactionCmd)
+	return nil, nil
+}
+
+func handleBurnReportWhiteList(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.BurnTransactionCmd)
+	return nil, nil
 }
 
 // handleDebugLevel handles debuglevel commands.
