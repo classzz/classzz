@@ -827,15 +827,11 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, lastScriptInfo []byte,
-	rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem, fork bool) error {
+func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,rewards []*PunishedRewardItem,
+	 mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
-	}
-	keepInfo, err := KeepedAmountFromScript(lastScriptInfo)
-	if err != nil {
-		return err
 	}
 	// make sure have enough Value to exchange
 	poolIn1 := &wire.TxIn{
@@ -853,12 +849,9 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := EnoughAmount(reserve1, items, keepInfo, fork); !ok {
-		return errors.New("not enough amount to be entangle...")
-	}
+	allEntangle := int64(0)
 
 	for i := range items {
-		calcExchange(items[i], &reserve1, keepInfo, true, fork)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
 			return errors.New("Make Meger tx failed,err: " + err.Error())
@@ -867,12 +860,12 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 			Value:    items[i].Value.Int64(),
 			PkScript: pkScript,
 		}
+		allEntangle += out.Value
 		tx.AddTxOut(out)
 	}
-	keepEntangleAmount(keepInfo, tx)
-	tx.TxOut[1].Value = reserve1
-	if reserve1 < reserve2 {
-		fmt.Println("as")
+	tx.TxOut[1].Value = reserve1 - allEntangle
+	if tx.TxOut[1].Value < 0 {
+		panic(errors.New("pool1 amount < 0"))
 	}
 	// reward the proof ,txin>3
 	for _, v := range rewards {

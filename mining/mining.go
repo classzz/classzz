@@ -619,21 +619,13 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	mergeItems := make(map[uint64][]*cross.BeaconMergeItem)
 
 	var eState *cross.EntangleState
-	fork := false
 	if g.chainParams.BeaconHeight < nextBlockHeight {
 		eState = g.chain.CurrentEstate()
-		fork = true
 	}
 
 	if g.chainParams.BeaconHeight == nextBlockHeight {
 		eState = cross.NewEntangleState()
 	}
-
-	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
-	if sErr != nil {
-		return nil, nil, sErr
-	}
-
 	log.Debugf("Considering %d transactions for inclusion to new block",
 		len(sourceTxns))
 
@@ -1046,10 +1038,10 @@ mempoolLoop:
 		}
 	}
 
-	if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); !ok {
-		//e := fmt.Sprintf("cross.OverEntangleAmount err")
-		//return nil, nil, errors.New(e)
-	}
+	// if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); !ok {
+	// 	//e := fmt.Sprintf("cross.OverEntangleAmount err")
+	// 	//return nil, nil, errors.New(e)
+	// }
 
 	// Now that the actual transactions have been selected, update the
 	// block size for the real transaction count and coinbase value with
@@ -1079,7 +1071,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
-		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, entangleItems, lastScriptInfo, rewards, mergeItems, fork)
+		err = cross.MakeMergeCoinbaseTx(coinbaseTx.MsgTx(), poolItem, entangleItems, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
 		}

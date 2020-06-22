@@ -528,7 +528,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
 	bOut := false
 	for i,v := range coinTx.MsgTx().TxOut {
-		if !Out.IsIn(i) && v.Value == item.Value.Int64() {
+		if !out.IsIn(i) && v.Value == item.Value.Int64() {
 			if pkScript, err := txscript.PayToAddrScript(item.Addr); err == nil {
 				if bytes.Equal(pkScript,v.PkScript) {
 					bOut = true
@@ -542,7 +542,9 @@ func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *c
 	} 
 	return nil
 }
-
+func (b *BlockChain) checkCoinBaseForMergeUxto() error {
+	return nil
+}
 func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 
 	hash := block.MsgBlock().Header.PrevBlock
