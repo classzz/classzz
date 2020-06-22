@@ -548,6 +548,22 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 				return err
 			}
 		}
+
+		// BeaconRegistration
+		info, _ := cross.IsBurnTx(tx.MsgTx())
+		if info != nil {
+			if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(pHeight+2), info.Amount); err != nil {
+				return err
+			}
+		}
+
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
+			height := big.NewInt(int64(einfo[0].Height))
+			_, err = eState.AddEntangleItem(einfo[0].Address, uint32(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	if eState != nil {

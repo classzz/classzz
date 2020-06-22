@@ -395,7 +395,7 @@ func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem,c
 			if err != nil {
 				return err
 			}
-			bIn = true 
+			bIn = true
 			in.Put(i,big.NewInt(amount))
 			break
 		}
@@ -515,13 +515,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 					Addr3:			to,
 					Amount:			new(big.Int).Set(info3.Amount),
 				}
-				if all,outPoint,err := b.getPoolAmount(info3.LightID,eState); err != nil {
+				if all,out,err := b.getPoolAmount(info3.LightID,eState); err != nil {
 					return err
 				} else {
 					amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
-					res.OriginAmount,res.POut = all,*outPoint
+					res.OriginAmount,res.POut = all,*out
 					res.Amount = amount
-					if err := b.checkCoinBaseInCrossProof(res,coinBaseTx,&in,&out); err != nil {
+					if err := b.checkCoinBaseInCrossProof(res,coinBaseTx); err != nil {
 						return err
 					}
 					// cross.CloseProofForPunished(info2, item, eState)
@@ -533,14 +533,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block,prevHeight int32) er
 	// check the coinbase Tx
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *czzutil.Tx,in,out *cross.ResCoinBasePos) error {
+func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
 	bOut := false
 	for i,v := range coinTx.MsgTx().TxOut {
 		if !out.IsIn(i) && v.Value == item.Value.Int64() {
 			if pkScript, err := txscript.PayToAddrScript(item.Addr); err == nil {
 				if bytes.Equal(pkScript,v.PkScript) {
 					bOut = true
-					out.Put(i,big.NewInt(v.Value))
 					break
 				}
 			} 
@@ -551,14 +550,7 @@ func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem,coinTx *c
 	} 
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx,in,out cross.ResCoinBasePos) error {
-	// check txin count
-	if len(coinTx.MsgTx().TxIn) != in.GetInCount() + 3 {
-		return errors.New("wrong coinbase tx txin count")
-	}
-	if len(coinTx.MsgTx().TxOut) != out.GetOutCount() + 3 {
-		return errors.New("wrong coinbase tx txout count")
-	}
+func (b *BlockChain) checkCoinBaseForMergeUxto() error {
 	return nil
 }
 func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {

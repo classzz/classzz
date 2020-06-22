@@ -62,6 +62,7 @@ type CreateRawTransactionCmd struct {
 }
 
 type ExChangeOut struct {
+	Address   string   `json:"address"`
 	ExTxType  uint8    `json:"extxtype"`
 	Index     uint32   `json:"index"`
 	Height    uint64   `json:"height"`
@@ -123,20 +124,15 @@ type BurnProofOut struct {
 	IsBeacon bool
 }
 
-// NewCreateRawTransactionCmd returns a new instance which can be used to issue
-// a createrawtransaction JSON-RPC command.
-//
-// Amounts are in CZZ.
-func NewAddBeaconPledgeOut(inputs []TransactionInput, beaconRegistrationOut BeaconRegistrationOut,
-	lockTime *int64) *BeaconRegistrationCmd {
-	return &BeaconRegistrationCmd{
-		Inputs:             inputs,
-		BeaconRegistration: beaconRegistrationOut,
-		LockTime:           lockTime,
-	}
+type BurnReportOut struct {
+	ExTxType uint8
+	Address  string
+	LightID  uint64
+	TxHash   []byte
+	OutIndex int64
 }
 
-// CreateRawExChangeTransactionCmd defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+// ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
 type ExChangeTransactionCmd struct {
 	Inputs       []TransactionInput
 	ExChangeOuts []ExChangeOut
@@ -152,7 +148,7 @@ type BeaconRegistrationCmd struct {
 	LockTime           *int64
 }
 
-// CreatePledgeRegistrationCmd defines JSON-RPC command.
+// AddBeaconPledge defines JSON-RPC command.
 type AddBeaconPledgeCmd struct {
 	Inputs          []TransactionInput
 	AddBeaconPledge AddBeaconPledgeOut
@@ -168,7 +164,7 @@ type AddBeaconCoinbaseCmd struct {
 	LockTime          *int64
 }
 
-// AddBeaconCoinbase defines JSON-RPC command.
+// BurnTransaction defines JSON-RPC command.
 type BurnTransactionCmd struct {
 	Inputs          []TransactionInput
 	BurnTransaction BurnTransactionOut
@@ -300,6 +296,16 @@ func NewAddBeaconCoinbaseCmd(inputs []TransactionInput, outs AddBeaconCoinbaseOu
 		AddBeaconCoinbase: outs,
 		Amounts:           amounts,
 		LockTime:          lockTime,
+	}
+}
+
+func NewBurnTransactionCmd(inputs []TransactionInput, out BurnTransactionOut, amounts *map[string]float64,
+	lockTime *int64) *BurnTransactionCmd {
+	return &BurnTransactionCmd{
+		Inputs:          inputs,
+		BurnTransaction: out,
+		Amounts:         amounts,
+		LockTime:        lockTime,
 	}
 }
 
@@ -1064,6 +1070,9 @@ func init() {
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("addbeaconcoinbase", (*AddBeaconCoinbaseCmd)(nil), flags)
 	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
+	MustRegisterCmd("burnprooft", (*BurnTransactionCmd)(nil), flags)
+	MustRegisterCmd("burnreport", (*BurnTransactionCmd)(nil), flags)
+	MustRegisterCmd("burnreportwhitelist", (*BurnTransactionCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)
