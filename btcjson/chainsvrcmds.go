@@ -62,13 +62,13 @@ type CreateRawTransactionCmd struct {
 }
 
 type ExChangeOut struct {
-	Address   string   `json:"address"`
-	ExTxType  uint8    `json:"extxtype"`
-	Index     uint32   `json:"index"`
-	Height    uint64   `json:"height"`
-	Amount    *big.Int `json:"amount"`
-	ExtTxHash string   `json:"exttxhash"`
-	BID       uint64   `json:"bid"`
+	Address   string         `json:"address"`
+	ExTxType  ExpandedTxType `json:"extxtype"`
+	Index     uint32         `json:"index"`
+	Height    uint64         `json:"height"`
+	Amount    *big.Int       `json:"amount"`
+	ExtTxHash string         `json:"exttxhash"`
+	BID       uint64         `json:"bid"`
 }
 
 type WhiteUnit struct {
@@ -110,7 +110,7 @@ type BurnTransactionOut struct {
 	ExTxType uint8
 	Address  string
 	LightID  uint64
-	Amount   *big.Int
+	Amount   float64
 }
 
 type BurnProofOut struct {
@@ -179,6 +179,20 @@ type BurnProofCmd struct {
 	LockTime  *int64
 }
 
+type BurnReportCmd struct {
+	Inputs    []TransactionInput
+	BurnProof BurnProofOut
+	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime  *int64
+}
+
+type BurnReportWhiteListCmd struct {
+	Inputs    []TransactionInput
+	BurnProof BurnProofOut
+	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime  *int64
+}
+
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""
@@ -211,8 +225,10 @@ type AddBeaconCoinbase struct {
 	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
+type ExpandedTxType uint8
+
 type BurnInfo struct {
-	ExTxType uint8
+	ExTxType ExpandedTxType
 	Address  string
 	LightID  uint64
 	Amount   *big.Int
@@ -1070,9 +1086,9 @@ func init() {
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("addbeaconcoinbase", (*AddBeaconCoinbaseCmd)(nil), flags)
 	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
-	MustRegisterCmd("burnprooft", (*BurnTransactionCmd)(nil), flags)
-	MustRegisterCmd("burnreport", (*BurnTransactionCmd)(nil), flags)
-	MustRegisterCmd("burnreportwhitelist", (*BurnTransactionCmd)(nil), flags)
+	MustRegisterCmd("burnprooft", (*BurnProofCmd)(nil), flags)
+	MustRegisterCmd("burnreport", (*BurnReportCmd)(nil), flags)
+	MustRegisterCmd("burnreportwhitelist", (*BurnReportWhiteListCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)

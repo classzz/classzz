@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
 	"strings"
 
@@ -164,7 +163,7 @@ type ExChangeTxInfo struct {
 	Index     uint32
 	Height    uint64
 	Amount    *big.Int
-	ExtTxHash []byte
+	ExtTxHash string
 	BID       uint64
 }
 
@@ -236,25 +235,25 @@ type BurnTxInfo struct {
 	Amount   *big.Int
 }
 
-func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
-		LightID uint64
-	}
-	var eb Store1
-	if err := s.Decode(&eb); err != nil {
-		return err
-	}
-	es.LightID = eb.LightID
-	return nil
-}
-func (es *BurnTxInfo) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
-		LightID uint64
-	}
-	return rlp.Encode(w, &Store1{
-		LightID: es.LightID,
-	})
-}
+//func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
+//	type Store1 struct {
+//		LightID uint64
+//	}
+//	var eb Store1
+//	if err := s.Decode(&eb); err != nil {
+//		return err
+//	}
+//	es.LightID = eb.LightID
+//	return nil
+//}
+//func (es *BurnTxInfo) EncodeRLP(w io.Writer) error {
+//	type Store1 struct {
+//		LightID uint64
+//	}
+//	return rlp.Encode(w, &Store1{
+//		LightID: es.LightID,
+//	})
+//}
 
 type KeepedItem struct {
 	ExTxType ExpandedTxType

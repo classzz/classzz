@@ -2,7 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -54,7 +53,7 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 	if ev.Cache != nil {
 		for i, v := range einfos {
 			if ok := ev.Cache.FetchExChangeUtxoView(v); ok {
-				errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Height)
+				errStr := fmt.Sprintf("[txid:%s, height:%v]", v.ExtTxHash, v.Height)
 				return nil, errors.New("txid has already entangle:" + errStr)
 			}
 			amount += tx.TxOut[i].Value
@@ -63,7 +62,7 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 
 	for i, v := range einfos {
 		if pub, err := ev.verifyTx(v, eState); err != nil {
-			errStr := fmt.Sprintf("[txid:%s, height:%v]", hex.EncodeToString(v.ExtTxHash), v.Index)
+			errStr := fmt.Sprintf("[txid:%s, height:%v]", v.ExtTxHash, v.Index)
 			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 		} else {
 			pairs = append(pairs, &TuplePubIndex{
@@ -131,7 +130,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
-					e := fmt.Sprintf("doge Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					e := fmt.Sprintf("doge Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -248,7 +247,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
-					e := fmt.Sprintf("ltc Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					e := fmt.Sprintf("ltc Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -369,7 +368,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
-					e := fmt.Sprintf("btc Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					e := fmt.Sprintf("btc Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -481,7 +480,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
-					e := fmt.Sprintf("Bch Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					e := fmt.Sprintf("Bch Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
 			} else {
@@ -598,7 +597,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
 				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
-					e := fmt.Sprintf("Bsv Transactionis %s not in BlockHeight %v", hex.EncodeToString(eInfo.ExtTxHash), eInfo.Height)
+					e := fmt.Sprintf("Bsv Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
 			} else {

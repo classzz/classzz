@@ -1246,11 +1246,18 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		mtx.AddTxIn(txIn)
 	}
 
+	// Convert the amount to satoshi.
+	satoshi, err := czzutil.NewAmount(c.BurnTransaction.Amount)
+	if err != nil {
+		context := "Failed to convert amount"
+		return nil, internalRPCError(err.Error(), context)
+	}
+
 	bi := &btcjson.BurnInfo{
-		ExTxType: c.BurnTransaction.ExTxType,
+		ExTxType: btcjson.ExpandedTxType(c.BurnTransaction.ExTxType),
 		Address:  c.BurnTransaction.Address,
 		LightID:  c.BurnTransaction.LightID,
-		Amount:   c.BurnTransaction.Amount,
+		Amount:   big.NewInt(int64(satoshi)),
 	}
 
 	biByte, err := rlp.EncodeToBytes(bi)
@@ -1265,6 +1272,25 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	})
 
 	params := s.cfg.ChainParams
+	CoinPool := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(CoinPool, params)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidAddressOrKey,
+			Message: "Invalid address or key: " + err.Error(),
+		}
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		context := "Failed to generate pay-to-address script"
+		return nil, internalRPCError(err.Error(), context)
+	}
+
+	txOut := wire.NewTxOut(int64(satoshi), pkScript)
+	mtx.AddTxOut(txOut)
+
 	// The change
 	if c.Amounts != nil {
 		for encodedAddr, amount := range *c.Amounts {

@@ -31,7 +31,7 @@ var (
 )
 
 var (
-	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
+	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
@@ -673,25 +673,26 @@ type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
 type ResItem struct {
-	Index 		int
-	Amount 		*big.Int
+	Index  int
+	Amount *big.Int
 }
-type ResCoinBasePos []*ResItem 
+type ResCoinBasePos []*ResItem
+
 func NewResCoinBasePos() ResCoinBasePos {
-	return []*ResItem {}
+	return []*ResItem{}
 }
 func (p *ResCoinBasePos) Put(i int, amount *big.Int) {
-	*p = append(*p,&ResItem{
-		Index: 	i,
+	*p = append(*p, &ResItem{
+		Index:  i,
 		Amount: new(big.Int).Set(amount),
 	})
 }
 func (p ResCoinBasePos) IsIn(i int) bool {
-	for _,v := range p {
+	for _, v := range p {
 		if v.Index == i {
 			return true
 		}
-	} 
+	}
 	return false
 }
 func (p ResCoinBasePos) GetInCount() int {
@@ -700,4 +701,5 @@ func (p ResCoinBasePos) GetInCount() int {
 func (p ResCoinBasePos) GetOutCount() int {
 	return 0
 }
+
 //////////////////////////////////////////////////////////////////////////////
