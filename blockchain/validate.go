@@ -376,6 +376,21 @@ func (b *BlockChain) getPoolAmount(lid uint64, eState *cross.EntangleState) (*bi
 		return nil, nil, errors.New(fmt.Sprintf("can't find view,from lid: %v", lid))
 	}
 }
+func (b *BlockChain) makeBeaconMergeItem(outs []*wire.OutPoint,to czzutil.Address) (*cross.BeaconMergeItem,error) {
+	view, err := b.FetchUtxoForBeacon(outs)
+	if err != nil {
+		return nil,err
+	} 
+	item := &cross.BeaconMergeItem{
+		ToAddress: to,
+	}
+	m := view.Entries()
+	for k, v := range m {
+		item.POut, item.Script, item.Amount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+		break
+	}
+	return item, nil
+}
 func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo, estate *cross.EntangleState, height uint64) (uint64, *cross.BurnItem, error) {
 	return cross.VerifyBurnProof(info, b.GetExChangeVerify(), estate, height)
 }
@@ -434,6 +449,73 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 	coinBaseTx, _ := block.Tx(0)
 	for _, tx := range block.Transactions() {
+		if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(),b.chainParams); info != nil {
+			if _, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
+				return err
+			} else {
+				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.StakingAmount, info.Fee, 
+					info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
+					return err
+				} else {
+					lightID := eState.GetBeaconIdByTo(info.ToAddress)
+					to := eState.GetBeaconToAddrByID(lightID)
+					if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
+						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), lightID))
+					} else {
+						if item, err := b.makeBeaconMergeItem(exInfos.EnItems,to); err != nil {
+							return err
+						} else {
+							items := append([]*cross.BeaconMergeItem{}, item)
+							items = append(items, &cross.BeaconMergeItem{
+								POut: wire.OutPoint{
+									Hash:  *tx.Hash(),
+									Index: 1,
+								},
+								ToAddress: to,
+								Amount:    new(big.Int).Set(info.StakingAmount),
+							})
+							if err := b.checkCoinBaseForRegister(items,coinBaseTx, &in, &out); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+			continue
+		}
+		if info, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(),b.chainParams); info != nil {
+			if _, err := b.GetExChangeVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {
+				return err
+			} else {
+				if err := eState.AppendAmountForBeaconAddress(info.Address, info.StakingAmount); err != nil {
+					return err
+				} else {
+					lightID := eState.GetBeaconIdByTo(info.ToAddress)
+					to := eState.GetBeaconToAddrByID(lightID)
+					if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
+						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), lightID))
+					} else {
+						if item, err := b.makeBeaconMergeItem(exInfos.EnItems,to); err != nil {
+							return err
+						} else {
+							items := append([]*cross.BeaconMergeItem{}, item)
+							items = append(items, &cross.BeaconMergeItem{
+								POut: wire.OutPoint{
+									Hash:  *tx.Hash(),
+									Index: 1,
+								},
+								ToAddress: to,
+								Amount:    new(big.Int).Set(info.StakingAmount),
+							})
+							if err := b.checkCoinBaseForRegister(items,coinBaseTx, &in, &out); err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+			continue
+		}
 		if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0[0] != nil {
 			if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 				return err
@@ -532,6 +614,48 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 	}
 	// check the coinbase Tx
+
+	if block.MsgBlock().Header.CIDRoot != cross.Hash(eState) {
+		return errors.New("CIDRoot not in the block")
+	}
+	return nil
+}
+func (b *BlockChain) checkCoinBaseForRegister(items []*cross.BeaconMergeItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) error {
+	if len(items) != 2 {
+		return errors.New("wrong length merge itmes")
+	}
+	pkScript, err := txscript.PayToAddrScript(items[0].ToAddress)
+	if err != nil {
+		return err
+	}
+	all := new(big.Int).Add(items[0].Amount,items[1].Amount).Int64()
+	bOut, bIn := false, false
+	// find from address
+	for i, v := range coinTx.MsgTx().TxIn {
+		if i > 3 && v.PreviousOutPoint == items[0].POut {
+			if len(coinTx.MsgTx().TxIn) > i + 1 && coinTx.MsgTx().TxIn[i+1].PreviousOutPoint == items[1].POut {
+				bIn = true
+				in.Put(i, new(big.Int).Set(items[0].Amount))
+				in.Put(i+1, new(big.Int).Set(items[1].Amount))
+				break
+			}
+		}
+	}
+	if !bIn {
+		return errors.New("not match txin in coinbase tx")
+	}
+	for i, v := range coinTx.MsgTx().TxOut {
+		if i > 3 {
+			if bytes.Equal(pkScript,v.PkScript) && v.Value == all {
+				bOut = true
+				out.Put(i, big.NewInt(v.Value))
+				break
+			}
+		}
+	}
+	if !bOut {
+		return errors.New("not match txOut in coinbase tx")
+	}
 	return nil
 }
 func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem, coinTx *czzutil.Tx, in, out cross.ResCoinBasePos) error {
