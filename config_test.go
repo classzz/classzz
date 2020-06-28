@@ -99,10 +99,10 @@ func TestGenesisAdderss(t *testing.T) {
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
-	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
 
-	if err1 != nil {
-		t.Errorf("failed to make address for: %v", err1)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
 	}
 	fmt.Println(address.String())
 }
@@ -116,10 +116,10 @@ func TestGenesisRegTestAdderss(t *testing.T) {
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
-	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.RegressionNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.RegressionNetParams)
 
-	if err1 != nil {
-		t.Errorf("failed to make address for: %v", err1)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
 	}
 	fmt.Println(address.String())
 }
@@ -133,10 +133,10 @@ func TestGenesisSimNetAdderss(t *testing.T) {
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
-	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
 
-	if err1 != nil {
-		t.Errorf("failed to make address for: %v", err1)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
 	}
 	fmt.Println(address.String())
 }
@@ -151,10 +151,10 @@ func TestConvertAddr(t *testing.T) {
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
-	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
 
-	if err1 != nil {
-		t.Errorf("failed to make address for: %v", err1)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
 	}
 	fmt.Println(address.String())
 
@@ -162,20 +162,16 @@ func TestConvertAddr(t *testing.T) {
 
 func TestWIFConvertAddr(t *testing.T) {
 
-	//keyBy, _ := hex.DecodeString("59c971df5e89a7f5816eff47575378498804224ca1e468a4d8d2afea12d9dd03")
-	//key, _ := czzec.PrivKeyFromBytes(czzec.S256(), keyBy)
 	wif, _ := czzutil.DecodeWIF("KxPjAmKaR5Xbw1Bmd9BaB1U9amXb6ywWJYhP4CmERorttk3Zrc9x")
-
-	//wif, _ := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
 	key := wif.PrivKey
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
-	address, err1 := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.SimNetParams)
 
-	if err1 != nil {
-		t.Errorf("failed to make address for: %v", err1)
+	if err != nil {
+		t.Errorf("failed to make address for: %v", err)
 	}
 	fmt.Println(address.String())
 

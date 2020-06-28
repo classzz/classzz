@@ -28,7 +28,7 @@ var (
 	ErrBurnProof          = errors.New("burn proof info not match")
 	ErrWhiteListProof     = errors.New("white list proof not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
-	ErrRepeatProof	      = errors.New("repeat proof")
+	ErrRepeatProof        = errors.New("repeat proof")
 )
 
 var (
@@ -655,7 +655,7 @@ type BurnProofInfo struct {
 	Address  czzutil.Address
 	Atype    uint32
 	TxHash   string // the tx hash of outside
-	OutIndex int64
+	OutIndex uint64
 	IsBeacon bool
 }
 
@@ -664,18 +664,20 @@ type WhiteListProof struct {
 	Atype    uint32
 	Height   uint64 // the height of outside chain
 	TxHash   string
-	InIndex  int64
-	OutIndex int64
+	InIndex  uint64
+	OutIndex uint64
 	Amount   *big.Int // the amount of outside chain
 }
+
 func (wl *WhiteListProof) Clone() *WhiteListProof {
 	return &WhiteListProof{
-		LightID:		wl.LightID,
-		Height:			wl.Height,
-		Amount:			new(big.Int).Set(wl.Amount),
-		Atype:			wl.Atype,
+		LightID: wl.LightID,
+		Height:  wl.Height,
+		Amount:  new(big.Int).Set(wl.Amount),
+		Atype:   wl.Atype,
 	}
 }
+
 type LHPunishedItem struct {
 	All  *big.Int // czz amount(all user burned item in timeout)
 	User string

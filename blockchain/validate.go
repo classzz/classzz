@@ -550,7 +550,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					if info2.IsBeacon {
 						eState.FinishHandleUserBurn(info2, &cross.BurnProofItem{
 							Height: h,
-							TxHash: append([]byte{}, info2.TxHash...),
+							TxHash: info2.TxHash,
 						})
 					} else {
 						from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info2.LightID)
@@ -573,8 +573,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				}
 				continue
 			}
-			if info1, _ := cross.IsBurnTx(tx.MsgTx(),b.chainParams); info1 != nil {
-				if cross.SameHeightTxForBurn(tx, burnTxs,b.chainParams) {
+			if info1, _ := cross.IsBurnTx(tx.MsgTx(), b.chainParams); info1 != nil {
+				if cross.SameHeightTxForBurn(tx, burnTxs, b.chainParams) {
 					return errors.New("same height in burnTx at same address")
 				}
 				// update the state
@@ -608,7 +608,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
 							return err
 						}
-						cross.FinishWhiteListProof(info3,eState)
+						cross.FinishWhiteListProof(info3, eState)
 					}
 				}
 			}

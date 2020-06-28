@@ -882,7 +882,7 @@ mempoolLoop:
 			if info.IsBeacon {
 				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
 					Height: oHeight,
-					TxHash: append([]byte{}, info.TxHash...),
+					TxHash: info.TxHash,
 				})
 			} else {
 				// send reward to the robot and Punished the beacon address
