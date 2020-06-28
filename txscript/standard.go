@@ -211,7 +211,7 @@ func isBurnProofTy(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_1
 }
 
-func isBurnReportTy(pops []parsedOpcode) bool {
+func isBurnReportWhiteListTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
@@ -219,13 +219,6 @@ func isBurnReportTy(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_2
 }
 
-func isBurnReportWhiteListTy(pops []parsedOpcode) bool {
-	// simple judge
-	return len(pops) >= 3 &&
-		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN196 &&
-		pops[2].opcode.value == OP_3
-}
 func isKeepedAmountInfo(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
@@ -355,14 +348,6 @@ func IsBurnProofTy(script []byte) bool {
 		return false
 	}
 	return isBurnProofTy(pops)
-}
-
-func IsBurnReportTy(script []byte) bool {
-	pops, err := parseScript(script)
-	if err != nil {
-		return false
-	}
-	return isBurnReportTy(pops)
 }
 
 func IsBurnReportWhiteListTy(script []byte) bool {
@@ -658,16 +643,6 @@ func BurnProofScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_1).AddData(data).Script()
 }
 
-// Add Burn Proof for robot or beacon, impl in
-func BurnReportScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_2).AddData(data).Script()
-}
-
 // Add white list Proof for robot, impl in
 func BurnReportWhiteListScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
@@ -675,7 +650,7 @@ func BurnReportWhiteListScript(data []byte) ([]byte, error) {
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_3).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_2).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in

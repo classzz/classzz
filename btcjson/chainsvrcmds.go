@@ -124,12 +124,14 @@ type BurnProofOut struct {
 	IsBeacon bool
 }
 
-type BurnReportOut struct {
-	ExTxType uint8
-	Address  string
-	LightID  uint64
-	TxHash   []byte
+type BurnReportWhiteListOut struct {
+	LightID  uint64 // the lightid for beaconAddress
+	Atype    uint32
+	Height   uint64 // the height of outside chain
+	TxHash   string
+	InIndex  int64
 	OutIndex int64
+	Amount   *big.Int // the amount of outside chain
 }
 
 // ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
@@ -188,7 +190,7 @@ type BurnReportCmd struct {
 
 type BurnReportWhiteListCmd struct {
 	Inputs    []TransactionInput
-	BurnProof BurnProofOut
+	BurnProof BurnReportWhiteListOut
 	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime  *int64
 }

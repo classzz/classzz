@@ -480,7 +480,7 @@ func (b *BurnItem) clone() *BurnItem {
 		Height:  b.Height,
 		Proof: &BurnProofItem{
 			Height: b.Proof.Height,
-			TxHash: append([]byte{}, b.Proof.TxHash...),
+			TxHash: b.Proof.TxHash,
 		},
 		RedeemState: b.RedeemState,
 	}
@@ -573,14 +573,14 @@ func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofI
 func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
 	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
-func (b *BurnInfos) EarliestHeightAndUsedTx(tx []byte) (uint64, bool) {
+func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	height, used := uint64(0), false
 	for _, v := range b.Items {
 		if v.Proof != nil {
 			if height == 0 || height < v.Proof.Height {
 				height = v.Proof.Height
 			}
-			if bytes.Equal(v.Proof.TxHash, tx) {
+			if v.Proof.TxHash == tx {
 				used = true
 			}
 		}
@@ -645,7 +645,7 @@ func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 
 type BurnProofItem struct {
 	Height uint64
-	TxHash []byte
+	TxHash string
 }
 
 type BurnProofInfo struct {
@@ -654,16 +654,19 @@ type BurnProofInfo struct {
 	Amount   *big.Int // the amount of burned asset (czz)
 	Address  czzutil.Address
 	Atype    uint32
-	TxHash   []byte // the tx hash of outside
+	TxHash   string // the tx hash of outside
 	OutIndex int64
 	IsBeacon bool
 }
 
 type WhiteListProof struct {
-	LightID uint64   // the lightid for beaconAddress
-	Height  uint64   // the height of outside chain
-	Amount  *big.Int // the amount of outside chain
-	Atype   uint32
+	LightID  uint64 // the lightid for beaconAddress
+	Atype    uint32
+	Height   uint64 // the height of outside chain
+	TxHash   string
+	InIndex  int64
+	OutIndex int64
+	Amount   *big.Int // the amount of outside chain
 }
 func (wl *WhiteListProof) Clone() *WhiteListProof {
 	return &WhiteListProof{
