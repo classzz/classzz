@@ -28,6 +28,7 @@ var (
 	ErrBurnProof          = errors.New("burn proof info not match")
 	ErrWhiteListProof     = errors.New("white list proof not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
+	ErrRepeatProof	      = errors.New("repeat proof")
 )
 
 var (
@@ -664,7 +665,14 @@ type WhiteListProof struct {
 	Amount  *big.Int // the amount of outside chain
 	Atype   uint32
 }
-
+func (wl *WhiteListProof) Clone() *WhiteListProof {
+	return &WhiteListProof{
+		LightID:		wl.LightID,
+		Height:			wl.Height,
+		Amount:			new(big.Int).Set(wl.Amount),
+		Atype:			wl.Atype,
+	}
+}
 type LHPunishedItem struct {
 	All  *big.Int // czz amount(all user burned item in timeout)
 	User string

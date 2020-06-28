@@ -608,7 +608,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
 							return err
 						}
-						// cross.CloseProofForPunished(info3, item, eState)
+						cross.FinishWhiteListProof(info3,eState)
 					}
 				}
 			}

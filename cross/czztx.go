@@ -1117,11 +1117,17 @@ func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleSta
 
 // the return value is beacon's balance of it was staking amount
 func VerifyWhiteListProof(info *WhiteListProof, ev *ExChangeVerify, state *EntangleState) error {
+	if err := state.VerifyWhiteListProof(info); err != nil {
+		return err
+	}
 	cur := state.GetOutSideAsset(info.LightID, info.Atype)
 	if cur == nil {
 		return ErrNoRegister
 	}
 	return ev.VerifyWhiteList(cur, info.Atype, state.GetWhiteList(info.LightID), state.getBeaconAddressByID(info.LightID))
+}
+func FinishWhiteListProof(info *WhiteListProof, state *EntangleState) error {
+	return state.FinishWhiteListProof(info)
 }
 func CloseProofForPunished(info *BurnProofInfo, item *BurnItem, state *EntangleState) error {
 	return state.CloseProofForPunished(info, item)

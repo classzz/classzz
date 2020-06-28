@@ -18,7 +18,24 @@ import (
 
 type ExBeaconInfo struct {
 	EnItems []*wire.OutPoint
+	Proofs []*WhiteListProof
 }
+func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
+	for _,v := range e.Proofs {
+		if v.Height == proof.Height {
+			return true
+		}
+	}
+	return false
+}
+func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
+	if !e.EqualProof(proof) {
+		e.Proofs = append(e.Proofs,proof.Clone())
+		return nil
+	}
+	return ErrRepeatProof
+}
+
 type EntangleState struct {
 	EnInfos       map[string]*BeaconAddressInfo
 	EnEntitys     map[uint64]UserEntangleInfos
@@ -690,6 +707,24 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 	return nil
 }
 
+func (es *EntangleState) VerifyWhiteListProof(proof *WhiteListProof) error {
+	if info := es.GetExInfosByID(proof.LightID); info != nil {
+		if !info.EqualProof(proof) {
+			return ErrRepeatProof
+		} else {
+			return nil
+		}
+	}
+	return ErrNoRegister
+}
+func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
+	if info := es.GetExInfosByID(proof.LightID); info != nil {
+		info.AppendProof(proof)
+		es.SetExBeaconInfo(proof.LightID,info)
+		return nil
+	}
+	return ErrNoRegister
+}
 ////////////////////////////////////////////////////////////////////////////
 // calc the punished amount by outside asset in the height
 // the return value(flag by czz) will be mul * 2
