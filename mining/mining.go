@@ -868,7 +868,7 @@ mempoolLoop:
 			})
 		}
 
-		if cross.SameHeightTxForBurn(tx, blockTxns) {
+		if cross.SameHeightTxForBurn(tx, blockTxns, g.chainParams) {
 			continue
 		}
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
@@ -913,7 +913,7 @@ mempoolLoop:
 				cross.CloseProofForPunished(info, item, eState)
 			}
 		}
-		if info, err := cross.IsBurnTx(tx.MsgTx()); err == nil {
+		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
 				amount, fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
 				if err1 != nil {

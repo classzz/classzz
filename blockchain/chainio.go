@@ -550,7 +550,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// BeaconRegistration
-		info, _ := cross.IsBurnTx(tx.MsgTx())
+		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
 		if info != nil {
 			if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(pHeight+2), info.Amount); err != nil {
 				return err

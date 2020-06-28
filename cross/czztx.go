@@ -595,7 +595,7 @@ func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconC
 	return nil, NoAddBeaconCoinbase
 }
 
-func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
+func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BurnTxInfo
 
@@ -627,7 +627,7 @@ func IsBurnTx(tx *wire.MsgTx) (*BurnTxInfo, error) {
 		}
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
@@ -1155,13 +1155,13 @@ func fetchOutPointFromTxs(txs []*czzutil.Tx, beacon map[uint64][]byte, state *En
 	}
 	return res
 }
-func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx) bool {
-	info, e := IsBurnTx(tx.MsgTx())
+func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx, params *chaincfg.Params) bool {
+	info, e := IsBurnTx(tx.MsgTx(), params)
 	if e != nil || info == nil {
 		return false
 	}
 	for _, v := range txs {
-		if info1, err := IsBurnTx(v.MsgTx()); err == nil {
+		if info1, err := IsBurnTx(v.MsgTx(), params); err == nil {
 			if info1 != nil && info1.Address == info.Address {
 				return true
 			}

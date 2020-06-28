@@ -1060,7 +1060,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// BeaconRegistration
-	info, _ := cross.IsBurnTx(tx.MsgTx())
+	info, _ := cross.IsBurnTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if info != nil {
 
 		err := mp.cfg.ExChangeVerify.VerifyBurn(info, eState)
