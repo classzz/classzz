@@ -630,6 +630,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		len(sourceTxns))
 
 	txkeys := make(map[chainhash.Hash]string)
+	once := 0
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		// A block can't have more than one coinbase or contain
@@ -885,6 +886,10 @@ mempoolLoop:
 					TxHash: info.TxHash,
 				})
 			} else {
+				if once >= 1 {
+					logSkippedDeps(tx, deps)
+					continue
+				}
 				// send reward to the robot and Punished the beacon address
 				// estate.
 				fromAddress, toAddress := cross.GetAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
@@ -911,6 +916,7 @@ mempoolLoop:
 				}
 				// reset the amount in beacon
 				cross.CloseProofForPunished(info, item, eState)
+				once = 1
 			}
 		}
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
@@ -930,6 +936,10 @@ mempoolLoop:
 			if err1 := cross.VerifyWhiteListProof(info, g.chain.GetExChangeVerify(), eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"VerifyWhiteListProof: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			if once >= 1 {
 				logSkippedDeps(tx, deps)
 				continue
 			}
@@ -953,6 +963,7 @@ mempoolLoop:
 					continue
 				} else {
 					rewards = append(rewards, item)
+					once = 1
 				}
 			}
 		}
@@ -973,6 +984,11 @@ mempoolLoop:
 			beaconMerge, beaconID, txAmount = true, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
 		if beaconMerge && uint64(nextBlockHeight) >= cross.StartMergeBeaconUtxoHeight+1 {
+			if once >= 1 {
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			once = 1
 			beaconMerge = false
 			exInfos := eState.GetExInfosByID(beaconID)
 			if exInfos == nil {
