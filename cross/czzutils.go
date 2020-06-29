@@ -709,10 +709,10 @@ func (p ResCoinBasePos) IsIn(i int) bool {
 	return false
 }
 func (p ResCoinBasePos) GetInCount() int {
-	return 0
+	return len(p)
 }
 func (p ResCoinBasePos) GetOutCount() int {
-	return 0
+	return len(p)
 }
 
 //////////////////////////////////////////////////////////////////////////////

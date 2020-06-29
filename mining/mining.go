@@ -963,6 +963,7 @@ mempoolLoop:
 					continue
 				} else {
 					rewards = append(rewards, item)
+					cross.FinishWhiteListProof(info,eState)
 					once = 1
 				}
 			}
