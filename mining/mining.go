@@ -969,47 +969,61 @@ mempoolLoop:
 			}
 		}
 
-		beaconMerge, beaconID, txAmount := false, uint64(0), big.NewInt(0)
+		beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
 		// BeaconRegistrationTx
 		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
 			if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 				return nil, nil, err
 			}
-			beaconMerge, beaconID, txAmount = true, eState.GetBeaconIdByTo(br.ToAddress), new(big.Int).Set(br.StakingAmount)
+			beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(br.ToAddress), new(big.Int).Set(br.StakingAmount)
 		}
 		// AddBeaconPledgeTx
 		if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
 			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
 				return nil, nil, err
 			}
-			beaconMerge, beaconID, txAmount = true, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
+			beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
-		if beaconMerge && uint64(nextBlockHeight) >= cross.StartMergeBeaconUtxoHeight+1 {
+		if beaconMerge > 0 && uint64(nextBlockHeight) >= cross.StartMergeBeaconUtxoHeight+1 {
 			if once >= 1 {
 				logSkippedDeps(tx, deps)
 				continue
 			}
 			once = 1
-			beaconMerge = false
-			exInfos := eState.GetExInfosByID(beaconID)
-			if exInfos == nil {
-				return nil, nil, errors.New(fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID))
-			}
-			if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
-				return nil, nil, errors.New(fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID))
-			} else {
-				if mergeItem, to := toMergeBeaconItems(view, beaconID, eState); mergeItem == nil {
-					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID))
-				} else {
-					mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
-					mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
-						POut: wire.OutPoint{
+			if beaconMerge == 1 {
+				if exInfos := eState.GetExInfosByID(beaconID); exInfos == nil {
+					ex := &cross.ExBeaconInfo{
+						EnItems: []*wire.OutPoint{&wire.OutPoint{
 							Hash:  *tx.Hash(),
 							Index: 1,
-						},
-						ToAddress: to,
-						Amount:    txAmount,
-					})
+						}},
+						Proofs: []*cross.WhiteListProof{},
+					}
+					eState.SetExBeaconInfo(beaconID,ex)
+				} else {
+					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
+				}
+			} else {
+				exInfos := eState.GetExInfosByID(beaconID)
+				if exInfos == nil {
+					return nil, nil, errors.New(fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID))
+				}
+				if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+					return nil, nil, errors.New(fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID))
+				} else {
+					if mergeItem, to := toMergeBeaconItems(view, beaconID, eState); mergeItem == nil {
+						return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID))
+					} else {
+						mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
+						mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
+							POut: wire.OutPoint{
+								Hash:  *tx.Hash(),
+								Index: 1,
+							},
+							ToAddress: to,
+							Amount:    txAmount,
+						})
+					}
 				}
 			}
 		}
