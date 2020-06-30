@@ -18,10 +18,11 @@ import (
 
 type ExBeaconInfo struct {
 	EnItems []*wire.OutPoint
-	Proofs []*WhiteListProof
+	Proofs  []*WhiteListProof
 }
+
 func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
-	for _,v := range e.Proofs {
+	for _, v := range e.Proofs {
 		if v.Height == proof.Height {
 			return true
 		}
@@ -30,7 +31,7 @@ func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
 }
 func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
 	if !e.EqualProof(proof) {
-		e.Proofs = append(e.Proofs,proof.Clone())
+		e.Proofs = append(e.Proofs, proof.Clone())
 		return nil
 	}
 	return ErrRepeatProof
@@ -210,7 +211,7 @@ func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
 func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
 	if b := es.getBeaconToAddressByID(i); b != nil {
 		addr, err := czzutil.NewLegacyAddressPubKeyHash(b, &chaincfg.MainNetParams)
-		if err != nil {
+		if err == nil {
 			return addr
 		}
 	}
@@ -278,8 +279,14 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 		WhiteList:       wu,
 		CoinBaseAddress: cba,
 	}
+
+	ebi := &ExBeaconInfo{
+		EnItems: make([]*wire.OutPoint, 0, 0),
+		Proofs:  make([]*WhiteListProof, 0, 0),
+	}
 	es.CurExchangeID = info.ExchangeID
 	es.EnInfos[addr] = info
+	es.BaExInfo[es.CurExchangeID] = ebi
 	return nil
 }
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
@@ -720,11 +727,12 @@ func (es *EntangleState) VerifyWhiteListProof(proof *WhiteListProof) error {
 func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 	if info := es.GetExInfosByID(proof.LightID); info != nil {
 		info.AppendProof(proof)
-		es.SetExBeaconInfo(proof.LightID,info)
+		es.SetExBeaconInfo(proof.LightID, info)
 		return nil
 	}
 	return ErrNoRegister
 }
+
 ////////////////////////////////////////////////////////////////////////////
 // calc the punished amount by outside asset in the height
 // the return value(flag by czz) will be mul * 2
