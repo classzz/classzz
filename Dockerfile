@@ -1,35 +1,20 @@
-# Start from a Debian image with the latest version of Go installed
-# and a workspace (GOPATH) configured at /go.
-FROM golang
+FROM golang AS builder 
 
-LABEL maintainer="Josh Ellithorpe <quest@mac.com>"
-
-# Copy the local package files to the container's workspace.
-ADD . /go/src/github.com/classzz/classzz
-
-# Switch to the correct working directory.
-WORKDIR /go/src/github.com/classzz/classzz
-
-# Restore vendored packages.
 RUN go get -u github.com/golang/dep/cmd/dep
-RUN dep ensure
+RUN go get github.com/classzz/classzz \
+    && cd /go/src/github.com/classzz/classzz \
+    && dep ensure \
+    && CGO_ENABLED=0 go install .\
+    && CGO_ENABLED=0 go install ./cmd/czzctl 
 
-# Build the code and the cli client.
-RUN go install .
-RUN go install ./cmd/czzctl
+FROM scratch
+MAINTAINER Josh Ellithorpe <quest@mac.com>
+WORKDIR /app/
 
-# Symlink the config to /root/.classzz/classzz.conf
-# so czzctl requires fewer flags.
-RUN mkdir -p /root/.classzz
-RUN ln -s /data/classzz.conf /root/.classzz/classzz.conf
-
-# Create the data volume.
 VOLUME ["/data"]
+EXPOSE 8333 8334
+ENTRYPOINT ["/app/classzz", "--addrindex", "--txindex","-b", "/data"]
 
-# Set the start command. This starts classzz with
-# flags to save the blockchain data and the
-# config on a docker volume.
-ENTRYPOINT ["classzz", "--addrindex", "--txindex", "-b", "/data", "-C", "/data/classzz.conf"]
-
-# Document that the service listens on port 8333.
-EXPOSE 8333
+COPY --from=builder /go/bin/classzz /app/classzz
+COPY --from=builder /go/bin/czzctl /app/czzctl
+COPY --from=builder /go/src/github.com/classzz/classzz/csatable.bin /app/csatable.bin
