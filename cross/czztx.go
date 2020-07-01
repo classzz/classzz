@@ -469,6 +469,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 
 	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
 	info.Address = address.String()
+	info.PubKey = pk
 
 	if es != nil {
 		return es, nil

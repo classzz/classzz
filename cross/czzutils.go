@@ -127,6 +127,7 @@ type FreeQuotaItem BaseAmountUint
 type BeaconAddressInfo struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
+	PubKey          []byte           `json:"pub_key"`
 	ToAddress       []byte           `json:"toAddress"`
 	StakingAmount   *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle

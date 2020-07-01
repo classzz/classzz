@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -175,12 +176,13 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		_, pub2, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		_, pub3, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub2, dogeparams)
+		fmt.Println("addr.ScriptAddress() ", hex.EncodeToString(addr.ScriptAddress()), " asd ", hex.EncodeToString(tx.MsgTx().TxOut[eInfo.Index].PkScript))
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub3, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
