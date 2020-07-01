@@ -963,7 +963,7 @@ mempoolLoop:
 					continue
 				} else {
 					rewards = append(rewards, item)
-					cross.FinishWhiteListProof(info,eState)
+					cross.FinishWhiteListProof(info, eState)
 					once = 1
 				}
 			}
@@ -971,12 +971,28 @@ mempoolLoop:
 
 		beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
 		// BeaconRegistrationTx
-		if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
-			if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
-				return nil, nil, err
+		if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
+			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.StakingAmount, info.Fee,
+				info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
+				return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
+			} else {
+				lightID := eState.GetBeaconIdByTo(info.ToAddress)
+				if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
+					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
+				} else {
+					ex := &cross.ExBeaconInfo{
+						EnItems: []*wire.OutPoint{&wire.OutPoint{
+							Hash:  *tx.Hash(),
+							Index: 1,
+						}},
+						Proofs: []*cross.WhiteListProof{},
+					}
+					eState.SetExBeaconInfo(lightID, ex)
+				}
 			}
-			beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(br.ToAddress), new(big.Int).Set(br.StakingAmount)
+			beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
 		}
+
 		// AddBeaconPledgeTx
 		if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
 			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
@@ -999,7 +1015,7 @@ mempoolLoop:
 						}},
 						Proofs: []*cross.WhiteListProof{},
 					}
-					eState.SetExBeaconInfo(beaconID,ex)
+					eState.SetExBeaconInfo(beaconID, ex)
 				} else {
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 				}

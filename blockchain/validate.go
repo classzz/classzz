@@ -462,7 +462,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					lightID := eState.GetBeaconIdByTo(info.ToAddress)
-					if exInfos := eState.GetExInfosByID(lightID); exInfos != nil {
+					if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), lightID))
 					} else {
 						ex := &cross.ExBeaconInfo{
@@ -472,7 +472,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 							}},
 							Proofs: []*cross.WhiteListProof{},
 						}
-						eState.SetExBeaconInfo(lightID,ex)
+						eState.SetExBeaconInfo(lightID, ex)
 					}
 				}
 			}
@@ -506,14 +506,14 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 								ToAddress: to,
 								Amount:    new(big.Int).Set(info.StakingAmount),
 							})
-							if err,index := b.checkCoinBaseForRegister(items, coinBaseTx, &in, &out); err != nil {
+							if err, index := b.checkCoinBaseForRegister(items, coinBaseTx, &in, &out); err != nil {
 								return err
 							} else {
 								exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
 									Hash:  *coinBaseTx.Hash(),
 									Index: uint32(index),
 								}}
-								eState.SetExBeaconInfo(lightID,exInfos)
+								eState.SetExBeaconInfo(lightID, exInfos)
 							}
 						}
 					}
@@ -545,7 +545,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 			if info2, _ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {
-				
+
 				if h, item, e := b.checkBurnOrPunishTx(info2, eState, uint64(prevHeight+1)); e != nil {
 					return e
 				} else {
@@ -623,7 +623,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	}
 	// check the coinbase Tx
 	if uint64(prevHeight+1) >= cross.StartMergeBeaconUtxoHeight {
-		if err := b.checkCoinBaseForMergeUxto(coinBaseTx,in,out,uint64(prevHeight+1)); err != nil {
+		if err := b.checkCoinBaseForMergeUxto(coinBaseTx, in, out, uint64(prevHeight+1)); err != nil {
 			return err
 		}
 	}
@@ -633,13 +633,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	}
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForRegister(items []*cross.BeaconMergeItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) (error,int) {
+func (b *BlockChain) checkCoinBaseForRegister(items []*cross.BeaconMergeItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) (error, int) {
 	if len(items) != 2 {
-		return errors.New("wrong length merge itmes"),0
+		return errors.New("wrong length merge itmes"), 0
 	}
 	pkScript, err := txscript.PayToAddrScript(items[0].ToAddress)
 	if err != nil {
-		return err,0
+		return err, 0
 	}
 	all := new(big.Int).Add(items[0].Amount, items[1].Amount).Int64()
 	bOut, bIn := false, false
@@ -655,22 +655,22 @@ func (b *BlockChain) checkCoinBaseForRegister(items []*cross.BeaconMergeItem, co
 		}
 	}
 	if !bIn {
-		return errors.New("not match txin in coinbase tx"),0
+		return errors.New("not match txin in coinbase tx"), 0
 	}
 	index := 0
 	for i, v := range coinTx.MsgTx().TxOut {
 		if i >= 3 {
 			if bytes.Equal(pkScript, v.PkScript) && v.Value == all {
-				bOut,index = true,i
+				bOut, index = true, i
 				out.Put(i, big.NewInt(v.Value))
 				break
 			}
 		}
 	}
 	if !bOut {
-		return errors.New("not match txOut in coinbase tx"),0
+		return errors.New("not match txOut in coinbase tx"), 0
 	}
-	return nil,index
+	return nil, index
 }
 func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) error {
 	bOut := false
@@ -679,7 +679,7 @@ func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem, coinTx *
 			if pkScript, err := txscript.PayToAddrScript(item.Addr); err == nil {
 				if bytes.Equal(pkScript, v.PkScript) {
 					bOut = true
-					out.Put(i,new(big.Int).Set(item.Value))
+					out.Put(i, new(big.Int).Set(item.Value))
 					break
 				}
 			}
