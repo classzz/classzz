@@ -457,7 +457,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			if _, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
 				return err
 			} else {
-				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.StakingAmount, info.Fee,
+				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
 					info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 					return err
 				} else {
@@ -521,7 +521,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 			continue
 		}
-		if uint64(prevHeight+1) > cross.StartMergeBeaconUtxoHeight {
+		if prevHeight+1 > b.chainParams.ExChangeHeight {
 			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0[0] != nil {
 				if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 					return err

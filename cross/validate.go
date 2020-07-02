@@ -24,7 +24,7 @@ var (
 const (
 	dogePoolAddr = "DNGzkoZbnVMihLTMq8M1m7L62XvN3d2cN2"
 	ltcPoolAddr  = "MUy9qiaLQtaqmKBSk27FXrEEfUkRBeddCZ"
-	dogeMaturity = 14
+	dogeMaturity = 2
 	ltcMaturity  = 12
 )
 
@@ -154,6 +154,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 
 		dogeparams := &chaincfg.Params{
 			LegacyScriptHashAddrID: 0x1e,
+			LegacyPubKeyHashAddrID: 0x1e,
 		}
 
 		bai := eState.getBeaconAddress(eInfo.BID)
@@ -162,33 +163,25 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "Invalid address or key: " + err.Error(),
-			}
-		}
-
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(addr.ScriptAddress(), dogeparams)
+		addr, err := czzutil.NewAddressPubKey(bai.PubKey, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
 		}
 
-		_, pub3, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
+		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		fmt.Println("addr.ScriptAddress() ", hex.EncodeToString(addr.ScriptAddress()), " asd ", hex.EncodeToString(tx.MsgTx().TxOut[eInfo.Index].PkScript))
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub3, dogeparams)
+		fmt.Println("addr.ScriptAddress()1 ", hex.EncodeToString(czzutil.Hash160(bai.PubKey)), "addr.ScriptAddress() ", hex.EncodeToString(addr.ScriptAddress()), " asd ", hex.EncodeToString(tx.MsgTx().TxOut[eInfo.Index].PkScript))
+		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
 		}
 
-		addr2Str := addr2.String()
+		addr2Str := addr.String()
 		addr3Str := addr3.String()
 		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
@@ -906,7 +899,7 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 
 	var ee *EntangleEntity
 	for _, e := range ees {
-		if e.AssetType == info.ExTxType.ToAssetType() {
+		if e.AssetType == uint32(info.ExTxType) {
 			ee = e
 			break
 		}

@@ -531,7 +531,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
 			if eState != nil {
-				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.PubKey, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
 			}
 			if err != nil {
 				return err

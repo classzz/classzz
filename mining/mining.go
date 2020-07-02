@@ -972,7 +972,7 @@ mempoolLoop:
 		beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
 		// BeaconRegistrationTx
 		if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
-			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.StakingAmount, info.Fee,
+			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
 				info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 				return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 			} else {

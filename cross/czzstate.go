@@ -251,7 +251,7 @@ func (es *EntangleState) getBeaconAddressByID(id uint64) string {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
+func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []byte, amount *big.Int,
 	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
 	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
 		!ValidAssetType(assetType) {
@@ -269,6 +269,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 	info := &BeaconAddressInfo{
 		ExchangeID:      es.CurExchangeID + 1,
 		Address:         addr,
+		PubKey:          pubkey,
 		ToAddress:       to,
 		StakingAmount:   new(big.Int).Set(amount),
 		AssetFlag:       assetType,
