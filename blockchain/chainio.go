@@ -610,7 +610,6 @@ func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cro
 
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
-
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
 	return err
 }

@@ -677,7 +677,7 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	var es *BurnProofInfo
 	var err error
 
-	if len(tx.TxOut) < 2 {
+	if len(tx.TxOut) < 1 {
 		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
 	}
 

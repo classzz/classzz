@@ -64,7 +64,6 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 
 		value := entangleBucket.Get(buf.Bytes())
 		if value != nil {
-
 			err := rlp.DecodeBytes(value, es)
 			if err != nil {
 				log.Fatal("Failed to RLP encode EntangleState", "err", err)

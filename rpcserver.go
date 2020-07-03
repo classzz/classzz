@@ -1399,20 +1399,11 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 	params := s.cfg.ChainParams
 
-	// Decode the provided address.
-	baddr, err := czzutil.DecodeAddress(c.BurnProof.Address, params)
-	if err != nil {
-		return nil, &btcjson.RPCError{
-			Code:    btcjson.ErrRPCInvalidAddressOrKey,
-			Message: "Invalid address or key: " + err.Error(),
-		}
-	}
-
 	bpi := &btcjson.BurnProofInfo{
 		LightID:  c.BurnProof.LightID,
 		Height:   c.BurnProof.Height,
 		Amount:   c.BurnProof.Amount,
-		Address:  baddr,
+		Address:  c.BurnProof.Address,
 		Atype:    c.BurnProof.Atype,
 		TxHash:   c.BurnProof.TxHash,
 		OutIndex: c.BurnProof.OutIndex,
@@ -1420,6 +1411,10 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 
 	bpiByte, err := rlp.EncodeToBytes(bpi)
+	if err != nil {
+		return nil, err
+	}
+
 	scriptInfo, err := txscript.BurnProofScript(bpiByte)
 	if err != nil {
 		return nil, err

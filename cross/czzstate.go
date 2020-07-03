@@ -672,7 +672,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeig
 		return nil, ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
-			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
+			if info.Address == addr1 {
 				return userEntity.verifyBurnProof(info, outHeight, curHeight)
 			} else {
 				return nil, ErrNotMatchUser
@@ -689,7 +689,7 @@ func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnIt
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
-			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
+			if info.Address == addr1 {
 				return userEntity.closeProofForPunished(item, info.Atype)
 			} else {
 				return ErrNotMatchUser
@@ -707,7 +707,7 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
-			if bytes.Equal(info.Address.ScriptAddress(), []byte(addr1)) {
+			if info.Address == addr1 {
 				userEntity.finishBurnState(info.Height, info.Amount, info.Atype, proof)
 			}
 		}

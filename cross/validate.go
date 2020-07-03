@@ -946,11 +946,11 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 	}
 
 	if bai.Address != bAdd.String() {
-		e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
-		return errors.New(e)
+		//e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
+		//return errors.New(e)
 	}
 
-	if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64() {
+	if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64()*100000000 {
 		e := fmt.Sprintf("VerifyBurnProof Value != Amount")
 		return errors.New(e)
 	}
@@ -961,7 +961,7 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 
 func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.Client) (*czzutil.Tx, czzutil.Address, error) {
 
-	if tx, err := client.GetWitnessRawTransaction(string(info.TxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(info.TxHash); err != nil {
 		return nil, nil, err
 	} else {
 		var pk []byte
@@ -979,14 +979,13 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 			}
 		}
 
-		_, addrs, _, err := txscript.ExtractPkScriptAddrs(
-			pk, ev.Params)
+		addrs, err := czzutil.NewAddressPubKey(pk, ev.Params)
 
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, nil, errors.New(e)
 		}
-		return tx, addrs[0], nil
+		return tx, addrs, nil
 	}
 }
 

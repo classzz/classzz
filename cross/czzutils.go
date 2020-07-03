@@ -493,6 +493,32 @@ type BurnInfos struct {
 	BAllAmount *big.Int // all burned asset on czz by the account
 }
 
+type extBurnInfos struct {
+	Items      []*BurnItem
+	RAllAmount *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount *big.Int // all burned asset on czz by the account
+}
+
+// DecodeRLP decodes the truechain
+func (b *BurnInfos) DecodeRLP(s *rlp.Stream) error {
+
+	var eb extBurnInfos
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	b.Items, b.RAllAmount, b.BAllAmount = eb.Items, eb.RAllAmount, eb.BAllAmount
+	return nil
+}
+
+// EncodeRLP serializes b into the truechain RLP block format.
+func (b *BurnInfos) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extBurnInfos{
+		Items:      b.Items,
+		RAllAmount: b.RAllAmount,
+		BAllAmount: b.BAllAmount,
+	})
+}
+
 func newBurnInfos() *BurnInfos {
 	return &BurnInfos{
 		Items:      make([]*BurnItem, 0, 0),
@@ -530,7 +556,7 @@ func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
 		Amount:      new(big.Int).Set(amount),
 		RAmount:     new(big.Int).Set(outAmount),
 		Height:      height,
-		Proof:       nil,
+		Proof:       &BurnProofItem{},
 		RedeemState: 0,
 	}
 	found := false
@@ -577,7 +603,7 @@ func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
 func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	height, used := uint64(0), false
 	for _, v := range b.Items {
-		if v.Proof != nil {
+		if v.Proof.TxHash != "" {
 			if height == 0 || height < v.Proof.Height {
 				height = v.Proof.Height
 			}
@@ -594,7 +620,7 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
-					if info.Amount.Cmp(v.Amount) >= 0 && v.Proof == nil {
+					if info.Amount.Cmp(v.Amount) >= 0 && v.Proof.TxHash == "" {
 						return v.clone(), nil
 					}
 				}
@@ -649,11 +675,36 @@ type BurnProofItem struct {
 	TxHash string
 }
 
+type extBurnProofItem struct {
+	Height uint64
+	TxHash string
+}
+
+func (b *BurnProofItem) DecodeRLP(s *rlp.Stream) error {
+	var eb extBurnProofItem
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	b.Height, b.TxHash = eb.Height, eb.TxHash
+	return nil
+}
+
+func (b *BurnProofItem) EncodeRLP(w io.Writer) error {
+	var eb extBurnProofItem
+	if b == nil {
+		eb = extBurnProofItem{
+			Height: b.Height,
+			TxHash: b.TxHash,
+		}
+	}
+	return rlp.Encode(w, eb)
+}
+
 type BurnProofInfo struct {
 	LightID  uint64   // the lightid for beaconAddress of user burn's asset
 	Height   uint64   // the height include the tx of user burn's asset
 	Amount   *big.Int // the amount of burned asset (czz)
-	Address  czzutil.Address
+	Address  string
 	Atype    uint32
 	TxHash   string // the tx hash of outside
 	OutIndex uint64

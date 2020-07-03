@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/classzz/classzz/wire"
-	"github.com/classzz/czzutil"
 	"math/big"
 )
 
@@ -119,8 +118,8 @@ type BurnProofOut struct {
 	Amount   *big.Int // the amount of burned asset (czz)
 	Address  string
 	Atype    uint32
-	TxHash   []byte // the tx hash of outside
-	OutIndex int64
+	TxHash   string // the tx hash of outside
+	OutIndex uint64
 	IsBeacon bool
 }
 
@@ -241,10 +240,10 @@ type BurnProofInfo struct {
 	LightID  uint64   // the lightid for beaconAddress of user burn's asset
 	Height   uint64   // the height include the tx of user burn's asset
 	Amount   *big.Int // the amount of burned asset (czz)
-	Address  czzutil.Address
+	Address  string
 	Atype    uint32
-	TxHash   []byte // the tx hash of outside
-	OutIndex int64
+	TxHash   string // the tx hash of outside
+	OutIndex uint64
 	IsBeacon bool
 }
 
