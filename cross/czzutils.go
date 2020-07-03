@@ -466,8 +466,8 @@ type BurnItem struct {
 	Amount      *big.Int       `json:"amount"`  // czz asset amount
 	RAmount     *big.Int       `json:"ramount"` // outside asset amount
 	Height      uint64         `json:"height"`
-	Proof       *BurnProofItem `json:"proof"`        // the tx of outside
 	RedeemState byte           `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+	Proof       *BurnProofItem `json:"proof"`        // the tx of outside
 }
 
 func (b *BurnItem) equal(o *BurnItem) bool {
