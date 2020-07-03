@@ -752,7 +752,7 @@ func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)
 	if err != nil {
-		log.Fatal("Failed to RLP encode EntangleState", "err", err)
+		log.Fatal("Failed to RLP encode EntangleState: ", "err", err)
 	}
 	return data
 }
@@ -769,6 +769,7 @@ func NewEntangleState() *EntangleState {
 	return &EntangleState{
 		EnInfos:       make(map[string]*BeaconAddressInfo),
 		EnEntitys:     make(map[uint64]UserEntangleInfos),
+		BaExInfo:      make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
 		CurExchangeID: 0,
 		PoolAmount1:   big.NewInt(0),
 		PoolAmount2:   big.NewInt(0),
