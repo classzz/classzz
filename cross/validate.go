@@ -940,7 +940,7 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 
 	bai := eState.getBeaconAddress(info.LightID)
 
-	tx, bAdd, err := ev.GetTxInAddress(info, client)
+	_, bAdd, err := ev.GetTxInAddress(info, client)
 	if err != nil {
 		return err
 	}
@@ -950,10 +950,10 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 		//return errors.New(e)
 	}
 
-	if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64()*100000000 {
-		e := fmt.Sprintf("VerifyBurnProof Value != Amount")
-		return errors.New(e)
-	}
+	//if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64()*100000000 {
+	//	e := fmt.Sprintf("VerifyBurnProof Value != Amount")
+	//	return errors.New(e)
+	//}
 
 	info.IsBeacon = true
 	return nil
