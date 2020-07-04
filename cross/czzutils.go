@@ -273,6 +273,13 @@ func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
 	return lh.WhiteList
 }
 func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
+	tmp := new(big.Int).Sub(lh.StakingAmount,lh.EntangleAmount)
+	if tmp.Sign() <= 0 {
+		return ErrNotEnouthEntangle
+	}
+	if tmp.Cmp(new(big.Int).Add(enAmount,MinStakingAmountForBeaconAddress)) < 0 {
+		return ErrNotEnouthEntangle
+	}
 	return nil
 }
 
