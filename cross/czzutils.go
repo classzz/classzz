@@ -29,6 +29,7 @@ var (
 	ErrWhiteListProof     = errors.New("white list proof not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
 	ErrRepeatProof        = errors.New("repeat proof")
+	ErrNotEnouthEntangle  = errors.New("not enough entangle amount in beaconAddress")
 )
 
 var (
@@ -270,6 +271,9 @@ func (lh *BeaconAddressInfo) getOutSideAsset(atype uint8) *big.Int {
 }
 func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
 	return lh.WhiteList
+}
+func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////

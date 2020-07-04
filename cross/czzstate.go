@@ -429,6 +429,9 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 		if err != nil {
 			return nil, err
 		}
+		if err := lh.EnoughToEntangle(sendAmount); err != nil {
+			return nil,err
+		}
 		userEntity.increaseOriginAmount(sendAmount)
 		userEntity.updateFreeQuotaOfHeight(height, amount)
 		lh.addEnAsset(aType, amount)
