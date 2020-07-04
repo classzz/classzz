@@ -78,6 +78,23 @@ func ValidPK(pk []byte) bool {
 	}
 	return true
 }
+
+func ExpandedTxTypeToAssetType(atype uint8) uint32 {
+	switch atype {
+	case ExpandedTxEntangle_Doge:
+		return LhAssetDOGE
+	case ExpandedTxEntangle_Ltc:
+		return LhAssetLTC
+	case ExpandedTxEntangle_Btc:
+		return LhAssetBTC
+	case ExpandedTxEntangle_Bch:
+		return LhAssetBCH
+	case ExpandedTxEntangle_Bsv:
+		return LhAssetBSV
+	}
+	return 0
+}
+
 func isValidAsset(atype, assetAll uint32) bool {
 	return atype&assetAll != 0
 }
@@ -117,7 +134,7 @@ func (w *WhiteUnit) toAddress() string {
 }
 
 type BaseAmountUint struct {
-	AssetType uint32   `json:"asset_type"`
+	AssetType uint8    `json:"asset_type"`
 	Amount    *big.Int `json:"amount"`
 }
 
@@ -152,7 +169,7 @@ type AddBeaconCoinbase struct {
 	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
-func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
+func (lh *BeaconAddressInfo) addEnAsset(atype uint8, amount *big.Int) {
 	found := false
 	for _, val := range lh.EnAssets {
 		if val.AssetType == atype {
@@ -170,14 +187,14 @@ func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
 func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
 }
-func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint32) {
+func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint8) {
 	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			v.Amount = new(big.Int).Add(v.Amount, amount)
 		}
 	}
 }
-func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint32) {
+func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint8) {
 	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
@@ -189,7 +206,7 @@ func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint32) {
 		}
 	}
 }
-func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, atype uint32) bool {
+func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, atype uint8) bool {
 	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
@@ -213,7 +230,7 @@ func (lh *BeaconAddressInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	}
 	return nil
 }
-func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
+func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint8) *FreeQuotaItem {
 	for _, v := range lh.Frees {
 		if atype == v.AssetType {
 			return v
@@ -242,7 +259,7 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 func (lh *BeaconAddressInfo) getToAddress() []byte {
 	return lh.ToAddress
 }
-func (lh *BeaconAddressInfo) getOutSideAsset(atype uint32) *big.Int {
+func (lh *BeaconAddressInfo) getOutSideAsset(atype uint8) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range lh.EnAssets {
 		if v.AssetType == atype {
@@ -260,7 +277,7 @@ func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
 type EntangleEntity struct {
 	ExchangeID      uint64     `json:"exchange_id"`
 	Address         string     `json:"address"`
-	AssetType       uint32     `json:"asset_type"`
+	AssetType       uint8      `json:"asset_type"`
 	Height          *big.Int   `json:"height"`            // newest height for entangle
 	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
 	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
@@ -376,7 +393,7 @@ func (e *EntangleEntity) updateBurnState(state byte, items []*BurnItem) {
 }
 
 /////////////////////////////////////////////////////////////////
-func (ee *EntangleEntitys) getEntityByType(atype uint32) *EntangleEntity {
+func (ee *EntangleEntitys) getEntityByType(atype uint8) *EntangleEntity {
 	for _, v := range *ee {
 		if atype == v.AssetType {
 			return v
@@ -427,7 +444,7 @@ func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo
 	}
 }
 func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
-	atype uint32, proof *BurnProofItem) {
+	atype uint8, proof *BurnProofItem) {
 	for _, entity := range *ee {
 		if entity.AssetType == atype {
 			entity.BurnAmount.finishBurn(height, amount, proof)
@@ -442,7 +459,7 @@ func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHe
 	}
 	return nil, ErrNoUserAsset
 }
-func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint32) error {
+func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint8) error {
 	for _, entity := range *ee {
 		if entity.AssetType == atype {
 			return entity.BurnAmount.closeProofForPunished(item)
@@ -648,7 +665,7 @@ func (b *BurnInfos) closeProofForPunished(item *BurnItem) error {
 
 type TimeOutBurnInfo struct {
 	Items     []*BurnItem
-	AssetType uint32
+	AssetType uint8
 }
 
 func (t *TimeOutBurnInfo) getAll() *big.Int {
@@ -705,7 +722,7 @@ type BurnProofInfo struct {
 	Height   uint64   // the height include the tx of user burn's asset
 	Amount   *big.Int // the amount of burned asset (czz)
 	Address  string
-	Atype    uint32
+	Atype    uint8
 	TxHash   string // the tx hash of outside
 	OutIndex uint64
 	IsBeacon bool
@@ -713,7 +730,7 @@ type BurnProofInfo struct {
 
 type WhiteListProof struct {
 	LightID  uint64 // the lightid for beaconAddress
-	Atype    uint32
+	Atype    uint8
 	Height   uint64 // the height of outside chain
 	TxHash   string
 	InIndex  uint64

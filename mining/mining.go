@@ -854,7 +854,7 @@ mempoolLoop:
 				continue
 			}
 			height := big.NewInt(int64(einfo[0].Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint32(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
@@ -921,7 +921,7 @@ mempoolLoop:
 		}
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
-				amount, fee, err1 := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
+				amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount)
 				if err1 != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"SetBurnAsset: %v", tx.Hash(), err1)

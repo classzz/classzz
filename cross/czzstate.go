@@ -227,7 +227,7 @@ func (es *EntangleState) SetExBeaconInfo(id uint64, info *ExBeaconInfo) error {
 	es.BaExInfo[id] = info
 	return nil
 }
-func (es *EntangleState) GetOutSideAsset(id uint64, atype uint32) *big.Int {
+func (es *EntangleState) GetOutSideAsset(id uint64, atype uint8) *big.Int {
 	lh := es.getBeaconByID(id)
 	if lh == nil {
 		return nil
@@ -374,7 +374,7 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint64,
+func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint64,
 	height, amount *big.Int) (*big.Int, error) {
 	if es.AddressInWhiteList(addr, true) {
 		return nil, ErrAddressInWhiteList
@@ -383,7 +383,8 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 	if lh == nil {
 		return nil, ErrNoRegister
 	}
-	if !isValidAsset(aType, lh.AssetFlag) {
+	aType1 := ExpandedTxTypeToAssetType(aType)
+	if !isValidAsset(aType1, lh.AssetFlag) {
 		return nil, ErrNoUserAsset
 	}
 	sendAmount := big.NewInt(0)
@@ -441,7 +442,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
 // returns the amount czz by user's burnned, took out fee by beaconaddress
-func (es *EntangleState) BurnAsset(addr string, aType uint32, lightID, height uint64,
+func (es *EntangleState) BurnAsset(addr string, aType uint8, lightID, height uint64,
 	amount *big.Int) (*big.Int, *big.Int, error) {
 	light := es.getBeaconAddress(lightID)
 	if light == nil {
@@ -504,7 +505,7 @@ func redeemAmount(addr string, amount *big.Int) error {
 	}
 	return nil
 }
-func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, error) {
+func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
 		return toDoge2(reserve, reqAmount), nil
@@ -518,7 +519,7 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, er
 		return nil, ErrNoUserAsset
 	}
 }
-func getRedeemRateByBurnCzz(reserve *big.Int, atype uint32) (*big.Int, *big.Int, error) {
+func getRedeemRateByBurnCzz(reserve *big.Int, atype uint8) (*big.Int, *big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
 		base, divisor := reverseToDoge(reserve)
@@ -548,7 +549,7 @@ func (es *EntangleState) AddressInWhiteList(addr string, self bool) bool {
 	}
 	return false
 }
-func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint32) *big.Int {
+func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint8) *big.Int {
 	aa := big.NewInt(0)
 	if lhEntitys, ok := es.EnEntitys[lightID]; ok {
 		for _, userEntitys := range lhEntitys {
@@ -570,7 +571,7 @@ func (es *EntangleState) getBeaconAddress(id uint64) *BeaconAddressInfo {
 	}
 	return nil
 }
-func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
+func (es *EntangleState) getAllEntangleAmount(atype uint8) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range es.EnInfos {
 		for _, v := range val.EnAssets {
@@ -737,7 +738,7 @@ func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 ////////////////////////////////////////////////////////////////////////////
 // calc the punished amount by outside asset in the height
 // the return value(flag by czz) will be mul * 2
-func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint32, lightID uint64) *big.Int {
+func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint8, lightID uint64) *big.Int {
 	// get current rate with czz and outside asset in heigth
 	reserve := es.getEntangledAmount(lightID, atype)
 	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)

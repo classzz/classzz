@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/classzz/classzz/chaincfg"
-	// "github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/classzz/txscript"
@@ -28,7 +27,7 @@ const (
 	ExpandedTxEntangle_Bch  = 0xF4
 )
 
-func (et ExpandedTxType) ToAssetType() uint32 {
+func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 	switch et {
 	case ExpandedTxEntangle_Doge:
 		return LhAssetDOGE
@@ -927,7 +926,7 @@ func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeIte
 		return nil
 	}
 	for i := range items {
-		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint32(items[i].EType),
+		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint8(items[i].EType),
 			items[i].BID, height, items[i].Value)
 		if err != nil {
 			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
@@ -1073,9 +1072,9 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIte
 	var keepInfo *KeepedAmount
 	var err error
 	if fork {
-		types := []uint32{}
+		types := []uint8{}
 		for _, v := range items {
-			types = append(types, uint32(v.EType))
+			types = append(types, uint8(v.EType))
 		}
 		keepInfo = getKeepInfosFromState(state, types)
 	} else {
@@ -1088,7 +1087,7 @@ func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIte
 	return !EnoughAmount(all, items, keepInfo, fork)
 }
 
-func getKeepInfosFromState(state *EntangleState, types []uint32) *KeepedAmount {
+func getKeepInfosFromState(state *EntangleState, types []uint8) *KeepedAmount {
 	if state == nil {
 		return nil
 	}

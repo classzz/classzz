@@ -899,7 +899,7 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 
 	var ee *EntangleEntity
 	for _, e := range ees {
-		if e.AssetType == uint32(info.ExTxType) {
+		if e.AssetType == uint8(info.ExTxType) {
 			ee = e
 			break
 		}
@@ -926,15 +926,15 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 	}
 	var client *rpcclient.Client
 	switch info.Atype {
-	case LhAssetDOGE:
+	case ExpandedTxEntangle_Doge:
 		client = ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
-	case LhAssetLTC:
+	case ExpandedTxEntangle_Ltc:
 		client = ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
-	case LhAssetBTC:
+	case ExpandedTxEntangle_Btc:
 		client = ev.BtcCoinRPC[rand.Intn(len(ev.BtcCoinRPC))]
-	case LhAssetBCH:
+	case ExpandedTxEntangle_Bch:
 		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
-	case LhAssetBSV:
+	case ExpandedTxEntangle_Bsv:
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
 	}
 
@@ -989,6 +989,6 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 	}
 }
 
-func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, atype uint32, wlist []*WhiteUnit, cur_addr string) error {
+func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, atype uint8, wlist []*WhiteUnit, cur_addr string) error {
 	return nil
 }

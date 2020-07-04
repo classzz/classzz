@@ -1068,7 +1068,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 			return err
 		}
 
-		if _, _, err := eState.BurnAsset(info.Address, uint32(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount); err != nil {
+		if _, _, err := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount); err != nil {
 			return err
 		}
 	}

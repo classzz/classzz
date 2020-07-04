@@ -527,7 +527,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					height := big.NewInt(int64(info0[0].Height))
-					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint32(info0[0].ExTxType),
+					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].ExTxType),
 						info0[0].BID, height, info0[0].Amount); err != nil {
 						return err
 					} else {
@@ -584,7 +584,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return errors.New("same height in burnTx at same address")
 				}
 				// update the state
-				if _, _, err := eState.BurnAsset(info1.Address, uint32(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
+				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
 					return err
 				}
 				burnTxs = append(burnTxs, tx)
