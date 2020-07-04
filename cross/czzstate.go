@@ -389,6 +389,16 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 	}
 	sendAmount := big.NewInt(0)
 	var err error
+	// calc the send amount
+	reserve := es.getEntangleAmountByAll(aType)
+	sendAmount, err = calcEntangleAmount(reserve, amount, aType)
+	if err != nil {
+		return nil, err
+	}
+	if err := lh.EnoughToEntangle(sendAmount); err != nil {
+		return nil,err
+	}
+
 	lhEntitys, ok := es.EnEntitys[lightID]
 	if !ok {
 		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
@@ -421,16 +431,6 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 				OriginAmount:    big.NewInt(0),
 			}
 			userEntitys = append(userEntitys, userEntity)
-		}
-
-		// calc the send amount
-		reserve := es.getEntangledAmount(lightID, aType)
-		sendAmount, err = calcEntangleAmount(reserve, amount, aType)
-		if err != nil {
-			return nil, err
-		}
-		if err := lh.EnoughToEntangle(sendAmount); err != nil {
-			return nil,err
 		}
 		userEntity.increaseOriginAmount(sendAmount)
 		userEntity.updateFreeQuotaOfHeight(height, amount)
@@ -475,7 +475,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, lightID, height uin
 	if userEntity == nil {
 		return nil, nil, ErrNoUserAsset
 	}
-	reserve := es.getEntangledAmount(lightID, aType)
+	reserve := es.getEntangleAmountByAll(aType)
 	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
 	if err != nil {
 		return nil, nil, err
@@ -566,6 +566,21 @@ func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint8) *big.In
 	}
 	return aa
 }
+func (es *EntangleState) getEntangleAmountByAll(atype uint8) *big.Int {
+	aa := big.NewInt(0)
+	for _,lhEntitys := range es.EnEntitys {
+		for _, userEntitys := range lhEntitys {
+			for _, vv := range userEntitys {
+				if atype == vv.AssetType {
+					aa = aa.Add(aa, vv.EnOutsideAmount)
+					break
+				}
+			}
+		}
+	}
+	return aa
+}
+
 func (es *EntangleState) getBeaconAddress(id uint64) *BeaconAddressInfo {
 	for _, val := range es.EnInfos {
 		if val.ExchangeID == id {
@@ -743,7 +758,7 @@ func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 // the return value(flag by czz) will be mul * 2
 func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint8, lightID uint64) *big.Int {
 	// get current rate with czz and outside asset in heigth
-	reserve := es.getEntangledAmount(lightID, atype)
+	reserve := es.getEntangleAmountByAll(atype)
 	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)
 	if err != nil {
 		return nil
