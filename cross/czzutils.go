@@ -273,11 +273,11 @@ func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
 	return lh.WhiteList
 }
 func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
-	tmp := new(big.Int).Sub(lh.StakingAmount,lh.EntangleAmount)
+	tmp := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
 	if tmp.Sign() <= 0 {
 		return ErrNotEnouthEntangle
 	}
-	if tmp.Cmp(new(big.Int).Add(enAmount,MinStakingAmountForBeaconAddress)) < 0 {
+	if tmp.Cmp(new(big.Int).Add(enAmount, MinStakingAmountForBeaconAddress)) < 0 {
 		return ErrNotEnouthEntangle
 	}
 	return nil
@@ -454,6 +454,16 @@ func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo
 		}
 	}
 }
+
+func (ee *EntangleEntitys) updateBurnState2(height uint64, amount *big.Int,
+	atype uint8, proof *BurnProofItem) {
+	for _, entity := range *ee {
+		if entity.AssetType == atype {
+			entity.BurnAmount.updateBurn(height, amount, proof)
+		}
+	}
+}
+
 func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 	atype uint8, proof *BurnProofItem) {
 	for _, entity := range *ee {
@@ -462,6 +472,7 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 		}
 	}
 }
+
 func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, entity := range *ee {
 		if entity.AssetType == info.Atype {
@@ -617,6 +628,16 @@ func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem 
 	}
 	return items
 }
+
+func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState != 2 &&
+			amount.Cmp(v.Amount) >= 0 {
+			v.RedeemState, v.Proof = 2, proof
+		}
+	}
+}
+
 func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState != 1 &&

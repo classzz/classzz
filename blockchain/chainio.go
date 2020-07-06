@@ -557,6 +557,20 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+			if info.IsBeacon {
+				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+					Height: uint64(pHeight + 1),
+					TxHash: info.TxHash,
+				})
+			} else {
+				eState.UpdateHandleUserBurn(info, &cross.BurnProofItem{
+					Height: uint64(pHeight + 1),
+					TxHash: info.TxHash,
+				})
+			}
+		}
+
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			height := big.NewInt(int64(einfo[0].Height))
 			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].ExTxType), einfo[0].BID, height, einfo[0].Amount)

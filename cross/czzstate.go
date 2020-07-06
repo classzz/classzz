@@ -396,7 +396,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 		return nil, err
 	}
 	if err := lh.EnoughToEntangle(sendAmount); err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	lhEntitys, ok := es.EnEntitys[lightID]
@@ -568,7 +568,7 @@ func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint8) *big.In
 }
 func (es *EntangleState) getEntangleAmountByAll(atype uint8) *big.Int {
 	aa := big.NewInt(0)
-	for _,lhEntitys := range es.EnEntitys {
+	for _, lhEntitys := range es.EnEntitys {
 		for _, userEntitys := range lhEntitys {
 			for _, vv := range userEntitys {
 				if atype == vv.AssetType {
@@ -728,6 +728,22 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 		for addr1, userEntity := range userEntitys {
 			if info.Address == addr1 {
 				userEntity.finishBurnState(info.Height, info.Amount, info.Atype, proof)
+			}
+		}
+	}
+	return nil
+}
+
+// FinishHandleUserBurn the BeaconAddress finish the burn item
+func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
+	userEntitys, ok := es.EnEntitys[info.LightID]
+	if !ok {
+		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.LightID)
+		return ErrNoRegister
+	} else {
+		for addr1, userEntity := range userEntitys {
+			if info.Address == addr1 {
+				userEntity.updateBurnState2(info.Height, info.Amount, info.Atype, proof)
 			}
 		}
 	}
