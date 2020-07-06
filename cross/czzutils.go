@@ -66,7 +66,17 @@ func validKeepTime(kt *big.Int) bool {
 	}
 	return true
 }
-func ValidAssetType(utype uint32) bool {
+
+func ValidAssetFlag(utype uint32) bool {
+	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
+		return true
+	}
+	return false
+}
+
+func ValidAssetType(utype1 uint8) bool {
+	utype := uint32(utype1)
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
 		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
 		return true
@@ -125,7 +135,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 //////////////////////////////////////////////////////////////////////////////
 
 type WhiteUnit struct {
-	AssetType uint32 `json:"asset_type"`
+	AssetType uint8  `json:"asset_type"`
 	Pk        []byte `json:"pk"`
 }
 

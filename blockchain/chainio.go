@@ -586,7 +586,6 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }

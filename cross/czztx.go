@@ -1124,7 +1124,7 @@ func VerifyWhiteListProof(info *WhiteListProof, ev *ExChangeVerify, state *Entan
 	if cur == nil {
 		return ErrNoRegister
 	}
-	return ev.VerifyWhiteList(cur, info.Atype, state.GetWhiteList(info.LightID), state.getBeaconAddressByID(info.LightID))
+	return ev.VerifyWhiteList(cur, info, state)
 }
 func FinishWhiteListProof(info *WhiteListProof, state *EntangleState) error {
 	return state.FinishWhiteListProof(info)

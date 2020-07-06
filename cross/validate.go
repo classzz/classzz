@@ -738,7 +738,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if !ValidAssetType(br.AssetFlag) {
+	if !ValidAssetFlag(br.AssetFlag) {
 		e := fmt.Sprintf("AssetFlag err")
 		return nil, errors.New(e)
 	}
@@ -989,6 +989,76 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 	}
 }
 
-func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, atype uint8, wlist []*WhiteUnit, cur_addr string) error {
+func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, info *WhiteListProof, state *EntangleState) error {
+
+	//.Atype, state.GetWhiteList(info.LightID), state.getBeaconAddressByID(info.LightID)
+
+	var client *rpcclient.Client
+	switch info.Atype {
+	case ExpandedTxEntangle_Doge:
+		client = ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
+	case ExpandedTxEntangle_Ltc:
+		client = ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
+	case ExpandedTxEntangle_Btc:
+		client = ev.BtcCoinRPC[rand.Intn(len(ev.BtcCoinRPC))]
+	case ExpandedTxEntangle_Bch:
+		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
+	case ExpandedTxEntangle_Bsv:
+		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
+	}
+
+	bai := state.getBeaconByID(info.LightID)
+
+	add, err := czzutil.NewAddressPubKeyHash(bai.PubKey, ev.Params)
+	if err != nil {
+
+	}
+
+	_, in, out, err := ev.GetTxInPk(info, client)
+
+	if !bytes.Equal(add.ScriptAddress(), in) {
+		e := fmt.Sprintf("address= err %s", err)
+		return errors.New(e)
+	}
+
+	whiteList := state.GetWhiteList(info.LightID)
+
+	for _, wu := range whiteList {
+		if wu.AssetType == info.Atype && bytes.Equal(out, wu.Pk) {
+			e := fmt.Sprintf("Illegal transfer err %s", err)
+			return errors.New(e)
+		}
+	}
+
 	return nil
+}
+
+func (ev *ExChangeVerify) GetTxInPk(info *WhiteListProof, client *rpcclient.Client) (*czzutil.Tx, []byte, []byte, error) {
+
+	if tx, err := client.GetWitnessRawTransaction(info.TxHash); err != nil {
+		return nil, nil, nil, err
+	} else {
+		var pk []byte
+		if tx.MsgTx().TxIn[info.InIndex].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[info.InIndex].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputePk err %s", err)
+				return nil, nil, nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[info.InIndex].Witness)
+			if err != nil {
+				e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+				return nil, nil, nil, errors.New(e)
+			}
+		}
+		out := tx.MsgTx().TxOut[info.OutIndex].PkScript
+
+		addr, err := czzutil.NewAddressPubKey(pk, ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("doge addr err")
+			return nil, nil, nil, errors.New(e)
+		}
+		return tx, addr.ScriptAddress(), out, nil
+	}
 }
