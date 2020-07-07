@@ -252,9 +252,9 @@ func (es *EntangleState) getBeaconAddressByID(id uint64) string {
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []byte, amount *big.Int,
-	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
+	fee, keeptime uint64, assetFlag uint32, wu []*WhiteUnit, cba []string) error {
 	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
-		!ValidAssetType(assetType) {
+		!ValidAssetFlag(assetFlag) {
 		return ErrInvalidParam
 	}
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
@@ -272,7 +272,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 		PubKey:          pubkey,
 		ToAddress:       to,
 		StakingAmount:   new(big.Int).Set(amount),
-		AssetFlag:       assetType,
+		AssetFlag:       assetFlag,
 		Fee:             fee,
 		KeepTime:        keeptime,
 		EnAssets:        make([]*EnAssetItem, 0, 0),
@@ -342,15 +342,15 @@ func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 		return ErrNoRegister
 	}
 }
-func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keeptime uint64, assetType uint32) error {
+func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keeptime uint64, AssetFlag uint32) error {
 	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
-		!ValidAssetType(assetType) {
+		!ValidAssetFlag(AssetFlag) {
 		return ErrInvalidParam
 	}
 	if info, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	} else {
-		info.Fee, info.AssetFlag, info.KeepTime = fee, assetType, keeptime
+		info.Fee, info.AssetFlag, info.KeepTime = fee, AssetFlag, keeptime
 	}
 	return nil
 }
