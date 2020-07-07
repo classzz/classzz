@@ -981,20 +981,6 @@ mempoolLoop:
 			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
 				info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 				return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
-			} else {
-				lightID := eState.GetBeaconIdByTo(info.ToAddress)
-				if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
-					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
-				} else {
-					ex := &cross.ExBeaconInfo{
-						EnItems: []*wire.OutPoint{&wire.OutPoint{
-							Hash:  *tx.Hash(),
-							Index: 1,
-						}},
-						Proofs: []*cross.WhiteListProof{},
-					}
-					eState.SetExBeaconInfo(lightID, ex)
-				}
 			}
 			beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
 		}
@@ -1006,7 +992,8 @@ mempoolLoop:
 			}
 			beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
-		if beaconMerge > 0 && uint64(nextBlockHeight) >= cross.StartMergeBeaconUtxoHeight+1 {
+
+		if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {
 			if once >= 1 {
 				logSkippedDeps(tx, deps)
 				continue
