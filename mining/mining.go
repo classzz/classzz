@@ -1000,7 +1000,7 @@ mempoolLoop:
 			}
 			once = 1
 			if beaconMerge == 1 {
-				if exInfos := eState.GetExInfosByID(beaconID); exInfos == nil {
+				if exInfos := eState.GetExInfosByID(beaconID); exInfos != nil {
 					ex := &cross.ExBeaconInfo{
 						EnItems: []*wire.OutPoint{&wire.OutPoint{
 							Hash:  *tx.Hash(),
