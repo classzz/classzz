@@ -481,9 +481,10 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, lightID, height uin
 		return nil, nil, err
 	}
 	// get out asset for burn czz
-	outAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
-	userEntity.BurnAmount.addBurnItem(height, amount, outAmount)
+	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
+	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
+	userEntity.BurnAmount.addBurnItem(height, amount,fee,outFeeAmount, outAllAmount)
 
 	return new(big.Int).Sub(amount, fee), fee, nil
 }
