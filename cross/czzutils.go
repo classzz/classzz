@@ -512,9 +512,9 @@ func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo
 
 /////////////////////////////////////////////////////////////////
 type BurnItem struct {
-	Amount      *big.Int       `json:"amount"`  // czz asset amount
-	FeeAmount   *big.Int  	   `json:"fee_amount"`  // czz asset fee amount
-	RAmount     *big.Int       `json:"ramount"` // outside asset amount
+	Amount      *big.Int       `json:"amount"`      // czz asset amount
+	FeeAmount   *big.Int       `json:"fee_amount"`  // czz asset fee amount
+	RAmount     *big.Int       `json:"ramount"`     // outside asset amount
 	FeeRAmount  *big.Int       `json:"fee_ramount"` // outside asset fee amount
 	Height      uint64         `json:"height"`
 	RedeemState byte           `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
@@ -528,11 +528,11 @@ func (b *BurnItem) equal(o *BurnItem) bool {
 }
 func (b *BurnItem) clone() *BurnItem {
 	return &BurnItem{
-		Amount:  new(big.Int).Set(b.Amount),
-		RAmount: new(big.Int).Set(b.RAmount),
-		FeeAmount: new(big.Int).Set(b.FeeAmount),
+		Amount:     new(big.Int).Set(b.Amount),
+		RAmount:    new(big.Int).Set(b.RAmount),
+		FeeAmount:  new(big.Int).Set(b.FeeAmount),
 		FeeRAmount: new(big.Int).Set(b.FeeRAmount),
-		Height:  b.Height,
+		Height:     b.Height,
 		Proof: &BurnProofItem{
 			Height: b.Proof.Height,
 			TxHash: b.Proof.TxHash,
@@ -607,7 +607,7 @@ func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 	}
 	return res
 }
-func (b *BurnInfos) addBurnItem(height uint64, amount,fee,outFee, outAmount *big.Int) {
+func (b *BurnInfos) addBurnItem(height uint64, amount, fee, outFee, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
 		RAmount:     new(big.Int).Set(outAmount),
@@ -630,6 +630,7 @@ func (b *BurnInfos) addBurnItem(height uint64, amount,fee,outFee, outAmount *big
 		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
 	}
 }
+
 func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
@@ -638,6 +639,7 @@ func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnIte
 	}
 	return nil
 }
+
 func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem {
 	items := []*BurnItem{}
 	for _, v := range b.Items {
@@ -651,7 +653,7 @@ func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem 
 func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState != 2 &&
-			amount.Cmp(new(big.Int).Sub(v.RAmount,v.FeeRAmount)) < 0 {
+			amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 {
 			v.RedeemState, v.Proof = 2, proof
 		}
 	}
@@ -660,7 +662,7 @@ func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofI
 func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState != 1 &&
-			amount.Cmp(new(big.Int).Sub(v.RAmount,v.FeeRAmount)) >= 0 {
+			amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
 			v.RedeemState, v.Proof = 1, proof
 		}
 	}
@@ -688,7 +690,7 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
-					if info.Amount.Cmp(new(big.Int).Sub(v.RAmount,v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
+					if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
 						return v.clone(), nil
 					}
 				}
@@ -697,7 +699,7 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 	} else {
 		if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 			for _, v := range items {
-				if info.Amount.Cmp(new(big.Int).Sub(v.RAmount,v.FeeRAmount)) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
+				if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 					// deficiency or timeout
 					return v.clone(), nil
 				}

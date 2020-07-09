@@ -1018,6 +1018,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 
 	eState := mp.cfg.CurrentEstate()
 
+	// BeaconRegistration
 	br, err := cross.IsBeaconRegistrationTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if err != nil && err != cross.NoBeaconRegistration {
 		return err
@@ -1032,14 +1033,14 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// AddBeaconPledge
-	bp, err1 := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
+	abp, err1 := cross.IsAddBeaconPledgeTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if err1 != nil && err1 != cross.NoAddBeaconPledge {
 		return err1
 	}
 
-	if bp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+	if abp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
-	} else if bp != nil {
+	} else if abp != nil {
 		if _, err := mp.cfg.ExChangeVerify.VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {
 			return err
 		}
@@ -1059,19 +1060,59 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		}
 	}
 
-	// BeaconRegistration
-	info, _ := cross.IsBurnTx(tx.MsgTx(), mp.cfg.ChainParams)
-	if info != nil {
+	// BurnTx
+	bt, err3 := cross.IsBurnTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if err3 != nil && err3 != cross.NoBurnTx {
+		return err3
+	}
 
-		err := mp.cfg.ExChangeVerify.VerifyBurn(info, eState)
-		if err != nil {
-			return err
-		}
-
-		if _, _, err := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.LightID, uint64(nextBlockHeight), info.Amount); err != nil {
+	if bt != nil && mp.cfg.ChainParams.BurnHeight > nextBlockHeight {
+		return errors.New("err ExChangeTx tx  BeaconHeight < nextBlockHeight ")
+	} else if bt != nil {
+		if err := mp.cfg.ExChangeVerify.VerifyBurn(bt, eState); err != nil {
 			return err
 		}
 	}
+
+	// BurnProofTx
+	bpt, err4 := cross.IsBurnProofTx(tx.MsgTx())
+
+	if err4 != nil && err4 != cross.NoBurnProofTx {
+		return err4
+	}
+
+	if bpt != nil && mp.cfg.ChainParams.BurnHeight > nextBlockHeight {
+		return errors.New("err ExChangeTx tx  BeaconHeight < nextBlockHeight ")
+	} else if bt != nil {
+		if _, _, err := mp.cfg.ExChangeVerify.VerifyBurnProof(bpt, eState, uint64(nextBlockHeight)); err != nil {
+			return err
+		}
+	}
+
+	//if info3, _ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
+	//	if e := b.checkWhiteListProof(info3, eState); e != nil {
+	//		return e
+	//	} else {
+	//		from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)
+	//		res := &cross.PunishedRewardItem{
+	//			Addr1:  from,
+	//			Addr2:  cross.ZeroAddrsss,
+	//			Addr3:  to,
+	//			Amount: new(big.Int).Set(info3.Amount),
+	//		}
+	//		if all, outPoint, err := b.getPoolAmount(info3.LightID, eState); err != nil {
+	//			return err
+	//		} else {
+	//			amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
+	//			res.OriginAmount, res.POut = all, *outPoint
+	//			res.Amount = amount
+	//			if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
+	//				return err
+	//			}
+	//			cross.FinishWhiteListProof(info3, eState)
+	//		}
+	//	}
+	//}
 
 	return nil
 }

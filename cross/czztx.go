@@ -47,6 +47,9 @@ var (
 	NoEntangle           = errors.New("no entangle info in transcation")
 	NoExChange           = errors.New("no NoExChange info in transcation")
 	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
+	NoBurnTx             = errors.New("no BurnTx info in transcation")
+	NoBurnProofTx        = errors.New("no BurnProofTx info in transcation")
+	NoWhiteListProofTx   = errors.New("no WhiteListProofTx info in transcation")
 	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
 	NoAddBeaconCoinbase  = errors.New("no AddBeaconCoinbase info in transcation")
 
@@ -650,7 +653,7 @@ func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 	if es != nil {
 		return es, nil
 	}
-	return nil, NoBeaconRegistration
+	return nil, NoBurnTx
 }
 
 func IsSendToZeroAddress(PkScript []byte) (bool, error) {
@@ -671,6 +674,7 @@ func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	}
 	return true, nil
 }
+
 func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BurnProofInfo
@@ -694,8 +698,9 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	if es != nil {
 		return es, nil
 	}
-	return nil, ErrBurnProof
+	return nil, NoBurnProofTx
 }
+
 func IsWhiteListProofTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 	// make sure at least one txout in OUTPUT
 	var es *WhiteListProof
@@ -716,8 +721,9 @@ func IsWhiteListProofTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 	if es != nil {
 		return es, nil
 	}
-	return nil, ErrWhiteListProof
+	return nil, NoWhiteListProofTx
 }
+
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 	data, err := txscript.GetEntangleInfoData(script)
 	if err != nil {
@@ -1103,16 +1109,7 @@ func getKeepInfosFromState(state *EntangleState, types []uint8) *KeepedAmount {
 
 //////////////////////////////////////////////////////////////////////////////
 func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-	oHeight := uint64(0)
-	err := ev.VerifyBurnProof(info, state)
-	if err != nil {
-		return 0, nil, err
-	}
-	if item, err := state.verifyBurnProof(info, oHeight, curHeight); err != nil {
-		return 0, nil, err
-	} else {
-		return oHeight, item, nil
-	}
+	return ev.VerifyBurnProof(info, state, curHeight)
 }
 
 // the return value is beacon's balance of it was staking amount

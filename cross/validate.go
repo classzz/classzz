@@ -2,7 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -163,7 +162,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.NewAddressPubKey(bai.PubKey, dogeparams)
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
@@ -174,16 +173,15 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, err
 		}
 
-		fmt.Println("addr.ScriptAddress()1 ", hex.EncodeToString(czzutil.Hash160(bai.PubKey)), "addr.ScriptAddress() ", hex.EncodeToString(addr.ScriptAddress()), " asd ", hex.EncodeToString(tx.MsgTx().TxOut[eInfo.Index].PkScript))
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
 		}
 
-		addr2Str := addr.String()
-		addr3Str := addr3.String()
-		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+		addrStr := addr.String()
+		addr2Str := addr2.String()
+		fmt.Println("addr2Str", addrStr, "addr3Str", addr2Str)
 
 		//if addr3.String() != addr2.String() {
 		//	e := fmt.Sprintf("doge dogePoolPub err")
@@ -916,13 +914,14 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	return nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleState) error {
+func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+
 	uei := eState.EnEntitys[info.LightID]
 	if uei == nil {
-		return errors.New("VerifyBurnProof EnEntitys is nil")
+		return 0, nil, errors.New("VerifyBurnProof EnEntitys is nil")
 	}
 	var client *rpcclient.Client
 	switch info.Atype {
@@ -942,21 +941,32 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 
 	_, bAdd, err := ev.GetTxInAddress(info, client)
 	if err != nil {
-		return err
+		return 0, nil, err
 	}
 
 	if bai.Address != bAdd.String() {
-		//e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
-		//return errors.New(e)
+		e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
+		return 0, nil, errors.New(e)
 	}
 
 	//if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64()*100000000 {
 	//	e := fmt.Sprintf("VerifyBurnProof Value != Amount")
 	//	return errors.New(e)
 	//}
+	outHeight := uint64(0)
+	var bi *BurnItem
+	for addr1, userEntity := range uei {
+		if info.Address == addr1 {
+			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
+			if err != nil {
+				return 0, nil, err
+			}
+		} else {
+			return 0, nil, ErrNotMatchUser
+		}
+	}
 
-	info.IsBeacon = true
-	return nil
+	return 0, bi, nil
 }
 
 func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.Client) (*czzutil.Tx, czzutil.Address, error) {

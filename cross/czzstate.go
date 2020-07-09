@@ -484,7 +484,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, lightID, height uin
 	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
-	userEntity.BurnAmount.addBurnItem(height, amount,fee,outFeeAmount, outAllAmount)
+	userEntity.BurnAmount.addBurnItem(height, amount, fee, outFeeAmount, outAllAmount)
 
 	return new(big.Int).Sub(amount, fee), fee, nil
 }
@@ -685,6 +685,7 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 	slashingAmount := new(big.Int).Mul(big.NewInt(2), amount)
 	return beacon.updatePunished(slashingAmount)
 }
+
 func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	userEntitys, ok := es.EnEntitys[info.LightID]
 	if !ok {
@@ -701,6 +702,7 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeig
 	}
 	return nil, nil
 }
+
 func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnItem) error {
 	es.FinishBeaconAddressPunished(info.LightID, info.Amount)
 	userEntitys, ok := es.EnEntitys[info.LightID]
