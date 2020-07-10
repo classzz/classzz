@@ -914,7 +914,15 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	return nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, state *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+	if info.IsBeacon {
+		return ev.VerifyBurnProofBeacon(info, state, curHeight)
+	} else {
+		return ev.VerifyBurnProofMe(info, state, curHeight)
+	}
+}
+
+func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
@@ -966,6 +974,29 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, eState *EntangleS
 		}
 	}
 
+	return 0, bi, nil
+}
+
+func (ev *ExChangeVerify) VerifyBurnProofMe(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+
+	uei := eState.EnEntitys[info.LightID]
+	if uei == nil {
+		return 0, nil, errors.New("VerifyBurnProof EnEntitys is nil")
+	}
+
+	outHeight := uint64(0)
+	var bi *BurnItem
+	var err error
+	for addr1, userEntity := range uei {
+		if info.Address == addr1 {
+			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
+			if err != nil {
+				return 0, nil, err
+			}
+		} else {
+			return 0, nil, ErrNotMatchUser
+		}
+	}
 	return 0, bi, nil
 }
 

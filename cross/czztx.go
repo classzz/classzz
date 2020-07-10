@@ -1107,11 +1107,6 @@ func getKeepInfosFromState(state *EntangleState, types []uint8) *KeepedAmount {
 	return keepinfo
 }
 
-//////////////////////////////////////////////////////////////////////////////
-func VerifyBurnProof(info *BurnProofInfo, ev *ExChangeVerify, state *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-	return ev.VerifyBurnProof(info, state, curHeight)
-}
-
 // the return value is beacon's balance of it was staking amount
 func VerifyWhiteListProof(info *WhiteListProof, ev *ExChangeVerify, state *EntangleState) error {
 	if err := state.VerifyWhiteListProof(info); err != nil {
