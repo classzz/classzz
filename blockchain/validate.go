@@ -395,9 +395,9 @@ func (b *BlockChain) makeBeaconMergeItem(outs []*wire.OutPoint, to czzutil.Addre
 //func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo, estate *cross.EntangleState, height uint64) (uint64, *cross.BurnItem, error) {
 //	return cross.VerifyBurnProof(info, b.GetExChangeVerify(), estate, height)
 //}
-func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof, estate *cross.EntangleState) error {
-	return cross.VerifyWhiteListProof(info, b.GetExChangeVerify(), estate)
-}
+//func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof, estate *cross.EntangleState) error {
+//	return cross.VerifyWhiteListProof(info, b.GetExChangeVerify(), estate)
+//}
 
 // make sure only one proof tx in a block
 func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) error {
@@ -596,7 +596,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				if once > 1 {
 					return proofError
 				}
-				if e := b.checkWhiteListProof(info3, eState); e != nil {
+				if e := b.GetExChangeVerify().VerifyWhiteListProof(info3, eState); e != nil {
 					return e
 				} else {
 					from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)

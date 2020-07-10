@@ -1030,9 +1030,7 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 	}
 }
 
-func (ev *ExChangeVerify) VerifyWhiteList(info *WhiteListProof, state *EntangleState) error {
-
-	//.Atype, state.GetWhiteList(info.LightID), state.getBeaconAddressByID(info.LightID)
+func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *EntangleState) error {
 
 	var client *rpcclient.Client
 	switch info.Atype {
@@ -1049,6 +1047,18 @@ func (ev *ExChangeVerify) VerifyWhiteList(info *WhiteListProof, state *EntangleS
 	}
 
 	bai := state.getBeaconByID(info.LightID)
+
+	if bai == nil {
+		return errors.New("VerifyBurnProof EnEntitys is nil")
+	}
+
+	if exinfo := state.GetExInfosByID(info.LightID); exinfo != nil {
+		if !exinfo.EqualProof(info) {
+			return ErrRepeatProof
+		}
+	} else {
+		return ErrNoRegister
+	}
 
 	add, err := czzutil.NewAddressPubKeyHash(bai.PubKey, ev.Params)
 	if err != nil {

@@ -753,16 +753,16 @@ func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 	return nil
 }
 
-func (es *EntangleState) VerifyWhiteListProof(proof *WhiteListProof) error {
-	if info := es.GetExInfosByID(proof.LightID); info != nil {
-		if !info.EqualProof(proof) {
-			return ErrRepeatProof
-		} else {
-			return nil
-		}
-	}
-	return ErrNoRegister
-}
+//func (es *EntangleState) VerifyWhiteListProof(proof *WhiteListProof) error {
+//	if info := es.GetExInfosByID(proof.LightID); info != nil {
+//		if !info.EqualProof(proof) {
+//			return ErrRepeatProof
+//		} else {
+//			return nil
+//		}
+//	}
+//	return ErrNoRegister
+//}
 func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 	if info := es.GetExInfosByID(proof.LightID); info != nil {
 		info.AppendProof(proof)

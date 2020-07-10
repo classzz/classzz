@@ -939,7 +939,7 @@ mempoolLoop:
 			}
 		}
 		if info, err := cross.IsWhiteListProofTx(tx.MsgTx()); err == nil {
-			if err1 := cross.VerifyWhiteListProof(info, g.chain.GetExChangeVerify(), eState); err1 != nil {
+			if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"VerifyWhiteListProof: %v", tx.Hash(), err1)
 				logSkippedDeps(tx, deps)

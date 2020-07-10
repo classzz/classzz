@@ -1108,16 +1108,17 @@ func getKeepInfosFromState(state *EntangleState, types []uint8) *KeepedAmount {
 }
 
 // the return value is beacon's balance of it was staking amount
-func VerifyWhiteListProof(info *WhiteListProof, ev *ExChangeVerify, state *EntangleState) error {
-	if err := state.VerifyWhiteListProof(info); err != nil {
-		return err
-	}
-	cur := state.GetOutSideAsset(info.LightID, info.Atype)
-	if cur == nil {
-		return ErrNoRegister
-	}
-	return ev.VerifyWhiteList(cur, info, state)
-}
+//func VerifyWhiteListProof(info *WhiteListProof, ev *ExChangeVerify, state *EntangleState) error {
+//	if err := state.VerifyWhiteListProof(info); err != nil {
+//		return err
+//	}
+//	cur := state.GetOutSideAsset(info.LightID, info.Atype)
+//	if cur == nil {
+//		return ErrNoRegister
+//	}
+//	return ev.VerifyWhiteList(cur, info, state)
+//}
+
 func FinishWhiteListProof(info *WhiteListProof, state *EntangleState) error {
 	return state.FinishWhiteListProof(info)
 }

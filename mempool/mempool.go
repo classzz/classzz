@@ -1089,7 +1089,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		}
 	}
 
-	// BurnProofTx
+	// WhiteListProofTx
 	wlpt, err5 := cross.IsWhiteListProofTx(tx.MsgTx())
 	if err5 != nil && err5 != cross.NoWhiteListProofTx {
 		return err5
@@ -1098,7 +1098,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	if wlpt != nil && mp.cfg.ChainParams.BurnHeight > nextBlockHeight {
 		return errors.New("err ExChangeTx tx  BeaconHeight < nextBlockHeight ")
 	} else if wlpt != nil {
-		if err := mp.cfg.ExChangeVerify.VerifyWhiteList(wlpt, eState); err != nil {
+		if err := mp.cfg.ExChangeVerify.VerifyWhiteListProof(wlpt, eState); err != nil {
 			return err
 		}
 	}
