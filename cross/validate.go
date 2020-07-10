@@ -929,7 +929,7 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 
 	uei := eState.EnEntitys[info.LightID]
 	if uei == nil {
-		return 0, nil, errors.New("VerifyBurnProof EnEntitys is nil")
+		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
 	}
 	var client *rpcclient.Client
 	switch info.Atype {
@@ -981,7 +981,7 @@ func (ev *ExChangeVerify) VerifyBurnProofMe(info *BurnProofInfo, eState *Entangl
 
 	uei := eState.EnEntitys[info.LightID]
 	if uei == nil {
-		return 0, nil, errors.New("VerifyBurnProof EnEntitys is nil")
+		return 0, nil, errors.New("VerifyBurnProofMe EnEntitys is nil")
 	}
 
 	outHeight := uint64(0)
