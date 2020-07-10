@@ -1030,7 +1030,7 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 	}
 }
 
-func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, info *WhiteListProof, state *EntangleState) error {
+func (ev *ExChangeVerify) VerifyWhiteList(info *WhiteListProof, state *EntangleState) error {
 
 	//.Atype, state.GetWhiteList(info.LightID), state.getBeaconAddressByID(info.LightID)
 
@@ -1052,7 +1052,7 @@ func (ev *ExChangeVerify) VerifyWhiteList(cur *big.Int, info *WhiteListProof, st
 
 	add, err := czzutil.NewAddressPubKeyHash(bai.PubKey, ev.Params)
 	if err != nil {
-
+		return err
 	}
 
 	_, in, out, err := ev.GetTxInPk(info, client)
