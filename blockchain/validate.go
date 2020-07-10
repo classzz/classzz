@@ -391,9 +391,10 @@ func (b *BlockChain) makeBeaconMergeItem(outs []*wire.OutPoint, to czzutil.Addre
 	}
 	return item, nil
 }
-func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo, estate *cross.EntangleState, height uint64) (uint64, *cross.BurnItem, error) {
-	return cross.VerifyBurnProof(info, b.GetExChangeVerify(), estate, height)
-}
+
+//func (b *BlockChain) checkBurnOrPunishTx(info *cross.BurnProofInfo, estate *cross.EntangleState, height uint64) (uint64, *cross.BurnItem, error) {
+//	return cross.VerifyBurnProof(info, b.GetExChangeVerify(), estate, height)
+//}
 func (b *BlockChain) checkWhiteListProof(info *cross.WhiteListProof, estate *cross.EntangleState) error {
 	return cross.VerifyWhiteListProof(info, b.GetExChangeVerify(), estate)
 }
@@ -546,7 +547,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 			if info2, _ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {
 
-				if h, item, e := b.checkBurnOrPunishTx(info2, eState, uint64(prevHeight+1)); e != nil {
+				if h, item, e := b.GetExChangeVerify().VerifyBurnProof(info2, eState, uint64(prevHeight+1)); e != nil {
 					return e
 				} else {
 					if info2.IsBeacon {

@@ -879,7 +879,7 @@ mempoolLoop:
 			continue
 		}
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			oHeight, item, err1 := cross.VerifyBurnProof(info, g.chain.GetExChangeVerify(), eState, uint64(nextBlockHeight))
+			oHeight, item, err1 := g.chain.GetExChangeVerify().VerifyBurnProof(info, eState, uint64(nextBlockHeight))
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"BurnProofTx: %v", tx.Hash(), err1)
