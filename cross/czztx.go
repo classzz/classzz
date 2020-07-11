@@ -60,13 +60,12 @@ var (
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
 	}
-	baseUnit                          = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
-	baseUnit1                         = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit                          = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
-	dogeUnit1                         = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
-	MinPunished                       = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	StartMergeBeaconUtxoHeight uint64 = 100000
-	ZeroAddrsss, _                    = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.MainNetParams)
+	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit1      = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	dogeUnit       = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit1      = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
+	MinPunished    = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
+	ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.MainNetParams)
 )
 
 type EntangleItem struct {

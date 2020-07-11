@@ -627,8 +627,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 	}
 	// check the coinbase Tx
-	if uint64(prevHeight+1) >= cross.StartMergeBeaconUtxoHeight {
-		if err := b.checkCoinBaseForMergeUxto(coinBaseTx, in, out, uint64(prevHeight+1)); err != nil {
+	if prevHeight+1 >= b.chainParams.ExChangeHeight {
+		if err := b.checkCoinBaseForMergeUxto(coinBaseTx, in, out, prevHeight+1); err != nil {
 			return err
 		}
 	}
@@ -695,10 +695,10 @@ func (b *BlockChain) checkCoinBaseForEntangle(item *cross.ExChangeItem, coinTx *
 	}
 	return nil
 }
-func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx, in, out cross.ResCoinBasePos, height uint64) error {
-	if cross.StartMergeBeaconUtxoHeight == height {
+func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx, in, out cross.ResCoinBasePos, height int32) error {
+	if b.chainParams.ExChangeHeight == height {
 		// include merge utxo for lid
-	} else if height > cross.StartMergeBeaconUtxoHeight {
+	} else if height > b.chainParams.ExChangeHeight {
 		// check pool address merge
 		// check txin count
 		if len(coinTx.MsgTx().TxIn) != in.GetInCount()+3 {

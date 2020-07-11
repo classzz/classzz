@@ -356,7 +356,7 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		PkScript: pkScript2,
 	})
 	// the amount of already entangled,placeholder
-	if nextBlockHeight >= params.EntangleHeight && uint64(nextBlockHeight) < cross.StartMergeBeaconUtxoHeight {
+	if nextBlockHeight >= params.EntangleHeight && nextBlockHeight < params.ExChangeHeight {
 		keepInfo := cross.KeepedAmount{Items: []cross.KeepedItem{}}
 		keepInfo.Add(cross.KeepedItem{
 			ExTxType: cross.ExpandedTxEntangle_Doge,
