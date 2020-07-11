@@ -33,7 +33,7 @@ var (
 	// testNet3PowLimit is the highest proof of work value a Bitcoin block
 	// can have for the test network (version 3).  It is the value
 	// 2^224 - 1.
-	testNet3PowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
+	testNetPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 255), bigOne)
 
 	// simNetPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the simulation test network.  It is the value 2^255 - 1.
@@ -185,8 +185,6 @@ type Params struct {
 
 	ExChangeHeight int32
 
-	BurnHeight int32
-
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 
@@ -328,7 +326,7 @@ var MainNetParams = Params{
 // 3), this network is sometimes simply called "testnet".
 var RegressionNetParams = Params{
 	Name:        "regtest",
-	Net:         wire.TestNet,
+	Net:         wire.RegTestNet,
 	DefaultPort: "18884",
 	DNSSeeds:    []DNSSeed{},
 
@@ -400,35 +398,27 @@ var RegressionNetParams = Params{
 // TestNet3Params defines the network parameters for the test Bitcoin network
 // (version 3).  Not to be confused with the regression test network, this
 // network is sometimes simply called "testnet".
-var TestNet3Params = Params{
-	Name:        "testnet3",
-	Net:         wire.TestNet3,
-	DefaultPort: "18333",
-	DNSSeeds: []DNSSeed{
-		{"testnet-seed.bitcoinabc.org", true},
-		{"testnet-seed-abc.bitcoinforks.org", true},
-		{"testnet-seed.bitprim.org", true},
-		{"testnet-seed.deadalnix.me", true},
-		{"testnet-seeder.criptolayer.net", true},
-	},
+var TestNetParams = Params{
+	Name:        "testnet",
+	Net:         wire.TestNet,
+	DefaultPort: "18885",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
-	GenesisBlock: &testNet3GenesisBlock,
-	GenesisHash:  &testNet3GenesisHash,
-	PowLimit:     testNet3PowLimit,
-	PowLimitBits: 0x1d00ffff,
+	GenesisBlock: &testNetGenesisBlock,
+	GenesisHash:  &testNetGenesisHash,
+	PowLimit:     testNetPowLimit,
+	PowLimitBits: 0x207fffff,
 
-	GravitonActivationTime: 1573819200,
-
-	CoinbaseMaturity:         100,
-	SubsidyReductionInterval: 1000000,
+	CoinbaseMaturity:         14,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	TargetTimePerBlock:       time.Minute * 10,    // 10 minutes
-	RetargetAdjustmentFactor: 4,                   // 25% less, 400% more
-	ReduceMinDifficulty:      true,
-	NoDifficultyAdjustment:   false,
-	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
-	GenerateSupported:        false,
+	SubsidyReductionInterval: 1000000,
+	TargetTimePerBlock:       30, // 10 minutes
+	GenerateSupported:        true,
+
+	EntangleHeight: 5,
+	BeaconHeight:   10,
+	ExChangeHeight: 15,
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
@@ -442,13 +432,18 @@ var TestNet3Params = Params{
 	Deployments: [DefinedDeployments]ConsensusDeployment{
 		DeploymentTestDummy: {
 			BitNumber:  28,
-			StartTime:  1199145601, // January 1, 2008 UTC
-			ExpireTime: 1230767999, // December 31, 2008 UTC
+			StartTime:  0,             // Always available for vote
+			ExpireTime: math.MaxInt64, // Never expires
 		},
 		DeploymentCSV: {
 			BitNumber:  0,
-			StartTime:  1456790400, // March 1st, 2016
-			ExpireTime: 1493596800, // May 1st, 2017
+			StartTime:  0,             // Always available for vote
+			ExpireTime: math.MaxInt64, // Never expires
+		},
+		DeploymentSEQ: {
+			BitNumber:  0,
+			StartTime:  0,             //
+			ExpireTime: math.MaxInt64, // Never expires
 		},
 	},
 
@@ -459,17 +454,17 @@ var TestNet3Params = Params{
 	CashAddressPrefix: "czztest", // always czztest for testnet
 
 	// Address encoding magics
-	LegacyPubKeyHashAddrID: 0x6f, // starts with m or n
-	LegacyScriptHashAddrID: 0xc4, // starts with 2
-	PrivateKeyID:           0xef, // starts with 9 (uncompressed) or c (compressed)
+	LegacyPubKeyHashAddrID: 0x00, // starts with 1
+	LegacyScriptHashAddrID: 0x05, // starts with 3
+	PrivateKeyID:           0x80, // starts with 5 (uncompressed) or K (compressed)
 
 	// BIP32 hierarchical deterministic extended key magics
-	HDPrivateKeyID: [4]byte{0x04, 0x35, 0x83, 0x94}, // starts with tprv
-	HDPublicKeyID:  [4]byte{0x04, 0x35, 0x87, 0xcf}, // starts with tpub
+	HDPrivateKeyID: [4]byte{0x04, 0x88, 0xad, 0xe4}, // starts with xprv
+	HDPublicKeyID:  [4]byte{0x04, 0x88, 0xb2, 0x1e}, // starts with xpub
 
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
-	HDCoinType: 1, // all coins use 1
+	HDCoinType: 706, // 706
 }
 
 // SimNetParams defines the network parameters for the simulation test Bitcoin
@@ -677,7 +672,7 @@ func newHashFromStr(hexStr string) *chainhash.Hash {
 func init() {
 	// Register all default networks when the package is initialized.
 	mustRegister(&MainNetParams)
-	mustRegister(&TestNet3Params)
+	mustRegister(&TestNetParams)
 	mustRegister(&RegressionNetParams)
 	mustRegister(&SimNetParams)
 }

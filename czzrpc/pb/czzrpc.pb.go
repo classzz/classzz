@@ -26,23 +26,23 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type GetBlockchainInfoResponse_BitcoinNet int32
 
 const (
-	GetBlockchainInfoResponse_MAINNET  GetBlockchainInfoResponse_BitcoinNet = 0
-	GetBlockchainInfoResponse_REGTEST  GetBlockchainInfoResponse_BitcoinNet = 1
-	GetBlockchainInfoResponse_TESTNET3 GetBlockchainInfoResponse_BitcoinNet = 2
-	GetBlockchainInfoResponse_SIMNET   GetBlockchainInfoResponse_BitcoinNet = 3
+	GetBlockchainInfoResponse_MAINNET GetBlockchainInfoResponse_BitcoinNet = 0
+	GetBlockchainInfoResponse_REGTEST GetBlockchainInfoResponse_BitcoinNet = 1
+	GetBlockchainInfoResponse_TESTNET GetBlockchainInfoResponse_BitcoinNet = 2
+	GetBlockchainInfoResponse_SIMNET  GetBlockchainInfoResponse_BitcoinNet = 3
 )
 
 var GetBlockchainInfoResponse_BitcoinNet_name = map[int32]string{
 	0: "MAINNET",
 	1: "REGTEST",
-	2: "TESTNET3",
+	2: "TESTNET",
 	3: "SIMNET",
 }
 var GetBlockchainInfoResponse_BitcoinNet_value = map[string]int32{
-	"MAINNET":  0,
-	"REGTEST":  1,
-	"TESTNET3": 2,
-	"SIMNET":   3,
+	"MAINNET": 0,
+	"REGTEST": 1,
+	"TESTNET": 2,
+	"SIMNET":  3,
 }
 
 func (x GetBlockchainInfoResponse_BitcoinNet) String() string {

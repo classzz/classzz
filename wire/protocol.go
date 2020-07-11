@@ -133,10 +133,10 @@ const (
 	MainNet BitcoinNet = 0xe8f3e1e3
 
 	// TestNet represents the regression test network.
-	TestNet BitcoinNet = 0xfabfb5da
+	RegTestNet BitcoinNet = 0xfabfb5da
 
-	// TestNet3 represents the test network (version 3).
-	TestNet3 BitcoinNet = 0xf4f3e5f4
+	// TestNet represents the test network (version 3).
+	TestNet BitcoinNet = 0xf4f3e5f4
 
 	// SimNet represents the simulation test network.
 	SimNet BitcoinNet = 0x12141c16
@@ -145,10 +145,10 @@ const (
 // bnStrings is a map of bitcoin networks back to their constant names for
 // pretty printing.
 var bnStrings = map[BitcoinNet]string{
-	MainNet:  "MainNet",
-	TestNet:  "TestNet",
-	TestNet3: "TestNet3",
-	SimNet:   "SimNet",
+	MainNet:    "MainNet",
+	RegTestNet: "RegTestNet",
+	TestNet:    "TestNet",
+	SimNet:     "SimNet",
 }
 
 // String returns the BitcoinNet in human-readable form.
