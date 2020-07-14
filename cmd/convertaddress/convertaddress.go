@@ -11,7 +11,7 @@ import (
 )
 
 type config struct {
-	prv     string `short:"p" long:"prv" description:"The other WIF private key is converted to CZZ address"`
+	Prv     string `short:"p" long:"prv" description:"The other WIF private key is converted to CZZ address"`
 	NetType string `short:"t" long:"type" description:"mainnet, testnet, regtest, simnet"`
 }
 
@@ -43,7 +43,7 @@ func main() {
 		params = &chaincfg.SimNetParams
 	}
 
-	wif, err1 := czzutil.DecodeWIF(cfg.prv)
+	wif, err1 := czzutil.DecodeWIF(cfg.Prv)
 	if err1 != nil {
 		fmt.Println("failed to make address for: ", err1)
 		return
