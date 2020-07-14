@@ -104,7 +104,8 @@ func TestGenesisAdderss(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 }
 
 func TestGenesisRegTestAdderss(t *testing.T) {
@@ -121,7 +122,8 @@ func TestGenesisRegTestAdderss(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 }
 
 func TestGenesisTestAdderss(t *testing.T) {
@@ -138,7 +140,8 @@ func TestGenesisTestAdderss(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 }
 
 func TestGenesisSimNetAdderss(t *testing.T) {
@@ -155,7 +158,8 @@ func TestGenesisSimNetAdderss(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 }
 
 func TestConvertAddr(t *testing.T) {
@@ -173,7 +177,8 @@ func TestConvertAddr(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 
 }
 
@@ -190,7 +195,8 @@ func TestWIFConvertAddr(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
 	}
-	fmt.Println(address.String())
+	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
+	fmt.Println("address:", address.String())
 
 }
 
