@@ -237,3 +237,18 @@ Go to the Classzz directory and run the following command
 CTRL + C
 
 Then do the first step
+
+
+## Address creation and WIF private key of the rest of the main network converted to CZZ address private key and address
+
+###### address creation
+
+```
+./createaddress
+```
+
+###### The WIF private key of the rest of the main network is converted to the private key and address of CZZ address
+
+```
+./convertAddress -p="external key" -t=""
+```
