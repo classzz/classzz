@@ -145,6 +145,23 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
+		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Doge))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Doge))
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("doge PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("doge ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
 		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("doge PkScript err")
@@ -154,12 +171,6 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		dogeparams := &chaincfg.Params{
 			LegacyScriptHashAddrID: 0x1e,
 			LegacyPubKeyHashAddrID: 0x1e,
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BID)
-		if bai == nil {
-			e := fmt.Sprintf("doge PkScript err")
-			return nil, errors.New(e)
 		}
 
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), dogeparams)
@@ -255,6 +266,23 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Ltc))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Ltc))
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("ltc PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("ltc ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
 		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("ltc PkScript err")
@@ -268,12 +296,6 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		ltcparams := &chaincfg.Params{
 			LegacyScriptHashAddrID: 0x32,
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BID)
-		if bai == nil {
-			e := fmt.Sprintf("ltc PkScript err")
-			return nil, errors.New(e)
 		}
 
 		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
@@ -376,6 +398,23 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Btc))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Btc))
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("btc PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("btc ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
 		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("btc PkScript err")
@@ -385,12 +424,6 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BID)
-		if bai == nil {
-			e := fmt.Sprintf("btc PkScript err")
-			return nil, errors.New(e)
 		}
 
 		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
@@ -488,6 +521,23 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bch))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bch))
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("bch PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("bch ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
 		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("Bch PkScript err")
@@ -502,12 +552,6 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bch addr err")
-			return nil, errors.New(e)
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BID)
-		if bai == nil {
-			e := fmt.Sprintf("Bch PkScript err")
 			return nil, errors.New(e)
 		}
 
@@ -605,6 +649,23 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bsv))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bsv))
+
+		bai := eState.getBeaconAddress(eInfo.BID)
+		if bai == nil {
+			e := fmt.Sprintf("Bsv PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("Bsv ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
 		ScriptClass := txscript.GetScriptClass(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("Bsv PkScript err")
@@ -619,12 +680,6 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
-			return nil, errors.New(e)
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BID)
-		if bai == nil {
-			e := fmt.Sprintf("Bsv PkScript err")
 			return nil, errors.New(e)
 		}
 
