@@ -918,7 +918,7 @@ func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, state *EntangleSt
 	if info.IsBeacon {
 		return ev.VerifyBurnProofBeacon(info, state, curHeight)
 	} else {
-		return ev.VerifyBurnProofMe(info, state, curHeight)
+		return ev.VerifyBurnProofRobot(info, state, curHeight)
 	}
 }
 
@@ -977,7 +977,7 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	return 0, bi, nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProofMe(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 
 	uei := eState.EnEntitys[info.LightID]
 	if uei == nil {
