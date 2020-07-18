@@ -432,7 +432,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 			}
 			userEntitys = append(userEntitys, userEntity)
 		}
-		userEntity.increaseOriginAmount(sendAmount)
+		userEntity.increaseOriginAmount(sendAmount,height)
 		userEntity.updateFreeQuotaOfHeight(height, amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)

@@ -365,8 +365,11 @@ func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
 }
 
 /////////////////////////////////////////////////////////////////
-func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
+func (e *EntangleEntity) increaseOriginAmount(amount,height *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
+	if e.MaxRedeem.Sign() == 0 {
+		e.OldHeight = new(big.Int).Set(height)
+	}
 	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem, amount)
 }
 
@@ -398,7 +401,7 @@ func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
 // updateFreeQuota returns the outside asset by user who can redeemable
 func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
 	limit := new(big.Int).Sub(curHeight, e.OldHeight)
-	if limit.Cmp(limitHeight) < 0 {
+	if limit.Cmp(limitHeight) > 0 {
 		// release user's quota
 		e.MaxRedeem = big.NewInt(0)
 	}
