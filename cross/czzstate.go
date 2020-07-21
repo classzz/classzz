@@ -252,8 +252,8 @@ func (es *EntangleState) getBeaconAddressByID(id uint64) string {
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []byte, amount *big.Int,
-	fee, keeptime uint64, assetFlag uint32, wu []*WhiteUnit, cba []string) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+	fee, keepBlock uint64, assetFlag uint32, wu []*WhiteUnit, cba []string) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keepBlock))) ||
 		!ValidAssetFlag(assetFlag) {
 		return ErrInvalidParam
 	}
@@ -274,7 +274,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 		StakingAmount:   new(big.Int).Set(amount),
 		AssetFlag:       assetFlag,
 		Fee:             fee,
-		KeepTime:        keeptime,
+		KeepBlock:       keepBlock,
 		EnAssets:        make([]*EnAssetItem, 0, 0),
 		EntangleAmount:  big.NewInt(0),
 		WhiteList:       wu,
@@ -342,15 +342,15 @@ func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 		return ErrNoRegister
 	}
 }
-func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keeptime uint64, AssetFlag uint32) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keepBlock uint64, AssetFlag uint32) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keepBlock))) ||
 		!ValidAssetFlag(AssetFlag) {
 		return ErrInvalidParam
 	}
 	if info, ok := es.EnInfos[addr]; ok {
 		return ErrRepeatRegister
 	} else {
-		info.Fee, info.AssetFlag, info.KeepTime = fee, AssetFlag, keeptime
+		info.Fee, info.AssetFlag, info.KeepBlock = fee, AssetFlag, keepBlock
 	}
 	return nil
 }
@@ -432,7 +432,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 			}
 			userEntitys = append(userEntitys, userEntity)
 		}
-		userEntity.increaseOriginAmount(sendAmount,height)
+		userEntity.increaseOriginAmount(sendAmount, height)
 		userEntity.updateFreeQuotaOfHeight(height, amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
@@ -627,7 +627,7 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 			fmt.Println("cann't found the BeaconAddress id:", lh.ExchangeID)
 		} else {
 			for _, userEntity := range userEntitys {
-				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(height)), big.NewInt(int64(lh.KeepTime)))
+				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(height)), big.NewInt(int64(lh.KeepBlock)))
 				lh.updateFreeQuota(res)
 			}
 		}

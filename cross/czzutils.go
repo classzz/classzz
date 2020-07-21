@@ -163,7 +163,7 @@ type BeaconAddressInfo struct {
 	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
 	AssetFlag       uint32           `json:"asset_flag"`
 	Fee             uint64           `json:"fee"`
-	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
+	KeepBlock       uint64           `json:"keep_block"` // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit     `json:"white_list"`
 	CoinBaseAddress []string         `json:"coinbase_address"`
 }
@@ -365,7 +365,7 @@ func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
 }
 
 /////////////////////////////////////////////////////////////////
-func (e *EntangleEntity) increaseOriginAmount(amount,height *big.Int) {
+func (e *EntangleEntity) increaseOriginAmount(amount, height *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
 	if e.MaxRedeem.Sign() == 0 {
 		e.OldHeight = new(big.Int).Set(height)

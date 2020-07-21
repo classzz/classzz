@@ -44,14 +44,14 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 }
 
 var (
-	NoEntangle           = errors.New("no entangle info in transcation")
-	NoExChange           = errors.New("no NoExChange info in transcation")
-	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
-	NoBurnTx             = errors.New("no BurnTx info in transcation")
-	NoBurnProofTx        = errors.New("no BurnProofTx info in transcation")
-	NoWhiteListProofTx   = errors.New("no WhiteListProofTx info in transcation")
-	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
-	NoAddBeaconCoinbase  = errors.New("no AddBeaconCoinbase info in transcation")
+	NoEntangle              = errors.New("no entangle info in transcation")
+	NoExChange              = errors.New("no NoExChange info in transcation")
+	NoBeaconRegistration    = errors.New("no BeaconRegistration info in transcation")
+	NoBurnTx                = errors.New("no BurnTx info in transcation")
+	NoBurnProofTx           = errors.New("no BurnProofTx info in transcation")
+	NoBurnReportWhiteListTx = errors.New("no WhiteListProofTx info in transcation")
+	NoAddBeaconPledge       = errors.New("no AddBeaconPledge info in transcation")
+	NoAddBeaconCoinbase     = errors.New("no AddBeaconCoinbase info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -439,7 +439,7 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 	txout := tx.TxOut[0]
 	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("BeaconRegistrationTxFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -500,7 +500,7 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	txout := tx.TxOut[0]
 	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("AddBeaconPledgeTxFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -560,7 +560,7 @@ func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconC
 	txout := tx.TxOut[0]
 	info, err := AddBeaconCoinbaseTxFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("AddBeaconCoinbaseTxFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -603,6 +603,16 @@ func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 
 	var pk []byte
 	var err error
+
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsBurnTy(txout.PkScript) {
+			return nil, NoBurnTx
+		}
+	} else {
+		return nil, NoBurnTx
+	}
+
 	// get to address
 	if len(tx.TxOut) < 2 {
 		return nil, errors.New("BurnTx Must be at least two TxOut")
@@ -638,7 +648,7 @@ func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 	txout := tx.TxOut[0]
 	info, err := BurnInfoFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("BurnInfoFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -679,6 +689,15 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	var es *BurnProofInfo
 	var err error
 
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsBurnProofTy(txout.PkScript) {
+			return nil, NoBurnProofTx
+		}
+	} else {
+		return nil, NoBurnProofTx
+	}
+
 	if len(tx.TxOut) < 1 {
 		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
 	}
@@ -686,7 +705,7 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	txout := tx.TxOut[0]
 	info, err := BurnProofInfoFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("BurnProofInfoFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -700,17 +719,27 @@ func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
 	return nil, NoBurnProofTx
 }
 
-func IsWhiteListProofTx(tx *wire.MsgTx) (*WhiteListProof, error) {
+func IsBurnReportWhiteListTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 	// make sure at least one txout in OUTPUT
 	var es *WhiteListProof
 	var err error
+
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsBurnReportWhiteListTy(txout.PkScript) {
+			return nil, NoBurnReportWhiteListTx
+		}
+	} else {
+		return nil, NoBurnReportWhiteListTx
+	}
+
 	if len(tx.TxOut) < 2 {
 		return nil, errors.New("WhiteListProof Must be at least two TxOut")
 	}
 	txout := tx.TxOut[0]
 	info, err := WhiteListProofFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("the output tx.")
+		return nil, errors.New("WhiteListProofFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -720,7 +749,7 @@ func IsWhiteListProofTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 	if es != nil {
 		return es, nil
 	}
-	return nil, NoWhiteListProofTx
+	return nil, NoBurnReportWhiteListTx
 }
 
 func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {

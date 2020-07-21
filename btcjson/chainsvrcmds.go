@@ -88,7 +88,7 @@ type BeaconRegistrationOut struct {
 	StakingAmount   float64
 	AssetFlag       uint32
 	Fee             uint64
-	KeepTime        uint64 // the time as the block count for finally redeem time
+	KeepBlock       uint64 // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit
 	CoinBaseAddress []string
 }

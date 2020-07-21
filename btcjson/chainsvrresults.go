@@ -485,7 +485,7 @@ type StateInfoChainResult struct {
 	StakingAmount   *big.Int     `json:"staking_amount"` // in
 	AssetFlag       uint32       `json:"asset_flag"`
 	Fee             uint64       `json:"fee"`
-	KeepTime        uint64       `json:"keep_time"` // the time as the block count for finally redeem time
+	KeepBlock       uint64       `json:"keep_block"` // the time as the block count for finally redeem time
 	WhiteList       []*WhiteUnit `json:"white_list"`
 	CoinBaseAddress []string     `json:"CoinBaseAddress"`
 }

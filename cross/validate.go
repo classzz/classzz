@@ -781,7 +781,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if !validKeepTime(big.NewInt(int64(br.KeepTime))) {
+	if !validKeepTime(big.NewInt(int64(br.KeepBlock))) {
 		e := fmt.Sprintf("KeepTime err")
 		return nil, errors.New(e)
 	}

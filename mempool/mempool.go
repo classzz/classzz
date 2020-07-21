@@ -1090,8 +1090,8 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// WhiteListProofTx
-	wlpt, err5 := cross.IsWhiteListProofTx(tx.MsgTx())
-	if err5 != nil && err5 != cross.NoWhiteListProofTx {
+	wlpt, err5 := cross.IsBurnReportWhiteListTx(tx.MsgTx())
+	if err5 != nil && err5 != cross.NoBurnReportWhiteListTx {
 		return err5
 	}
 

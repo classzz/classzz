@@ -463,7 +463,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				return err
 			} else {
 				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
-					info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
+					info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 					return err
 				} else {
 					lightID := eState.GetBeaconIdByTo(info.ToAddress)
@@ -595,7 +595,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				burnTxs = append(burnTxs, tx)
 				continue
 			}
-			if info3, _ := cross.IsWhiteListProofTx(tx.MsgTx()); info3 != nil {
+			if info3, _ := cross.IsBurnReportWhiteListTx(tx.MsgTx()); info3 != nil {
 				once++
 				if once > 1 {
 					return proofError

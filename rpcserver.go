@@ -811,7 +811,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 		ToAddress:       c.BeaconRegistration.ToAddress,
 		AssetFlag:       c.BeaconRegistration.AssetFlag,
 		Fee:             c.BeaconRegistration.Fee,
-		KeepTime:        c.BeaconRegistration.KeepTime,
+		KeepTime:        c.BeaconRegistration.KeepBlock,
 		WhiteList:       wls,
 		CoinBaseAddress: c.BeaconRegistration.CoinBaseAddress,
 	}
@@ -3346,7 +3346,7 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 			StakingAmount:   info.StakingAmount,
 			AssetFlag:       info.AssetFlag,
 			Fee:             info.Fee,
-			KeepTime:        info.KeepTime,
+			KeepBlock:       info.KeepBlock,
 			CoinBaseAddress: info.CoinBaseAddress,
 		}
 		infos = append(infos, infor)

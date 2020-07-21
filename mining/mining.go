@@ -938,7 +938,7 @@ mempoolLoop:
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
 		}
-		if info, err := cross.IsWhiteListProofTx(tx.MsgTx()); err == nil {
+		if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
 			if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"VerifyWhiteListProof: %v", tx.Hash(), err1)
@@ -979,7 +979,7 @@ mempoolLoop:
 		// BeaconRegistrationTx
 		if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
 			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
-				info.KeepTime, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
+				info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 				return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 			}
 			beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
