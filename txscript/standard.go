@@ -198,9 +198,10 @@ func isBeaconRegistrationTy(pops []parsedOpcode) bool {
 
 func isBurnTy(pops []parsedOpcode) bool {
 	// simple judge
-	return len(pops) >= 2 &&
+	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN196
+		pops[1].opcode.value == OP_UNKNOWN196 &&
+		pops[1].opcode.value < 0x50
 }
 
 func isBurnProofTy(pops []parsedOpcode) bool {

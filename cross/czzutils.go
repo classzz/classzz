@@ -664,8 +664,9 @@ func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofI
 
 func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState != 1 &&
-			amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
+		//&&
+		//amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
+		if v.Height == height && v.RedeemState != 1 {
 			v.RedeemState, v.Proof = 1, proof
 		}
 	}
@@ -693,7 +694,8 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
-					if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
+					//info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
+					if v.Proof.TxHash == "" {
 						return v.clone(), nil
 					}
 				}

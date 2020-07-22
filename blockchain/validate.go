@@ -1823,7 +1823,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 	for txIndex, tx := range txs {
 		if txIndex == 0 {
 			for i, txout := range tx.MsgTx().TxOut {
-				if i > 3 {
+				if i > 2 {
 					amount1 = amount1 + txout.Value
 				}
 				if i == 1 {

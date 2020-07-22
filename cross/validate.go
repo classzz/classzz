@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -1007,8 +1008,8 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 		return 0, nil, err
 	}
 
-	if bai.Address != bAdd.String() {
-		e := fmt.Sprintf("VerifyBurnProof Address != BeaconAddress")
+	if hex.EncodeToString(bai.PubKey) != bAdd.String() {
+		e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", bai.Address, bAdd.String())
 		return 0, nil, errors.New(e)
 	}
 
