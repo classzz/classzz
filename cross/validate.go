@@ -977,13 +977,13 @@ func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, e
 	if tx.MsgTx().TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
 		if err != nil {
-			e := fmt.Sprintf("btc ComputePk err %s", err)
+			e := fmt.Sprintf("ComputePk err %s", err)
 			return 0, nil, errors.New(e)
 		}
 	} else {
 		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
 		if err != nil {
-			e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
 			return 0, nil, errors.New(e)
 		}
 	}
@@ -993,9 +993,9 @@ func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, e
 		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
 	}
 
-	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(pk), ev.Params)
+	addr, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), ev.Params)
 	if err != nil {
-		e := fmt.Sprintf("doge addr err")
+		e := fmt.Sprintf("addr err")
 		return 0, nil, errors.New(e)
 	}
 
@@ -1077,10 +1077,10 @@ func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *Enta
 
 	outHeight := uint64(0)
 	var bi *BurnItem
-
+	var err error
 	for addr1, userEntity := range uei {
 		if info.Address == addr1 {
-			_, err := userEntity.verifyBurnProof(info, outHeight, curHeight)
+			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
 			}
