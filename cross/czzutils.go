@@ -37,7 +37,7 @@ var (
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
-	LimitRedeemHeightForBeaconAddress = 5000
+	LimitRedeemHeightForBeaconAddress = 50
 	MaxCoinBase                       = 4
 	ChechWhiteListProof               = true
 )
@@ -486,14 +486,15 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 	}
 }
 
-func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+func (ee *EntangleEntitys) verifyBurnProof(sendAmount *big.Int, info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, entity := range *ee {
 		if entity.AssetType == info.Atype {
-			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
+			return entity.BurnAmount.verifyProof(sendAmount, info, outHeight, curHeight)
 		}
 	}
 	return nil, ErrNoUserAsset
 }
+
 func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint8) error {
 	for _, entity := range *ee {
 		if entity.AssetType == atype {
@@ -664,13 +665,13 @@ func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofI
 
 func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
-		//&&
-		//amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
-		if v.Height == height && v.RedeemState != 1 {
+		//&& v.RedeemState != 1 && sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
+		if v.Height == height {
 			v.RedeemState, v.Proof = 1, proof
 		}
 	}
 }
+
 func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
 	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
@@ -688,14 +689,13 @@ func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	}
 	return height, used
 }
-func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+func (b *BurnInfos) verifyProof(sendAmount *big.Int, info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
 	if info.IsBeacon {
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
-					//info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
-					if v.Proof.TxHash == "" {
+					if sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
 						return v.clone(), nil
 					}
 				}
@@ -704,7 +704,7 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 	} else {
 		if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 			for _, v := range items {
-				if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
+				if sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 					// deficiency or timeout
 					return v.clone(), nil
 				}

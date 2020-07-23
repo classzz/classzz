@@ -692,9 +692,16 @@ func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeig
 		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
 		return nil, ErrNoRegister
 	} else {
+
+		reserve := es.getEntangleAmountByAll(info.Atype)
+		sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
+		if err != nil {
+			return nil, err
+		}
+
 		for addr1, userEntity := range userEntitys {
 			if info.Address == addr1 {
-				return userEntity.verifyBurnProof(info, outHeight, curHeight)
+				return userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
 			} else {
 				return nil, ErrNotMatchUser
 			}

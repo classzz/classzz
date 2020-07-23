@@ -1017,11 +1017,18 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	//	e := fmt.Sprintf("VerifyBurnProof Value != Amount")
 	//	return errors.New(e)
 	//}
+
+	reserve := eState.getEntangleAmountByAll(info.Atype)
+	sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
+	if err != nil {
+		return 0, nil, err
+	}
+
 	outHeight := uint64(0)
 	var bi *BurnItem
 	for addr1, userEntity := range uei {
 		if info.Address == addr1 {
-			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
+			bi, err = userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
 			}
@@ -1042,10 +1049,15 @@ func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *Enta
 
 	outHeight := uint64(0)
 	var bi *BurnItem
-	var err error
+
+	reserve := eState.getEntangleAmountByAll(info.Atype)
+	sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
+	if err != nil {
+		return 0, nil, err
+	}
 	for addr1, userEntity := range uei {
 		if info.Address == addr1 {
-			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
+			bi, err = userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
 			}
