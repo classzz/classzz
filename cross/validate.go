@@ -970,11 +970,45 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	return nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProof(info *BurnProofInfo, state *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-	if info.IsBeacon {
-		return ev.VerifyBurnProofBeacon(info, state, curHeight)
+func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+
+	var pk []byte
+	var err error
+	if tx.MsgTx().TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("btc ComputePk err %s", err)
+			return 0, nil, errors.New(e)
+		}
 	} else {
-		return ev.VerifyBurnProofRobot(info, state, curHeight)
+		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+			return 0, nil, errors.New(e)
+		}
+	}
+
+	ba := eState.getBeaconAddress(info.LightID)
+	if ba == nil {
+		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
+	}
+
+	addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(pk), ev.Params)
+	if err != nil {
+		e := fmt.Sprintf("doge addr err")
+		return 0, nil, errors.New(e)
+	}
+
+	if ba.Address == addr.String() {
+		info.IsBeacon = true
+	} else {
+		info.IsBeacon = false
+	}
+
+	if info.IsBeacon {
+		return ev.VerifyBurnProofBeacon(info, eState, curHeight)
+	} else {
+		return ev.VerifyBurnProofRobot(info, eState, curHeight)
 	}
 }
 
@@ -1018,17 +1052,11 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	//	return errors.New(e)
 	//}
 
-	reserve := eState.getEntangleAmountByAll(info.Atype)
-	sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
-	if err != nil {
-		return 0, nil, err
-	}
-
 	outHeight := uint64(0)
 	var bi *BurnItem
 	for addr1, userEntity := range uei {
 		if info.Address == addr1 {
-			bi, err = userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
+			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
 			}
@@ -1050,14 +1078,9 @@ func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *Enta
 	outHeight := uint64(0)
 	var bi *BurnItem
 
-	reserve := eState.getEntangleAmountByAll(info.Atype)
-	sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
-	if err != nil {
-		return 0, nil, err
-	}
 	for addr1, userEntity := range uei {
 		if info.Address == addr1 {
-			bi, err = userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
+			_, err := userEntity.verifyBurnProof(info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
 			}

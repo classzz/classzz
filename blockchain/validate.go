@@ -551,7 +551,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 			if info2, _ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {
 
-				if h, item, e := b.GetExChangeVerify().VerifyBurnProof(info2, eState, uint64(prevHeight+1)); e != nil {
+				if h, item, e := b.GetExChangeVerify().VerifyBurnProof(tx, info2, eState, uint64(prevHeight+1)); e != nil {
 					return e
 				} else {
 					if info2.IsBeacon {

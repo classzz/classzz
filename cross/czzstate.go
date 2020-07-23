@@ -686,29 +686,23 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 	return beacon.updatePunished(slashingAmount)
 }
 
-func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-	userEntitys, ok := es.EnEntitys[info.LightID]
-	if !ok {
-		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
-		return nil, ErrNoRegister
-	} else {
-
-		reserve := es.getEntangleAmountByAll(info.Atype)
-		sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.Atype)
-		if err != nil {
-			return nil, err
-		}
-
-		for addr1, userEntity := range userEntitys {
-			if info.Address == addr1 {
-				return userEntity.verifyBurnProof(sendAmount, info, outHeight, curHeight)
-			} else {
-				return nil, ErrNotMatchUser
-			}
-		}
-	}
-	return nil, nil
-}
+//func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+//	userEntitys, ok := es.EnEntitys[info.LightID]
+//	if !ok {
+//		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
+//		return nil, ErrNoRegister
+//	} else {
+//
+//		for addr1, userEntity := range userEntitys {
+//			if info.Address == addr1 {
+//				return userEntity.verifyBurnProof(info, outHeight, curHeight)
+//			} else {
+//				return nil, ErrNotMatchUser
+//			}
+//		}
+//	}
+//	return nil, nil
+//}
 
 func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnItem) error {
 	es.FinishBeaconAddressPunished(info.LightID, info.Amount)

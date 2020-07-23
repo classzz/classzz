@@ -486,10 +486,10 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 	}
 }
 
-func (ee *EntangleEntitys) verifyBurnProof(sendAmount *big.Int, info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, entity := range *ee {
 		if entity.AssetType == info.Atype {
-			return entity.BurnAmount.verifyProof(sendAmount, info, outHeight, curHeight)
+			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
 		}
 	}
 	return nil, ErrNoUserAsset
@@ -647,7 +647,7 @@ func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnIte
 func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem {
 	items := []*BurnItem{}
 	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == state {
+		if v.Height == height && v.RedeemState == state && v.RAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
 			items = append(items, v)
 		}
 	}
@@ -689,13 +689,13 @@ func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	}
 	return height, used
 }
-func (b *BurnInfos) verifyProof(sendAmount *big.Int, info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
 	if info.IsBeacon {
 		if outHeight >= eHeight && !used {
 			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 				for _, v := range items {
-					if sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
+					if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
 						return v.clone(), nil
 					}
 				}
@@ -704,7 +704,7 @@ func (b *BurnInfos) verifyProof(sendAmount *big.Int, info *BurnProofInfo, outHei
 	} else {
 		if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 			for _, v := range items {
-				if sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 || int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
+				if int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 					// deficiency or timeout
 					return v.clone(), nil
 				}
