@@ -972,39 +972,6 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 
 func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 
-	var pk []byte
-	var err error
-	if tx.MsgTx().TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
-		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
-			return 0, nil, errors.New(e)
-		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return 0, nil, errors.New(e)
-		}
-	}
-
-	ba := eState.getBeaconAddress(info.LightID)
-	if ba == nil {
-		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
-	}
-
-	addr, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), ev.Params)
-	if err != nil {
-		e := fmt.Sprintf("addr err")
-		return 0, nil, errors.New(e)
-	}
-
-	if ba.Address == addr.String() {
-		info.IsBeacon = true
-	} else {
-		info.IsBeacon = false
-	}
-
 	if info.IsBeacon {
 		return ev.VerifyBurnProofBeacon(info, eState, curHeight)
 	} else {

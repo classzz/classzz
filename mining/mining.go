@@ -898,7 +898,14 @@ mempoolLoop:
 				}
 				// send reward to the robot and Punished the beacon address
 				// estate.
-				fromAddress, toAddress := cross.GetAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
+				fromAddress, err := cross.GetAddressFromProofTx(tx, g.chainParams)
+				if err != nil {
+					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
+					logSkippedDeps(tx, deps)
+					continue
+				}
+
+				toAddress := eState.GetBeaconToAddrByID(info.LightID)
 				exInfos := eState.GetExInfosByID(info.LightID)
 				if fromAddress == nil || toAddress == nil || exInfos == nil {
 					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
@@ -949,7 +956,8 @@ mempoolLoop:
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			fromAddress, toAddress := cross.GetAddressFromProofTx(tx, g.chainParams), eState.GetBeaconToAddrByID(info.LightID)
+			fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
+			toAddress := eState.GetBeaconToAddrByID(info.LightID)
 			exInfos := eState.GetExInfosByID(info.LightID)
 			if fromAddress == nil || toAddress == nil || exInfos == nil {
 				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())

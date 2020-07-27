@@ -1196,12 +1196,35 @@ func SameHeightTxForBurn(tx *czzutil.Tx, txs []*czzutil.Tx, params *chaincfg.Par
 	}
 	return false
 }
-func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) czzutil.Address {
-	_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[1].PkScript, params)
-	if err == nil {
-		return nil
+func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) (czzutil.Address, error) {
+
+	var pk []byte
+	var err error
+	if tx.MsgTx().TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("btc ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
 	}
-	return addrs[0]
+
+	addrs, err := czzutil.NewAddressPubKeyHash(pk, params)
+	if err != nil {
+		e := fmt.Sprintf("doge addr err")
+		return nil, errors.New(e)
+	}
+
+	//_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[0].PkScript, params)
+	//if err == nil {
+	//	return nil
+	//}
+	return addrs, nil
 }
 
 //////////////////////////////////////////////////////////////////////////////

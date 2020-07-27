@@ -1399,6 +1399,11 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 	params := s.cfg.ChainParams
 
+	IsBeacon := false
+	if c.BurnProof.TxHash != "" {
+		IsBeacon = true
+	}
+
 	bpi := &btcjson.BurnProofInfo{
 		LightID:  c.BurnProof.LightID,
 		Height:   c.BurnProof.Height,
@@ -1407,7 +1412,7 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 		Atype:    c.BurnProof.Atype,
 		TxHash:   c.BurnProof.TxHash,
 		OutIndex: c.BurnProof.OutIndex,
-		IsBeacon: c.BurnProof.IsBeacon,
+		IsBeacon: IsBeacon,
 	}
 
 	bpiByte, err := rlp.EncodeToBytes(bpi)

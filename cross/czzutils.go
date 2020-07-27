@@ -37,7 +37,7 @@ var (
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
-	LimitRedeemHeightForBeaconAddress = 50
+	LimitRedeemHeightForBeaconAddress = 10
 	MaxCoinBase                       = 4
 	ChechWhiteListProof               = true
 )

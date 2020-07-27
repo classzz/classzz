@@ -564,7 +564,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						if once > 1 {
 							return proofError
 						}
-						from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info2.LightID)
+						from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
+						to := eState.GetBeaconToAddrByID(info2.LightID)
 						res := &cross.PunishedRewardItem{
 							Addr1:  from,
 							Addr2:  cross.ZeroAddrsss,
@@ -603,7 +604,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				if e := b.GetExChangeVerify().VerifyWhiteListProof(info3, eState); e != nil {
 					return e
 				} else {
-					from, to := cross.GetAddressFromProofTx(tx, b.chainParams), eState.GetBeaconToAddrByID(info3.LightID)
+					from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
+					to := eState.GetBeaconToAddrByID(info3.LightID)
 					res := &cross.PunishedRewardItem{
 						Addr1:  from,
 						Addr2:  cross.ZeroAddrsss,
