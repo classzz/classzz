@@ -65,7 +65,7 @@ var (
 	dogeUnit       = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1      = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 	MinPunished    = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.MainNetParams)
+	ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.TestNetParams)
 )
 
 type EntangleItem struct {
@@ -1203,21 +1203,18 @@ func GetAddressFromProofTx(tx *czzutil.Tx, params *chaincfg.Params) (czzutil.Add
 	if tx.MsgTx().TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
 		if err != nil {
-			e := fmt.Sprintf("btc ComputePk err %s", err)
-			return nil, errors.New(e)
+			return nil, err
 		}
 	} else {
 		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
 		if err != nil {
-			e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
-			return nil, errors.New(e)
+			return nil, err
 		}
 	}
 
-	addrs, err := czzutil.NewAddressPubKeyHash(pk, params)
+	addrs, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
 	if err != nil {
-		e := fmt.Sprintf("doge addr err")
-		return nil, errors.New(e)
+		return nil, err
 	}
 
 	//_, addrs, _, err := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[0].PkScript, params)

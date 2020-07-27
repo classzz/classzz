@@ -144,7 +144,7 @@ func isCoinBaseInParam(tx *czzutil.Tx, chainParams *chaincfg.Params) bool {
 	}
 
 	if height >= chainParams.EntangleHeight {
-		if len(msgTx.TxIn) != 3 {
+		if len(msgTx.TxIn) < 3 {
 			return false
 		}
 	} else {

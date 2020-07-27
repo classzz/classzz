@@ -7,6 +7,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/cross"
@@ -535,6 +536,19 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 			if err != nil {
 				return err
+			}
+			beaconID := eState.GetBeaconIdByTo(br.ToAddress)
+			if exInfos := eState.GetExInfosByID(beaconID); exInfos != nil {
+				ex := &cross.ExBeaconInfo{
+					EnItems: []*wire.OutPoint{&wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					}},
+					Proofs: []*cross.WhiteListProof{},
+				}
+				eState.SetExBeaconInfo(beaconID, ex)
+			} else {
+				return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 			}
 		}
 
