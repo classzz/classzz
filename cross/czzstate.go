@@ -217,13 +217,13 @@ func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
 	}
 	return nil
 }
-func (es *EntangleState) GetExInfosByID(id uint64) *ExBeaconInfo {
+func (es *EntangleState) GetBaExInfoByID(id uint64) *ExBeaconInfo {
 	if v, ok := es.BaExInfo[id]; ok {
 		return v
 	}
 	return nil
 }
-func (es *EntangleState) SetExBeaconInfo(id uint64, info *ExBeaconInfo) error {
+func (es *EntangleState) SetBaExInfo(id uint64, info *ExBeaconInfo) error {
 	es.BaExInfo[id] = info
 	return nil
 }
@@ -765,9 +765,9 @@ func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 //	return ErrNoRegister
 //}
 func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
-	if info := es.GetExInfosByID(proof.LightID); info != nil {
+	if info := es.GetBaExInfoByID(proof.LightID); info != nil {
 		info.AppendProof(proof)
-		es.SetExBeaconInfo(proof.LightID, info)
+		es.SetBaExInfo(proof.LightID, info)
 		return nil
 	}
 	return ErrNoRegister

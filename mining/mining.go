@@ -906,7 +906,7 @@ mempoolLoop:
 				}
 
 				toAddress := eState.GetBeaconToAddrByID(info.LightID)
-				exInfos := eState.GetExInfosByID(info.LightID)
+				exInfos := eState.GetBaExInfoByID(info.LightID)
 				if fromAddress == nil || toAddress == nil || exInfos == nil {
 					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
 					logSkippedDeps(tx, deps)
@@ -930,6 +930,7 @@ mempoolLoop:
 				// reset the amount in beacon
 				cross.CloseProofForPunished(info, item, eState)
 				once = 1
+
 			}
 		}
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
@@ -958,7 +959,7 @@ mempoolLoop:
 			}
 			fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
 			toAddress := eState.GetBeaconToAddrByID(info.LightID)
-			exInfos := eState.GetExInfosByID(info.LightID)
+			exInfos := eState.GetBaExInfoByID(info.LightID)
 			if fromAddress == nil || toAddress == nil || exInfos == nil {
 				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
 				logSkippedDeps(tx, deps)
@@ -1008,7 +1009,7 @@ mempoolLoop:
 			}
 			once = 1
 			if beaconMerge == 1 {
-				if exInfos := eState.GetExInfosByID(beaconID); exInfos != nil {
+				if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
 					ex := &cross.ExBeaconInfo{
 						EnItems: []*wire.OutPoint{&wire.OutPoint{
 							Hash:  *tx.Hash(),
@@ -1016,12 +1017,12 @@ mempoolLoop:
 						}},
 						Proofs: []*cross.WhiteListProof{},
 					}
-					eState.SetExBeaconInfo(beaconID, ex)
+					eState.SetBaExInfo(beaconID, ex)
 				} else {
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 				}
 			} else {
-				exInfos := eState.GetExInfosByID(beaconID)
+				exInfos := eState.GetBaExInfoByID(beaconID)
 				if exInfos == nil {
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID))
 				}

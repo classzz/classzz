@@ -538,7 +538,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 				return err
 			}
 			beaconID := eState.GetBeaconIdByTo(br.ToAddress)
-			if exInfos := eState.GetExInfosByID(beaconID); exInfos != nil {
+			if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
 				ex := &cross.ExBeaconInfo{
 					EnItems: []*wire.OutPoint{&wire.OutPoint{
 						Hash:  *tx.Hash(),
@@ -546,7 +546,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					}},
 					Proofs: []*cross.WhiteListProof{},
 				}
-				eState.SetExBeaconInfo(beaconID, ex)
+				eState.SetBaExInfo(beaconID, ex)
 			} else {
 				return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 			}
@@ -582,6 +582,19 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					Height: uint64(pHeight + 1),
 					TxHash: info.TxHash,
 				})
+
+				if exInfos := eState.GetBaExInfoByID(info.LightID); exInfos != nil {
+					ex := &cross.ExBeaconInfo{
+						EnItems: []*wire.OutPoint{&wire.OutPoint{
+							Hash:  *tx.Hash(),
+							Index: 1,
+						}},
+						Proofs: []*cross.WhiteListProof{},
+					}
+					eState.SetBaExInfo(info.LightID, ex)
+				} else {
+					return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", info.LightID))
+				}
 			}
 		}
 

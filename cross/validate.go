@@ -1110,7 +1110,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		return errors.New("VerifyBurnProof EnEntitys is nil")
 	}
 
-	if exinfo := state.GetExInfosByID(info.LightID); exinfo != nil {
+	if exinfo := state.GetBaExInfoByID(info.LightID); exinfo != nil {
 		if !exinfo.EqualProof(info) {
 			return ErrRepeatProof
 		}

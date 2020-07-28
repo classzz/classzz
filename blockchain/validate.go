@@ -367,7 +367,7 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 	return nil
 }
 func (b *BlockChain) getPoolAmount(lid uint64, eState *cross.EntangleState) (*big.Int, *wire.OutPoint, error) {
-	exInfos := eState.GetExInfosByID(lid)
+	exInfos := eState.GetBaExInfoByID(lid)
 	if exInfos == nil {
 		return nil, nil, cross.ErrNoRegister
 	}
@@ -467,7 +467,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					lightID := eState.GetBeaconIdByTo(info.ToAddress)
-					if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
+					if exInfos := eState.GetBaExInfoByID(lightID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), lightID))
 					} else {
 						ex := &cross.ExBeaconInfo{
@@ -477,7 +477,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 							}},
 							Proofs: []*cross.WhiteListProof{},
 						}
-						eState.SetExBeaconInfo(lightID, ex)
+						eState.SetBaExInfo(lightID, ex)
 					}
 				}
 			}
@@ -496,7 +496,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				} else {
 					lightID := eState.GetBeaconIdByTo(info.ToAddress)
 					to := eState.GetBeaconToAddrByID(lightID)
-					if exInfos := eState.GetExInfosByID(lightID); exInfos == nil {
+					if exInfos := eState.GetBaExInfoByID(lightID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), lightID))
 					} else {
 						if item, err := b.makeBeaconMergeItem(exInfos.EnItems, to); err != nil {
@@ -518,7 +518,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 									Hash:  *coinBaseTx.Hash(),
 									Index: uint32(index),
 								}}
-								eState.SetExBeaconInfo(lightID, exInfos)
+								eState.SetBaExInfo(lightID, exInfos)
 							}
 						}
 					}
@@ -1334,10 +1334,10 @@ func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView 
 		return errors.New(fmt.Sprintf("BlockSubsidy:the pool2 address's reward was wrong[%v,expected:%v] height:%d ",
 			summay.pool2Amount, originIncome2+summay.lastpool2Amount, txHeight))
 	}
-	if summay.TotalOut > summay.TotalIn {
-		return errors.New(fmt.Sprintf("BlockSubsidy:wrong,the totalOut > totalIn,[totalOut:%v,totalIn:%v] height:%d",
-			summay.TotalOut, summay.TotalIn, txHeight))
-	}
+	//if summay.TotalOut > summay.TotalIn {
+	//	return errors.New(fmt.Sprintf("BlockSubsidy:wrong,the totalOut > totalIn,[totalOut:%v,totalIn:%v] height:%d",
+	//		summay.TotalOut, summay.TotalIn, txHeight))
+	//}
 	return nil
 }
 
@@ -1771,14 +1771,15 @@ func getKeepedAmountFormPreBlock(block *czzutil.Block) (*cross.KeepedAmount, err
 	}
 	coinbaseTx, err := block.Tx(0)
 	if err == nil {
-		if len(coinbaseTx.MsgTx().TxOut) >= 4 {
-			if err := keepInfo.Parse(coinbaseTx.MsgTx().TxOut[3].PkScript); err != nil {
+		if len(coinbaseTx.MsgTx().TxOut) >= 3 {
+			if err := keepInfo.Parse(coinbaseTx.MsgTx().TxOut[2].PkScript); err != nil {
 				return keepInfo, err
 			}
 		}
 	}
 	return keepInfo, nil
 }
+
 func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) error {
 	coinbaseTx, err := block.Tx(0)
 	if err == nil {
@@ -1813,10 +1814,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			Items: make([]cross.KeepedItem, 0),
 		},
 	}
-	keepInfo, err := getKeepedAmountFormPreBlock(preblock)
-	if err != nil {
-		return nil, err
-	}
+	//keepInfo, err := getKeepedAmountFormPreBlock(preblock)
+	//if err != nil {
+	//	return nil, err
+	//}
 	if err := getPoolAmountFromPreBlock(preblock, summay); err != nil {
 		return nil, err
 	}
@@ -1838,10 +1839,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			einfos, _ := cross.IsExChangeTx(tx.MsgTx())
-			if einfos != nil {
-				handleSummayEntangle(summay, keepInfo, einfos, fork)
-			}
+			//einfos, _ := cross.IsExChangeTx(tx.MsgTx())
+			//if einfos != nil {
+			//	handleSummayEntangle(summay, keepInfo, einfos, fork)
+			//}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value
 			}
@@ -1859,9 +1860,9 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 		}
 	}
 	// check entangle amount
-	if amount1 != summay.EntangleAmount {
-		return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))
-	}
+	//if amount1 != summay.EntangleAmount {
+	//	return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))
+	//}
 	summay.TotalIn, summay.TotalOut = totalIn, totalOut
 	return summay, nil
 }
