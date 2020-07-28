@@ -884,26 +884,6 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 
-	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
-	updateTxOutValue(tx.TxOut[2], reserve2)
-	allEntangle := int64(0)
-
-	for i := range items {
-		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
-		if err != nil {
-			return errors.New("Make Meger tx failed,err: " + err.Error())
-		}
-		out := &wire.TxOut{
-			Value:    items[i].Value.Int64(),
-			PkScript: pkScript,
-		}
-		allEntangle += out.Value
-		tx.AddTxOut(out)
-	}
-	tx.TxOut[1].Value = reserve1 - allEntangle
-	if tx.TxOut[1].Value < 0 {
-		panic(errors.New("pool1 amount < 0"))
-	}
 	// reward the proof ,txin>3
 	for _, v := range rewards {
 		tx.AddTxIn(&wire.TxIn{
@@ -930,6 +910,28 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 			PkScript: pkScript3,
 		})
 	}
+
+	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
+	updateTxOutValue(tx.TxOut[2], reserve2)
+	allEntangle := int64(0)
+
+	for i := range items {
+		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
+		if err != nil {
+			return errors.New("Make Meger tx failed,err: " + err.Error())
+		}
+		out := &wire.TxOut{
+			Value:    items[i].Value.Int64(),
+			PkScript: pkScript,
+		}
+		allEntangle += out.Value
+		tx.AddTxOut(out)
+	}
+	tx.TxOut[1].Value = reserve1 - allEntangle
+	if tx.TxOut[1].Value < 0 {
+		panic(errors.New("pool1 amount < 0"))
+	}
+
 	// merge beacon utxo
 	var to czzutil.Address
 	for _, Items := range mergeItem {

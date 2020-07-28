@@ -526,6 +526,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		eState = cross.NewEntangleState()
 	}
 
+	BurnProofTx_beaconID := uint64(0)
 	for _, tx := range block.Transactions() {
 		var err error
 		// BeaconRegistration
@@ -582,19 +583,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					Height: uint64(pHeight + 1),
 					TxHash: info.TxHash,
 				})
-
-				if exInfos := eState.GetBaExInfoByID(info.LightID); exInfos != nil {
-					ex := &cross.ExBeaconInfo{
-						EnItems: []*wire.OutPoint{&wire.OutPoint{
-							Hash:  *tx.Hash(),
-							Index: 1,
-						}},
-						Proofs: []*cross.WhiteListProof{},
-					}
-					eState.SetBaExInfo(info.LightID, ex)
-				} else {
-					return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", info.LightID))
-				}
+				BurnProofTx_beaconID = info.LightID
 			}
 		}
 
@@ -604,6 +593,18 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	if BurnProofTx_beaconID > 0 {
+		if exInfos := eState.GetBaExInfoByID(BurnProofTx_beaconID); exInfos != nil {
+			exInfos.EnItems = append(exInfos.EnItems, &wire.OutPoint{
+				Hash:  *block.Transactions()[0].Hash(),
+				Index: 5,
+			})
+			eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
+		} else {
+			return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", BurnProofTx_beaconID))
 		}
 	}
 
