@@ -1110,33 +1110,19 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		return errors.New("VerifyBurnProof EnEntitys is nil")
 	}
 
-	//if exinfo := state.GetBaExInfoByID(info.LightID); exinfo != nil {
-	//if !exinfo.EqualProof(info) {
-	//	return ErrRepeatProof
-	//}
-	add, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
-	if err != nil {
-		return err
-	}
-
 	_, in, out, err := ev.GetTxInPk(info, client)
-
-	if !bytes.Equal(add.ScriptAddress(), in) {
-		e := fmt.Sprintf("address= err %s", err)
+	if !bytes.Equal(bai.PubKey, in) {
+		e := fmt.Sprintf("address err %s", err)
 		return errors.New(e)
 	}
 
 	whiteList := state.GetWhiteList(info.LightID)
-
 	for _, wu := range whiteList {
 		if wu.AssetType == info.Atype && bytes.Equal(out, wu.Pk) {
 			e := fmt.Sprintf("Illegal transfer err %s", err)
 			return errors.New(e)
 		}
 	}
-	//} else {
-	//	return ErrNoRegister
-	//}
 
 	return nil
 }
@@ -1161,12 +1147,6 @@ func (ev *ExChangeVerify) GetTxInPk(info *WhiteListProof, client *rpcclient.Clie
 			}
 		}
 		out := tx.MsgTx().TxOut[info.OutIndex].PkScript
-
-		addr, err := czzutil.NewAddressPubKey(pk, ev.Params)
-		if err != nil {
-			e := fmt.Sprintf("doge addr err")
-			return nil, nil, nil, errors.New(e)
-		}
-		return tx, addr.ScriptAddress(), out, nil
+		return tx, pk, out, nil
 	}
 }
