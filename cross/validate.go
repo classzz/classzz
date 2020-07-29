@@ -1110,15 +1110,11 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		return errors.New("VerifyBurnProof EnEntitys is nil")
 	}
 
-	if exinfo := state.GetBaExInfoByID(info.LightID); exinfo != nil {
-		if !exinfo.EqualProof(info) {
-			return ErrRepeatProof
-		}
-	} else {
-		return ErrNoRegister
-	}
-
-	add, err := czzutil.NewAddressPubKeyHash(bai.PubKey, ev.Params)
+	//if exinfo := state.GetBaExInfoByID(info.LightID); exinfo != nil {
+	//if !exinfo.EqualProof(info) {
+	//	return ErrRepeatProof
+	//}
+	add, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
 	if err != nil {
 		return err
 	}
@@ -1138,6 +1134,9 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 			return errors.New(e)
 		}
 	}
+	//} else {
+	//	return ErrNoRegister
+	//}
 
 	return nil
 }

@@ -733,9 +733,6 @@ func IsBurnReportWhiteListTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 		return nil, NoBurnReportWhiteListTx
 	}
 
-	if len(tx.TxOut) < 2 {
-		return nil, errors.New("WhiteListProof Must be at least two TxOut")
-	}
 	txout := tx.TxOut[0]
 	info, err := WhiteListProofFromScript(txout.PkScript)
 	if err != nil {

@@ -128,8 +128,8 @@ type BurnReportWhiteListOut struct {
 	Atype    uint32
 	Height   uint64 // the height of outside chain
 	TxHash   string
-	InIndex  int64
-	OutIndex int64
+	InIndex  uint64
+	OutIndex uint64
 	Amount   *big.Int // the amount of outside chain
 }
 
