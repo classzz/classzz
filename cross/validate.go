@@ -1118,7 +1118,14 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 
 	whiteList := state.GetWhiteList(info.LightID)
 	for _, wu := range whiteList {
-		if wu.AssetType == info.Atype && bytes.Equal(out, wu.Pk) {
+
+		addrs, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(wu.Pk), ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("NewAddressPubKeyHash err")
+			return errors.New(e)
+		}
+
+		if wu.AssetType == info.Atype && bytes.Equal(out, addrs.ScriptAddress()) {
 			e := fmt.Sprintf("Illegal transfer err %s", err)
 			return errors.New(e)
 		}
