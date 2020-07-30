@@ -598,10 +598,11 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	if BurnProofTx_beaconID > 0 {
 		if exInfos := eState.GetBaExInfoByID(BurnProofTx_beaconID); exInfos != nil {
-			exInfos.EnItems = append(exInfos.EnItems, &wire.OutPoint{
+			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
 				Hash:  *block.Transactions()[0].Hash(),
 				Index: 5,
-			})
+			}}
+
 			eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
 		} else {
 			return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", BurnProofTx_beaconID))
