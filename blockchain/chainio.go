@@ -583,7 +583,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					Height: uint64(pHeight + 1),
 					TxHash: info.TxHash,
 				})
-				BurnProofTx_beaconID = info.LightID
+				BurnProofTx_beaconID = info.BeaconID
 			}
 		}
 

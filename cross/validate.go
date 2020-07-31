@@ -984,12 +984,12 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
 
-	uei := eState.EnEntitys[info.LightID]
+	uei := eState.EnEntitys[info.BeaconID]
 	if uei == nil {
 		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
 	}
 	var client *rpcclient.Client
-	switch info.Atype {
+	switch info.AssetType {
 	case ExpandedTxEntangle_Doge:
 		client = ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 	case ExpandedTxEntangle_Ltc:
@@ -1002,7 +1002,7 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
 	}
 
-	bai := eState.getBeaconAddress(info.LightID)
+	bai := eState.getBeaconAddress(info.BeaconID)
 
 	_, bAdd, err := ev.GetTxInAddress(info, client)
 	if err != nil {
@@ -1037,7 +1037,7 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 
 func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 
-	uei := eState.EnEntitys[info.LightID]
+	uei := eState.EnEntitys[info.BeaconID]
 	if uei == nil {
 		return 0, nil, errors.New("VerifyBurnProofMe EnEntitys is nil")
 	}
@@ -1091,7 +1091,7 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *EntangleState) error {
 
 	var client *rpcclient.Client
-	switch info.Atype {
+	switch info.AssetType {
 	case ExpandedTxEntangle_Doge:
 		client = ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 	case ExpandedTxEntangle_Ltc:
@@ -1104,7 +1104,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
 	}
 
-	bai := state.getBeaconByID(info.LightID)
+	bai := state.getBeaconByID(info.BeaconID)
 
 	if bai == nil {
 		return errors.New("VerifyBurnProof EnEntitys is nil")
@@ -1116,7 +1116,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		return errors.New(e)
 	}
 
-	whiteList := state.GetWhiteList(info.LightID)
+	whiteList := state.GetWhiteList(info.BeaconID)
 	for _, wu := range whiteList {
 
 		addrs, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(wu.Pk), ev.Params)
@@ -1125,7 +1125,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 			return errors.New(e)
 		}
 
-		if wu.AssetType == info.Atype && bytes.Equal(out, addrs.ScriptAddress()) {
+		if wu.AssetType == info.AssetType && bytes.Equal(out, addrs.ScriptAddress()) {
 			e := fmt.Sprintf("Illegal transfer err %s", err)
 			return errors.New(e)
 		}

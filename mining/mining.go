@@ -905,8 +905,8 @@ mempoolLoop:
 					continue
 				}
 
-				toAddress := eState.GetBeaconToAddrByID(info.LightID)
-				exInfos := eState.GetBaExInfoByID(info.LightID)
+				toAddress := eState.GetBeaconToAddrByID(info.BeaconID)
+				exInfos := eState.GetBaExInfoByID(info.BeaconID)
 				if fromAddress == nil || toAddress == nil || exInfos == nil {
 					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
 					logSkippedDeps(tx, deps)
@@ -958,8 +958,8 @@ mempoolLoop:
 				continue
 			}
 			fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
-			toAddress := eState.GetBeaconToAddrByID(info.LightID)
-			exInfos := eState.GetBaExInfoByID(info.LightID)
+			toAddress := eState.GetBeaconToAddrByID(info.BeaconID)
+			exInfos := eState.GetBaExInfoByID(info.BeaconID)
 			if fromAddress == nil || toAddress == nil || exInfos == nil {
 				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
 				logSkippedDeps(tx, deps)
@@ -1320,7 +1320,7 @@ func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.U
 	if view == nil {
 		return nil, errors.New("view is nil")
 	}
-	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.Atype, info.LightID)
+	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.AssetType, info.BeaconID)
 	res := &cross.PunishedRewardItem{
 		Amount: new(big.Int).Mul(big.NewInt(1), amount),
 		Addr1:  rewardAddress,

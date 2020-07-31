@@ -107,30 +107,26 @@ type AddBeaconCoinbaseOut struct {
 
 type BurnTransactionOut struct {
 	ExTxType uint8
-	Address  string
-	LightID  uint64
+	BeaconID uint64
 	Amount   float64
 }
 
 type BurnProofOut struct {
-	LightID  uint64   // the lightid for beaconAddress of user burn's asset
-	Height   uint64   // the height include the tx of user burn's asset
-	Amount   *big.Int // the amount of burned asset (czz)
-	Address  string
-	Atype    uint32
-	TxHash   string // the tx hash of outside
-	OutIndex uint64
-	IsBeacon bool
+	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	Height    uint64   // the height include the tx of user burn's asset
+	Amount    *big.Int // the amount of burned asset (czz)
+	Address   string
+	AssetType uint8
 }
 
 type BurnReportWhiteListOut struct {
-	LightID  uint64 // the lightid for beaconAddress
-	Atype    uint32
-	Height   uint64 // the height of outside chain
-	TxHash   string
-	InIndex  uint64
-	OutIndex uint64
-	Amount   *big.Int // the amount of outside chain
+	BeaconID  uint64 // the lightid for beaconAddress
+	AssetType uint8
+	Height    uint64 // the height of outside chain
+	TxHash    string
+	InIndex   uint64
+	OutIndex  uint64
+	Amount    *big.Int // the amount of outside chain
 }
 
 // ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
@@ -200,7 +196,7 @@ func (w *WhiteUnit) toAddress() string {
 }
 
 type BeaconAddressInfo struct {
-	ExchangeID      uint64           `json:"exchange_id"`
+	BeaconID        uint64           `json:"beacon_id"`
 	Address         string           `json:"address"`
 	PubKey          []byte           `json:"pub_key"`
 	ToAddress       []byte           `json:"toAddress"`
@@ -232,19 +228,19 @@ type ExpandedTxType uint8
 type BurnInfo struct {
 	ExTxType ExpandedTxType
 	Address  string
-	LightID  uint64
+	BeaconID uint64
 	Amount   *big.Int
 }
 
 type BurnProofInfo struct {
-	LightID  uint64   // the lightid for beaconAddress of user burn's asset
-	Height   uint64   // the height include the tx of user burn's asset
-	Amount   *big.Int // the amount of burned asset (czz)
-	Address  string
-	Atype    uint32
-	TxHash   string // the tx hash of outside
-	OutIndex uint64
-	IsBeacon bool
+	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	Height    uint64   // the height include the tx of user burn's asset
+	Amount    *big.Int // the amount of burned asset (czz)
+	Address   string
+	AssetType uint8
+	TxHash    string // the tx hash of outside
+	OutIndex  uint64
+	IsBeacon  bool
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue

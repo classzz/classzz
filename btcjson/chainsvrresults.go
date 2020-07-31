@@ -479,7 +479,7 @@ type InfoChainResult struct {
 
 // InfoChainResult models the data returned by the chain server getinfo command.
 type StateInfoChainResult struct {
-	ExchangeID      uint64       `json:"exchange_id"`
+	BeaconID        uint64       `json:"beacon_id"`
 	Address         string       `json:"address"`
 	ToAddress       string       `json:"toAddress_pk_hex"`
 	StakingAmount   *big.Int     `json:"staking_amount"` // in

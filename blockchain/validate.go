@@ -565,14 +565,14 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 							return proofError
 						}
 						from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
-						to := eState.GetBeaconToAddrByID(info2.LightID)
+						to := eState.GetBeaconToAddrByID(info2.BeaconID)
 						res := &cross.PunishedRewardItem{
 							Addr1:  from,
 							Addr2:  cross.ZeroAddrsss,
 							Addr3:  to,
 							Amount: new(big.Int).Set(info2.Amount),
 						}
-						if all, outPoint, err := b.getPoolAmount(info2.LightID, eState); err != nil {
+						if all, outPoint, err := b.getPoolAmount(info2.BeaconID, eState); err != nil {
 							return err
 						} else {
 							res.OriginAmount, res.POut = all, *outPoint
@@ -605,17 +605,17 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return e
 				} else {
 					from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
-					to := eState.GetBeaconToAddrByID(info3.LightID)
+					to := eState.GetBeaconToAddrByID(info3.BeaconID)
 					res := &cross.PunishedRewardItem{
 						Addr1:  from,
 						Addr2:  cross.ZeroAddrsss,
 						Addr3:  to,
 						Amount: new(big.Int).Set(info3.Amount),
 					}
-					if all, outPoint, err := b.getPoolAmount(info3.LightID, eState); err != nil {
+					if all, outPoint, err := b.getPoolAmount(info3.BeaconID, eState); err != nil {
 						return err
 					} else {
-						amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.Atype, info3.LightID)
+						amount := eState.CalcSlashingForWhiteListProof(info3.Amount, info3.AssetType, info3.BeaconID)
 						res.OriginAmount, res.POut = all, *outPoint
 						res.Amount = amount
 						if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {

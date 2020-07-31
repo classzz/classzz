@@ -153,7 +153,7 @@ type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
 type BeaconAddressInfo struct {
-	ExchangeID      uint64           `json:"exchange_id"`
+	BeaconID        uint64           `json:"beacon_id"`
 	Address         string           `json:"address"`
 	PubKey          []byte           `json:"pub_key"`
 	ToAddress       []byte           `json:"toAddress"`
@@ -296,7 +296,7 @@ func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
 /////////////////////////////////////////////////////////////////
 // Address > EntangleEntity
 type EntangleEntity struct {
-	ExchangeID      uint64     `json:"exchange_id"`
+	BeaconID        uint64     `json:"beacon_id"`
 	Address         string     `json:"address"`
 	AssetType       uint8      `json:"asset_type"`
 	Height          *big.Int   `json:"height"`            // newest height for entangle
@@ -488,7 +488,7 @@ func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
 
 func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, entity := range *ee {
-		if entity.AssetType == info.Atype {
+		if entity.AssetType == info.AssetType {
 			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
 		}
 	}
@@ -776,32 +776,32 @@ func (b *BurnProofItem) EncodeRLP(w io.Writer) error {
 }
 
 type BurnProofInfo struct {
-	LightID  uint64   // the lightid for beaconAddress of user burn's asset
-	Height   uint64   // the height include the tx of user burn's asset
-	Amount   *big.Int // the amount of burned asset (czz)
-	Address  string
-	Atype    uint8
-	TxHash   string // the tx hash of outside
-	OutIndex uint64
-	IsBeacon bool
+	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	Height    uint64   // the height include the tx of user burn's asset
+	Amount    *big.Int // the amount of burned asset (czz)
+	Address   string
+	AssetType uint8
+	TxHash    string // the tx hash of outside
+	OutIndex  uint64
+	IsBeacon  bool
 }
 
 type WhiteListProof struct {
-	LightID  uint64 // the lightid for beaconAddress
-	Atype    uint8
-	Height   uint64 // the height of outside chain
-	TxHash   string
-	InIndex  uint64
-	OutIndex uint64
-	Amount   *big.Int // the amount of outside chain
+	BeaconID  uint64 // the lightid for beaconAddress
+	AssetType uint8
+	Height    uint64 // the height of outside chain
+	TxHash    string
+	InIndex   uint64
+	OutIndex  uint64
+	Amount    *big.Int // the amount of outside chain
 }
 
 func (wl *WhiteListProof) Clone() *WhiteListProof {
 	return &WhiteListProof{
-		LightID: wl.LightID,
-		Height:  wl.Height,
-		Amount:  new(big.Int).Set(wl.Amount),
-		Atype:   wl.Atype,
+		BeaconID:  wl.BeaconID,
+		Height:    wl.Height,
+		Amount:    new(big.Int).Set(wl.Amount),
+		AssetType: wl.AssetType,
 	}
 }
 

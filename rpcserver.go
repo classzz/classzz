@@ -1255,8 +1255,7 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 
 	bi := &btcjson.BurnInfo{
 		ExTxType: btcjson.ExpandedTxType(c.BurnTransaction.ExTxType),
-		Address:  c.BurnTransaction.Address,
-		LightID:  c.BurnTransaction.LightID,
+		BeaconID: c.BurnTransaction.BeaconID,
 		Amount:   big.NewInt(int64(satoshi)),
 	}
 
@@ -1405,14 +1404,14 @@ func handleBurnProoft(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	}
 
 	bpi := &btcjson.BurnProofInfo{
-		LightID:  c.BurnProof.LightID,
-		Height:   c.BurnProof.Height,
-		Amount:   c.BurnProof.Amount,
-		Address:  c.BurnProof.Address,
-		Atype:    c.BurnProof.Atype,
-		TxHash:   c.BurnProof.TxHash,
-		OutIndex: c.BurnProof.OutIndex,
-		IsBeacon: IsBeacon,
+		BeaconID:  c.BurnProof.BeaconID,
+		Height:    c.BurnProof.Height,
+		Amount:    c.BurnProof.Amount,
+		Address:   c.BurnProof.Address,
+		AssetType: c.BurnProof.AssetType,
+		TxHash:    c.BurnProof.TxHash,
+		OutIndex:  c.BurnProof.OutIndex,
+		IsBeacon:  IsBeacon,
 	}
 
 	bpiByte, err := rlp.EncodeToBytes(bpi)
@@ -3322,7 +3321,7 @@ func (list StateList) Len() int {
 }
 
 func (list StateList) Less(i, j int) bool {
-	if list[i].ExchangeID < list[j].ExchangeID {
+	if list[i].BeaconID < list[j].BeaconID {
 		return true
 	}
 	return false
@@ -3345,7 +3344,7 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 
 	for _, info := range estate.EnInfos {
 		infor := &btcjson.StateInfoChainResult{
-			ExchangeID:      info.ExchangeID,
+			BeaconID:        info.BeaconID,
 			Address:         info.Address,
 			ToAddress:       hex.EncodeToString(info.ToAddress),
 			StakingAmount:   info.StakingAmount,

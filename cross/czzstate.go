@@ -38,12 +38,12 @@ func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
 }
 
 type EntangleState struct {
-	EnInfos       map[string]*BeaconAddressInfo
-	EnEntitys     map[uint64]UserEntangleInfos
-	BaExInfo      map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
-	PoolAmount1   *big.Int
-	PoolAmount2   *big.Int
-	CurExchangeID uint64
+	EnInfos     map[string]*BeaconAddressInfo
+	EnEntitys   map[uint64]UserEntangleInfos
+	BaExInfo    map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
+	PoolAmount1 *big.Int
+	PoolAmount2 *big.Int
+	CurBeaconID uint64
 }
 
 /////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	es.CurExchangeID = eb.ID
+	es.CurBeaconID = eb.ID
 	es.fromSlice(eb.Value1, eb.Value2, eb.Value3)
 	return nil
 }
@@ -171,7 +171,7 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 	}
 	s1, s2, s3 := es.toSlice()
 	return rlp.Encode(w, &Store1{
-		ID:     es.CurExchangeID,
+		ID:     es.CurBeaconID,
 		Value1: s1,
 		Value2: s2,
 		Value3: s3,
@@ -179,9 +179,9 @@ func (es *EntangleState) EncodeRLP(w io.Writer) error {
 }
 
 /////////////////////////////////////////////////////////////////
-func (es *EntangleState) getBeaconByID(eid uint64) *BeaconAddressInfo {
+func (es *EntangleState) getBeaconByID(bid uint64) *BeaconAddressInfo {
 	for _, v := range es.EnInfos {
-		if v.ExchangeID == eid {
+		if v.BeaconID == bid {
 			return v
 		}
 	}
@@ -198,7 +198,7 @@ func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 func (es *EntangleState) GetBeaconIdByTo(to []byte) uint64 {
 	info := es.getBeaconAddressFromTo(to)
 	if info != nil {
-		return info.ExchangeID
+		return info.BeaconID
 	}
 	return 0
 }
@@ -267,7 +267,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 		return ErrRepeatToAddress
 	}
 	info := &BeaconAddressInfo{
-		ExchangeID:      es.CurExchangeID + 1,
+		BeaconID:        es.CurBeaconID + 1,
 		Address:         addr,
 		PubKey:          pubkey,
 		ToAddress:       to,
@@ -285,9 +285,9 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 		EnItems: make([]*wire.OutPoint, 0, 0),
 		Proofs:  make([]*WhiteListProof, 0, 0),
 	}
-	es.CurExchangeID = info.ExchangeID
+	es.CurBeaconID = info.BeaconID
 	es.EnInfos[addr] = info
-	es.BaExInfo[es.CurExchangeID] = ebi
+	es.BaExInfo[es.CurBeaconID] = ebi
 	return nil
 }
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
@@ -374,12 +374,12 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint64,
+func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint64,
 	height, amount *big.Int) (*big.Int, error) {
 	if es.AddressInWhiteList(addr, true) {
 		return nil, ErrAddressInWhiteList
 	}
-	lh := es.getBeaconAddress(lightID)
+	lh := es.getBeaconAddress(BeaconID)
 	if lh == nil {
 		return nil, ErrNoRegister
 	}
@@ -399,7 +399,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 		return nil, err
 	}
 
-	lhEntitys, ok := es.EnEntitys[lightID]
+	lhEntitys, ok := es.EnEntitys[BeaconID]
 	if !ok {
 		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
 	}
@@ -420,7 +420,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 		}
 		if !found {
 			userEntity = &EntangleEntity{
-				ExchangeID:      lightID,
+				BeaconID:        BeaconID,
 				Address:         addr,
 				AssetType:       aType,
 				Height:          new(big.Int).Set(height),
@@ -437,7 +437,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, lightID uint6
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
 		lhEntitys[addr] = userEntitys
-		es.EnEntitys[lightID] = lhEntitys
+		es.EnEntitys[BeaconID] = lhEntitys
 	}
 	return sendAmount, nil
 }
@@ -582,9 +582,9 @@ func (es *EntangleState) getEntangleAmountByAll(atype uint8) *big.Int {
 	return aa
 }
 
-func (es *EntangleState) getBeaconAddress(id uint64) *BeaconAddressInfo {
+func (es *EntangleState) getBeaconAddress(bid uint64) *BeaconAddressInfo {
 	for _, val := range es.EnInfos {
-		if val.ExchangeID == id {
+		if val.BeaconID == bid {
 			return val
 		}
 	}
@@ -622,9 +622,9 @@ func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
 // UpdateQuotaOnBlock called in insertBlock for update user's quota state
 func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 	for _, lh := range es.EnInfos {
-		userEntitys, ok := es.EnEntitys[lh.ExchangeID]
+		userEntitys, ok := es.EnEntitys[lh.BeaconID]
 		if !ok {
-			fmt.Println("cann't found the BeaconAddress id:", lh.ExchangeID)
+			fmt.Println("cann't found the BeaconAddress id:", lh.BeaconID)
 		} else {
 			for _, userEntity := range userEntitys {
 				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(height)), big.NewInt(int64(lh.KeepBlock)))
@@ -705,15 +705,15 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 //}
 
 func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnItem) error {
-	es.FinishBeaconAddressPunished(info.LightID, info.Amount)
-	userEntitys, ok := es.EnEntitys[info.LightID]
+	es.FinishBeaconAddressPunished(info.BeaconID, info.Amount)
+	userEntitys, ok := es.EnEntitys[info.BeaconID]
 	if !ok {
-		fmt.Println("CloseProofForPunished:cann't found the BeaconAddress id:", info.LightID)
+		fmt.Println("CloseProofForPunished:cann't found the BeaconAddress id:", info.BeaconID)
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if info.Address == addr1 {
-				return userEntity.closeProofForPunished(item, info.Atype)
+				return userEntity.closeProofForPunished(item, info.AssetType)
 			} else {
 				return ErrNotMatchUser
 			}
@@ -724,14 +724,14 @@ func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnIt
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
-	userEntitys, ok := es.EnEntitys[info.LightID]
+	userEntitys, ok := es.EnEntitys[info.BeaconID]
 	if !ok {
-		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.LightID)
+		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if info.Address == addr1 {
-				userEntity.finishBurnState(info.Height, info.Amount, info.Atype, proof)
+				userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
 			}
 		}
 	}
@@ -740,14 +740,14 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
-	userEntitys, ok := es.EnEntitys[info.LightID]
+	userEntitys, ok := es.EnEntitys[info.BeaconID]
 	if !ok {
-		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.LightID)
+		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
 		return ErrNoRegister
 	} else {
 		for addr1, userEntity := range userEntitys {
 			if info.Address == addr1 {
-				userEntity.updateBurnState2(info.Height, info.Amount, info.Atype, proof)
+				userEntity.updateBurnState2(info.Height, info.Amount, info.AssetType, proof)
 			}
 		}
 	}
@@ -765,9 +765,9 @@ func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 //	return ErrNoRegister
 //}
 func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
-	if info := es.GetBaExInfoByID(proof.LightID); info != nil {
+	if info := es.GetBaExInfoByID(proof.BeaconID); info != nil {
 		info.AppendProof(proof)
-		es.SetBaExInfo(proof.LightID, info)
+		es.SetBaExInfo(proof.BeaconID, info)
 		return nil
 	}
 	return ErrNoRegister
@@ -776,7 +776,7 @@ func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 ////////////////////////////////////////////////////////////////////////////
 // calc the punished amount by outside asset in the height
 // the return value(flag by czz) will be mul * 2
-func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint8, lightID uint64) *big.Int {
+func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint8, BeaconID uint64) *big.Int {
 	// get current rate with czz and outside asset in heigth
 	reserve := es.getEntangleAmountByAll(atype)
 	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)
@@ -806,11 +806,11 @@ func Hash(es *EntangleState) chainhash.Hash {
 }
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
-		EnInfos:       make(map[string]*BeaconAddressInfo),
-		EnEntitys:     make(map[uint64]UserEntangleInfos),
-		BaExInfo:      make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
-		CurExchangeID: 0,
-		PoolAmount1:   big.NewInt(0),
-		PoolAmount2:   big.NewInt(0),
+		EnInfos:     make(map[string]*BeaconAddressInfo),
+		EnEntitys:   make(map[uint64]UserEntangleInfos),
+		BaExInfo:    make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
+		CurBeaconID: 0,
+		PoolAmount1: big.NewInt(0),
+		PoolAmount2: big.NewInt(0),
 	}
 }
