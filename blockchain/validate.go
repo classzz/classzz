@@ -466,9 +466,9 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 					return err
 				} else {
-					lightID := eState.GetBeaconIdByTo(info.ToAddress)
-					if exInfos := eState.GetBaExInfoByID(lightID); exInfos == nil {
-						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), lightID))
+					BeaconID := eState.GetBeaconIdByTo(info.ToAddress)
+					if exInfos := eState.GetBaExInfoByID(BeaconID); exInfos == nil {
+						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), BeaconID))
 					} else {
 						ex := &cross.ExBeaconInfo{
 							EnItems: []*wire.OutPoint{&wire.OutPoint{
@@ -477,7 +477,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 							}},
 							Proofs: []*cross.WhiteListProof{},
 						}
-						eState.SetBaExInfo(lightID, ex)
+						eState.SetBaExInfo(BeaconID, ex)
 					}
 				}
 			}
@@ -494,10 +494,10 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				if err := eState.AppendAmountForBeaconAddress(info.Address, info.StakingAmount); err != nil {
 					return err
 				} else {
-					lightID := eState.GetBeaconIdByTo(info.ToAddress)
-					to := eState.GetBeaconToAddrByID(lightID)
-					if exInfos := eState.GetBaExInfoByID(lightID); exInfos == nil {
-						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), lightID))
+					BeaconID := eState.GetBeaconIdByTo(info.ToAddress)
+					to := eState.GetBeaconToAddrByID(BeaconID)
+					if exInfos := eState.GetBaExInfoByID(BeaconID); exInfos == nil {
+						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), BeaconID))
 					} else {
 						if item, err := b.makeBeaconMergeItem(exInfos.EnItems, to); err != nil {
 							return err
@@ -518,7 +518,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 									Hash:  *coinBaseTx.Hash(),
 									Index: uint32(index),
 								}}
-								eState.SetBaExInfo(lightID, exInfos)
+								eState.SetBaExInfo(BeaconID, exInfos)
 							}
 						}
 					}
@@ -533,14 +533,14 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				} else {
 					height := big.NewInt(int64(info0[0].Height))
 					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].ExTxType),
-						info0[0].BID, height, info0[0].Amount); err != nil {
+						info0[0].BeaconID, height, info0[0].Amount); err != nil {
 						return err
 					} else {
 						item := &cross.ExChangeItem{
-							EType: info0[0].ExTxType,
-							Addr:  obj[0].Address,
-							Value: czzAsset,
-							BID:   info0[0].BID,
+							EType:    info0[0].ExTxType,
+							Addr:     obj[0].Address,
+							Value:    czzAsset,
+							BeaconID: info0[0].BeaconID,
 						}
 						if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
 							return err
@@ -590,7 +590,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return errors.New("same height in burnTx at same address")
 				}
 				// update the state
-				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.ExTxType), info1.LightID, uint64(prevHeight+1), info1.Amount); err != nil {
+				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.ExTxType), info1.BeaconID, uint64(prevHeight+1), info1.Amount); err != nil {
 					return err
 				}
 				burnTxs = append(burnTxs, tx)

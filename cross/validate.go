@@ -149,7 +149,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Doge))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Doge))
 
-		bai := eState.getBeaconAddress(eInfo.BID)
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
 			e := fmt.Sprintf("doge PkScript err")
 			return nil, errors.New(e)
@@ -270,7 +270,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Ltc))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Ltc))
 
-		bai := eState.getBeaconAddress(eInfo.BID)
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
 			e := fmt.Sprintf("ltc PkScript err")
 			return nil, errors.New(e)
@@ -402,7 +402,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Btc))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Btc))
 
-		bai := eState.getBeaconAddress(eInfo.BID)
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
 			e := fmt.Sprintf("btc PkScript err")
 			return nil, errors.New(e)
@@ -525,7 +525,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bch))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bch))
 
-		bai := eState.getBeaconAddress(eInfo.BID)
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
 			e := fmt.Sprintf("bch PkScript err")
 			return nil, errors.New(e)
@@ -653,7 +653,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bsv))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bsv))
 
-		bai := eState.getBeaconAddress(eInfo.BID)
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
 			e := fmt.Sprintf("Bsv PkScript err")
 			return nil, errors.New(e)
@@ -941,7 +941,7 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
 
-	uei := eState.EnEntitys[info.LightID]
+	uei := eState.EnEntitys[info.BeaconID]
 	if uei == nil {
 		return errors.New("EnEntitys is nil")
 	}

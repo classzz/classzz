@@ -776,7 +776,7 @@ func (b *BurnProofItem) EncodeRLP(w io.Writer) error {
 }
 
 type BurnProofInfo struct {
-	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
@@ -787,7 +787,7 @@ type BurnProofInfo struct {
 }
 
 type WhiteListProof struct {
-	BeaconID  uint64 // the lightid for beaconAddress
+	BeaconID  uint64 // the BeaconID for beaconAddress
 	AssetType uint8
 	Height    uint64 // the height of outside chain
 	TxHash    string

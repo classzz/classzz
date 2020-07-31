@@ -112,7 +112,7 @@ type BurnTransactionOut struct {
 }
 
 type BurnProofOut struct {
-	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
@@ -122,7 +122,7 @@ type BurnProofOut struct {
 }
 
 type BurnReportWhiteListOut struct {
-	BeaconID  uint64 // the lightid for beaconAddress
+	BeaconID  uint64 // the BeaconID for beaconAddress
 	AssetType uint8
 	Height    uint64 // the height of outside chain
 	TxHash    string
@@ -235,7 +235,7 @@ type BurnInfo struct {
 }
 
 type BurnProofInfo struct {
-	BeaconID  uint64   // the lightid for beaconAddress of user burn's asset
+	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string

@@ -445,13 +445,13 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
 // returns the amount czz by user's burnned, took out fee by beaconaddress
-func (es *EntangleState) BurnAsset(addr string, aType uint8, lightID, height uint64,
+func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height uint64,
 	amount *big.Int) (*big.Int, *big.Int, error) {
-	light := es.getBeaconAddress(lightID)
+	light := es.getBeaconAddress(BeaconID)
 	if light == nil {
 		return nil, nil, ErrNoRegister
 	}
-	lhEntitys, ok := es.EnEntitys[lightID]
+	lhEntitys, ok := es.EnEntitys[BeaconID]
 	if !ok {
 		return nil, nil, ErrNoRegister
 	}
@@ -553,9 +553,9 @@ func (es *EntangleState) AddressInWhiteList(addr string, self bool) bool {
 	}
 	return false
 }
-func (es *EntangleState) getEntangledAmount(lightID uint64, atype uint8) *big.Int {
+func (es *EntangleState) getEntangledAmount(BeaconID uint64, atype uint8) *big.Int {
 	aa := big.NewInt(0)
-	if lhEntitys, ok := es.EnEntitys[lightID]; ok {
+	if lhEntitys, ok := es.EnEntitys[BeaconID]; ok {
 		for _, userEntitys := range lhEntitys {
 			for _, vv := range userEntitys {
 				if atype == vv.AssetType {

@@ -84,18 +84,18 @@ func (ii *EntangleItem) Clone() *EntangleItem {
 }
 
 type ExChangeItem struct {
-	EType ExpandedTxType
-	Value *big.Int
-	Addr  czzutil.Address
-	BID   uint64
+	EType    ExpandedTxType
+	Value    *big.Int
+	Addr     czzutil.Address
+	BeaconID uint64
 }
 
 func (ii *ExChangeItem) Clone() *ExChangeItem {
 	item := &ExChangeItem{
-		EType: ii.EType,
-		Value: new(big.Int).Set(ii.Value),
-		Addr:  ii.Addr,
-		BID:   ii.BID,
+		EType:    ii.EType,
+		Value:    new(big.Int).Set(ii.Value),
+		Addr:     ii.Addr,
+		BeaconID: ii.BeaconID,
 	}
 	return item
 }
@@ -165,7 +165,7 @@ type ExChangeTxInfo struct {
 	Height    uint64
 	Amount    *big.Int
 	ExtTxHash string
-	BID       uint64
+	BeaconID  uint64
 }
 
 type EntangleTxInfo struct {
@@ -232,29 +232,9 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 type BurnTxInfo struct {
 	ExTxType ExpandedTxType
 	Address  string
-	LightID  uint64
+	BeaconID uint64
 	Amount   *big.Int
 }
-
-//func (es *BurnTxInfo) DecodeRLP(s *rlp.Stream) error {
-//	type Store1 struct {
-//		LightID uint64
-//	}
-//	var eb Store1
-//	if err := s.Decode(&eb); err != nil {
-//		return err
-//	}
-//	es.LightID = eb.LightID
-//	return nil
-//}
-//func (es *BurnTxInfo) EncodeRLP(w io.Writer) error {
-//	type Store1 struct {
-//		LightID uint64
-//	}
-//	return rlp.Encode(w, &Store1{
-//		LightID: es.LightID,
-//	})
-//}
 
 type KeepedItem struct {
 	ExTxType ExpandedTxType
@@ -960,10 +940,10 @@ func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeIte
 	}
 	for i := range items {
 		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint8(items[i].EType),
-			items[i].BID, height, items[i].Value)
+			items[i].BeaconID, height, items[i].Value)
 		if err != nil {
 			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
-				i, items[i].BID, items[i].EType, items[i].Value.String(), err.Error()))
+				i, items[i].BeaconID, items[i].EType, items[i].Value.String(), err.Error()))
 		}
 		pkScript, err1 := txscript.PayToAddrScript(items[i].Addr)
 		if err1 != nil {
