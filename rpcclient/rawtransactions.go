@@ -322,13 +322,6 @@ func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,
 	return c.CreateRawTransactionAsync(inputs, amounts, lockTime).Receive()
 }
 
-// CreateRawTransaction returns a new transaction spending the provided inputs
-// and sending to the provided addresses.
-func (c *Client) EntangleTransaction(inputs []btcjson.TransactionInput,
-	exChangeOuts []btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
-	return c.ExChangeTransactionAsync(inputs, exChangeOuts, amounts, lockTime).Receive()
-}
-
 // BeaconRegistration returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) BeaconRegistration(inputs []btcjson.TransactionInput,

@@ -117,6 +117,8 @@ type BurnProofOut struct {
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
 	AssetType uint8
+	TxHash    string // the tx hash of outside
+	OutIndex  uint64
 }
 
 type BurnReportWhiteListOut struct {
