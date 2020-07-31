@@ -100,7 +100,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 	client := ev.DogeCoinRPC[rand.Intn(len(ev.DogeCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
@@ -130,7 +130,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
 					e := fmt.Sprintf("doge Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
@@ -221,7 +221,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	client := ev.LtcCoinRPC[rand.Intn(len(ev.LtcCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
@@ -251,7 +251,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
 					e := fmt.Sprintf("ltc Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
@@ -353,7 +353,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	client := ev.BtcCoinRPC[rand.Intn(len(ev.BtcCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
@@ -383,7 +383,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
 					e := fmt.Sprintf("btc Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
@@ -476,7 +476,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	client := ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
@@ -506,7 +506,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
 					e := fmt.Sprintf("Bch Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
@@ -604,7 +604,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	client := ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(string(eInfo.ExtTxHash)); err != nil {
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
@@ -634,7 +634,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
 			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(string(eInfo.ExtTxHash), dblock) {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
 					e := fmt.Sprintf("Bsv Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
 					return nil, errors.New(e)
 				}
