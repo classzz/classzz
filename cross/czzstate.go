@@ -16,9 +16,74 @@ import (
 	"github.com/classzz/czzutil"
 )
 
+type BeaconFreeQuotaInfo struct {
+	Rate 	[]uint64
+	Items   []*BaseAmountUint
+}
+func (e *BeaconFreeQuotaInfo) SetRate(atype uint8, vv uint64) error {
+	find,i,all := false,0,uint64(0)
+	var v *BaseAmountUint = nil
+
+	for i,v = range e.Items {
+		if v.AssetType == atype {
+			find = true		
+			all += vv
+		} else {
+			all += e.Rate[i]
+		}
+	}
+	if !find {
+		all += vv
+	}
+
+	if all != uint64(100) {
+		return errors.New("wrong rate params in beacon")
+	}
+
+	if find {
+		e.Rate[i] = vv
+	} else {
+		e.Rate = append(e.Rate,vv)
+		e.Items = append(e.Items,&BaseAmountUint{
+			AssetType: 	atype,
+			Amount: big.NewInt(0),
+		})
+	}
+
+	return nil
+}
+func (e *BeaconFreeQuotaInfo) add(atype uint8,val *big.Int) error {
+	for _,v := range e.Items {
+		v.Amount.Add(v.Amount,val)
+		return nil
+	}
+	return ErrNotKindOfAsset
+} 
+func (e *BeaconFreeQuotaInfo) sub(atype uint8,val *big.Int) error {
+	for _,v := range e.Items {
+		if v.AssetType == atype {
+			v.Amount.Sub(v.Amount,val)
+			return nil
+		}
+	}
+	return ErrNotKindOfAsset
+} 
+func (e *BeaconFreeQuotaInfo) canBurn(atype uint8,val *big.Int) error {
+	for _,v := range e.Items {
+		if v.AssetType == atype {
+			if v.Amount.Cmp(val) >= 0 {
+				return nil
+			}
+			return errors.New("not enough free quota")
+		}
+	}
+	return ErrNotKindOfAsset
+}  
+
 type ExBeaconInfo struct {
 	EnItems []*wire.OutPoint
 	Proofs  []*WhiteListProof
+	Free 	*BeaconFreeQuotaInfo
 }
 
 func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
@@ -35,6 +100,41 @@ func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
 		return nil
 	}
 	return ErrRepeatProof
+}
+
+func getAssetForBaRedeem(all *big.Int,atype uint8,es *EntangleState) (*big.Int,error) {
+	reserve := es.getEntangleAmountByAll(atype)
+	base, divisor, err := getRedeemRateByBurnCzz(reserve, atype)
+	if err != nil {
+		return nil, err
+	}
+	return new(big.Int).Div(new(big.Int).Mul(all, base), divisor),nil
+}
+func (e *ExBeaconInfo) UpdateFreeQuato(all *big.Int,es *EntangleState) error {
+	use := big.NewInt(0)
+	for i,v := range e.Free.Items {
+		p := big.NewInt(0)
+		if i == len(e.Free.Rate) - 1 {
+			p = new(big.Int).Sub(all,use)
+		} else {
+			p = new(big.Int).Div(new(big.Int).Mul(all,big.NewInt(100)),big.NewInt(int64(e.Free.Rate[i])))
+			use = use.Add(use,p)
+		}
+		if l,err := getAssetForBaRedeem(p,v.AssetType,es); err != nil {
+			return err
+		} else {
+			e.Free.add(v.AssetType,l)
+		}
+	}
+	return nil
+}
+func (e *ExBeaconInfo) CanBurn(all *big.Int,atype uint8,es *EntangleState) (*big.Int,error) {
+	out,err := getAssetForBaRedeem(all,atype,es)
+	if err != nil {
+		return nil,err
+	}
+	err = e.Free.canBurn(atype,out)
+	return out,err
 }
 
 type EntangleState struct {
@@ -451,6 +551,14 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 	if light == nil {
 		return nil, nil, ErrNoRegister
 	}
+	if light.Address == addr {
+		ex := es.GetBaExInfoByID(BeaconID)
+		if ex == nil {
+			return nil,nil,errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:", BeaconID))
+		}
+		out,err := ex.CanBurn(amount,aType,es)
+		return out,big.NewInt(0),err
+	}
 	lhEntitys, ok := es.EnEntitys[BeaconID]
 	if !ok {
 		return nil, nil, ErrNoRegister
@@ -626,9 +734,18 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 		if !ok {
 			fmt.Println("cann't found the BeaconAddress id:", lh.BeaconID)
 		} else {
+			all := big.NewInt(0)
 			for _, userEntity := range userEntitys {
 				res := userEntity.updateFreeQuotaForAllType(big.NewInt(int64(height)), big.NewInt(int64(lh.KeepBlock)))
-				lh.updateFreeQuota(res)
+				all = new(big.Int).Add(all,res)
+			}
+			if ba := es.GetBaExInfoByID(lh.BeaconID); ba != nil {
+				err := ba.UpdateFreeQuato(all,es)
+				if err != nil {
+					fmt.Println("UpdateFreeQuato in the BeaconAddress was wrong,err::", lh.BeaconID,err)
+				}
+			} else {
+				fmt.Println("cann't found exInfos in the BeaconAddress id:", lh.BeaconID)
 			}
 		}
 	}

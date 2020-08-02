@@ -2,14 +2,14 @@ package cross
 
 import (
 	"fmt"
-	"github.com/classzz/classzz/btcjson"
+	// "github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	_ "github.com/classzz/classzz/database/ffldb"
 	"github.com/classzz/classzz/rpcclient"
-	"github.com/classzz/classzz/txscript"
+	// "github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
-	"math/big"
+	// "math/big"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,9 +36,9 @@ func TestVerifyTx(t *testing.T) {
 	defer os.RemoveAll(dbPath)
 	defer db.Close()
 
-	cacheEntangleInfo := &CacheEntangleInfo{
-		DB: db,
-	}
+	// cacheEntangleInfo := &CacheEntangleInfo{
+	// 	DB: db,
+	// }
 
 	var dogeclients []*rpcclient.Client
 	connCfg := &rpcclient.ConnConfig{
@@ -74,21 +74,21 @@ func TestVerifyTx(t *testing.T) {
 	})
 
 	// {\"extxtype\":240,\"index\":1,\"height\":2975150,\"amount\":1000000000,\"exttxhash\":\"6800e9579dad0e6667e6e897e2d65f08afdba18ed1eb9956fe5f0b936162404a\"\}\]
-	EntangleOut := &btcjson.EntangleOut{
-		ExTxType:  240,
-		Index:     0,
-		Height:    2972841,
-		Amount:    big.NewInt(225226803000),
-		ExtTxHash: "6800e9579dad0e6667e6e897e2d65f08afdba18ed1eb9956fe5f0b936162404a",
-	}
+	// EntangleOut := &btcjson.EntangleOut{
+	// 	ExTxType:  240,
+	// 	Index:     0,
+	// 	Height:    2972841,
+	// 	Amount:    big.NewInt(225226803000),
+	// 	ExtTxHash: "6800e9579dad0e6667e6e897e2d65f08afdba18ed1eb9956fe5f0b936162404a",
+	// }
 
-	scriptInfo, err := txscript.EntangleScript(EntangleOut.Serialize())
-	if err != nil {
-		t.Error("err", err)
-	}
+	// scriptInfo, err := txscript.EntangleScript(EntangleOut.Serialize())
+	// if err != nil {
+	// 	t.Error("err", err)
+	// }
 	txout := &wire.TxOut{
 		Value:    0,
-		PkScript: scriptInfo,
+		PkScript: nil,
 	}
 	tx.AddTxOut(txout)
 	// puk, err := entangleVerify.VerifyEntangleTx(tx)

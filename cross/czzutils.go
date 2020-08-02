@@ -30,6 +30,7 @@ var (
 	ErrStakingNotEnough   = errors.New("staking not enough")
 	ErrRepeatProof        = errors.New("repeat proof")
 	ErrNotEnouthEntangle  = errors.New("not enough entangle amount in beaconAddress")
+	ErrNotKindOfAsset     = errors.New("no support the kind of asset")
 )
 
 var (
@@ -303,7 +304,7 @@ type EntangleEntity struct {
 	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
 	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
 	OriginAmount    *big.Int   `json:"origin_amount"`     // origin asset(czz) by entangle in
-	MaxRedeem       *big.Int   `json:"max_redeem"`        // out asset
+	MaxRedeem       *big.Int   `json:"max_redeem"`        // redeem asset bt czz
 	BurnAmount      *BurnInfos `json:"burn_amount"`
 }
 type EntangleEntitys []*EntangleEntity
@@ -375,7 +376,7 @@ func (e *EntangleEntity) increaseOriginAmount(amount, height *big.Int) {
 
 // the returns maybe negative
 func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllBurnedAmountByOutside())
+	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllAmountByOrigin())
 }
 func (e *EntangleEntity) getValidOriginAmount() *big.Int {
 	return new(big.Int).Sub(e.OriginAmount, e.BurnAmount.GetAllAmountByOrigin())
@@ -398,14 +399,16 @@ func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
 	e.OldHeight = new(big.Int).Add(e.OldHeight, interval)
 }
 
-// updateFreeQuota returns the outside asset by user who can redeemable
+// updateFreeQuota returns the czz asset by user who can redeemable
 func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
 	limit := new(big.Int).Sub(curHeight, e.OldHeight)
 	if limit.Cmp(limitHeight) > 0 {
 		// release user's quota
+		left := e.GetValidRedeemAmount()
 		e.MaxRedeem = big.NewInt(0)
+		return left
 	}
-	return e.getValidOutsideAmount()
+	return big.NewInt(0)
 }
 func (e *EntangleEntity) updateBurnState(state byte, items []*BurnItem) {
 	for _, v := range items {
@@ -425,16 +428,12 @@ func (ee *EntangleEntitys) getEntityByType(atype uint8) *EntangleEntity {
 	}
 	return nil
 }
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) []*BaseAmountUint {
-	res := make([]*BaseAmountUint, 0, 0)
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) *big.Int {
+	all := big.NewInt(0)
 	for _, v := range *ee {
-		item := &BaseAmountUint{
-			AssetType: v.AssetType,
-		}
-		item.Amount = v.updateFreeQuota(curHeight, limit)
-		res = append(res, item)
+		all = new(big.Int).Add(all,v.updateFreeQuota(curHeight, limit))
 	}
-	return res
+	return all
 }
 func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
 	res := big.NewInt(0)

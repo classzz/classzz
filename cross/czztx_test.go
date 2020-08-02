@@ -226,8 +226,10 @@ func TestBigInt(t *testing.T) {
 	fmt.Println("finish")
 }
 func TestStateRlp(t *testing.T) {
+	ValidAssetType(10)
 	state := NewEntangleState()
 	l := state.ToBytes()
 	fmt.Println("state len:", l)
+	
 	fmt.Println("finish")
 }
