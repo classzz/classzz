@@ -20,6 +20,15 @@ type BeaconFreeQuotaInfo struct {
 	Rate 	[]uint64
 	Items   []*BaseAmountUint
 }
+func newBeaconFreeQuotaInfo() *BeaconFreeQuotaInfo{
+	return &BeaconFreeQuotaInfo{
+		Rate:	[]uint64{uint64(100)},
+		Items: []*BaseAmountUint{&BaseAmountUint{
+			AssetType:  ExpandedTxEntangle_Btc,
+			Amount: 	big.NewInt(0),
+		}},
+	}
+}
 func (e *BeaconFreeQuotaInfo) SetRate(atype uint8, vv uint64) error {
 	find,i,all := false,0,uint64(0)
 	var v *BaseAmountUint = nil
@@ -84,8 +93,16 @@ type ExBeaconInfo struct {
 	EnItems []*wire.OutPoint
 	Proofs  []*WhiteListProof
 	Free 	*BeaconFreeQuotaInfo
+	BItems 	*BurnInfos
 }
-
+func newExBeaconInfo() *ExBeaconInfo{
+	return &ExBeaconInfo{
+		EnItems: 	[]*wire.OutPoint{},
+		Proofs:		[]*WhiteListProof{},
+		Free:		newBeaconFreeQuotaInfo(),
+		BItems:		newBurnInfos(),
+	}
+}
 func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
 	for _, v := range e.Proofs {
 		if v.Height == proof.Height {
@@ -557,6 +574,10 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 			return nil,nil,errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:", BeaconID))
 		}
 		out,err := ex.CanBurn(amount,aType,es)
+		if err == nil {
+			z := big.NewInt(0)
+			ex.BItems.addBurnItem(height, amount, z, z, out)
+		}
 		return out,big.NewInt(0),err
 	}
 	lhEntitys, ok := es.EnEntitys[BeaconID]
