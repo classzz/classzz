@@ -7,6 +7,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -570,6 +571,9 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if _, _, err := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.BeaconID, uint64(pHeight+2), info.Amount); err != nil {
 				return err
 			}
+			if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
+				return err
+			}
 		}
 
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
@@ -584,6 +588,9 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					TxHash: info.TxHash,
 				})
 				BurnProofTx_beaconID = info.BeaconID
+			}
+			if err := dbRemoveBurnTxInfoEntry(dbTx, info); err != nil {
+				return err
 			}
 		}
 
@@ -653,6 +660,26 @@ func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cro
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
+	return err
+}
+
+func dbPutBurnTxInfoEntry(dbTx database.Tx, info *cross.BurnTxInfo) error {
+	BurnTxInfoBucket := dbTx.Metadata().Bucket(cross.BurnTxInfoKey)
+	buf, err := hex.DecodeString(info.Address)
+	if err != nil {
+		return err
+	}
+	err = BurnTxInfoBucket.Put(buf, info.ToBytes())
+	return err
+}
+
+func dbRemoveBurnTxInfoEntry(dbTx database.Tx, info *cross.BurnProofInfo) error {
+	BurnTxInfoBucket := dbTx.Metadata().Bucket(cross.BurnTxInfoKey)
+	buf, err := hex.DecodeString(info.Address)
+	if err != nil {
+		return err
+	}
+	err = BurnTxInfoBucket.Delete(buf)
 	return err
 }
 

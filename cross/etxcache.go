@@ -3,6 +3,7 @@ package cross
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
@@ -13,6 +14,7 @@ import (
 var (
 	BucketKey        = []byte("entangle-tx")
 	EntangleStateKey = []byte("entanglestate")
+	BurnTxInfoKey    = []byte("burntxinfo")
 )
 
 type CacheEntangleInfo struct {
@@ -61,7 +63,6 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 				return err
 			}
 		}
-
 		value := entangleBucket.Get(buf.Bytes())
 		if value != nil {
 			err := rlp.DecodeBytes(value, es)
@@ -77,4 +78,28 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 		return nil
 	}
 	return es
+}
+
+func (c *CacheEntangleInfo) LoadBurnTxInfo(address string) *BurnTxInfo {
+
+	bti := &BurnTxInfo{}
+	buf, err := hex.DecodeString(address)
+
+	err = c.DB.View(func(tx database.Tx) error {
+		BurnTxInfoBucket := tx.Metadata().Bucket(BurnTxInfoKey)
+		value := BurnTxInfoBucket.Get(buf)
+		if value != nil {
+			err := rlp.DecodeBytes(value, bti)
+			if err != nil {
+				log.Fatal("Failed to RLP encode BurnTxInfo", "err", err)
+				return err
+			}
+			return nil
+		}
+		return errors.New("value is nil")
+	})
+	if err != nil {
+		return nil
+	}
+	return bti
 }

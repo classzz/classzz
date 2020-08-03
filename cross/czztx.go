@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"strings"
 
@@ -234,6 +235,16 @@ type BurnTxInfo struct {
 	Address  string
 	BeaconID uint64
 	Amount   *big.Int
+	Height   int32
+}
+
+func (es *BurnTxInfo) ToBytes() []byte {
+	// maybe rlp encode
+	data, err := rlp.EncodeToBytes(es)
+	if err != nil {
+		log.Fatal("Failed to RLP encode BurnTxInfo: ", "err", err)
+	}
+	return data
 }
 
 type KeepedItem struct {
