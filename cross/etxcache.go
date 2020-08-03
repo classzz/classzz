@@ -87,6 +87,11 @@ func (c *CacheEntangleInfo) LoadBurnTxInfo(address string) *BurnTxInfo {
 
 	err = c.DB.View(func(tx database.Tx) error {
 		BurnTxInfoBucket := tx.Metadata().Bucket(BurnTxInfoKey)
+		if BurnTxInfoBucket == nil {
+			if BurnTxInfoBucket, err = tx.Metadata().CreateBucketIfNotExists(BurnTxInfoKey); err != nil {
+				return err
+			}
+		}
 		value := BurnTxInfoBucket.Get(buf)
 		if value != nil {
 			err := rlp.DecodeBytes(value, bti)
