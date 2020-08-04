@@ -396,6 +396,22 @@ func NewGetBlockCmd(hash string, verbosity *uint32) *GetBlockCmd {
 	}
 }
 
+// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+type GetBurnTxInfoCmd struct {
+	BeaconID uint64
+}
+
+// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+// JSON-RPC command.
+//
+// The parameters which are pointers indicate they are optional.  Passing nil
+// for optional parameters will use the default value.
+func NewGetBurnTxInfoCmd(BeaconID uint64) *GetBurnTxInfoCmd {
+	return &GetBurnTxInfoCmd{
+		BeaconID: BeaconID,
+	}
+}
+
 // GetBlockCmd defines the getblock JSON-RPC command.
 type GetDogecoinBlockCmd struct {
 	Hash string
@@ -1109,6 +1125,7 @@ func init() {
 	MustRegisterCmd("gethashespersec", (*GetHashesPerSecCmd)(nil), flags)
 	MustRegisterCmd("getinfo", (*GetInfoCmd)(nil), flags)
 	MustRegisterCmd("getstateinfo", (*GetStateInfoCmd)(nil), flags)
+	MustRegisterCmd("getburntxinfo", (*GetBurnTxInfoCmd)(nil), flags)
 	MustRegisterCmd("getentangleinfo", (*GetEntangleInfoCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)
 	MustRegisterCmd("getmempoolinfo", (*GetMempoolInfoCmd)(nil), flags)

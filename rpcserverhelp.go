@@ -487,6 +487,11 @@ var helpDescsEnUS = map[string]string{
 	// GetInfoCmd help.
 	"getinfo--synopsis": "Returns a JSON object containing various state info.",
 
+	// GetBlockHashCmd help.
+	"getburntxinfo--synopsis": "Returns hash of the block in best block chain at the given height.",
+	"getburntxinfo-index":     "The block BeaconID",
+	"getburntxinfo--result0":  "The burntxinfo",
+
 	// GetInfoCmd help.
 	"getstateinfo--synopsis": "Returns a JSON object containing various state info.",
 

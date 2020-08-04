@@ -138,15 +138,14 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":              handleAddNode,
-	"createrawtransaction": handleCreateRawTransaction,
-	"exchangetransaction":  handleExChangeTransaction,
-	"beaconregistration":   handleBeaconRegistration,
-	"addbeaconpledge":      handleAddBeaconPledge,
-	"addbeaconcoinbase":    handleAddBeaconCoinbase,
-	"burntransaction":      handleBurnTransaction,
-	"burnprooft":           handleBurnProoft,
-	//"burnreport":            handleBurnReport,
+	"addnode":               handleAddNode,
+	"createrawtransaction":  handleCreateRawTransaction,
+	"exchangetransaction":   handleExChangeTransaction,
+	"beaconregistration":    handleBeaconRegistration,
+	"addbeaconpledge":       handleAddBeaconPledge,
+	"addbeaconcoinbase":     handleAddBeaconCoinbase,
+	"burntransaction":       handleBurnTransaction,
+	"burnprooft":            handleBurnProoft,
 	"burnreportwhitelist":   handleBurnReportWhiteList,
 	"debuglevel":            handleDebugLevel,
 	"decoderawtransaction":  handleDecodeRawTransaction,
@@ -161,6 +160,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getblockcount":         handleGetBlockCount,
 	"getblockhash":          handleGetBlockHash,
 	"getblockheader":        handleGetBlockHeader,
+	"getburntxinfo":         handleGetBurnTxInfo,
 	"getblocktemplate":      handleGetBlockTemplate,
 	"getcfilter":            handleGetCFilter,
 	"getcfilterheader":      handleGetCFilterHeader,
@@ -288,6 +288,7 @@ var rpcLimited = map[string]struct{}{
 	"getblockcount":                {},
 	"getblockhash":                 {},
 	"getblockheader":               {},
+	"getburntxinfo":                {},
 	"getcfilter":                   {},
 	"getcfilterheader":             {},
 	"getcurrentnet":                {},
@@ -3360,6 +3361,14 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 	sort.Sort(pList)
 
 	return pList, nil
+}
+
+// handleGetInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetBurnTxInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetBurnTxInfoCmd)
+	btis := s.cfg.Chain.GetExChangeVerify().Cache.LoadBurnTxInfoAll(c.BeaconID)
+	return btis, nil
 }
 
 func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {

@@ -12,6 +12,7 @@ import (
 	"github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/wire"
+	"math/big"
 )
 
 // FutureGetBestBlockHashResult is a future promise to deliver the result of a
@@ -381,6 +382,51 @@ func (c *Client) GetBlockHashAsync(blockHeight int64) FutureGetBlockHashResult {
 // given height.
 func (c *Client) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
 	return c.GetBlockHashAsync(blockHeight).Receive()
+}
+
+type BurnTxInfo struct {
+	ExTxType uint8
+	Address  string
+	BeaconID uint64
+	Amount   *big.Int
+	Height   int32
+}
+
+// FutureGetBlockHashResult is a future promise to deliver the result of a
+// GetBlockHashAsync RPC invocation (or an applicable error).
+type FutureGetBurnTxInfoResult chan *response
+
+// Receive waits for the response promised by the future and returns the hash of
+// the block in the best block chain at the given height.
+func (r FutureGetBurnTxInfoResult) Receive() ([]*BurnTxInfo, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the result as a string-encoded sha.
+	var btis []*BurnTxInfo
+	err = json.Unmarshal(res, &btis)
+	if err != nil {
+		return nil, err
+	}
+	return btis, nil
+}
+
+// GetBlockHashAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See GetBlockHash for the blocking version and more details.
+func (c *Client) GetBurnTxInfoAsync(BeaconID uint64) FutureGetBurnTxInfoResult {
+	cmd := btcjson.NewGetBurnTxInfoCmd(BeaconID)
+	return c.sendCmd(cmd)
+}
+
+// GetBlockHash returns the hash of the block in the best block chain at the
+// given height.
+func (c *Client) GetBurnTxInfo(BeaconID uint64) ([]*BurnTxInfo, error) {
+	return c.GetBurnTxInfoAsync(BeaconID).Receive()
 }
 
 // FutureGetBlockHeaderResult is a future promise to deliver the result of a
