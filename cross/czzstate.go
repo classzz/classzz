@@ -571,7 +571,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 	if light.Address == addr {
 		ex := es.GetBaExInfoByID(BeaconID)
 		if ex == nil {
-			return nil,nil,errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:", BeaconID))
+			return nil,nil,errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:%v", BeaconID))
 		}
 		out,err := ex.CanBurn(amount,aType,es)
 		if err == nil {
@@ -862,14 +862,27 @@ func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnIt
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
-	userEntitys, ok := es.EnEntitys[info.BeaconID]
-	if !ok {
-		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
+	light := es.getBeaconAddress(info.BeaconID)
+	if light == nil {
 		return ErrNoRegister
+	}
+	// beacon burned 
+	if light.Address == info.Address {
+		ex := es.GetBaExInfoByID(info.BeaconID)
+		if ex == nil {
+			return errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:%v", info.BeaconID))
+		}
+		ex.BItems.finishBurn(info.Height, info.Amount, proof)
 	} else {
-		for addr1, userEntity := range userEntitys {
-			if info.Address == addr1 {
-				userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
+		userEntitys, ok := es.EnEntitys[info.BeaconID]
+		if !ok {
+			fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
+			return ErrNoRegister
+		} else {
+			for addr1, userEntity := range userEntitys {
+				if info.Address == addr1 {
+					userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
+				}
 			}
 		}
 	}
