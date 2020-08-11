@@ -888,11 +888,11 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 	return bp, nil
 }
 
-func (ev *ExChangeVerify) VerifyAddBeaconCoinbaseTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconCoinbase, error) {
+func (ev *ExChangeVerify) VerifyUpdateBeaconCoinbaseTx(tx *wire.MsgTx, eState *EntangleState) (*UpdateBeaconCoinbase, error) {
 
-	bp, _ := IsAddBeaconCoinbaseTx(tx, ev.Params)
+	bp, _ := IsUpdateBeaconCoinbaseTx(tx, ev.Params)
 	if bp == nil {
-		return nil, NoAddBeaconPledge
+		return nil, NoUpdateBeaconCoinbase
 	}
 
 	if len(tx.TxIn) > 1 || len(tx.TxOut) > 2 || len(tx.TxOut) < 1 {

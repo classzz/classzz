@@ -229,9 +229,10 @@ func isKeepedAmountInfo(pops []parsedOpcode) bool {
 
 func isBeaconTy(pops []parsedOpcode) bool {
 	// simple judge
-	return len(pops) >= 2 &&
+	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
-		pops[1].opcode.value == OP_UNKNOWN197
+		pops[1].opcode.value == OP_UNKNOWN197 &&
+		pops[2].opcode.value < 0x50
 }
 
 func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
@@ -242,7 +243,7 @@ func isAddBeaconPledgeTy(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_1
 }
 
-func isAddBeaconCoinbaseTy(pops []parsedOpcode) bool {
+func isUpdateBeaconCoinbaseTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 3 &&
 		pops[0].opcode.value == OP_RETURN &&
@@ -327,12 +328,12 @@ func IsAddBeaconPledgeTy(script []byte) bool {
 	return isAddBeaconPledgeTy(pops)
 }
 
-func IsAddBeaconCoinbaseTy(script []byte) bool {
+func IsUpdateBeaconCoinbaseTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
 		return false
 	}
-	return isAddBeaconCoinbaseTy(pops)
+	return isUpdateBeaconCoinbaseTy(pops)
 }
 
 func IsBurnTy(script []byte) bool {

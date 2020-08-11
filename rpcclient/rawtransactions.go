@@ -352,17 +352,17 @@ func (c *Client) AddBeaconPledge(inputs []btcjson.TransactionInput,
 // function on the returned instance.
 //
 // See BeaconRegistrationAsync for the blocking version and more details.
-func (c *Client) AddBeaconCoinbaseAsync(inputs []btcjson.TransactionInput,
-	out btcjson.AddBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+func (c *Client) UpdateBeaconCoinbaseAsync(inputs []btcjson.TransactionInput,
+	out btcjson.UpdateBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewAddBeaconCoinbaseCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
 // BeaconRegistration returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
-func (c *Client) AddBeaconCoinbase(inputs []btcjson.TransactionInput,
-	out btcjson.AddBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
-	return c.AddBeaconCoinbaseAsync(inputs, out, amounts, lockTime).Receive()
+func (c *Client) UpdateBeaconCoinbase(inputs []btcjson.TransactionInput,
+	out btcjson.UpdateBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.UpdateBeaconCoinbaseAsync(inputs, out, amounts, lockTime).Receive()
 }
 
 func (c *Client) BurnTransactionAsync(inputs []btcjson.TransactionInput,

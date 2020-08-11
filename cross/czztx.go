@@ -52,7 +52,7 @@ var (
 	NoBurnProofTx           = errors.New("no BurnProofTx info in transcation")
 	NoBurnReportWhiteListTx = errors.New("no WhiteListProofTx info in transcation")
 	NoAddBeaconPledge       = errors.New("no AddBeaconPledge info in transcation")
-	NoAddBeaconCoinbase     = errors.New("no AddBeaconCoinbase info in transcation")
+	NoUpdateBeaconCoinbase  = errors.New("no UpdateBeaconCoinbase info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -529,15 +529,15 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	return nil, NoAddBeaconPledge
 }
 
-func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconCoinbase, error) {
+func IsUpdateBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateBeaconCoinbase, error) {
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
-		if !txscript.IsAddBeaconCoinbaseTy(txout.PkScript) {
-			return nil, NoAddBeaconCoinbase
+		if !txscript.IsUpdateBeaconCoinbaseTy(txout.PkScript) {
+			return nil, NoUpdateBeaconCoinbase
 		}
 	} else {
-		return nil, NoAddBeaconCoinbase
+		return nil, NoUpdateBeaconCoinbase
 	}
 
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
@@ -546,12 +546,12 @@ func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconC
 	}
 
 	// make sure at least one txout in OUTPUT
-	var bp *AddBeaconCoinbase
+	var bp *UpdateBeaconCoinbase
 
 	txout := tx.TxOut[0]
-	info, err := AddBeaconCoinbaseTxFromScript(txout.PkScript)
+	info, err := UpdateBeaconCoinbaseTxFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("AddBeaconCoinbaseTxFromScript the output tx.")
+		return nil, errors.New("UpdateBeaconCoinbaseTxFromScript the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -585,7 +585,7 @@ func IsAddBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconC
 	if bp != nil {
 		return bp, nil
 	}
-	return nil, NoAddBeaconCoinbase
+	return nil, NoUpdateBeaconCoinbase
 }
 
 func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
@@ -781,12 +781,12 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 	return info, err
 }
 
-func AddBeaconCoinbaseTxFromScript(script []byte) (*AddBeaconCoinbase, error) {
+func UpdateBeaconCoinbaseTxFromScript(script []byte) (*UpdateBeaconCoinbase, error) {
 	data, err := txscript.GetAddBeaconCoinbaseData(script)
 	if err != nil {
 		return nil, err
 	}
-	info := &AddBeaconCoinbase{}
+	info := &UpdateBeaconCoinbase{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }

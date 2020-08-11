@@ -99,7 +99,7 @@ type AddBeaconPledgeOut struct {
 	StakingAmount float64
 }
 
-type AddBeaconCoinbaseOut struct {
+type UpdateBeaconCoinbaseOut struct {
 	Address         string
 	ToAddress       []byte
 	CoinBaseAddress []string
@@ -156,11 +156,11 @@ type AddBeaconPledgeCmd struct {
 }
 
 // AddBeaconCoinbase defines JSON-RPC command.
-type AddBeaconCoinbaseCmd struct {
-	Inputs            []TransactionInput
-	AddBeaconCoinbase AddBeaconCoinbaseOut
-	Amounts           *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime          *int64
+type UpdateBeaconCoinbaseCmd struct {
+	Inputs               []TransactionInput
+	UpdateBeaconCoinbase UpdateBeaconCoinbaseOut
+	Amounts              *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime             *int64
 }
 
 // BurnTransaction defines JSON-RPC command.
@@ -219,7 +219,7 @@ type AddBeaconPledge struct {
 	StakingAmount *big.Int `json:"staking_amount"`
 }
 
-type AddBeaconCoinbase struct {
+type UpdateBeaconCoinbase struct {
 	Address         string   `json:"address"`
 	ToAddress       []byte   `json:"to_address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
@@ -305,13 +305,13 @@ func NewAddBeaconPledgeCmd(inputs []TransactionInput, addBeaconPledgeOut AddBeac
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewAddBeaconCoinbaseCmd(inputs []TransactionInput, outs AddBeaconCoinbaseOut, amounts *map[string]float64,
-	lockTime *int64) *AddBeaconCoinbaseCmd {
-	return &AddBeaconCoinbaseCmd{
-		Inputs:            inputs,
-		AddBeaconCoinbase: outs,
-		Amounts:           amounts,
-		LockTime:          lockTime,
+func NewAddBeaconCoinbaseCmd(inputs []TransactionInput, outs UpdateBeaconCoinbaseOut, amounts *map[string]float64,
+	lockTime *int64) *UpdateBeaconCoinbaseCmd {
+	return &UpdateBeaconCoinbaseCmd{
+		Inputs:               inputs,
+		UpdateBeaconCoinbase: outs,
+		Amounts:              amounts,
+		LockTime:             lockTime,
 	}
 }
 
@@ -1100,7 +1100,7 @@ func init() {
 	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
-	MustRegisterCmd("addbeaconcoinbase", (*AddBeaconCoinbaseCmd)(nil), flags)
+	MustRegisterCmd("updatebeaconcoinbase", (*UpdateBeaconCoinbaseCmd)(nil), flags)
 	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
 	MustRegisterCmd("burnprooft", (*BurnProofCmd)(nil), flags)
 	MustRegisterCmd("burnreport", (*BurnReportCmd)(nil), flags)

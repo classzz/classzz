@@ -175,7 +175,7 @@ type AddBeaconPledge struct {
 	StakingAmount *big.Int `json:"staking_amount"`
 }
 
-type AddBeaconCoinbase struct {
+type UpdateBeaconCoinbase struct {
 	Address         string   `json:"address"`
 	ToAddress       []byte   `json:"to_address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
@@ -431,7 +431,7 @@ func (ee *EntangleEntitys) getEntityByType(atype uint8) *EntangleEntity {
 func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range *ee {
-		all = new(big.Int).Add(all,v.updateFreeQuota(curHeight, limit))
+		all = new(big.Int).Add(all, v.updateFreeQuota(curHeight, limit))
 	}
 	return all
 }

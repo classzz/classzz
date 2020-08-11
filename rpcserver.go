@@ -138,41 +138,48 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":               handleAddNode,
-	"createrawtransaction":  handleCreateRawTransaction,
-	"exchangetransaction":   handleExChangeTransaction,
-	"beaconregistration":    handleBeaconRegistration,
-	"addbeaconpledge":       handleAddBeaconPledge,
-	"addbeaconcoinbase":     handleAddBeaconCoinbase,
-	"burntransaction":       handleBurnTransaction,
-	"burnprooft":            handleBurnProoft,
-	"burnreportwhitelist":   handleBurnReportWhiteList,
-	"debuglevel":            handleDebugLevel,
-	"decoderawtransaction":  handleDecodeRawTransaction,
-	"decodescript":          handleDecodeScript,
-	"estimatefee":           handleEstimateFee,
-	"generate":              handleGenerate,
-	"getaddednodeinfo":      handleGetAddedNodeInfo,
-	"getbestblock":          handleGetBestBlock,
-	"getbestblockhash":      handleGetBestBlockHash,
-	"getblock":              handleGetBlock,
-	"getblockchaininfo":     handleGetBlockChainInfo,
-	"getblockcount":         handleGetBlockCount,
-	"getblockhash":          handleGetBlockHash,
-	"getblockheader":        handleGetBlockHeader,
-	"getburntxinfo":         handleGetBurnTxInfo,
-	"getblocktemplate":      handleGetBlockTemplate,
-	"getcfilter":            handleGetCFilter,
-	"getcfilterheader":      handleGetCFilterHeader,
-	"getconnectioncount":    handleGetConnectionCount,
-	"getcurrentnet":         handleGetCurrentNet,
-	"getdifficulty":         handleGetDifficulty,
-	"getgenerate":           handleGetGenerate,
-	"gethashespersec":       handleGetHashesPerSec,
-	"getheaders":            handleGetHeaders,
-	"getinfo":               handleGetInfo,
-	"getstateinfo":          handleGetStateInfo,
-	"getentangleinfo":       handleGetEntangleInfo,
+	"addnode":              handleAddNode,
+	"createrawtransaction": handleCreateRawTransaction,
+	"exchangetransaction":  handleExChangeTransaction,
+	"beaconregistration":   handleBeaconRegistration,
+	"addbeaconpledge":      handleAddBeaconPledge,
+
+	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
+	"updatebeaconfreequota": handleUpdateBeaconCoinbase,
+
+	"burntransaction": handleBurnTransaction,
+
+	"burnprooft":          handleBurnProoft,
+	"burnreportwhitelist": handleBurnReportWhiteList,
+
+	"debuglevel":           handleDebugLevel,
+	"decoderawtransaction": handleDecodeRawTransaction,
+	"decodescript":         handleDecodeScript,
+	"estimatefee":          handleEstimateFee,
+	"generate":             handleGenerate,
+	"getaddednodeinfo":     handleGetAddedNodeInfo,
+	"getbestblock":         handleGetBestBlock,
+	"getbestblockhash":     handleGetBestBlockHash,
+	"getblock":             handleGetBlock,
+	"getblockchaininfo":    handleGetBlockChainInfo,
+	"getblockcount":        handleGetBlockCount,
+	"getblockhash":         handleGetBlockHash,
+	"getblockheader":       handleGetBlockHeader,
+	"getburntxinfo":        handleGetBurnTxInfo,
+	"getblocktemplate":     handleGetBlockTemplate,
+	"getcfilter":           handleGetCFilter,
+	"getcfilterheader":     handleGetCFilterHeader,
+	"getconnectioncount":   handleGetConnectionCount,
+	"getcurrentnet":        handleGetCurrentNet,
+	"getdifficulty":        handleGetDifficulty,
+	"getgenerate":          handleGetGenerate,
+	"gethashespersec":      handleGetHashesPerSec,
+	"getheaders":           handleGetHeaders,
+
+	"getinfo":         handleGetInfo,
+	"getstateinfo":    handleGetStateInfo,
+	"getentangleinfo": handleGetEntangleInfo,
+
 	"getwork":               handleGetWork,
 	"getworktemplate":       handleGetWorkTemplate,
 	"getmempoolinfo":        handleGetMempoolInfo,
@@ -938,8 +945,8 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 }
 
 // handleAddBeaconCoinbase
-func handleAddBeaconCoinbase(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*btcjson.AddBeaconCoinbaseCmd)
+func handleUpdateBeaconCoinbase(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.UpdateBeaconCoinbaseCmd)
 
 	// Validate the locktime, if given.
 	if c.LockTime != nil &&
@@ -967,9 +974,9 @@ func handleAddBeaconCoinbase(s *rpcServer, cmd interface{}, closeChan <-chan str
 		mtx.AddTxIn(txIn)
 	}
 
-	abc := &btcjson.AddBeaconCoinbase{
-		ToAddress:       c.AddBeaconCoinbase.ToAddress,
-		CoinBaseAddress: c.AddBeaconCoinbase.CoinBaseAddress,
+	abc := &btcjson.UpdateBeaconCoinbase{
+		ToAddress:       c.UpdateBeaconCoinbase.ToAddress,
+		CoinBaseAddress: c.UpdateBeaconCoinbase.CoinBaseAddress,
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abc)
