@@ -1046,6 +1046,34 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		}
 	}
 
+	// UpdateBeaconCoinbase
+	ubc, err := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if err != nil && err != cross.NoUpdateBeaconCoinbase {
+		return err
+	}
+
+	if ubc != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err UpdateBeaconCoinbase tx  BeaconHeight < nextBlockHeight ")
+	} else if ubc != nil {
+		if _, err := mp.cfg.ExChangeVerify.VerifyUpdateBeaconCoinbaseTx(tx.MsgTx(), eState); err != nil {
+			return err
+		}
+	}
+
+	// UpdateBeaconFreeQuota
+	ubfq, err := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if err != nil && err != cross.NoUpdateBeaconFreeQuota {
+		return err
+	}
+
+	if ubfq != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err UpdateBeaconFreeQuota tx  BeaconHeight < nextBlockHeight ")
+	} else if ubfq != nil {
+		if _, err := mp.cfg.ExChangeVerify.VerifyUpdateBeaconFreeQuotaTx(tx.MsgTx(), eState); err != nil {
+			return err
+		}
+	}
+
 	// ExChangeTx
 	einfos, err2 := cross.IsExChangeTx(tx.MsgTx())
 	if err2 != nil && err2 != cross.NoExChange {

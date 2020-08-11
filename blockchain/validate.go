@@ -526,6 +526,20 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 			continue
 		}
+
+		// UpdateBeaconCoinbase
+		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), b.chainParams); bp != nil {
+			if err := eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+				return err
+			}
+		}
+
+		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), b.chainParams); bfq != nil {
+			if err := eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
+				return err
+			}
+		}
+
 		if prevHeight+1 > b.chainParams.ExChangeHeight {
 			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0[0] != nil {
 				if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
