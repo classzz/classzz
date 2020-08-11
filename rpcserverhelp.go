@@ -794,7 +794,7 @@ var rpcResultTypes = map[string][]interface{}{
 	"createrawentangletransaction": {(*string)(nil)},
 	"beaconregistration":           {(*string)(nil)},
 	"addbeaconpledge":              {(*string)(nil)},
-	"addbeaconcoinbase":            {(*string)(nil)},
+	"updatebeaconcoinbase":         {(*string)(nil)},
 	"burntransaction":              {(*string)(nil)},
 	"burnprooft":                   {(*string)(nil)},
 	"burnreport":                   {(*string)(nil)},

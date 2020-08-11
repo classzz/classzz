@@ -155,7 +155,7 @@ type AddBeaconPledgeCmd struct {
 	LockTime        *int64
 }
 
-// AddBeaconCoinbase defines JSON-RPC command.
+// UpdateBeaconCoinbase defines JSON-RPC command.
 type UpdateBeaconCoinbaseCmd struct {
 	Inputs               []TransactionInput
 	UpdateBeaconCoinbase UpdateBeaconCoinbaseOut

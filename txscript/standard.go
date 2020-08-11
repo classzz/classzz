@@ -625,7 +625,7 @@ func UpdateBeaconCoinbaseScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_2).AddData(data).Script()
 }
 
-// AddBeaconCoinbase impl in
+// UpdateBeaconCoinbase impl in
 func BurnScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+

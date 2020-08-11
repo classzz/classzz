@@ -944,7 +944,7 @@ func handleBeaconRegistration(s *rpcServer, cmd interface{}, closeChan <-chan st
 	return mtxHex, nil
 }
 
-// handleAddBeaconCoinbase
+// UpdateBeaconCoinbase
 func handleUpdateBeaconCoinbase(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.UpdateBeaconCoinbaseCmd)
 
@@ -1224,7 +1224,7 @@ func handleAddBeaconPledge(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	return mtxHex, nil
 }
 
-// handleAddBeaconCoinbase
+// handleBurnTransaction
 func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.BurnTransactionCmd)
 
