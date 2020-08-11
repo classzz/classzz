@@ -354,7 +354,7 @@ func (c *Client) AddBeaconPledge(inputs []btcjson.TransactionInput,
 // See BeaconRegistrationAsync for the blocking version and more details.
 func (c *Client) UpdateBeaconCoinbaseAsync(inputs []btcjson.TransactionInput,
 	out btcjson.UpdateBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewAddBeaconCoinbaseCmd(inputs, out, amounts, lockTime)
+	cmd := btcjson.NewUpdateBeaconCoinbaseCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 

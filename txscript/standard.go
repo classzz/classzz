@@ -615,8 +615,8 @@ func AddBeaconPledgeScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).Script()
 }
 
-// AddBeaconCoinbase impl in
-func AddBeaconCoinbaseScript(data []byte) ([]byte, error) {
+// UpdateBeaconCoinbase impl in
+func UpdateBeaconCoinbaseScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
@@ -744,12 +744,12 @@ func GetAddBeaconPledgeData(script []byte) ([]byte, error) {
 	return pops[3].data, nil
 }
 
-func GetAddBeaconCoinbaseData(script []byte) ([]byte, error) {
+func GetUpdateBeaconCoinbaseData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
 		return nil, err
 	}
-	if !isAddBeaconPledgeTy(pops) {
+	if !isUpdateBeaconCoinbaseTy(pops) {
 		return nil, errors.New("not AddBeaconPledge type")
 	}
 	return pops[3].data, nil

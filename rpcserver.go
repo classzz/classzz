@@ -980,7 +980,7 @@ func handleUpdateBeaconCoinbase(s *rpcServer, cmd interface{}, closeChan <-chan 
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abc)
-	scriptInfo, err := txscript.AddBeaconCoinbaseScript(BeaconByte)
+	scriptInfo, err := txscript.UpdateBeaconCoinbaseScript(BeaconByte)
 	if err != nil {
 		return nil, err
 	}

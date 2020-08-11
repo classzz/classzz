@@ -782,7 +782,7 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 }
 
 func UpdateBeaconCoinbaseTxFromScript(script []byte) (*UpdateBeaconCoinbase, error) {
-	data, err := txscript.GetAddBeaconCoinbaseData(script)
+	data, err := txscript.GetUpdateBeaconCoinbaseData(script)
 	if err != nil {
 		return nil, err
 	}

@@ -305,7 +305,7 @@ func NewAddBeaconPledgeCmd(inputs []TransactionInput, addBeaconPledgeOut AddBeac
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewAddBeaconCoinbaseCmd(inputs []TransactionInput, outs UpdateBeaconCoinbaseOut, amounts *map[string]float64,
+func NewUpdateBeaconCoinbaseCmd(inputs []TransactionInput, outs UpdateBeaconCoinbaseOut, amounts *map[string]float64,
 	lockTime *int64) *UpdateBeaconCoinbaseCmd {
 	return &UpdateBeaconCoinbaseCmd{
 		Inputs:               inputs,
