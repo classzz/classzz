@@ -101,8 +101,12 @@ type AddBeaconPledgeOut struct {
 
 type UpdateBeaconCoinbaseOut struct {
 	Address         string
-	ToAddress       []byte
 	CoinBaseAddress []string
+}
+
+type UpdateBeaconFreeQuotaOut struct {
+	Address   string
+	FreeQuota []uint64
 }
 
 type BurnTransactionOut struct {
@@ -163,6 +167,14 @@ type UpdateBeaconCoinbaseCmd struct {
 	LockTime             *int64
 }
 
+// UpdateBeaconCoinbase defines JSON-RPC command.
+type UpdateBeaconFreeQuotaCmd struct {
+	Inputs                []TransactionInput
+	UpdateBeaconFreeQuota UpdateBeaconFreeQuotaOut
+	Amounts               *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime              *int64
+}
+
 // BurnTransaction defines JSON-RPC command.
 type BurnTransactionCmd struct {
 	Inputs          []TransactionInput
@@ -221,8 +233,12 @@ type AddBeaconPledge struct {
 
 type UpdateBeaconCoinbase struct {
 	Address         string   `json:"address"`
-	ToAddress       []byte   `json:"to_address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
+type UpdateBeaconFreeQuota struct {
+	Address   string   `json:"address"`
+	FreeQuota []uint64 `json:"free_quota"`
 }
 
 type ExpandedTxType uint8

@@ -40,6 +40,7 @@ var (
 	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 10
 	MaxCoinBase                       = 4
+	MaxCoinType                       = 6
 	ChechWhiteListProof               = true
 )
 
@@ -177,8 +178,12 @@ type AddBeaconPledge struct {
 
 type UpdateBeaconCoinbase struct {
 	Address         string   `json:"address"`
-	ToAddress       []byte   `json:"to_address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
+type UpdateBeaconFreeQuota struct {
+	Address   string   `json:"address"`
+	FreeQuota []uint64 `json:"free_quota"`
 }
 
 func (lh *BeaconAddressInfo) addEnAsset(atype uint8, amount *big.Int) {

@@ -53,6 +53,7 @@ var (
 	NoBurnReportWhiteListTx = errors.New("no WhiteListProofTx info in transcation")
 	NoAddBeaconPledge       = errors.New("no AddBeaconPledge info in transcation")
 	NoUpdateBeaconCoinbase  = errors.New("no UpdateBeaconCoinbase info in transcation")
+	NoUpdateBeaconFreeQuota = errors.New("no UpdateBeaconFreeQuota info in transcation")
 
 	infoFixed = map[ExpandedTxType]uint32{
 		ExpandedTxEntangle_Doge: 64,
@@ -588,6 +589,65 @@ func IsUpdateBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateB
 	return nil, NoUpdateBeaconCoinbase
 }
 
+func IsUpdateBeaconFreeQuotaTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateBeaconFreeQuota, error) {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsUpdateBeaconFreeQuotaTy(txout.PkScript) {
+			return nil, NoUpdateBeaconFreeQuota
+		}
+	} else {
+		return nil, NoUpdateBeaconFreeQuota
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not UpdateBeaconFreeQuota tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	}
+
+	// make sure at least one txout in OUTPUT
+	var bp *UpdateBeaconFreeQuota
+
+	txout := tx.TxOut[0]
+	info, err := UpdateBeaconFreeQuotaTxFromScript(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("UpdateBeaconFreeQuotaTxFromScript the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		bp = info
+	}
+
+	var pk []byte
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	info.Address = address.String()
+
+	if bp != nil {
+		return bp, nil
+	}
+	return nil, NoUpdateBeaconFreeQuota
+}
+
 func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 	// make sure at least one txout in OUTPUT
 	var es *BurnTxInfo
@@ -787,6 +847,16 @@ func UpdateBeaconCoinbaseTxFromScript(script []byte) (*UpdateBeaconCoinbase, err
 		return nil, err
 	}
 	info := &UpdateBeaconCoinbase{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
+func UpdateBeaconFreeQuotaTxFromScript(script []byte) (*UpdateBeaconFreeQuota, error) {
+	data, err := txscript.GetUpdateBeaconFreeQuotaData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &UpdateBeaconFreeQuota{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }

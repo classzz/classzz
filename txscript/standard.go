@@ -251,6 +251,14 @@ func isUpdateBeaconCoinbaseTy(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_2
 }
 
+func isUpdateBeaconFreeQuotaTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 3 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN197 &&
+		pops[2].opcode.value == OP_3
+}
+
 func isExChangeTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
@@ -334,6 +342,14 @@ func IsUpdateBeaconCoinbaseTy(script []byte) bool {
 		return false
 	}
 	return isUpdateBeaconCoinbaseTy(pops)
+}
+
+func IsUpdateBeaconFreeQuotaTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isUpdateBeaconFreeQuotaTy(pops)
 }
 
 func IsBurnTy(script []byte) bool {
@@ -626,6 +642,16 @@ func UpdateBeaconCoinbaseScript(data []byte) ([]byte, error) {
 }
 
 // UpdateBeaconCoinbase impl in
+func UpdateBeaconFreeQuotaScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_3).AddData(data).Script()
+}
+
+// UpdateBeaconCoinbase impl in
 func BurnScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
@@ -755,6 +781,17 @@ func GetUpdateBeaconCoinbaseData(script []byte) ([]byte, error) {
 	return pops[3].data, nil
 }
 
+func GetUpdateBeaconFreeQuotaData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isUpdateBeaconFreeQuotaTy(pops) {
+		return nil, errors.New("not AddBeaconPledge type")
+	}
+	return pops[3].data, nil
+}
+
 func GetBurnInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -776,6 +813,7 @@ func GetBurnProofInfoData(script []byte) ([]byte, error) {
 	}
 	return pops[3].data, nil
 }
+
 func GetWhiteListProofData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
@@ -786,6 +824,7 @@ func GetWhiteListProofData(script []byte) ([]byte, error) {
 	}
 	return pops[3].data, nil
 }
+
 func GetExChangeInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {

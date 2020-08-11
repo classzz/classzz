@@ -878,6 +878,7 @@ mempoolLoop:
 		if cross.SameHeightTxForBurn(tx, blockTxns, g.chainParams) {
 			continue
 		}
+
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
 			oHeight, item, err1 := g.chain.GetExChangeVerify().VerifyBurnProof(tx, info, eState, uint64(nextBlockHeight))
 			if err1 != nil {
@@ -933,6 +934,7 @@ mempoolLoop:
 
 			}
 		}
+
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
 				amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
@@ -946,6 +948,7 @@ mempoolLoop:
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
 		}
+
 		if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
 			if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -985,6 +988,7 @@ mempoolLoop:
 		}
 
 		beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
+
 		// BeaconRegistrationTx
 		if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
 			if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
@@ -1000,6 +1004,19 @@ mempoolLoop:
 				return nil, nil, err
 			}
 			beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
+		}
+
+		// UpdateBeaconCoinbase
+		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+				return nil, nil, err
+			}
+		}
+
+		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), g.chainParams); bfq != nil {
+			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
+				return nil, nil, err
+			}
 		}
 
 		if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {

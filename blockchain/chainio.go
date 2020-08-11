@@ -565,6 +565,19 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		// UpdateBeaconCoinbase
+		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), NetParams); bp != nil {
+			if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+				return err
+			}
+		}
+
+		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), NetParams); bfq != nil {
+			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
+				return err
+			}
+		}
+
 		// BeaconRegistration
 		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
 		if info != nil {
