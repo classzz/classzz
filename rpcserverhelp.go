@@ -136,6 +136,8 @@ var helpDescsEnUS = map[string]string{
 	"burnreportwhitelist-locktime":       "Locktime value; a non-zero value will also locktime-activate the inputs",
 	"burnreportwhitelist--result0":       "Hex-encoded bytes of the serialized transaction",
 
+	"conversionaddress--synopsis": "",
+
 	// ScriptSig help.
 	"scriptsig-asm": "Disassembly of the script",
 	"scriptsig-hex": "Hex-encoded bytes of the script",
@@ -494,6 +496,9 @@ var helpDescsEnUS = map[string]string{
 
 	// GetInfoCmd help.
 	"getstateinfo--synopsis": "Returns a JSON object containing various state info.",
+
+	// GetRateCmd help.
+	"getrateinfo--synopsis": "Returns a JSON object containing various rate info.",
 
 	// GetEntangleInfoCmd help.
 	"getentangleinfo--synopsis": "Returns a JSON object containing various Entangle info.",

@@ -124,7 +124,7 @@ func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
 }
 
 func getAssetForBaRedeem(all *big.Int, atype uint8, es *EntangleState) (*big.Int, error) {
-	reserve := es.getEntangleAmountByAll(atype)
+	reserve := es.GetEntangleAmountByAll(atype)
 	base, divisor, err := getRedeemRateByBurnCzz(reserve, atype)
 	if err != nil {
 		return nil, err
@@ -527,7 +527,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 	sendAmount := big.NewInt(0)
 	var err error
 	// calc the send amount
-	reserve := es.getEntangleAmountByAll(aType)
+	reserve := es.GetEntangleAmountByAll(aType)
 	sendAmount, err = calcEntangleAmount(reserve, amount, aType)
 	if err != nil {
 		return nil, err
@@ -624,7 +624,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 	if userEntity == nil {
 		return nil, nil, ErrNoUserAsset
 	}
-	reserve := es.getEntangleAmountByAll(aType)
+	reserve := es.GetEntangleAmountByAll(aType)
 	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
 	if err != nil {
 		return nil, nil, err
@@ -672,6 +672,10 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, err
 		return nil, ErrNoUserAsset
 	}
 }
+func CalcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, error) {
+	return calcEntangleAmount(reserve, reqAmount, atype)
+}
+
 func getRedeemRateByBurnCzz(reserve *big.Int, atype uint8) (*big.Int, *big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
@@ -716,7 +720,7 @@ func (es *EntangleState) getEntangledAmount(BeaconID uint64, atype uint8) *big.I
 	}
 	return aa
 }
-func (es *EntangleState) getEntangleAmountByAll(atype uint8) *big.Int {
+func (es *EntangleState) GetEntangleAmountByAll(atype uint8) *big.Int {
 	aa := big.NewInt(0)
 	for _, lhEntitys := range es.EnEntitys {
 		for _, userEntitys := range lhEntitys {
@@ -949,7 +953,7 @@ func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 // the return value(flag by czz) will be mul * 2
 func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint8, BeaconID uint64) *big.Int {
 	// get current rate with czz and outside asset in heigth
-	reserve := es.getEntangleAmountByAll(atype)
+	reserve := es.GetEntangleAmountByAll(atype)
 	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)
 	if err != nil {
 		return nil

@@ -159,6 +159,11 @@ type AddBeaconPledgeCmd struct {
 	LockTime        *int64
 }
 
+// AddBeaconPledge defines JSON-RPC command.
+type ConversionAddresseCmd struct {
+	ClasszzAddress string `json:"classzz_address"`
+}
+
 // UpdateBeaconCoinbase defines JSON-RPC command.
 type UpdateBeaconCoinbaseCmd struct {
 	Inputs               []TransactionInput
@@ -761,6 +766,15 @@ func NewGetStateInfoCmd() *GetStateInfoCmd {
 	return &GetStateInfoCmd{}
 }
 
+// GetRateInfoCmd defines the getpeerinfo JSON-RPC command.
+type GetRateInfoCmd struct{}
+
+// NewGetRateInfoCmd returns a new instance which can be used to issue a getpeer
+// JSON-RPC command.
+func NewGetRateInfoCmd() *GetRateInfoCmd {
+	return &GetRateInfoCmd{}
+}
+
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
 type GetRawMempoolCmd struct {
 	Verbose *bool `jsonrpcdefault:"false"`
@@ -1121,6 +1135,7 @@ func init() {
 	MustRegisterCmd("burnprooft", (*BurnProofCmd)(nil), flags)
 	MustRegisterCmd("burnreport", (*BurnReportCmd)(nil), flags)
 	MustRegisterCmd("burnreportwhitelist", (*BurnReportWhiteListCmd)(nil), flags)
+	MustRegisterCmd("conversionaddress", (*ConversionAddresseCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
 	MustRegisterCmd("getaddednodeinfo", (*GetAddedNodeInfoCmd)(nil), flags)
@@ -1141,6 +1156,7 @@ func init() {
 	MustRegisterCmd("gethashespersec", (*GetHashesPerSecCmd)(nil), flags)
 	MustRegisterCmd("getinfo", (*GetInfoCmd)(nil), flags)
 	MustRegisterCmd("getstateinfo", (*GetStateInfoCmd)(nil), flags)
+	MustRegisterCmd("getrateinfo", (*GetRateInfoCmd)(nil), flags)
 	MustRegisterCmd("getburntxinfo", (*GetBurnTxInfoCmd)(nil), flags)
 	MustRegisterCmd("getentangleinfo", (*GetEntangleInfoCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)

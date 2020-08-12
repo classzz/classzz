@@ -138,48 +138,44 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":              handleAddNode,
-	"createrawtransaction": handleCreateRawTransaction,
-	"exchangetransaction":  handleExChangeTransaction,
-	"beaconregistration":   handleBeaconRegistration,
-	"addbeaconpledge":      handleAddBeaconPledge,
-
+	"addnode":               handleAddNode,
+	"createrawtransaction":  handleCreateRawTransaction,
+	"exchangetransaction":   handleExChangeTransaction,
+	"beaconregistration":    handleBeaconRegistration,
+	"addbeaconpledge":       handleAddBeaconPledge,
 	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
 	"updatebeaconfreequota": handleUpdateBeaconFreeQuota,
-
-	"burntransaction": handleBurnTransaction,
-
-	"burnprooft":          handleBurnProoft,
-	"burnreportwhitelist": handleBurnReportWhiteList,
-
-	"debuglevel":           handleDebugLevel,
-	"decoderawtransaction": handleDecodeRawTransaction,
-	"decodescript":         handleDecodeScript,
-	"estimatefee":          handleEstimateFee,
-	"generate":             handleGenerate,
-	"getaddednodeinfo":     handleGetAddedNodeInfo,
-	"getbestblock":         handleGetBestBlock,
-	"getbestblockhash":     handleGetBestBlockHash,
-	"getblock":             handleGetBlock,
-	"getblockchaininfo":    handleGetBlockChainInfo,
-	"getblockcount":        handleGetBlockCount,
-	"getblockhash":         handleGetBlockHash,
-	"getblockheader":       handleGetBlockHeader,
-	"getburntxinfo":        handleGetBurnTxInfo,
-	"getblocktemplate":     handleGetBlockTemplate,
-	"getcfilter":           handleGetCFilter,
-	"getcfilterheader":     handleGetCFilterHeader,
-	"getconnectioncount":   handleGetConnectionCount,
-	"getcurrentnet":        handleGetCurrentNet,
-	"getdifficulty":        handleGetDifficulty,
-	"getgenerate":          handleGetGenerate,
-	"gethashespersec":      handleGetHashesPerSec,
-	"getheaders":           handleGetHeaders,
-
-	"getinfo":         handleGetInfo,
-	"getstateinfo":    handleGetStateInfo,
-	"getentangleinfo": handleGetEntangleInfo,
-
+	"burntransaction":       handleBurnTransaction,
+	"burnprooft":            handleBurnProoft,
+	"burnreportwhitelist":   handleBurnReportWhiteList,
+	"conversionaddress":     handleConversionAddress,
+	"debuglevel":            handleDebugLevel,
+	"decoderawtransaction":  handleDecodeRawTransaction,
+	"decodescript":          handleDecodeScript,
+	"estimatefee":           handleEstimateFee,
+	"generate":              handleGenerate,
+	"getaddednodeinfo":      handleGetAddedNodeInfo,
+	"getbestblock":          handleGetBestBlock,
+	"getbestblockhash":      handleGetBestBlockHash,
+	"getblock":              handleGetBlock,
+	"getblockchaininfo":     handleGetBlockChainInfo,
+	"getblockcount":         handleGetBlockCount,
+	"getblockhash":          handleGetBlockHash,
+	"getblockheader":        handleGetBlockHeader,
+	"getburntxinfo":         handleGetBurnTxInfo,
+	"getblocktemplate":      handleGetBlockTemplate,
+	"getcfilter":            handleGetCFilter,
+	"getcfilterheader":      handleGetCFilterHeader,
+	"getconnectioncount":    handleGetConnectionCount,
+	"getcurrentnet":         handleGetCurrentNet,
+	"getdifficulty":         handleGetDifficulty,
+	"getgenerate":           handleGetGenerate,
+	"gethashespersec":       handleGetHashesPerSec,
+	"getheaders":            handleGetHeaders,
+	"getinfo":               handleGetInfo,
+	"getstateinfo":          handleGetStateInfo,
+	"getrateinfo":           handleGetRateInfo,
+	"getentangleinfo":       handleGetEntangleInfo,
 	"getwork":               handleGetWork,
 	"getworktemplate":       handleGetWorkTemplate,
 	"getmempoolinfo":        handleGetMempoolInfo,
@@ -3490,6 +3486,109 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 	sort.Sort(pList)
 
 	return pList, nil
+}
+
+func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	estate := s.cfg.Chain.CurrentEstate()
+	rate := make(map[string]float64)
+	if s.cfg.Chain.BestSnapshot().Height < s.cfg.ChainParams.BeaconHeight {
+		return rate, nil
+	}
+
+	reserve := estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Doge))
+	sendAmount, err := cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Doge))
+	if err != nil {
+		return nil, err
+	}
+	rate["DOGE"] = float64(1.0) / float64(sendAmount.Uint64())
+
+	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Ltc))
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Ltc))
+	if err != nil {
+		return nil, err
+	}
+	rate["LTC"] = float64(1.0) / float64(sendAmount.Uint64())
+
+	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Btc))
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Btc))
+	if err != nil {
+		return nil, err
+	}
+	rate["BTC"] = float64(1.0) / float64(sendAmount.Uint64())
+
+	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bch))
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bch))
+	if err != nil {
+		return nil, err
+	}
+	rate["BCH"] = float64(1.0) / float64(sendAmount.Uint64())
+
+	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bsv))
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bsv))
+	if err != nil {
+		return nil, err
+	}
+	rate["BSV"] = float64(1.0) / float64(sendAmount.Uint64())
+
+	return rate, nil
+}
+
+// handleGetInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleConversionAddress(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+
+	c := cmd.(*btcjson.ConversionAddresseCmd)
+	czzaddr, err := czzutil.DecodeAddress(c.ClasszzAddress, s.cfg.ChainParams)
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := make(map[string]string)
+
+	dogeparams := &chaincfg.Params{
+		LegacyScriptHashAddrID: 0x1e,
+		LegacyPubKeyHashAddrID: 0x1e,
+	}
+	addr1, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), dogeparams)
+	if err != nil {
+		e := fmt.Sprintf("doge addr err")
+		return nil, errors.New(e)
+	}
+	addrs["DOGE"] = addr1.String()
+
+	ltcparams := &chaincfg.Params{
+		LegacyScriptHashAddrID: 0x32,
+	}
+	addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), ltcparams)
+	if err != nil {
+		e := fmt.Sprintf("LTC addr err")
+		return nil, errors.New(e)
+	}
+	addrs["LTC"] = addr2.String()
+
+	addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	if err != nil {
+		e := fmt.Sprintf("BTC addr err")
+		return nil, errors.New(e)
+	}
+	addrs["BTC"] = addr3.String()
+
+	addr4, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	if err != nil {
+		e := fmt.Sprintf("BCH addr err")
+		return nil, errors.New(e)
+	}
+	addrs["BCH"] = addr4.String()
+
+	addr5, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	if err != nil {
+		e := fmt.Sprintf("BSV addr err")
+		return nil, errors.New(e)
+	}
+	addrs["BSV"] = addr5.String()
+
+	return addrs, nil
 }
 
 // handleGetInfo implements the getinfo command. We only return the fields

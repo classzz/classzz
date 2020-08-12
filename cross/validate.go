@@ -146,7 +146,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Doge))
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Doge))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Doge))
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
@@ -267,7 +267,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Ltc))
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Ltc))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Ltc))
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
@@ -399,7 +399,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Btc))
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Btc))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Btc))
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
@@ -522,7 +522,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bch))
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Bch))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bch))
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
@@ -650,7 +650,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.getEntangleAmountByAll(uint8(ExpandedTxEntangle_Bsv))
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Bsv))
 		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bsv))
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
