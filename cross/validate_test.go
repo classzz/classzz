@@ -2,14 +2,13 @@ package cross
 
 import (
 	"fmt"
-	// "github.com/classzz/classzz/btcjson"
+	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	_ "github.com/classzz/classzz/database/ffldb"
 	"github.com/classzz/classzz/rpcclient"
-	// "github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
-	// "math/big"
+	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,6 +23,53 @@ var (
 	ltccoinrpcuser = "root"
 	ltccoinrpcpass = "admin"
 )
+
+func NewExChangeVerify() *ExChangeVerify {
+
+	dbPath := filepath.Join(os.TempDir(), "examplecreate")
+	db, err := database.Create("ffldb", dbPath, wire.MainNet)
+	if err != nil {
+		fmt.Println("NewExChangeVerify", err)
+		return nil
+	}
+
+	cacheEntangleInfo := &CacheEntangleInfo{
+		DB: db,
+	}
+
+	var dogeclients []*rpcclient.Client
+	connCfg := &rpcclient.ConnConfig{
+		Host:         dogecoinrpc,
+		Endpoint:     "ws",
+		User:         dogecoinrpcuser,
+		Pass:         dogecoinrpcpass,
+		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	}
+
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client, err := rpcclient.New(connCfg, nil)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	dogeclients = append(dogeclients, client)
+
+	entangleVerify := &ExChangeVerify{
+		Cache:       cacheEntangleInfo,
+		DogeCoinRPC: dogeclients,
+		Params:      &chaincfg.TestNetParams,
+	}
+
+	return entangleVerify
+}
+
+func Close() {
+	dbPath := filepath.Join(os.TempDir(), "examplecreate")
+	os.RemoveAll(dbPath)
+	//defer db.Close()
+}
 
 func TestVerifyTx(t *testing.T) {
 
@@ -97,5 +143,38 @@ func TestVerifyTx(t *testing.T) {
 	// }
 
 	// t.Log(puk[0].Pub)
+
+}
+
+// registration
+func TestExChangeVerify_VerifyBeaconRegistrationTx(t *testing.T) {
+
+	state := NewEntangleState()
+	ev := NewExChangeVerify()
+
+	defer Close()
+
+	whiteList := make([]*WhiteUnit, 0)
+	whiteUnit1 := &WhiteUnit{
+		AssetType: 240,
+		Pk:        []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20},
+	}
+	whiteList = append(whiteList, whiteUnit1)
+
+	bai := &BeaconAddressInfo{
+		ToAddress:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20},
+		StakingAmount:   new(big.Int).Mul(big.NewInt(101), big.NewInt(1e8)),
+		EnAssets:        nil,
+		Frees:           nil,
+		AssetFlag:       1,
+		Fee:             200,
+		KeepBlock:       200,
+		WhiteList:       whiteList,
+		CoinBaseAddress: []string{"crmf3kkfmudmer2sm3zc3fnwlcydkx8eeqaedxw563"},
+	}
+
+	if err := ev.VerifyBeaconRegistrationTx(bai, state); err != nil {
+		t.Error(err)
+	}
 
 }

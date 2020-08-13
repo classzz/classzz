@@ -459,7 +459,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			if once > 1 {
 				return proofError
 			}
-			if _, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
+			if err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(info, eState); err != nil {
 				return err
 			} else {
 				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,

@@ -1019,15 +1019,15 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	eState := mp.cfg.CurrentEstate()
 
 	// BeaconRegistration
-	br, err := cross.IsBeaconRegistrationTx(tx.MsgTx(), mp.cfg.ChainParams)
+	bai, err := cross.IsBeaconRegistrationTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if err != nil && err != cross.NoBeaconRegistration {
 		return err
 	}
 
-	if br != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+	if bai != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
-	} else if br != nil {
-		if _, err := mp.cfg.ExChangeVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
+	} else if bai != nil {
+		if err := mp.cfg.ExChangeVerify.VerifyBeaconRegistrationTx(bai, eState); err != nil {
 			return err
 		}
 	}

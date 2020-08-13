@@ -411,6 +411,7 @@ func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 
 // BeaconRegistration
 func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
+
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
@@ -421,22 +422,17 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 		return nil, NoBeaconRegistration
 	}
 
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
 		return nil, errors.New(e)
 	}
-
-	var es *BeaconAddressInfo
 
 	txout := tx.TxOut[0]
 	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
 	if err != nil {
 		return nil, errors.New("BeaconRegistrationTxFromScript the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
+	} else if txout.Value != 0 {
+		return nil, errors.New("the output value must be 0 in tx.")
 	}
 
 	var pk []byte
@@ -454,20 +450,39 @@ func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAdd
 		}
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+	fromAddress, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
 	if err != nil {
 		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
 		return nil, errors.New(e)
 	}
 
+	addr, err := czzutil.NewAddressPubKeyHash(info.ToAddress, params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != info.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
 	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
-	info.Address = address.String()
+	info.Address = fromAddress.String()
 	info.PubKey = pk
 
-	if es != nil {
-		return es, nil
-	}
-	return nil, NoBeaconRegistration
+	return info, nil
 }
 
 func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
@@ -828,7 +843,10 @@ func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	}
 	info := &BeaconAddressInfo{}
 	err = rlp.DecodeBytes(data, info)
-	return info, err
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
 }
 
 func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
