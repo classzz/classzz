@@ -19,6 +19,7 @@ import (
 
 var (
 	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
+	ErrStakingAmount  = errors.New("StakingAmount Less than minimum 1000000 czz")
 )
 
 const (
@@ -67,9 +68,9 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 		} else {
 			pairs = append(pairs, &TuplePubIndex{
-				EType: v.ExTxType,
-				Index: i,
-				Pub:   pub,
+				AssetType: v.AssetType,
+				Index:     i,
+				Pub:       pub,
 			})
 		}
 	}
@@ -78,7 +79,7 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 }
 
 func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
-	switch eInfo.ExTxType {
+	switch eInfo.AssetType {
 	case ExpandedTxEntangle_Doge:
 		return ev.verifyDogeTx(eInfo, eState)
 	case ExpandedTxEntangle_Ltc:
@@ -195,7 +196,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		addr2Str := addr2.String()
 		fmt.Println("addr2Str", addrStr, "addr3Str", addr2Str)
 
-		//if addr3.String() != addr2.String() {
+		//if addr.String() != addr2.String() {
 		//	e := fmt.Sprintf("doge dogePoolPub err")
 		//	return nil, errors.New(e)
 		//}
@@ -757,8 +758,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(bai *BeaconAddressInfo, eSt
 	}
 
 	if bai.StakingAmount == nil || bai.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
-		e := fmt.Sprintf("StakingAmount err")
-		return errors.New(e)
+		return ErrStakingAmount
 	}
 
 	if !ValidAssetFlag(bai.AssetFlag) {
@@ -946,7 +946,7 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 
 	var ee *EntangleEntity
 	for _, e := range ees {
-		if e.AssetType == uint8(info.ExTxType) {
+		if e.AssetType == uint8(info.AssetType) {
 			ee = e
 			break
 		}
@@ -1001,9 +1001,8 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	if err != nil {
 		return 0, nil, err
 	}
-
 	if hex.EncodeToString(bai.PubKey) != bAdd.String() {
-		e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", bai.Address, bAdd.String())
+		e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
 		return 0, nil, errors.New(e)
 	}
 

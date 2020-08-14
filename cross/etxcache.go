@@ -27,9 +27,9 @@ func (c *CacheEntangleInfo) FetchExChangeUtxoView(info *ExChangeTxInfo) bool {
 	var err error
 	txExist := false
 
-	ExTxType := byte(info.ExTxType)
+	AssetType := byte(info.AssetType)
 	ExTxHash := []byte(info.ExtTxHash)
-	key := append(ExTxHash, ExTxType)
+	key := append(ExTxHash, AssetType)
 	err = c.DB.View(func(tx database.Tx) error {
 		entangleBucket := tx.Metadata().Bucket(BucketKey)
 		if entangleBucket == nil {

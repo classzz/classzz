@@ -562,7 +562,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		// BeaconRegistration
 		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
 		if info != nil {
-			if _, _, err := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.BeaconID, uint64(pHeight+2), info.Amount); err != nil {
+			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
 				return err
 			}
 			if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
@@ -590,7 +590,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			height := big.NewInt(int64(einfo[0].Height))
-			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].ExTxType), einfo[0].BeaconID, height, einfo[0].Amount)
+			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount)
 			if err != nil {
 				return err
 			}

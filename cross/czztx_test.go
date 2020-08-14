@@ -92,7 +92,7 @@ func TestCaclMode3(t *testing.T) {
 }
 func TestStruct(t *testing.T) {
 	d1 := EntangleTxInfo{
-		ExTxType:  ExpandedTxEntangle_Doge,
+		AssetType: ExpandedTxEntangle_Doge,
 		Index:     10,
 		Height:    200,
 		Amount:    big.NewInt(333311),
@@ -102,7 +102,7 @@ func TestStruct(t *testing.T) {
 	fmt.Println("d1.Serialize():", sByte)
 	d2 := EntangleTxInfo{}
 	d2.Parse(sByte)
-	fmt.Println("ExTxType:", d2.ExTxType, " Index:", d2.Index, " Height:", d2.Height,
+	fmt.Println("AssetType:", d2.AssetType, " Index:", d2.Index, " Height:", d2.Height,
 		"Amount:", d2.Amount, "ExtTxHash:", d2.ExtTxHash)
 
 	Sum := byte(10)
@@ -112,8 +112,8 @@ func TestStruct(t *testing.T) {
 	}
 	for i := 0; i < int(Sum); i++ {
 		v := KeepedItem{
-			ExTxType: ExpandedTxEntangle_Doge,
-			Amount:   big.NewInt(int64(100 * i)),
+			AssetType: ExpandedTxEntangle_Doge,
+			Amount:    big.NewInt(int64(100 * i)),
 		}
 		items.Add(v)
 	}
@@ -144,7 +144,7 @@ func makeTxIncludeEntx() *czzutil.Tx {
 	})
 
 	info := EntangleTxInfo{
-		ExTxType:  ExpandedTxEntangle_Doge,
+		AssetType: ExpandedTxEntangle_Doge,
 		Index:     1,
 		Height:    100,
 		Amount:    big.NewInt(20),
@@ -230,6 +230,6 @@ func TestStateRlp(t *testing.T) {
 	state := NewEntangleState()
 	l := state.ToBytes()
 	fmt.Println("state len:", l)
-	
+
 	fmt.Println("finish")
 }
