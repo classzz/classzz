@@ -359,12 +359,12 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	if nextBlockHeight >= params.EntangleHeight && nextBlockHeight < params.ExChangeHeight {
 		keepInfo := cross.KeepedAmount{Items: []cross.KeepedItem{}}
 		keepInfo.Add(cross.KeepedItem{
-			ExTxType: cross.ExpandedTxEntangle_Doge,
-			Amount:   big.NewInt(0),
+			AssetType: cross.ExpandedTxEntangle_Doge,
+			Amount:    big.NewInt(0),
 		})
 		keepInfo.Add(cross.KeepedItem{
-			ExTxType: cross.ExpandedTxEntangle_Ltc,
-			Amount:   big.NewInt(0),
+			AssetType: cross.ExpandedTxEntangle_Ltc,
+			Amount:    big.NewInt(0),
 		})
 		scriptInfo, err := txscript.KeepedAmountScript(keepInfo.Serialize())
 		if err != nil {
@@ -860,7 +860,7 @@ mempoolLoop:
 				continue
 			}
 			height := big.NewInt(int64(einfo[0].Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].ExTxType), einfo[0].BeaconID, height, einfo[0].Amount)
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
@@ -868,10 +868,10 @@ mempoolLoop:
 				continue
 			}
 			entangleItems = append(entangleItems, &cross.ExChangeItem{
-				EType:    einfo[0].ExTxType,
-				Addr:     obj[0].Address,
-				Value:    czzAsset,
-				BeaconID: einfo[0].BeaconID,
+				AssetType: einfo[0].AssetType,
+				Addr:      obj[0].Address,
+				Value:     czzAsset,
+				BeaconID:  einfo[0].BeaconID,
 			})
 		}
 
@@ -937,7 +937,7 @@ mempoolLoop:
 
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
-				amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.ExTxType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
+				amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
 				if err1 != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"SetBurnAsset: %v", tx.Hash(), err1)

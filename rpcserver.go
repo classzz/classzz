@@ -3616,7 +3616,7 @@ func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	infos := make([]*btcjson.EntangleInfoChainResult, 0)
 	for _, item := range keepedAmount.Items {
 		info := &btcjson.EntangleInfoChainResult{}
-		switch item.ExTxType {
+		switch item.AssetType {
 		case cross.ExpandedTxEntangle_Doge:
 			info.ExTxType = "doge"
 		case cross.ExpandedTxEntangle_Ltc:

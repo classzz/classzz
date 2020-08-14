@@ -546,15 +546,15 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					height := big.NewInt(int64(info0[0].Height))
-					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].ExTxType),
+					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].AssetType),
 						info0[0].BeaconID, height, info0[0].Amount); err != nil {
 						return err
 					} else {
 						item := &cross.ExChangeItem{
-							EType:    info0[0].ExTxType,
-							Addr:     obj[0].Address,
-							Value:    czzAsset,
-							BeaconID: info0[0].BeaconID,
+							AssetType: info0[0].AssetType,
+							Addr:      obj[0].Address,
+							Value:     czzAsset,
+							BeaconID:  info0[0].BeaconID,
 						}
 						if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
 							return err
@@ -604,7 +604,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return errors.New("same height in burnTx at same address")
 				}
 				// update the state
-				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.ExTxType), info1.BeaconID, uint64(prevHeight+1), info1.Amount); err != nil {
+				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.AssetType), info1.BeaconID, uint64(prevHeight+1), info1.Amount); err != nil {
 					return err
 				}
 				burnTxs = append(burnTxs, tx)
@@ -1807,12 +1807,12 @@ func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmou
 	infos map[uint32]*cross.ExChangeTxInfo, fork bool) {
 	for _, v := range infos {
 		item := &cross.ExChangeItem{
-			EType: v.ExTxType,
-			Value: new(big.Int).Set(v.Amount),
+			AssetType: v.AssetType,
+			Value:     new(big.Int).Set(v.Amount),
 		}
 		summay.KeepedAmountInBlock.Add(cross.KeepedItem{
-			ExTxType: item.EType,
-			Amount:   new(big.Int).Set(item.Value),
+			AssetType: item.AssetType,
+			Amount:    new(big.Int).Set(item.Value),
 		})
 		cross.PreCalcEntangleAmount(item, keepedInfo, fork)
 		summay.EntangleAmount += item.Value.Int64()

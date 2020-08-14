@@ -195,7 +195,7 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 		return nil
 	}
 	for _, v := range einfos {
-		ExTxType := byte(v.ExTxType)
+		ExTxType := byte(v.AssetType)
 		key := append(v.ExtTxHash, ExTxType)
 		if err := txIndex.Put(key, v.Serialize()); err != nil {
 			return err
@@ -213,7 +213,7 @@ func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 		return nil
 	}
 	for _, v := range einfos {
-		ExTxType := byte(v.ExTxType)
+		ExTxType := byte(v.AssetType)
 		key := append(v.ExtTxHash, ExTxType)
 		serializedData := txIndex.Get(key)
 		if len(serializedData) == 0 {

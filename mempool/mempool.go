@@ -491,7 +491,7 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 
 		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 		for _, v := range einfos {
-			ExTxType := byte(v.ExTxType)
+			ExTxType := byte(v.AssetType)
 			key := append(v.ExtTxHash, ExTxType)
 			delete(mp.entanglepool, string(key))
 		}
@@ -557,8 +557,8 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 
 	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 	for _, v := range einfos {
-		ExTxType := byte(v.ExTxType)
-		key := append(v.ExtTxHash, ExTxType)
+		AssetType := byte(v.AssetType)
+		key := append(v.ExtTxHash, AssetType)
 		mp.entanglepool[string(key)] = txD
 	}
 
