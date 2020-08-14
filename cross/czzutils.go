@@ -86,7 +86,7 @@ func ValidAssetType(utype1 uint8) bool {
 	return false
 }
 func ValidPK(pk []byte) bool {
-	if len(pk) != 64 {
+	if len(pk) != 65 {
 		return false
 	}
 	return true

@@ -134,6 +134,9 @@ func TestGenesisTestAdderss(t *testing.T) {
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
+
+	fmt.Println("pubk:", (*czzec.PublicKey)(&key.PublicKey).SerializeUncompressed())
+	fmt.Println("pubk compressed :", pk)
 	fmt.Println("pub:", hex.EncodeToString(pk))
 	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.TestNetParams)
 

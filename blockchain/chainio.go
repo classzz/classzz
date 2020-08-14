@@ -533,34 +533,15 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
-			if eState != nil {
-				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.PubKey, br.StakingAmount, br.Fee, br.KeepBlock, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-			}
-			if err != nil {
+			if err := RegisterBeaconTxStore(eState, br, tx); err != nil {
 				return err
-			}
-			beaconID := eState.GetBeaconIdByTo(br.ToAddress)
-			if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
-				ex := &cross.ExBeaconInfo{
-					EnItems: []*wire.OutPoint{&wire.OutPoint{
-						Hash:  *tx.Hash(),
-						Index: 1,
-					}},
-					Proofs: []*cross.WhiteListProof{},
-				}
-				eState.SetBaExInfo(beaconID, ex)
-			} else {
-				return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
 			}
 		}
 
 		// AddBeaconPledge
 		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
 		if bp != nil {
-			if eState != nil {
-				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
-			}
-			if err != nil {
+			if err := AddBeaconPledgeTxStore(eState, bp); err != nil {
 				return err
 			}
 		}
@@ -635,6 +616,42 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func RegisterBeaconTxStore(state *cross.EntangleState, bai *cross.BeaconAddressInfo, tx *czzutil.Tx) error {
+
+	var err error
+	if state != nil {
+		err = state.RegisterBeaconAddress(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.Fee, bai.KeepBlock, bai.AssetFlag, bai.WhiteList, bai.CoinBaseAddress)
+	}
+	if err != nil {
+		return err
+	}
+	beaconID := state.GetBeaconIdByTo(bai.ToAddress)
+	if exInfos := state.GetBaExInfoByID(beaconID); exInfos != nil {
+		ex := &cross.ExBeaconInfo{
+			EnItems: []*wire.OutPoint{&wire.OutPoint{
+				Hash:  *tx.Hash(),
+				Index: 1,
+			}},
+			Proofs: []*cross.WhiteListProof{},
+		}
+		state.SetBaExInfo(beaconID, ex)
+	} else {
+		return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
+	}
+	return nil
+}
+
+func AddBeaconPledgeTxStore(state *cross.EntangleState, abp *cross.AddBeaconPledge) error {
+	var err error
+	if state != nil {
+		err = state.AppendAmountForBeaconAddress(abp.Address, abp.StakingAmount)
+	}
+	if err != nil {
+		return err
 	}
 	return nil
 }

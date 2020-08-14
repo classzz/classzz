@@ -2,6 +2,7 @@ package cross
 
 import (
 	"fmt"
+	"github.com/classzz/classzz/blockchain"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
@@ -151,16 +152,22 @@ func TestExChangeVerify_VerifyBeaconRegistrationTx(t *testing.T) {
 
 	state := NewEntangleState()
 	ev := NewExChangeVerify()
-
 	defer Close()
+
+	if err := BeaconRegistration(state, ev, false); err != nil{
+		t.Error(err)
+	}
+
+}
+
+func BeaconRegistration(state *EntangleState,ev *ExChangeVerify, store bool) error {
 
 	whiteList := make([]*WhiteUnit, 0)
 	whiteUnit1 := &WhiteUnit{
 		AssetType: 240,
-		Pk:        []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20},
+		Pk:        []byte{4,166,247,199,108,33,195,82,32,221,1,203,206,58,106,74,172,110,216,231,207,202,230,241,203,183,15,31,240,85,196,241,127,97,228,254,196,138,222,147,162,36,215,56,166,232,123,245,173,55,160,181,72,48,173,91,216,12,162,216,229,8,30,3,153},
 	}
 	whiteList = append(whiteList, whiteUnit1)
-
 	bai := &BeaconAddressInfo{
 		ToAddress:       []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20},
 		StakingAmount:   new(big.Int).Mul(big.NewInt(101), big.NewInt(1e8)),
@@ -174,7 +181,22 @@ func TestExChangeVerify_VerifyBeaconRegistrationTx(t *testing.T) {
 	}
 
 	if err := ev.VerifyBeaconRegistrationTx(bai, state); err != nil {
-		t.Error(err)
+		return err
 	}
+
+	if store {
+		err := ev.Cache.DB.Update(func(dbTx database.Tx) error {
+			if err := blockchain.RegisterBeaconTxStore(state, bai, tx); err != nil{
+				return err
+			}
+			return nil
+		}
+	}
+
+	return nil
+}
+
+
+func TestExChangeVerify_VerifyExChangeTx(t *testing.T) {
 
 }
