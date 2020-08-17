@@ -62,7 +62,7 @@ type CreateRawTransactionCmd struct {
 
 type ExChangeOut struct {
 	Address   string         `json:"address"`
-	AssetType ExpandedTxType `json:"extxtype"`
+	AssetType ExpandedTxType `json:"asset_type"`
 	Index     uint32         `json:"index"`
 	Height    uint64         `json:"height"`
 	Amount    *big.Int       `json:"amount"`

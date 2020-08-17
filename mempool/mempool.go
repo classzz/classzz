@@ -491,8 +491,8 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 
 		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
 		for _, v := range einfos {
-			ExTxType := byte(v.AssetType)
-			key := append(v.ExtTxHash, ExTxType)
+			AssetType := byte(v.AssetType)
+			key := append(v.ExtTxHash, AssetType)
 			delete(mp.entanglepool, string(key))
 		}
 
