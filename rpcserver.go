@@ -3462,6 +3462,7 @@ func (list StateList) Swap(i, j int) {
 // handleGetInfo implements the getinfo command. We only return the fields
 // that are not related to wallet functionality.
 func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetStateInfoCmd)
 	estate := s.cfg.Chain.CurrentEstate()
 	infos := make([]*btcjson.StateInfoChainResult, 0)
 	if s.cfg.Chain.BestSnapshot().Height < s.cfg.ChainParams.BeaconHeight {
@@ -3478,6 +3479,9 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 			Fee:             info.Fee,
 			KeepBlock:       info.KeepBlock,
 			CoinBaseAddress: info.CoinBaseAddress,
+		}
+		if c.BeaconID != nil && *c.BeaconID == info.BeaconID {
+			return infor, nil
 		}
 		infos = append(infos, infor)
 	}

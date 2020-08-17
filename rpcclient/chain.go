@@ -384,6 +384,18 @@ func (c *Client) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
 	return c.GetBlockHashAsync(blockHeight).Receive()
 }
 
+// See GetBlockHash for the blocking version and more details.
+func (c *Client) GetStateInfoAsync(BeaconID *uint64) FutureGetBlockHashResult {
+	cmd := btcjson.NewGetStateInfoCmd(BeaconID)
+	return c.sendCmd(cmd)
+}
+
+// GetBlockHash returns the hash of the block in the best block chain at the
+// given height.
+func (c *Client) GetStateInfo(BeaconID *uint64) (*chainhash.Hash, error) {
+	return c.GetStateInfoAsync(BeaconID).Receive()
+}
+
 type BurnTxInfo struct {
 	ExTxType uint8
 	Address  string
