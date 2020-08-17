@@ -851,6 +851,21 @@ mempoolLoop:
 			continue
 		}
 
+		// UpdateBeaconCoinbase
+		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+				return nil, nil, err
+			}
+		}
+
+		// UpdateBeaconFreeQuota
+		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), g.chainParams); bfq != nil {
+			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
+				return nil, nil, err
+			}
+		}
+
+		// ExChange
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
 			if err != nil && len(obj) > 0 {
@@ -879,6 +894,7 @@ mempoolLoop:
 			continue
 		}
 
+		// BurnProof
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
 			oHeight, item, err1 := g.chain.GetExChangeVerify().VerifyBurnProof(tx, info, eState, uint64(nextBlockHeight))
 			if err1 != nil {
@@ -935,6 +951,7 @@ mempoolLoop:
 			}
 		}
 
+		// BurnTx
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
 				amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
@@ -949,6 +966,7 @@ mempoolLoop:
 			}
 		}
 
+		// BurnReportWhiteListTx
 		if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
 			if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -1006,19 +1024,6 @@ mempoolLoop:
 			beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
 		}
 
-		// UpdateBeaconCoinbase
-		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), g.chainParams); bp != nil {
-			if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
-				return nil, nil, err
-			}
-		}
-
-		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), g.chainParams); bfq != nil {
-			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
-				return nil, nil, err
-			}
-		}
-
 		if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {
 			if once >= 1 {
 				logSkippedDeps(tx, deps)
@@ -1027,13 +1032,13 @@ mempoolLoop:
 			once = 1
 			if beaconMerge == 1 {
 				if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
-					ex := &cross.ExBeaconInfo{
-						EnItems: []*wire.OutPoint{&wire.OutPoint{
-							Hash:  *tx.Hash(),
-							Index: 1,
-						}},
-						Proofs: []*cross.WhiteListProof{},
-					}
+
+					ex := cross.NewExBeaconInfo()
+					ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					}}
+
 					eState.SetBaExInfo(beaconID, ex)
 				} else {
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
@@ -1047,7 +1052,7 @@ mempoolLoop:
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID))
 				} else {
 					if mergeItem, to := toMergeBeaconItems(view, beaconID, eState); mergeItem == nil {
-						return nil, nil, errors.New(fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID))
+						return nil, nil, fmt.Errorf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID)
 					} else {
 						mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
 						mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
@@ -1146,6 +1151,10 @@ mempoolLoop:
 	CIDRoot := chainhash.Hash{}
 	// Beacon
 	if g.chainParams.BeaconHeight <= nextBlockHeight && eState != nil {
+		err = eState.UpdateQuotaOnBlock(uint64(nextBlockHeight))
+		if err != nil {
+			return nil, nil, err
+		}
 		CIDRoot = cross.Hash(eState)
 	}
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)

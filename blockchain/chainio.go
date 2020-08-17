@@ -530,6 +530,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	BurnProofTx_beaconID := uint64(0)
 	for _, tx := range block.Transactions() {
 		var err error
+
 		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
@@ -553,13 +554,14 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		// UpdateBeaconFreeQuota
 		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), NetParams); bfq != nil {
 			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
 				return err
 			}
 		}
 
-		// BeaconRegistration
+		// BurnTx
 		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
 		if info != nil {
 			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
@@ -570,6 +572,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		// BurnProof
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
 			if info.IsBeacon {
 				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
@@ -588,6 +591,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		// ExChange
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			height := big.NewInt(int64(einfo[0].Height))
 			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount)
@@ -606,7 +610,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 			eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
 		} else {
-			return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", BurnProofTx_beaconID))
+			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", BurnProofTx_beaconID)
 		}
 	}
 
@@ -631,13 +635,12 @@ func RegisterBeaconTxStore(state *cross.EntangleState, bai *cross.BeaconAddressI
 	}
 	beaconID := state.GetBeaconIdByTo(bai.ToAddress)
 	if exInfos := state.GetBaExInfoByID(beaconID); exInfos != nil {
-		ex := &cross.ExBeaconInfo{
-			EnItems: []*wire.OutPoint{&wire.OutPoint{
-				Hash:  *tx.Hash(),
-				Index: 1,
-			}},
-			Proofs: []*cross.WhiteListProof{},
-		}
+		ex := cross.NewExBeaconInfo()
+		ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
+			Hash:  *tx.Hash(),
+			Index: 1,
+		}}
+
 		state.SetBaExInfo(beaconID, ex)
 	} else {
 		return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))

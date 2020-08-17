@@ -470,13 +470,18 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					if exInfos := eState.GetBaExInfoByID(BeaconID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), BeaconID))
 					} else {
-						ex := &cross.ExBeaconInfo{
-							EnItems: []*wire.OutPoint{&wire.OutPoint{
-								Hash:  *tx.Hash(),
-								Index: 1,
-							}},
-							Proofs: []*cross.WhiteListProof{},
-						}
+						//ex := &cross.ExBeaconInfo{
+						//	EnItems: []*wire.OutPoint{&wire.OutPoint{
+						//		Hash:  *tx.Hash(),
+						//		Index: 1,
+						//	}},
+						//	Proofs: []*cross.WhiteListProof{},
+						//}
+						ex := cross.NewExBeaconInfo()
+						ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
+							Hash:  *tx.Hash(),
+							Index: 1,
+						}}
 						eState.SetBaExInfo(BeaconID, ex)
 					}
 				}

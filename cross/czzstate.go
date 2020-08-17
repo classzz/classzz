@@ -97,10 +97,10 @@ type ExBeaconInfo struct {
 	BItems  *BurnInfos
 }
 
-func newExBeaconInfo() *ExBeaconInfo {
+func NewExBeaconInfo() *ExBeaconInfo {
 	return &ExBeaconInfo{
-		EnItems: []*wire.OutPoint{},
-		Proofs:  []*WhiteListProof{},
+		EnItems: make([]*wire.OutPoint, 0, 0),
+		Proofs:  make([]*WhiteListProof, 0, 0),
 		Free:    newBeaconFreeQuotaInfo(),
 		BItems:  newBurnInfos(),
 	}
@@ -402,13 +402,9 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 		CoinBaseAddress: cba,
 	}
 
-	ebi := &ExBeaconInfo{
-		EnItems: make([]*wire.OutPoint, 0, 0),
-		Proofs:  make([]*WhiteListProof, 0, 0),
-	}
 	es.CurBeaconID = info.BeaconID
 	es.EnInfos[addr] = info
-	es.BaExInfo[es.CurBeaconID] = ebi
+	es.BaExInfo[es.CurBeaconID] = NewExBeaconInfo()
 	return nil
 }
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {

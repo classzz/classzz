@@ -1131,6 +1131,7 @@ func init() {
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("updatebeaconcoinbase", (*UpdateBeaconCoinbaseCmd)(nil), flags)
+	MustRegisterCmd("updatebeaconfreequota", (*UpdateBeaconFreeQuotaCmd)(nil), flags)
 	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
 	MustRegisterCmd("burnprooft", (*BurnProofCmd)(nil), flags)
 	MustRegisterCmd("burnreport", (*BurnReportCmd)(nil), flags)
