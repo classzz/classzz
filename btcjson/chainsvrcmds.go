@@ -62,7 +62,7 @@ type CreateRawTransactionCmd struct {
 
 type ExChangeOut struct {
 	Address   string         `json:"address"`
-	ExTxType  ExpandedTxType `json:"extxtype"`
+	AssetType ExpandedTxType `json:"extxtype"`
 	Index     uint32         `json:"index"`
 	Height    uint64         `json:"height"`
 	Amount    *big.Int       `json:"amount"`
@@ -110,9 +110,9 @@ type UpdateBeaconFreeQuotaOut struct {
 }
 
 type BurnTransactionOut struct {
-	ExTxType uint8
-	BeaconID uint64
-	Amount   float64
+	AssetType uint8
+	BeaconID  uint64
+	Amount    float64
 }
 
 type BurnProofOut struct {
@@ -249,10 +249,10 @@ type UpdateBeaconFreeQuota struct {
 type ExpandedTxType uint8
 
 type BurnInfo struct {
-	ExTxType ExpandedTxType
-	Address  string
-	BeaconID uint64
-	Amount   *big.Int
+	AssetType ExpandedTxType
+	Address   string
+	BeaconID  uint64
+	Amount    *big.Int
 }
 
 type BurnProofInfo struct {
