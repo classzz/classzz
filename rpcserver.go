@@ -145,36 +145,54 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"addbeaconpledge":       handleAddBeaconPledge,
 	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
 	"updatebeaconfreequota": handleUpdateBeaconFreeQuota,
-	"burntransaction":       handleBurnTransaction,
-	"burnprooft":            handleBurnProoft,
-	"burnreportwhitelist":   handleBurnReportWhiteList,
-	"conversionaddress":     handleConversionAddress,
-	"debuglevel":            handleDebugLevel,
-	"decoderawtransaction":  handleDecodeRawTransaction,
-	"decodescript":          handleDecodeScript,
-	"estimatefee":           handleEstimateFee,
-	"generate":              handleGenerate,
-	"getaddednodeinfo":      handleGetAddedNodeInfo,
-	"getbestblock":          handleGetBestBlock,
-	"getbestblockhash":      handleGetBestBlockHash,
-	"getblock":              handleGetBlock,
-	"getblockchaininfo":     handleGetBlockChainInfo,
-	"getblockcount":         handleGetBlockCount,
-	"getblockhash":          handleGetBlockHash,
-	"getblockheader":        handleGetBlockHeader,
-	"getburntxinfo":         handleGetBurnTxInfo,
-	"getblocktemplate":      handleGetBlockTemplate,
-	"getcfilter":            handleGetCFilter,
-	"getcfilterheader":      handleGetCFilterHeader,
-	"getconnectioncount":    handleGetConnectionCount,
-	"getcurrentnet":         handleGetCurrentNet,
-	"getdifficulty":         handleGetDifficulty,
-	"getgenerate":           handleGetGenerate,
-	"gethashespersec":       handleGetHashesPerSec,
-	"getheaders":            handleGetHeaders,
-	"getinfo":               handleGetInfo,
-	"getstateinfo":          handleGetStateInfo,
-	"getrateinfo":           handleGetRateInfo,
+
+	"burntransaction":      handleBurnTransaction,
+	"burnprooft":           handleBurnProoft,
+	"burnreportwhitelist":  handleBurnReportWhiteList,
+	"conversionaddress":    handleConversionAddress,
+	"debuglevel":           handleDebugLevel,
+	"decoderawtransaction": handleDecodeRawTransaction,
+	"decodescript":         handleDecodeScript,
+	"estimatefee":          handleEstimateFee,
+	"generate":             handleGenerate,
+	"getaddednodeinfo":     handleGetAddedNodeInfo,
+	"getbestblock":         handleGetBestBlock,
+	"getbestblockhash":     handleGetBestBlockHash,
+	"getblock":             handleGetBlock,
+	"getblockchaininfo":    handleGetBlockChainInfo,
+	"getblockcount":        handleGetBlockCount,
+	"getblockhash":         handleGetBlockHash,
+	"getblockheader":       handleGetBlockHeader,
+	"getburntxinfo":        handleGetBurnTxInfo,
+	"getblocktemplate":     handleGetBlockTemplate,
+	"getcfilter":           handleGetCFilter,
+	"getcfilterheader":     handleGetCFilterHeader,
+	"getconnectioncount":   handleGetConnectionCount,
+	"getcurrentnet":        handleGetCurrentNet,
+	"getdifficulty":        handleGetDifficulty,
+	"getgenerate":          handleGetGenerate,
+	"gethashespersec":      handleGetHashesPerSec,
+	"getheaders":           handleGetHeaders,
+	"getinfo":              handleGetInfo,
+	"getstateinfo":         handleGetStateInfo,
+
+	// 获取该地址详情
+	"getaddressexchangeinfo": handleAddressExchangeInfo,
+
+	// 获取两个token的汇率
+	"getrateinfo": handleGetRateInfo,
+
+	// 获取灯塔可兑换的额度
+	"getbeaconexchangeasset": handleGetRateInfo,
+
+	// 获取灯塔的自由资产（czz）
+	"getbeaconfreeasset": handleGetRateInfo,
+
+	// 获取灯塔所有未过期的资产
+	"getbeaconnooverdueasset": handleGetRateInfo,
+
+	// 一键兑换接口
+
 	"getentangleinfo":       handleGetEntangleInfo,
 	"getwork":               handleGetWork,
 	"getworktemplate":       handleGetWorkTemplate,
@@ -3536,6 +3554,22 @@ func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 	rate["BSV"] = float64(1.0) / float64(sendAmount.Uint64())
 
 	return rate, nil
+}
+
+// handleAddressExchangeInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	//c := cmd.(*btcjson.GetBurnTxInfoCmd)
+
+	//estate := s.cfg.Chain.CurrentEstate()
+	//us := estate.EnEntitys[c.BeaconID]
+
+	//for _,u := range us["asd"]{
+	//	u.Height
+	//}
+	//
+	//return btis, nil
+	return nil, nil
 }
 
 // handleGetInfo implements the getinfo command. We only return the fields

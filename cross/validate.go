@@ -934,9 +934,9 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
 
-	uei := eState.EnEntitys[info.BeaconID]
+	uei := eState.EnUserExChangeInfos[info.BeaconID]
 	if uei == nil {
-		return errors.New("EnEntitys is nil")
+		return errors.New("EnUserExChangeInfos is nil")
 	}
 
 	ees := uei[info.Address]
@@ -944,19 +944,19 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 		return errors.New("UserEntangleInfos is nil")
 	}
 
-	var ee *EntangleEntity
-	for _, e := range ees {
-		if e.AssetType == uint8(info.AssetType) {
-			ee = e
-			break
-		}
-	}
+	//var ee *ExChangeEntity
+	//for _, e := range ees.ExChangeEntitys {
+	//	if e.AssetType == uint8(info.AssetType) {
+	//		ee = e
+	//		break
+	//	}
+	//}
 
-	if ee == nil {
-		return errors.New("AssetType is nil")
-	}
+	//if ee == nil {
+	//	return errors.New("AssetType is nil")
+	//}
 
-	if info.Amount.Cmp(ee.OriginAmount) > 0 {
+	if info.Amount.Cmp(ees.OriginAmount) > 0 {
 		return errors.New("Amount > OriginAmount")
 	}
 
@@ -977,9 +977,9 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
 
-	uei := eState.EnEntitys[info.BeaconID]
+	uei := eState.EnUserExChangeInfos[info.BeaconID]
 	if uei == nil {
-		return 0, nil, errors.New("VerifyBurnProofBeacon EnEntitys is nil")
+		return 0, nil, errors.New("VerifyBurnProofBeacon EnUserExChangeInfos is nil")
 	}
 	var client *rpcclient.Client
 	switch info.AssetType {
@@ -1029,9 +1029,9 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 
 func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 
-	uei := eState.EnEntitys[info.BeaconID]
+	uei := eState.EnUserExChangeInfos[info.BeaconID]
 	if uei == nil {
-		return 0, nil, errors.New("VerifyBurnProofMe EnEntitys is nil")
+		return 0, nil, errors.New("VerifyBurnProofRobot EnUserExChangeInfos is nil")
 	}
 
 	outHeight := uint64(0)

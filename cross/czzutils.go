@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"sort"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/rlp"
@@ -299,79 +298,109 @@ func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
 	return nil
 }
 
-/////////////////////////////////////////////////////////////////
-// Address > EntangleEntity
-type EntangleEntity struct {
-	BeaconID        uint64     `json:"beacon_id"`
-	Address         string     `json:"address"`
-	AssetType       uint8      `json:"asset_type"`
-	Height          *big.Int   `json:"height"`            // newest height for entangle
-	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
+///////////////////////////////////////////////////////////////////
+//// Address > EntangleEntity
+type ExChangeEntity struct {
+	AssetType       uint8
 	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
-	OriginAmount    *big.Int   `json:"origin_amount"`     // origin asset(czz) by entangle in
-	MaxRedeem       *big.Int   `json:"max_redeem"`        // redeem asset bt czz
 	BurnAmount      *BurnInfos `json:"burn_amount"`
 }
-type EntangleEntitys []*EntangleEntity
-type UserEntangleInfos map[string]EntangleEntitys
-type StoreUserItme struct {
-	Addr      string
-	UserInfos EntangleEntitys
-}
-type SortStoreUserItems []*StoreUserItme
 
-func (vs SortStoreUserItems) Len() int {
-	return len(vs)
+type UserExChangeInfo struct {
+	BeaconID        uint64            `json:"beacon_id"`     // beaconID id
+	Address         string            `json:"address"`       // 兑换的地址
+	Height          *big.Int          `json:"height"`        // newest height for entangle
+	OldHeight       *big.Int          `json:"old_height"`    // oldest height for entangle
+	OriginAmount    *big.Int          `json:"origin_amount"` // origin asset(czz) by entangle in
+	MaxRedeem       *big.Int          `json:"max_redeem"`    // redeem asset bt czz
+	ExChangeEntitys []*ExChangeEntity `json:"ex_change_entitys"`
 }
-func (vs SortStoreUserItems) Less(i, j int) bool {
-	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
-}
-func (vs SortStoreUserItems) Swap(i, j int) {
-	it := vs[i]
-	vs[i] = vs[j]
-	vs[j] = it
-}
-func (uinfos *UserEntangleInfos) toSlice() SortStoreUserItems {
-	v1 := make([]*StoreUserItme, 0, 0)
-	for k, v := range *uinfos {
-		v1 = append(v1, &StoreUserItme{
-			Addr:      k,
-			UserInfos: v,
-		})
+
+func newUserExChangeInfo() *UserExChangeInfo {
+	uci := &UserExChangeInfo{
+		BeaconID:        0,
+		Height:          big.NewInt(0),
+		OldHeight:       big.NewInt(0),
+		OriginAmount:    big.NewInt(0),
+		MaxRedeem:       big.NewInt(0),
+		ExChangeEntitys: make([]*ExChangeEntity, 0, 0),
 	}
-	sort.Sort(SortStoreUserItems(v1))
-	return SortStoreUserItems(v1)
+	return uci
 }
-func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems) {
-	userInfos := make(map[string]EntangleEntitys)
-	for _, v := range vv {
-		userInfos[v.Addr] = v.UserInfos
-	}
-	*es = UserEntangleInfos(userInfos)
+
+//type EntangleEntitys []*EntangleEntity
+
+type UserExChangeInfos map[string]*UserExChangeInfo
+
+func newUserExChangeInfos() UserExChangeInfos {
+	return UserExChangeInfos(make(map[string]*UserExChangeInfo))
 }
-func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
-		Value SortStoreUserItems
-	}
-	var eb Store1
-	if err := s.Decode(&eb); err != nil {
-		return err
-	}
-	es.fromSlice(eb.Value)
-	return nil
+
+type StoreUserItme struct {
+	Addr     string
+	UserInfo UserExChangeInfo
 }
-func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
-		Value SortStoreUserItems
-	}
-	s1 := es.toSlice()
-	return rlp.Encode(w, &Store1{
-		Value: s1,
-	})
-}
+
+//type SortStoreUserItems []*StoreUserItme
+//
+//func (vs SortStoreUserItems) Len() int {
+//	return len(vs)
+//}
+//
+//func (vs SortStoreUserItems) Less(i, j int) bool {
+//	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
+//}
+//
+//func (vs SortStoreUserItems) Swap(i, j int) {
+//	it := vs[i]
+//	vs[i] = vs[j]
+//	vs[j] = it
+//}
+
+//func (uinfos *UserExChangeInfos) toSlice() SortStoreUserItems {
+//	v1 := make([]*StoreUserItme, 0, 0)
+//	for k, v := range *uinfos {
+//		v1 = append(v1, &StoreUserItme{
+//			Addr:      k,
+//			UserInfo:  v,
+//		})
+//	}
+//	sort.Sort(SortStoreUserItems(v1))
+//	return SortStoreUserItems(v1)
+//}
+//
+//func (es *UserExChangeInfos) fromSlice(vv SortStoreUserItems) {
+//	userInfos := make(map[string]UserExChangeInfo)
+//	for _, v := range vv {
+//		userInfos[v.Addr] = v.UserInfos
+//	}
+//	*es = UserEntangleInfos(userInfos)
+//}
+
+//func (es *UserExChangeInfo) DecodeRLP(s *rlp.Stream) error {
+//	type Store1 struct {
+//		Value SortStoreUserItems
+//	}
+//	var eb Store1
+//	if err := s.Decode(&eb); err != nil {
+//		return err
+//	}
+//	es.fromSlice(eb.Value)
+//	return nil
+//}
+//
+//func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
+//	type Store1 struct {
+//		Value SortStoreUserItems
+//	}
+//	s1 := es.toSlice()
+//	return rlp.Encode(w, &Store1{
+//		Value: s1,
+//	})
+//}
 
 /////////////////////////////////////////////////////////////////
-func (e *EntangleEntity) increaseOriginAmount(amount, height *big.Int) {
+func (e *UserExChangeInfo) increaseOriginAmount(amount, height *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
 	if e.MaxRedeem.Sign() == 0 {
 		e.OldHeight = new(big.Int).Set(height)
@@ -380,18 +409,29 @@ func (e *EntangleEntity) increaseOriginAmount(amount, height *big.Int) {
 }
 
 // the returns maybe negative
-func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
-	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllAmountByOrigin())
+func (e *UserExChangeInfo) getRedeemableAmount() *big.Int {
+
+	allAmount := big.NewInt(0)
+	for _, v := range e.ExChangeEntitys {
+		allAmount = big.NewInt(0).Add(allAmount, v.BurnAmount.GetAllAmountByOrigin())
+	}
+	return new(big.Int).Sub(e.MaxRedeem, allAmount)
 }
-func (e *EntangleEntity) getValidOriginAmount() *big.Int {
-	return new(big.Int).Sub(e.OriginAmount, e.BurnAmount.GetAllAmountByOrigin())
+
+func (e *UserExChangeInfo) getValidOriginAmount() *big.Int {
+	allAmount := big.NewInt(0)
+	for _, v := range e.ExChangeEntitys {
+		allAmount = big.NewInt(0).Add(allAmount, v.BurnAmount.GetAllAmountByOrigin())
+	}
+	return new(big.Int).Sub(e.OriginAmount, allAmount)
 }
-func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
+
+func (e *ExChangeEntity) getValidOutsideAmount() *big.Int {
 	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
 }
 
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
-func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
+func (e *UserExChangeInfo) updateFreeQuotaOfHeight(height, amount *big.Int) {
 	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(big.NewInt(90), amount)
 
 	t1 := new(big.Int).Add(new(big.Int).Mul(t0, a0), f0)
@@ -405,17 +445,18 @@ func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
 }
 
 // updateFreeQuota returns the czz asset by user who can redeemable
-func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
+func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
 	limit := new(big.Int).Sub(curHeight, e.OldHeight)
 	if limit.Cmp(limitHeight) > 0 {
 		// release user's quota
-		left := e.GetValidRedeemAmount()
+		left := e.getRedeemableAmount()
 		e.MaxRedeem = big.NewInt(0)
 		return left
 	}
 	return big.NewInt(0)
 }
-func (e *EntangleEntity) updateBurnState(state byte, items []*BurnItem) {
+
+func (e *ExChangeEntity) updateBurnState(state byte, items []*BurnItem) {
 	for _, v := range items {
 		ii := e.BurnAmount.getItem(v.Height, v.Amount, v.RedeemState)
 		if ii != nil {
@@ -425,34 +466,40 @@ func (e *EntangleEntity) updateBurnState(state byte, items []*BurnItem) {
 }
 
 /////////////////////////////////////////////////////////////////
-func (ee *EntangleEntitys) getEntityByType(atype uint8) *EntangleEntity {
-	for _, v := range *ee {
+func (ee *UserExChangeInfo) getEntityByType(atype uint8) *ExChangeEntity {
+	for _, v := range ee.ExChangeEntitys {
 		if atype == v.AssetType {
 			return v
 		}
 	}
 	return nil
 }
-func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) *big.Int {
-	all := big.NewInt(0)
-	for _, v := range *ee {
-		all = new(big.Int).Add(all, v.updateFreeQuota(curHeight, limit))
-	}
-	return all
-}
-func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
-	res := big.NewInt(0)
-	for _, v := range *ee {
-		a := v.GetValidRedeemAmount()
-		if a != nil {
-			res = res.Add(res, a)
-		}
-	}
-	return res
-}
-func (ee *EntangleEntitys) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfo {
+
+//func (uei *UserExChangeInfo) updateFreeQuota(curHeight, limit *big.Int) *big.Int {
+//	all := big.NewInt(0)
+//	//for _, v := range uei.EntangleEntitys {
+//
+//	//}
+//
+//	all = new(big.Int).Add(all, uei.updateFreeQuota(curHeight, limit))
+//	return all
+//}
+
+//func (ee *UserExChangeInfo) getAllRedeemableAmount() *big.Int {
+//res := big.NewInt(0)
+//for _, v := range ee.ExChangeEntitys {
+//	a := v.GetValidRedeemAmount()
+//	if a != nil {
+//		res = res.Add(res, a)
+//	}
+//}
+
+//return ee.GetValidRedeemAmount()
+//}
+
+func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfo {
 	res := make([]*TimeOutBurnInfo, 0, 0)
-	for _, entity := range *ee {
+	for _, entity := range ee.ExChangeEntitys {
 		items := entity.BurnAmount.getBurnTimeout(height, update)
 		if len(items) > 0 {
 			res = append(res, &TimeOutBurnInfo{
@@ -463,7 +510,8 @@ func (ee *EntangleEntitys) getBurnTimeout(height uint64, update bool) TypeTimeOu
 	}
 	return TypeTimeOutBurnInfo(res)
 }
-func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo) {
+
+func (ee *UserExChangeInfo) updateBurnState(state byte, items TypeTimeOutBurnInfo) {
 	for _, v := range items {
 		entity := ee.getEntityByType(v.AssetType)
 		if entity != nil {
@@ -472,26 +520,26 @@ func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo
 	}
 }
 
-func (ee *EntangleEntitys) updateBurnState2(height uint64, amount *big.Int,
+func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
 	atype uint8, proof *BurnProofItem) {
-	for _, entity := range *ee {
+	for _, entity := range ee.ExChangeEntitys {
 		if entity.AssetType == atype {
 			entity.BurnAmount.updateBurn(height, amount, proof)
 		}
 	}
 }
 
-func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int,
+func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
 	atype uint8, proof *BurnProofItem) {
-	for _, entity := range *ee {
+	for _, entity := range ee.ExChangeEntitys {
 		if entity.AssetType == atype {
 			entity.BurnAmount.finishBurn(height, amount, proof)
 		}
 	}
 }
 
-func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-	for _, entity := range *ee {
+func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+	for _, entity := range ee.ExChangeEntitys {
 		if entity.AssetType == info.AssetType {
 			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
 		}
@@ -499,8 +547,8 @@ func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo, outHeight, curHe
 	return nil, ErrNoUserAsset
 }
 
-func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint8) error {
-	for _, entity := range *ee {
+func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, atype uint8) error {
+	for _, entity := range ee.ExChangeEntitys {
 		if entity.AssetType == atype {
 			return entity.BurnAmount.closeProofForPunished(item)
 		}
@@ -509,7 +557,7 @@ func (ee *EntangleEntitys) closeProofForPunished(item *BurnItem, atype uint8) er
 }
 
 /////////////////////////////////////////////////////////////////
-func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo) {
+func (u UserExChangeInfos) updateBurnState(state byte, items UserTimeOutBurnInfo) {
 	for addr, infos := range items {
 		entitys, ok := u[addr]
 		if ok {
