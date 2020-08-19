@@ -433,6 +433,24 @@ func NewGetBurnTxInfoCmd(BeaconID uint64) *GetBurnTxInfoCmd {
 	}
 }
 
+// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+type GetAddressExchangeInfoCmd struct {
+	BeaconID uint64
+	Address  string
+}
+
+// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+// JSON-RPC command.
+//
+// The parameters which are pointers indicate they are optional.  Passing nil
+// for optional parameters will use the default value.
+func NewGetAddressExchangeInfoCmd(beaconID uint64, address string) *GetAddressExchangeInfoCmd {
+	return &GetAddressExchangeInfoCmd{
+		BeaconID: beaconID,
+		Address:  address,
+	}
+}
+
 // GetBlockCmd defines the getblock JSON-RPC command.
 type GetDogecoinBlockCmd struct {
 	Hash string
@@ -769,12 +787,15 @@ func NewGetStateInfoCmd(BeaconID *uint64) *GetStateInfoCmd {
 }
 
 // GetRateInfoCmd defines the getpeerinfo JSON-RPC command.
-type GetRateInfoCmd struct{}
+type GetRateInfoCmd struct {
+	Token1 *string `json:"token_1"`
+	Token2 *string `json:"token_2"`
+}
 
 // NewGetRateInfoCmd returns a new instance which can be used to issue a getpeer
 // JSON-RPC command.
-func NewGetRateInfoCmd() *GetRateInfoCmd {
-	return &GetRateInfoCmd{}
+func NewGetRateInfoCmd(Token1 *string, Token2 *string) *GetRateInfoCmd {
+	return &GetRateInfoCmd{Token1: Token1, Token2: Token2}
 }
 
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.

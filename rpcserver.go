@@ -146,38 +146,36 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
 	"updatebeaconfreequota": handleUpdateBeaconFreeQuota,
 
-	"burntransaction":      handleBurnTransaction,
-	"burnprooft":           handleBurnProoft,
-	"burnreportwhitelist":  handleBurnReportWhiteList,
-	"conversionaddress":    handleConversionAddress,
-	"debuglevel":           handleDebugLevel,
-	"decoderawtransaction": handleDecodeRawTransaction,
-	"decodescript":         handleDecodeScript,
-	"estimatefee":          handleEstimateFee,
-	"generate":             handleGenerate,
-	"getaddednodeinfo":     handleGetAddedNodeInfo,
-	"getbestblock":         handleGetBestBlock,
-	"getbestblockhash":     handleGetBestBlockHash,
-	"getblock":             handleGetBlock,
-	"getblockchaininfo":    handleGetBlockChainInfo,
-	"getblockcount":        handleGetBlockCount,
-	"getblockhash":         handleGetBlockHash,
-	"getblockheader":       handleGetBlockHeader,
-	"getburntxinfo":        handleGetBurnTxInfo,
-	"getblocktemplate":     handleGetBlockTemplate,
-	"getcfilter":           handleGetCFilter,
-	"getcfilterheader":     handleGetCFilterHeader,
-	"getconnectioncount":   handleGetConnectionCount,
-	"getcurrentnet":        handleGetCurrentNet,
-	"getdifficulty":        handleGetDifficulty,
-	"getgenerate":          handleGetGenerate,
-	"gethashespersec":      handleGetHashesPerSec,
-	"getheaders":           handleGetHeaders,
-	"getinfo":              handleGetInfo,
-	"getstateinfo":         handleGetStateInfo,
-
-	// 获取该地址详情
-	"getaddressexchangeinfo": handleAddressExchangeInfo,
+	"burntransaction":        handleBurnTransaction,
+	"burnprooft":             handleBurnProoft,
+	"burnreportwhitelist":    handleBurnReportWhiteList,
+	"conversionaddress":      handleConversionAddress,
+	"debuglevel":             handleDebugLevel,
+	"decoderawtransaction":   handleDecodeRawTransaction,
+	"decodescript":           handleDecodeScript,
+	"estimatefee":            handleEstimateFee,
+	"generate":               handleGenerate,
+	"getaddednodeinfo":       handleGetAddedNodeInfo,
+	"getbestblock":           handleGetBestBlock,
+	"getbestblockhash":       handleGetBestBlockHash,
+	"getblock":               handleGetBlock,
+	"getblockchaininfo":      handleGetBlockChainInfo,
+	"getblockcount":          handleGetBlockCount,
+	"getblockhash":           handleGetBlockHash,
+	"getblockheader":         handleGetBlockHeader,
+	"getburntxinfo":          handleGetBurnTxInfo,
+	"getblocktemplate":       handleGetBlockTemplate,
+	"getcfilter":             handleGetCFilter,
+	"getcfilterheader":       handleGetCFilterHeader,
+	"getconnectioncount":     handleGetConnectionCount,
+	"getcurrentnet":          handleGetCurrentNet,
+	"getdifficulty":          handleGetDifficulty,
+	"getgenerate":            handleGetGenerate,
+	"gethashespersec":        handleGetHashesPerSec,
+	"getheaders":             handleGetHeaders,
+	"getinfo":                handleGetInfo,
+	"getstateinfo":           handleGetStateInfo,
+	"getaddressexchangeinfo": handleGetAddressExchangeInfo,
 
 	// 获取两个token的汇率
 	"getrateinfo": handleGetRateInfo,
@@ -3512,6 +3510,8 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 
 func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 
+	c := cmd.(*btcjson.GetRateInfoCmd)
+
 	estate := s.cfg.Chain.CurrentEstate()
 	rate := make(map[string]float64)
 	if s.cfg.Chain.BestSnapshot().Height < s.cfg.ChainParams.BeaconHeight {
@@ -3523,53 +3523,76 @@ func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 	if err != nil {
 		return nil, err
 	}
-	rate["DOGE"] = float64(1.0) / float64(sendAmount.Uint64())
+	rate["DOGE"] = float64(sendAmount.Uint64())
 
 	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Ltc))
 	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Ltc))
 	if err != nil {
 		return nil, err
 	}
-	rate["LTC"] = float64(1.0) / float64(sendAmount.Uint64())
+	rate["LTC"] = float64(sendAmount.Uint64())
 
 	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Btc))
 	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Btc))
 	if err != nil {
 		return nil, err
 	}
-	rate["BTC"] = float64(1.0) / float64(sendAmount.Uint64())
+	rate["BTC"] = float64(sendAmount.Uint64())
 
 	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bch))
 	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bch))
 	if err != nil {
 		return nil, err
 	}
-	rate["BCH"] = float64(1.0) / float64(sendAmount.Uint64())
+	rate["BCH"] = float64(sendAmount.Uint64())
 
 	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bsv))
 	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bsv))
 	if err != nil {
 		return nil, err
 	}
-	rate["BSV"] = float64(1.0) / float64(sendAmount.Uint64())
+	rate["BSV"] = float64(sendAmount.Uint64())
+	rate["CZZ"] = 1.0
 
-	return rate, nil
+	Num1 := 1.0
+	Num2 := 1.0
+
+	if c.Token1 == nil || c.Token2 == nil || (rate[*c.Token1] == 0.0 && rate[*c.Token1] == 0.0) {
+		return nil, fmt.Errorf("err")
+	}
+
+	if rate[*c.Token1] != 0.0 {
+		Num1 = rate[*c.Token1]
+	}
+
+	if rate[*c.Token2] != 0.0 {
+		Num2 = rate[*c.Token2]
+	}
+
+	return Num1 / Num2, nil
 }
 
 // handleAddressExchangeInfo implements the getinfo command. We only return the fields
 // that are not related to wallet functionality.
-func handleAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	//c := cmd.(*btcjson.GetBurnTxInfoCmd)
+func handleGetAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetAddressExchangeInfoCmd)
 
-	//estate := s.cfg.Chain.CurrentEstate()
-	//us := estate.EnEntitys[c.BeaconID]
+	estate := s.cfg.Chain.CurrentEstate()
+	us := estate.EnUserExChangeInfos[c.BeaconID]
+	if us == nil {
+		return nil, errors.New("EnUserExChangeInfos is nil")
+	}
 
-	//for _,u := range us["asd"]{
-	//	u.Height
-	//}
-	//
-	//return btis, nil
-	return nil, nil
+	addrInfo := us[c.Address]
+	if addrInfo == nil {
+		return nil, errors.New("EnUserExChangeInfos address is nil")
+	}
+
+	result := make(map[string]interface{})
+	result["lastHeight"] = addrInfo.OldHeight
+	result["MaxRedeem"] = addrInfo.MaxRedeem
+
+	return result, nil
 }
 
 // handleGetInfo implements the getinfo command. We only return the fields
