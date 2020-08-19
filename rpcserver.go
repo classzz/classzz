@@ -146,50 +146,41 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
 	"updatebeaconfreequota": handleUpdateBeaconFreeQuota,
 
-	"burntransaction":        handleBurnTransaction,
-	"burnprooft":             handleBurnProoft,
-	"burnreportwhitelist":    handleBurnReportWhiteList,
-	"conversionaddress":      handleConversionAddress,
-	"debuglevel":             handleDebugLevel,
-	"decoderawtransaction":   handleDecodeRawTransaction,
-	"decodescript":           handleDecodeScript,
-	"estimatefee":            handleEstimateFee,
-	"generate":               handleGenerate,
-	"getaddednodeinfo":       handleGetAddedNodeInfo,
-	"getbestblock":           handleGetBestBlock,
-	"getbestblockhash":       handleGetBestBlockHash,
-	"getblock":               handleGetBlock,
-	"getblockchaininfo":      handleGetBlockChainInfo,
-	"getblockcount":          handleGetBlockCount,
-	"getblockhash":           handleGetBlockHash,
-	"getblockheader":         handleGetBlockHeader,
-	"getburntxinfo":          handleGetBurnTxInfo,
-	"getblocktemplate":       handleGetBlockTemplate,
-	"getcfilter":             handleGetCFilter,
-	"getcfilterheader":       handleGetCFilterHeader,
-	"getconnectioncount":     handleGetConnectionCount,
-	"getcurrentnet":          handleGetCurrentNet,
-	"getdifficulty":          handleGetDifficulty,
-	"getgenerate":            handleGetGenerate,
-	"gethashespersec":        handleGetHashesPerSec,
-	"getheaders":             handleGetHeaders,
-	"getinfo":                handleGetInfo,
-	"getstateinfo":           handleGetStateInfo,
-	"getaddressexchangeinfo": handleGetAddressExchangeInfo,
+	"burntransaction":      handleBurnTransaction,
+	"burnprooft":           handleBurnProoft,
+	"burnreportwhitelist":  handleBurnReportWhiteList,
+	"conversionaddress":    handleConversionAddress,
+	"debuglevel":           handleDebugLevel,
+	"decoderawtransaction": handleDecodeRawTransaction,
+	"decodescript":         handleDecodeScript,
+	"estimatefee":          handleEstimateFee,
+	"generate":             handleGenerate,
+	"getaddednodeinfo":     handleGetAddedNodeInfo,
+	"getbestblock":         handleGetBestBlock,
+	"getbestblockhash":     handleGetBestBlockHash,
+	"getblock":             handleGetBlock,
+	"getblockchaininfo":    handleGetBlockChainInfo,
+	"getblockcount":        handleGetBlockCount,
+	"getblockhash":         handleGetBlockHash,
+	"getblockheader":       handleGetBlockHeader,
+	"getburntxinfo":        handleGetBurnTxInfo,
+	"getblocktemplate":     handleGetBlockTemplate,
+	"getcfilter":           handleGetCFilter,
+	"getcfilterheader":     handleGetCFilterHeader,
+	"getconnectioncount":   handleGetConnectionCount,
+	"getcurrentnet":        handleGetCurrentNet,
+	"getdifficulty":        handleGetDifficulty,
+	"getgenerate":          handleGetGenerate,
+	"gethashespersec":      handleGetHashesPerSec,
+	"getheaders":           handleGetHeaders,
+	"getinfo":              handleGetInfo,
+	"getstateinfo":         handleGetStateInfo,
 
-	// 获取两个token的汇率
-	"getrateinfo": handleGetRateInfo,
-
-	// 获取灯塔可兑换的额度
-	"getbeaconexchangeasset": handleGetRateInfo,
-
-	// 获取灯塔的自由资产（czz）
-	"getbeaconfreeasset": handleGetRateInfo,
-
-	// 获取灯塔所有未过期的资产
-	"getbeaconnooverdueasset": handleGetRateInfo,
-
-	// 一键兑换接口
+	"getaddressexchangeinfo":  handleGetAddressExchangeInfo,
+	"getrateinfo":             handleGetRateInfo,
+	"getbeaconexchangeasset":  handleGetBeaconExchangeAsset,
+	"getbeaconfreeasset":      handleGetBeaconFreeAsset,
+	"getbeaconnooverdueasset": handleGetBeaconNoOverdueAsset,
 
 	"getentangleinfo":       handleGetEntangleInfo,
 	"getwork":               handleGetWork,
@@ -3591,6 +3582,69 @@ func handleGetAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-cha
 	result := make(map[string]interface{})
 	result["lastHeight"] = addrInfo.OldHeight
 	result["MaxRedeem"] = addrInfo.MaxRedeem
+
+	return result, nil
+}
+
+// handleAddressExchangeInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetBeaconExchangeAsset(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetBeaconExchangeAssetCmd)
+
+	estate := s.cfg.Chain.CurrentEstate()
+	info := estate.EnInfos[c.Address]
+	tmp := big.NewInt(0).Sub(info.StakingAmount, info.EntangleAmount)
+	tmp = big.NewInt(0).Sub(tmp, cross.MinStakingAmountForBeaconAddress)
+
+	return tmp.Uint64(), nil
+}
+
+// handleAddressExchangeInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetBeaconFreeAsset(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetBeaconFreeAssetCmd)
+
+	estate := s.cfg.Chain.CurrentEstate()
+	info := estate.BaExInfo[c.BeaconID]
+	if info == nil {
+		return nil, errors.New("BaExInfo is nil")
+	}
+
+	result := make(map[string]interface{})
+
+	for _, v := range info.Free.Items {
+		AssetType := ""
+		switch v.AssetType {
+		case cross.ExpandedTxEntangle_Doge:
+			AssetType = "DOGE"
+		case cross.ExpandedTxEntangle_Ltc:
+			AssetType = "LTC"
+		case cross.ExpandedTxEntangle_Btc:
+			AssetType = "BTC"
+		case cross.ExpandedTxEntangle_Bsv:
+			AssetType = "BSV"
+		case cross.ExpandedTxEntangle_Bch:
+			AssetType = "BCH"
+		}
+		result[AssetType] = v.Amount
+	}
+	return result, nil
+}
+
+// handleAddressExchangeInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetBeaconNoOverdueAsset(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetBeaconNoOverdueAssetCmd)
+	estate := s.cfg.Chain.CurrentEstate()
+	info := estate.EnUserExChangeInfos[c.BeaconID]
+	if info == nil {
+		return nil, errors.New("EnUserExChangeInfos is nil")
+	}
+
+	result := big.NewInt(0)
+	for _, v := range info {
+		result = big.NewInt(0).Add(result, v.MaxRedeem)
+	}
 
 	return result, nil
 }

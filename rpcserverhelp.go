@@ -535,6 +535,16 @@ var helpDescsEnUS = map[string]string{
 	// GetNetTotalsCmd help.
 	"getnettotals--synopsis": "Returns a JSON object containing network traffic statistics.",
 
+	// GetNetTotalsCmd help.
+	"getaddressexchangeinfo--synopsis": "Returns a JSON object containing network traffic statistics.",
+	// GetNetTotalsCmd help.
+
+	"getbeaconexchangeasset--synopsis": "Returns a JSON object containing network traffic statistics.",
+
+	"getbeaconfreeasset--synopsis": "Returns a JSON object containing network traffic statistics.",
+
+	"getbeaconnooverdueasset--synopsis": "Returns a JSON object containing network traffic statistics.",
+
 	// GetNetTotalsResult help.
 	"getnettotalsresult-totalbytesrecv": "Total bytes received",
 	"getnettotalsresult-totalbytessent": "Total bytes sent",
