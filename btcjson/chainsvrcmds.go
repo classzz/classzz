@@ -499,6 +499,22 @@ func NewGetBeaconNoOverdueAssetCmd(beaconID uint64) *GetBeaconNoOverdueAssetCmd 
 	}
 }
 
+// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+type GetBeaconBurnInfoCmd struct {
+	BeaconID uint64
+}
+
+// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+// JSON-RPC command.
+//
+// The parameters which are pointers indicate they are optional.  Passing nil
+// for optional parameters will use the default value.
+func NewGetBeaconBurnInfoCmd(beaconID uint64) *GetBeaconBurnInfoCmd {
+	return &GetBeaconBurnInfoCmd{
+		BeaconID: beaconID,
+	}
+}
+
 // GetBlockCmd defines the getblock JSON-RPC command.
 type GetDogecoinBlockCmd struct {
 	Hash string

@@ -181,6 +181,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getbeaconexchangeasset":  handleGetBeaconExchangeAsset,
 	"getbeaconfreeasset":      handleGetBeaconFreeAsset,
 	"getbeaconnooverdueasset": handleGetBeaconNoOverdueAsset,
+	"getbeaconburninfo":       handleGetBeaconBurnInfo,
 
 	"getentangleinfo":       handleGetEntangleInfo,
 	"getwork":               handleGetWork,
@@ -3644,6 +3645,33 @@ func handleGetBeaconNoOverdueAsset(s *rpcServer, cmd interface{}, closeChan <-ch
 	result := big.NewInt(0)
 	for _, v := range info {
 		result = big.NewInt(0).Add(result, v.MaxRedeem)
+	}
+
+	return result, nil
+}
+
+// handleGetBeaconBurnInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetBeaconBurnInfoCmd)
+	estate := s.cfg.Chain.CurrentEstate()
+	info := estate.EnUserExChangeInfos[c.BeaconID]
+	if info == nil {
+		return nil, errors.New("EnUserExChangeInfos is nil")
+	}
+
+	result := make(map[string]interface{})
+	for _, v := range info {
+		result1 := make(map[string]interface{})
+		for _, en := range v.ExChangeEntitys {
+			for _, item := range en.BurnAmount.Items {
+				result1["amount"] = item.Amount
+				result1["height"] = item.Height
+				result1["fee_r_amount"] = item.FeeRAmount
+				result1["redeem_state"] = item.RedeemState
+			}
+		}
+		result[v.Address] = result1
 	}
 
 	return result, nil
