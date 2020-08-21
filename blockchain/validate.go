@@ -565,7 +565,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						return errors.New("same height in burnTx at same address")
 					}
 					// update the state
-					if _, _, err := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), burnTx.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
+					if _, _, err := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
 						return err
 					}
 

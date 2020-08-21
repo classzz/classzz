@@ -887,7 +887,7 @@ mempoolLoop:
 				continue
 			}
 
-			amount, fee, err1 := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), burnTx.BeaconID, uint64(nextBlockHeight), czzAsset)
+			amount, fee, err1 := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(nextBlockHeight), czzAsset)
 
 			// now will be seed fee to beacon address
 			log.Info("user send burn tx, hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)

@@ -315,6 +315,12 @@ func (c *Client) ExChangeTransactionAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
+func (c *Client) FastExChangeTransactionAsync(inputs []btcjson.TransactionInput,
+	exChange btcjson.ExChangeOut, BurnTransaction btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewFastExChangeTransactionCmd(inputs, exChange, BurnTransaction, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
 // CreateRawTransaction returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,

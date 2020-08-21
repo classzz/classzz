@@ -599,7 +599,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if err1 != nil {
 				return err1
 			}
-			_, _, err1 = eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), burnTx.BeaconID, uint64(pHeight+1), czzAsset)
+			_, _, err1 = eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(pHeight+1), czzAsset)
 			if err1 != nil {
 				return err1
 			}

@@ -67,7 +67,7 @@ type ExChangeOut struct {
 	Height    uint64         `json:"height"`
 	Amount    *big.Int       `json:"amount"`
 	ExtTxHash string         `json:"exttxhash"`
-	BID       uint64         `json:"bid"`
+	BeaconID  uint64         `json:"beaconid"`
 }
 
 type WhiteUnit struct {
@@ -300,6 +300,17 @@ func NewExChangeTransactionCmd(inputs []TransactionInput, entangleOuts []ExChang
 		ExChangeOuts: entangleOuts,
 		Amounts:      amounts,
 		LockTime:     lockTime,
+	}
+}
+
+func NewFastExChangeTransactionCmd(inputs []TransactionInput, entangle ExChangeOut, BurnTransaction BurnTransactionOut, amounts *map[string]float64,
+	lockTime *int64) *FastExChangeTransactionCmd {
+	return &FastExChangeTransactionCmd{
+		Inputs:          inputs,
+		ExChange:        entangle,
+		BurnTransaction: BurnTransaction,
+		Amounts:         amounts,
+		LockTime:        lockTime,
 	}
 }
 
@@ -1224,6 +1235,7 @@ func init() {
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
+	MustRegisterCmd("fastexchangetransaction", (*FastExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("updatebeaconcoinbase", (*UpdateBeaconCoinbaseCmd)(nil), flags)
