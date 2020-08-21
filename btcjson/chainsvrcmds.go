@@ -143,6 +143,15 @@ type ExChangeTransactionCmd struct {
 	LockTime     *int64
 }
 
+// ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+type FastExChangeTransactionCmd struct {
+	Inputs          []TransactionInput
+	ExChange        ExChangeOut
+	BurnTransaction BurnTransactionOut
+	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime        *int64
+}
+
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
 type BeaconRegistrationCmd struct {
 	Inputs             []TransactionInput

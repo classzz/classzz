@@ -591,6 +591,20 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
+		// FastExChange
+		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), NetParams); einfo != nil && burnTx != nil {
+
+			height := big.NewInt(int64(einfo.Height))
+			czzAsset, err1 := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount)
+			if err1 != nil {
+				return err1
+			}
+			_, _, err1 = eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), burnTx.BeaconID, uint64(pHeight+1), czzAsset)
+			if err1 != nil {
+				return err1
+			}
+		}
+
 		// ExChange
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			height := big.NewInt(int64(einfo[0].Height))

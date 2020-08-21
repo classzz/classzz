@@ -865,6 +865,40 @@ mempoolLoop:
 			}
 		}
 
+		// FastExChange
+		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), g.chainParams); einfo != nil && burnTx != nil {
+
+			_, err := g.chain.GetExChangeVerify().VerifyExChangeTx(tx.MsgTx(), eState)
+			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
+			if err != nil && len(obj) > 0 {
+				log.Tracef("Skipping tx %s due to error in "+
+					"toAddressFromEntangle: %v", tx.Hash(), err)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+
+			height := big.NewInt(int64(einfo.Height))
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount)
+
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"toAddressFromEntangle: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+
+			amount, fee, err1 := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), burnTx.BeaconID, uint64(nextBlockHeight), czzAsset)
+
+			// now will be seed fee to beacon address
+			log.Info("user send burn tx, hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"toAddressFromEntangle: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+		}
+
 		// ExChange
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)

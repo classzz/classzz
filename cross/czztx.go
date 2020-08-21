@@ -47,6 +47,7 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 var (
 	NoEntangle              = errors.New("no entangle info in transcation")
 	NoExChange              = errors.New("no NoExChange info in transcation")
+	NoFastExChange          = errors.New("no NoFastExChange info in transcation")
 	NoBeaconRegistration    = errors.New("no BeaconRegistration info in transcation")
 	NoBurnTx                = errors.New("no BurnTx info in transcation")
 	NoBurnProofTx           = errors.New("no BurnProofTx info in transcation")
@@ -407,6 +408,66 @@ func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
 		return einfos, nil
 	}
 	return nil, NoExChange
+}
+
+// Only txOut[0] is valid
+func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo, *BurnTxInfo, error) {
+
+	var es *BurnTxInfo
+	var err error
+
+	if len(tx.TxOut) > 1 {
+		txout1 := tx.TxOut[0]
+		txout2 := tx.TxOut[1]
+		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
+			return nil, nil, NoFastExChange
+		}
+	} else {
+		return nil, nil, NoFastExChange
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, nil, errors.New(e)
+	}
+
+	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
+	if err != nil {
+		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
+		return nil, nil, errors.New(e)
+	}
+
+	var pk []byte
+	// get from address
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, nil, errors.New(e)
+	}
+
+	txout := tx.TxOut[1]
+	info, err := BurnInfoFromScript(txout.PkScript)
+	if err != nil {
+		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
+	}
+
+	info.Address = address.String()
+
+	return exInfo, es, nil
 }
 
 // BeaconRegistration
