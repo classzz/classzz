@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"sort"
 
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/rlp"
@@ -328,8 +329,6 @@ func newUserExChangeInfo() *UserExChangeInfo {
 	return uci
 }
 
-//type EntangleEntitys []*EntangleEntity
-
 type UserExChangeInfos map[string]*UserExChangeInfo
 
 func newUserExChangeInfos() UserExChangeInfos {
@@ -338,66 +337,66 @@ func newUserExChangeInfos() UserExChangeInfos {
 
 type StoreUserItme struct {
 	Addr     string
-	UserInfo UserExChangeInfo
+	UserInfo *UserExChangeInfo
 }
 
-//type SortStoreUserItems []*StoreUserItme
-//
-//func (vs SortStoreUserItems) Len() int {
-//	return len(vs)
-//}
-//
-//func (vs SortStoreUserItems) Less(i, j int) bool {
-//	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
-//}
-//
-//func (vs SortStoreUserItems) Swap(i, j int) {
-//	it := vs[i]
-//	vs[i] = vs[j]
-//	vs[j] = it
-//}
+type SortStoreUserItems []*StoreUserItme
 
-//func (uinfos *UserExChangeInfos) toSlice() SortStoreUserItems {
-//	v1 := make([]*StoreUserItme, 0, 0)
-//	for k, v := range *uinfos {
-//		v1 = append(v1, &StoreUserItme{
-//			Addr:      k,
-//			UserInfo:  v,
-//		})
-//	}
-//	sort.Sort(SortStoreUserItems(v1))
-//	return SortStoreUserItems(v1)
-//}
-//
-//func (es *UserExChangeInfos) fromSlice(vv SortStoreUserItems) {
-//	userInfos := make(map[string]UserExChangeInfo)
-//	for _, v := range vv {
-//		userInfos[v.Addr] = v.UserInfos
-//	}
-//	*es = UserEntangleInfos(userInfos)
-//}
+func (vs SortStoreUserItems) Len() int {
+	return len(vs)
+}
 
-//func (es *UserExChangeInfo) DecodeRLP(s *rlp.Stream) error {
-//	type Store1 struct {
-//		Value SortStoreUserItems
-//	}
-//	var eb Store1
-//	if err := s.Decode(&eb); err != nil {
-//		return err
-//	}
-//	es.fromSlice(eb.Value)
-//	return nil
-//}
-//
-//func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
-//	type Store1 struct {
-//		Value SortStoreUserItems
-//	}
-//	s1 := es.toSlice()
-//	return rlp.Encode(w, &Store1{
-//		Value: s1,
-//	})
-//}
+func (vs SortStoreUserItems) Less(i, j int) bool {
+	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
+}
+
+func (vs SortStoreUserItems) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+
+func (uinfos *UserExChangeInfos) toSlice() SortStoreUserItems {
+	v1 := make([]*StoreUserItme, 0, 0)
+	for k, v := range *uinfos {
+		v1 = append(v1, &StoreUserItme{
+			Addr:     k,
+			UserInfo: v,
+		})
+	}
+	sort.Sort(SortStoreUserItems(v1))
+	return SortStoreUserItems(v1)
+}
+
+func (es *UserExChangeInfos) fromSlice(vv SortStoreUserItems) {
+	userInfos := make(map[string]*UserExChangeInfo)
+	for _, v := range vv {
+		userInfos[v.Addr] = v.UserInfo
+	}
+	*es = userInfos
+}
+
+func (es *UserExChangeInfos) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		Value SortStoreUserItems
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.fromSlice(eb.Value)
+	return nil
+}
+
+func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		Value SortStoreUserItems
+	}
+	s1 := es.toSlice()
+	return rlp.Encode(w, &Store1{
+		Value: s1,
+	})
+}
 
 /////////////////////////////////////////////////////////////////
 func (e *UserExChangeInfo) increaseOriginAmount(amount, height *big.Int) {

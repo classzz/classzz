@@ -131,6 +131,7 @@ func getAssetForBaRedeem(all *big.Int, atype uint8, es *EntangleState) (*big.Int
 	}
 	return new(big.Int).Div(new(big.Int).Mul(all, base), divisor), nil
 }
+
 func (e *ExBeaconInfo) UpdateFreeQuato(all *big.Int, es *EntangleState) error {
 	use := big.NewInt(0)
 	for i, v := range e.Free.Items {

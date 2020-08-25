@@ -61,13 +61,13 @@ type CreateRawTransactionCmd struct {
 }
 
 type ExChangeOut struct {
-	Address   string         `json:"address"`
-	AssetType ExpandedTxType `json:"asset_type"`
-	Index     uint32         `json:"index"`
-	Height    uint64         `json:"height"`
-	Amount    *big.Int       `json:"amount"`
-	ExtTxHash string         `json:"exttxhash"`
-	BeaconID  uint64         `json:"beaconid"`
+	Address   string   `json:"address"`
+	AssetType uint8    `json:"asset_type"`
+	Index     uint32   `json:"index"`
+	Height    uint64   `json:"height"`
+	Amount    *big.Int `json:"amount"`
+	ExtTxHash string   `json:"exttxhash"`
+	BeaconID  uint64   `json:"beaconid"`
 }
 
 type WhiteUnit struct {
@@ -137,10 +137,10 @@ type BurnReportWhiteListOut struct {
 
 // ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
 type ExChangeTransactionCmd struct {
-	Inputs       []TransactionInput
-	ExChangeOuts []ExChangeOut
-	Amounts      *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime     *int64
+	Inputs   []TransactionInput
+	ExChange ExChangeOut
+	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime *int64
 }
 
 // ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
@@ -232,10 +232,10 @@ type BeaconAddressInfo struct {
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
 	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
-	AssetFlag       uint32           `json:"asset_flag"`
+	AssetFlag       uint32           `json:"assetflag"`
 	Fee             uint64           `json:"fee"`
-	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
-	WhiteList       []*WhiteUnit     `json:"white_list"`
+	KeepTime        uint64           `json:"keeptime"` // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit     `json:"whitelist"`
 	CoinBaseAddress []string         `json:"coinbase_address"`
 }
 
@@ -262,6 +262,7 @@ type BurnInfo struct {
 	Address   string
 	BeaconID  uint64
 	Amount    *big.Int
+	Height    uint32
 }
 
 type BurnProofInfo struct {
@@ -293,13 +294,13 @@ func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]fl
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewExChangeTransactionCmd(inputs []TransactionInput, entangleOuts []ExChangeOut, amounts *map[string]float64,
+func NewExChangeTransactionCmd(inputs []TransactionInput, entangle ExChangeOut, amounts *map[string]float64,
 	lockTime *int64) *ExChangeTransactionCmd {
 	return &ExChangeTransactionCmd{
-		Inputs:       inputs,
-		ExChangeOuts: entangleOuts,
-		Amounts:      amounts,
-		LockTime:     lockTime,
+		Inputs:   inputs,
+		ExChange: entangle,
+		Amounts:  amounts,
+		LockTime: lockTime,
 	}
 }
 
@@ -1271,6 +1272,7 @@ func init() {
 	MustRegisterCmd("getbeaconfreeasset", (*GetBeaconFreeAssetCmd)(nil), flags)
 	MustRegisterCmd("getbeaconnooverdueasset", (*GetBeaconNoOverdueAssetCmd)(nil), flags)
 	MustRegisterCmd("getburntxinfo", (*GetBurnTxInfoCmd)(nil), flags)
+	MustRegisterCmd("getbeaconburninfo", (*GetBeaconBurnInfoCmd)(nil), flags)
 	MustRegisterCmd("getentangleinfo", (*GetEntangleInfoCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)
 	MustRegisterCmd("getmempoolinfo", (*GetMempoolInfoCmd)(nil), flags)

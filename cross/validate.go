@@ -1097,7 +1097,6 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 	}
 
 	bai := state.getBeaconByID(info.BeaconID)
-
 	if bai == nil {
 		return errors.New("VerifyBurnProof EnEntitys is nil")
 	}

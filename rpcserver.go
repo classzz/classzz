@@ -694,18 +694,16 @@ func handleExChangeTransaction(s *rpcServer, cmd interface{}, closeChan <-chan s
 		mtx.AddTxIn(txIn)
 	}
 
-	for _, exChange := range c.ExChangeOuts {
-		exChangeByte, err := rlp.EncodeToBytes(exChange)
-		scriptInfo, err := txscript.ExChangeScript(exChangeByte)
-		if err != nil {
-			return nil, err
-		}
-
-		mtx.AddTxOut(&wire.TxOut{
-			Value:    0,
-			PkScript: scriptInfo,
-		})
+	exChangeByte, err := rlp.EncodeToBytes(c.ExChange)
+	scriptInfo, err := txscript.ExChangeScript(exChangeByte)
+	if err != nil {
+		return nil, err
 	}
+
+	mtx.AddTxOut(&wire.TxOut{
+		Value:    0,
+		PkScript: scriptInfo,
+	})
 
 	params := s.cfg.ChainParams
 	// The change

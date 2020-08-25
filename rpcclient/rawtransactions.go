@@ -310,8 +310,8 @@ func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
 }
 
 func (c *Client) ExChangeTransactionAsync(inputs []btcjson.TransactionInput,
-	exChangeOuts []btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewExChangeTransactionCmd(inputs, exChangeOuts, amounts, lockTime)
+	exChange btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewExChangeTransactionCmd(inputs, exChange, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 

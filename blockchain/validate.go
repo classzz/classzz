@@ -1871,10 +1871,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			Items: make([]cross.KeepedItem, 0),
 		},
 	}
-	//keepInfo, err := getKeepedAmountFormPreBlock(preblock)
-	//if err != nil {
-	//	return nil, err
-	//}
+	keepInfo, err := getKeepedAmountFormPreBlock(preblock)
+	if err != nil {
+		return nil, err
+	}
 	if err := getPoolAmountFromPreBlock(preblock, summay); err != nil {
 		return nil, err
 	}
@@ -1896,10 +1896,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			//einfos, _ := cross.IsExChangeTx(tx.MsgTx())
-			//if einfos != nil {
-			//	handleSummayEntangle(summay, keepInfo, einfos, fork)
-			//}
+			einfos, _ := cross.IsExChangeTx(tx.MsgTx())
+			if einfos != nil {
+				handleSummayEntangle(summay, keepInfo, einfos, fork)
+			}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value
 			}
@@ -1917,9 +1917,9 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 		}
 	}
 	// check entangle amount
-	//if amount1 != summay.EntangleAmount {
-	//	return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))
-	//}
+	if amount1 != summay.EntangleAmount {
+		return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))
+	}
 	summay.TotalIn, summay.TotalOut = totalIn, totalOut
 	return summay, nil
 }

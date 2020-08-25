@@ -237,7 +237,7 @@ type BurnTxInfo struct {
 	Address   string
 	BeaconID  uint64
 	Amount    *big.Int
-	Height    int32
+	Height    uint32
 }
 
 func (es *BurnTxInfo) ToBytes() []byte {
@@ -770,7 +770,7 @@ func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
 	txout := tx.TxOut[0]
 	info, err := BurnInfoFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("BurnInfoFromScript the output tx.")
+		return nil, errors.New("BurnInfoFromScript the output tx " + err.Error())
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
