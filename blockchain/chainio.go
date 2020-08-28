@@ -567,9 +567,9 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
 				return err
 			}
-			if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
-				return err
-			}
+			//if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
+			//	return err
+			//}
 		}
 
 		// BurnProof
@@ -595,7 +595,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), NetParams); einfo != nil && burnTx != nil {
 
 			height := big.NewInt(int64(einfo.Height))
-			czzAsset, err1 := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount)
+			czzAsset, err1 := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, block.Height())
 			if err1 != nil {
 				return err1
 			}
@@ -608,7 +608,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		// ExChange
 		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
 			height := big.NewInt(int64(einfo[0].Height))
-			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount)
+			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount, block.Height())
 			if err != nil {
 				return err
 			}
@@ -629,9 +629,11 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	}
 
 	if eState != nil {
-		var err error
-		err = dbPutEntangleStateEntry(dbTx, block, eState)
-		if err != nil {
+		if err := eState.UpdateQuotaOnBlock(uint64(block.Height())); err != nil {
+			return err
+		}
+
+		if err := dbPutEntangleStateEntry(dbTx, block, eState); err != nil {
 			return err
 		}
 	}

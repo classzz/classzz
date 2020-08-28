@@ -25,7 +25,7 @@ func newBeaconFreeQuotaInfo() *BeaconFreeQuotaInfo {
 	return &BeaconFreeQuotaInfo{
 		Rate: []uint64{uint64(100)},
 		Items: []*BaseAmountUint{&BaseAmountUint{
-			AssetType: ExpandedTxEntangle_Btc,
+			AssetType: ExpandedTxEntangle_Doge,
 			Amount:    big.NewInt(0),
 		}},
 	}
@@ -511,7 +511,7 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint64,
-	height, amount *big.Int) (*big.Int, error) {
+	height, amount *big.Int, czzHetgit int32) (*big.Int, error) {
 	if es.AddressInWhiteList(addr, true) {
 		return nil, ErrAddressInWhiteList
 	}
@@ -565,8 +565,8 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 			userExChangeInfo.ExChangeEntitys = append(userExChangeInfo.ExChangeEntitys, userEntity)
 		}
 
-		userExChangeInfo.increaseOriginAmount(sendAmount, height)
-		userExChangeInfo.updateFreeQuotaOfHeight(height, amount)
+		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHetgit)))
+		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(czzHetgit)), amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
 		userExChangeInfos[addr] = userExChangeInfo

@@ -557,7 +557,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				}
 				height := big.NewInt(int64(einfo.Height))
 				if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType),
-					einfo.BeaconID, height, einfo.Amount); err != nil {
+					einfo.BeaconID, height, einfo.Amount, prevHeight+1); err != nil {
 					return err
 				} else {
 
@@ -589,7 +589,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				} else {
 					height := big.NewInt(int64(info0[0].Height))
 					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].AssetType),
-						info0[0].BeaconID, height, info0[0].Amount); err != nil {
+						info0[0].BeaconID, height, info0[0].Amount, prevHeight+1); err != nil {
 						return err
 					} else {
 						item := &cross.ExChangeItem{
@@ -688,6 +688,9 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	// check the coinbase Tx
 	if prevHeight+1 >= b.chainParams.ExChangeHeight {
 		if err := b.checkCoinBaseForMergeUxto(coinBaseTx, in, out, prevHeight+1); err != nil {
+			return err
+		}
+		if err := eState.UpdateQuotaOnBlock(uint64(prevHeight + 1)); err != nil {
 			return err
 		}
 	}

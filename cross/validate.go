@@ -1122,16 +1122,16 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		}
 	}
 
-	addrs, err := czzutil.NewAddressPubKeyHash(out, ev.Params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err")
-		return errors.New(e)
-	}
+	//addrs, err := czzutil.NewAddressPubKeyHash(out, ev.Params)
+	//if err != nil {
+	//	e := fmt.Sprintf("NewAddressPubKeyHash err")
+	//	return errors.New(e)
+	//}
 
-	if bti := ev.Cache.LoadBurnTxInfo(addrs.String()); bti == nil {
-		e := fmt.Sprintf("LoadBurnTxInfo err")
-		return errors.New(e)
-	}
+	//if bti := ev.Cache.LoadBurnTxInfo(addrs.String()); bti == nil {
+	//	e := fmt.Sprintf("LoadBurnTxInfo err")
+	//	return errors.New(e)
+	//}
 
 	return nil
 }

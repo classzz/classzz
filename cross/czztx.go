@@ -162,8 +162,8 @@ type BeaconMergeItem struct {
 }
 
 type ExChangeTxInfo struct {
-	Address   string
 	AssetType ExpandedTxType
+	Address   string
 	Index     uint32
 	Height    uint64
 	Amount    *big.Int
@@ -1095,7 +1095,7 @@ func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeIte
 	}
 	for i := range items {
 		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint8(items[i].AssetType),
-			items[i].BeaconID, height, items[i].Value)
+			items[i].BeaconID, height, items[i].Value, 0)
 		if err != nil {
 			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
 				i, items[i].BeaconID, items[i].AssetType, items[i].Value.String(), err.Error()))

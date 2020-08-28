@@ -180,7 +180,7 @@ func (m *CPUMiner) submitBlock(block *czzutil.Block) bool {
 		// so log that error as an internal error.
 		if _, ok := err.(blockchain.RuleError); !ok {
 			log.Errorf("Unexpected error while processing "+
-				"block submitted via CPU miner: %v", err)
+				"block submitted via CPU miner: %s", err)
 			return false
 		}
 

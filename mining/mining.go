@@ -878,7 +878,7 @@ mempoolLoop:
 			}
 
 			height := big.NewInt(int64(einfo.Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount)
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
 
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -909,7 +909,7 @@ mempoolLoop:
 				continue
 			}
 			height := big.NewInt(int64(einfo[0].Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount)
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount, nextBlockHeight)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)

@@ -61,22 +61,22 @@ type CreateRawTransactionCmd struct {
 }
 
 type ExChangeOut struct {
-	Address   string   `json:"address"`
-	AssetType uint8    `json:"asset_type"`
-	Index     uint32   `json:"index"`
-	Height    uint64   `json:"height"`
-	Amount    *big.Int `json:"amount"`
-	ExtTxHash string   `json:"exttxhash"`
-	BeaconID  uint64   `json:"beaconid"`
+	AssetType ExpandedTxType
+	Address   string
+	Index     uint32
+	Height    uint64
+	Amount    *big.Int
+	ExtTxHash string
+	BeaconID  uint64
 }
 
 type WhiteUnit struct {
-	AssetType uint32 `json:"asset_type"`
+	AssetType uint32 `json:"assettype"`
 	Pk        []byte `json:"pk"`
 }
 
 type BaseAmountUint struct {
-	AssetType uint32   `json:"asset_type"`
+	AssetType uint32   `json:"assettype"`
 	Amount    *big.Int `json:"amount"`
 }
 
