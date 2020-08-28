@@ -384,18 +384,6 @@ func (c *Client) GetBlockHash(blockHeight int64) (*chainhash.Hash, error) {
 	return c.GetBlockHashAsync(blockHeight).Receive()
 }
 
-// See GetBlockHash for the blocking version and more details.
-func (c *Client) GetStateInfoAsync(BeaconID *uint64) FutureGetBlockHashResult {
-	cmd := btcjson.NewGetStateInfoCmd(BeaconID)
-	return c.sendCmd(cmd)
-}
-
-// GetBlockHash returns the hash of the block in the best block chain at the
-// given height.
-func (c *Client) GetStateInfo(BeaconID *uint64) (*chainhash.Hash, error) {
-	return c.GetStateInfoAsync(BeaconID).Receive()
-}
-
 type BurnTxInfo struct {
 	ExTxType uint8
 	Address  string
@@ -439,6 +427,43 @@ func (c *Client) GetBurnTxInfoAsync(BeaconID uint64) FutureGetBurnTxInfoResult {
 // given height.
 func (c *Client) GetBurnTxInfo(BeaconID uint64) ([]*BurnTxInfo, error) {
 	return c.GetBurnTxInfoAsync(BeaconID).Receive()
+}
+
+// FutureGetBlockHashResult is a future promise to deliver the result of a
+// GetBlockHashAsync RPC invocation (or an applicable error).
+type FutureGetStateInfoResult chan *response
+
+// Receive waits for the response promised by the future and returns the hash of
+// the block in the best block chain at the given height.
+func (r FutureGetStateInfoResult) Receive() ([]*btcjson.StateInfoChainResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the result as a string-encoded sha.
+	var btis []*btcjson.StateInfoChainResult
+	err = json.Unmarshal(res, &btis)
+	if err != nil {
+		return nil, err
+	}
+	return btis, nil
+}
+
+// GetBlockHashAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See GetBlockHash for the blocking version and more details.
+func (c *Client) GetStateInfoAsync(BeaconID *uint64) FutureGetStateInfoResult {
+	cmd := btcjson.NewGetStateInfoCmd(BeaconID)
+	return c.sendCmd(cmd)
+}
+
+// GetBlockHash returns the hash of the block in the best block chain at the
+// given height.
+func (c *Client) GetStateInfo(BeaconID *uint64) ([]*btcjson.StateInfoChainResult, error) {
+	return c.GetStateInfoAsync(BeaconID).Receive()
 }
 
 // FutureGetBlockHeaderResult is a future promise to deliver the result of a

@@ -3632,7 +3632,9 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 			CoinBaseAddress: info.CoinBaseAddress,
 		}
 		if c.BeaconID != nil && *c.BeaconID == info.BeaconID {
-			return infor, nil
+			infos := make([]*btcjson.StateInfoChainResult, 0)
+			infos = append(infos, infor)
+			return infos, nil
 		}
 		infos = append(infos, infor)
 	}
