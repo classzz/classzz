@@ -640,8 +640,10 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 
 	// get out asset for burn czz
 	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
+	outAllAmount = big.NewInt(0).Div(outAllAmount, baseUnit)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
+	outFeeAmount = big.NewInt(0).Div(outFeeAmount, baseUnit)
 
 	burnInfo.addBurnItem(height, amount, fee, outFeeAmount, outAllAmount)
 

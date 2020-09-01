@@ -3813,7 +3813,7 @@ func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 			result2 := make([]interface{}, 0, 0)
 			for _, item := range burn.Items {
 				result3 := make(map[string]interface{})
-				result3["amount"] = item.Amount
+				result3["r_amount"] = item.RAmount
 				result3["height"] = item.Height
 				result3["fee_r_amount"] = item.FeeRAmount
 				result3["redeem_state"] = item.RedeemState
