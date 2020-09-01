@@ -46,36 +46,47 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 		3. check the correct tx
 		4. check the pool reserve enough reward
 	*/
-	einfos, _ := IsExChangeTx(tx)
-	if einfos == nil {
+	einfo, _ := IsExChangeTx(tx)
+	if einfo == nil {
 		return nil, errors.New("not entangle tx")
 	}
 	pairs := make([]*TuplePubIndex, 0)
 	amount := int64(0)
 	if ev.Cache != nil {
-		for i, v := range einfos {
-			if ok := ev.Cache.FetchExChangeUtxoView(v); ok {
-				errStr := fmt.Sprintf("[txid:%s, height:%v]", v.ExtTxHash, v.Height)
-				return nil, errors.New("txid has already entangle:" + errStr)
-			}
-			amount += tx.TxOut[i].Value
+		if ok := ev.Cache.FetchExChangeUtxoView(einfo); ok {
+			errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Height)
+			return nil, errors.New("txid has already entangle:" + errStr)
 		}
+		amount += tx.TxOut[0].Value
 	}
 
-	for i, v := range einfos {
-		if pub, err := ev.verifyTx(v, eState); err != nil {
-			errStr := fmt.Sprintf("[txid:%s, height:%v]", v.ExtTxHash, v.Index)
-			return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
-		} else {
-			pairs = append(pairs, &TuplePubIndex{
-				AssetType: v.AssetType,
-				Index:     i,
-				Pub:       pub,
-			})
-		}
+	if pub, err := ev.verifyTx(einfo, eState); err != nil {
+		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
+		return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
+	} else {
+		pairs = append(pairs, &TuplePubIndex{
+			AssetType: einfo.AssetType,
+			Index:     0,
+			Pub:       pub,
+		})
 	}
 
 	return pairs, nil
+}
+
+func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleState) error {
+	/*
+		1. check entangle tx struct
+		2. check the repeat tx
+		3. check the correct tx
+		4. check the pool reserve enough reward
+	*/
+	einfo, _, _ := IsFastExChangeTx(tx, ev.Params)
+	if einfo == nil {
+		return errors.New("not entangle tx")
+	}
+
+	return nil
 }
 
 func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {

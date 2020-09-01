@@ -149,9 +149,10 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"updatebeaconcoinbase":  handleUpdateBeaconCoinbase,
 	"updatebeaconfreequota": handleUpdateBeaconFreeQuota,
 
-	"burntransaction":      handleBurnTransaction,
-	"burnprooft":           handleBurnProoft,
-	"burnreportwhitelist":  handleBurnReportWhiteList,
+	"burntransaction":     handleBurnTransaction,
+	"burnprooft":          handleBurnProoft,
+	"burnreportwhitelist": handleBurnReportWhiteList,
+
 	"conversionaddress":    handleConversionAddress,
 	"debuglevel":           handleDebugLevel,
 	"decoderawtransaction": handleDecodeRawTransaction,
@@ -3806,17 +3807,36 @@ func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 	}
 
 	result := make(map[string]interface{})
-	for _, v := range info {
+	for k, v := range info {
 		result1 := make(map[string]interface{})
-		for _, en := range v.ExChangeEntitys {
-			for _, item := range en.BurnAmount.Items {
-				result1["amount"] = item.Amount
-				result1["height"] = item.Height
-				result1["fee_r_amount"] = item.FeeRAmount
-				result1["redeem_state"] = item.RedeemState
+		for _, burn := range v.BurnAmounts {
+			result2 := make([]interface{}, 0, 0)
+			for _, item := range burn.Items {
+				result3 := make(map[string]interface{})
+				result3["amount"] = item.Amount
+				result3["height"] = item.Height
+				result3["fee_r_amount"] = item.FeeRAmount
+				result3["redeem_state"] = item.RedeemState
+				result2 = append(result2, result3)
 			}
+
+			AssetType := ""
+			switch burn.AssetType {
+			case cross.ExpandedTxEntangle_Doge:
+				AssetType = "DOGE"
+			case cross.ExpandedTxEntangle_Ltc:
+				AssetType = "LTC"
+			case cross.ExpandedTxEntangle_Btc:
+				AssetType = "BTC"
+			case cross.ExpandedTxEntangle_Bsv:
+				AssetType = "BSV"
+			case cross.ExpandedTxEntangle_Bch:
+				AssetType = "BCH"
+			}
+
+			result1[AssetType] = result2
 		}
-		result[v.Address] = result1
+		result[k] = result1
 	}
 
 	return result, nil

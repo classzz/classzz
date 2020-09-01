@@ -606,9 +606,9 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// ExChange
-		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
-			height := big.NewInt(int64(einfo[0].Height))
-			_, err = eState.AddEntangleItem(einfo[0].Address, uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount, block.Height())
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
+			height := big.NewInt(int64(einfo.Height))
+			_, err = eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, block.Height())
 			if err != nil {
 				return err
 			}

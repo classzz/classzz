@@ -868,9 +868,8 @@ mempoolLoop:
 		// FastExChange
 		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), g.chainParams); einfo != nil && burnTx != nil {
 
-			_, err := g.chain.GetExChangeVerify().VerifyExChangeTx(tx.MsgTx(), eState)
-			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
-			if err != nil && len(obj) > 0 {
+			err := g.chain.GetExChangeVerify().VerifyFastExChangeTx(tx.MsgTx(), eState)
+			if err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err)
 				logSkippedDeps(tx, deps)
@@ -878,7 +877,7 @@ mempoolLoop:
 			}
 
 			height := big.NewInt(int64(einfo.Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
+			czzAsset, err1 := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
 
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -900,7 +899,7 @@ mempoolLoop:
 		}
 
 		// ExChange
-		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil && einfo[0] != nil {
+		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
 			obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
 			if err != nil && len(obj) > 0 {
 				log.Tracef("Skipping tx %s due to error in "+
@@ -908,8 +907,8 @@ mempoolLoop:
 				logSkippedDeps(tx, deps)
 				continue
 			}
-			height := big.NewInt(int64(einfo[0].Height))
-			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo[0].AssetType), einfo[0].BeaconID, height, einfo[0].Amount, nextBlockHeight)
+			height := big.NewInt(int64(einfo.Height))
+			czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
 			if err1 != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"toAddressFromEntangle: %v", tx.Hash(), err1)
@@ -917,10 +916,10 @@ mempoolLoop:
 				continue
 			}
 			entangleItems = append(entangleItems, &cross.ExChangeItem{
-				AssetType: einfo[0].AssetType,
+				AssetType: einfo.AssetType,
 				Addr:      obj[0].Address,
 				Value:     czzAsset,
-				BeaconID:  einfo[0].BeaconID,
+				BeaconID:  einfo.BeaconID,
 			})
 		}
 

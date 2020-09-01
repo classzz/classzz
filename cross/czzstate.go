@@ -94,7 +94,7 @@ type ExBeaconInfo struct {
 	EnItems []*wire.OutPoint
 	Proofs  []*WhiteListProof
 	Free    *BeaconFreeQuotaInfo
-	BItems  *BurnInfos
+	BItems  *BurnInfo
 }
 
 func NewExBeaconInfo() *ExBeaconInfo {
@@ -102,7 +102,12 @@ func NewExBeaconInfo() *ExBeaconInfo {
 		EnItems: make([]*wire.OutPoint, 0, 0),
 		Proofs:  make([]*WhiteListProof, 0, 0),
 		Free:    newBeaconFreeQuotaInfo(),
-		BItems:  newBurnInfos(),
+		BItems: &BurnInfo{
+			AssetType:  ExpandedTxEntangle_Ltc,
+			RAllAmount: big.NewInt(0),
+			BAllAmount: big.NewInt(0),
+			Items:      make([]*BurnItem, 0, 0),
+		},
 	}
 }
 
@@ -407,7 +412,8 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 
 	es.CurBeaconID = info.BeaconID
 	es.EnInfos[addr] = info
-	es.BaExInfo[es.CurBeaconID] = NewExBeaconInfo()
+	es.BaExInfo[info.BeaconID] = NewExBeaconInfo()
+	es.EnUserExChangeInfos[info.BeaconID] = newUserExChangeInfos()
 	return nil
 }
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
@@ -560,7 +566,6 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 			userEntity = &ExChangeEntity{
 				AssetType:       aType,
 				EnOutsideAmount: new(big.Int).Set(amount),
-				BurnAmount:      newBurnInfos(),
 			}
 			userExChangeInfo.ExChangeEntitys = append(userExChangeInfo.ExChangeEntitys, userEntity)
 		}
@@ -580,10 +585,12 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 // returns the amount czz by user's burnned, took out fee by beaconaddress
 func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height uint64,
 	amount *big.Int) (*big.Int, *big.Int, error) {
+
 	light := es.getBeaconAddress(BeaconID)
 	if light == nil {
 		return nil, nil, ErrNoRegister
 	}
+
 	if light.Address == addr {
 		ex := es.GetBaExInfoByID(BeaconID)
 		if ex == nil {
@@ -596,40 +603,47 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 		}
 		return out, big.NewInt(0), err
 	}
+
 	lhEntitys, ok := es.EnUserExChangeInfos[BeaconID]
 	if !ok {
 		return nil, nil, ErrNoRegister
 	}
+
 	userEntitys, ok1 := lhEntitys[addr]
 	if !ok1 {
 		return nil, nil, ErrNoUserReg
 	}
+
 	// self redeem amount, maybe add the free quota in the BeaconAddress
 	validAmount := userEntitys.getRedeemableAmount()
 	if amount.Cmp(validAmount) > 0 {
 		return nil, nil, ErrNotEnouthBurn
 	}
 
-	var exChangeEntity *ExChangeEntity
-	for _, v := range userEntitys.ExChangeEntitys {
+	var burnInfo *BurnInfo
+	for _, v := range userEntitys.BurnAmounts {
 		if aType == v.AssetType {
-			exChangeEntity = v
+			burnInfo = v
 			break
 		}
 	}
-	if exChangeEntity == nil {
+
+	if burnInfo == nil {
 		return nil, nil, ErrNoUserAsset
 	}
+
 	reserve := es.GetEntangleAmountByAll(aType)
 	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// get out asset for burn czz
 	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
-	exChangeEntity.BurnAmount.addBurnItem(height, amount, fee, outFeeAmount, outAllAmount)
+
+	burnInfo.addBurnItem(height, amount, fee, outFeeAmount, outAllAmount)
 
 	return new(big.Int).Sub(amount, fee), fee, nil
 }
@@ -846,24 +860,6 @@ func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int
 	return beacon.updatePunished(slashingAmount)
 }
 
-//func (es *EntangleState) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-//	userEntitys, ok := es.EnEntitys[info.LightID]
-//	if !ok {
-//		fmt.Println("verifyBurnProof:cann't found the BeaconAddress id:", info.LightID)
-//		return nil, ErrNoRegister
-//	} else {
-//
-//		for addr1, userEntity := range userEntitys {
-//			if info.Address == addr1 {
-//				return userEntity.verifyBurnProof(info, outHeight, curHeight)
-//			} else {
-//				return nil, ErrNotMatchUser
-//			}
-//		}
-//	}
-//	return nil, nil
-//}
-
 func (es *EntangleState) CloseProofForPunished(info *BurnProofInfo, item *BurnItem) error {
 	es.FinishBeaconAddressPunished(info.BeaconID, info.Amount)
 	userEntitys, ok := es.EnUserExChangeInfos[info.BeaconID]
@@ -927,16 +923,6 @@ func (es *EntangleState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 	return nil
 }
 
-//func (es *EntangleState) VerifyWhiteListProof(proof *WhiteListProof) error {
-//	if info := es.GetExInfosByID(proof.LightID); info != nil {
-//		if !info.EqualProof(proof) {
-//			return ErrRepeatProof
-//		} else {
-//			return nil
-//		}
-//	}
-//	return ErrNoRegister
-//}
 func (es *EntangleState) FinishWhiteListProof(proof *WhiteListProof) error {
 	if info := es.GetBaExInfoByID(proof.BeaconID); info != nil {
 		info.AppendProof(proof)

@@ -303,8 +303,7 @@ func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
 //// Address > EntangleEntity
 type ExChangeEntity struct {
 	AssetType       uint8
-	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
-	BurnAmount      *BurnInfos `json:"burn_amount"`
+	EnOutsideAmount *big.Int `json:"en_outside_amount"` // out asset
 }
 
 type UserExChangeInfo struct {
@@ -314,6 +313,7 @@ type UserExChangeInfo struct {
 	OldHeight       *big.Int          `json:"old_height"`    // oldest height for entangle
 	OriginAmount    *big.Int          `json:"origin_amount"` // origin asset(czz) by entangle in
 	MaxRedeem       *big.Int          `json:"max_redeem"`    // redeem asset bt czz
+	BurnAmounts     []*BurnInfo       `json:"burn_amount"`
 	ExChangeEntitys []*ExChangeEntity `json:"ex_change_entitys"`
 }
 
@@ -324,6 +324,7 @@ func newUserExChangeInfo() *UserExChangeInfo {
 		OldHeight:       big.NewInt(0),
 		OriginAmount:    big.NewInt(0),
 		MaxRedeem:       big.NewInt(0),
+		BurnAmounts:     newBurnInfos(),
 		ExChangeEntitys: make([]*ExChangeEntity, 0, 0),
 	}
 	return uci
@@ -409,25 +410,24 @@ func (e *UserExChangeInfo) increaseOriginAmount(amount, height *big.Int) {
 
 // the returns maybe negative
 func (e *UserExChangeInfo) getRedeemableAmount() *big.Int {
-
 	allAmount := big.NewInt(0)
-	for _, v := range e.ExChangeEntitys {
-		allAmount = big.NewInt(0).Add(allAmount, v.BurnAmount.GetAllAmountByOrigin())
+	for _, v := range e.BurnAmounts {
+		allAmount = big.NewInt(0).Add(allAmount, v.GetAllAmountByOrigin())
 	}
 	return new(big.Int).Sub(e.MaxRedeem, allAmount)
 }
 
 func (e *UserExChangeInfo) getValidOriginAmount() *big.Int {
 	allAmount := big.NewInt(0)
-	for _, v := range e.ExChangeEntitys {
-		allAmount = big.NewInt(0).Add(allAmount, v.BurnAmount.GetAllAmountByOrigin())
+	for _, v := range e.BurnAmounts {
+		allAmount = big.NewInt(0).Add(allAmount, v.GetAllAmountByOrigin())
 	}
 	return new(big.Int).Sub(e.OriginAmount, allAmount)
 }
 
-func (e *ExChangeEntity) getValidOutsideAmount() *big.Int {
-	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
-}
+//func (e *ExChangeEntity) getValidOutsideAmount() *big.Int {
+//	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
+//}
 
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
 func (e *UserExChangeInfo) updateFreeQuotaOfHeight(height, amount *big.Int) {
@@ -455,18 +455,9 @@ func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big
 	return big.NewInt(0)
 }
 
-func (e *ExChangeEntity) updateBurnState(state byte, items []*BurnItem) {
-	for _, v := range items {
-		ii := e.BurnAmount.getItem(v.Height, v.Amount, v.RedeemState)
-		if ii != nil {
-			ii.RedeemState = state
-		}
-	}
-}
-
 /////////////////////////////////////////////////////////////////
-func (ee *UserExChangeInfo) getEntityByType(atype uint8) *ExChangeEntity {
-	for _, v := range ee.ExChangeEntitys {
+func (ee *UserExChangeInfo) getBurnByType(atype uint8) *BurnInfo {
+	for _, v := range ee.BurnAmounts {
 		if atype == v.AssetType {
 			return v
 		}
@@ -474,32 +465,10 @@ func (ee *UserExChangeInfo) getEntityByType(atype uint8) *ExChangeEntity {
 	return nil
 }
 
-//func (uei *UserExChangeInfo) updateFreeQuota(curHeight, limit *big.Int) *big.Int {
-//	all := big.NewInt(0)
-//	//for _, v := range uei.EntangleEntitys {
-//
-//	//}
-//
-//	all = new(big.Int).Add(all, uei.updateFreeQuota(curHeight, limit))
-//	return all
-//}
-
-//func (ee *UserExChangeInfo) getAllRedeemableAmount() *big.Int {
-//res := big.NewInt(0)
-//for _, v := range ee.ExChangeEntitys {
-//	a := v.GetValidRedeemAmount()
-//	if a != nil {
-//		res = res.Add(res, a)
-//	}
-//}
-
-//return ee.GetValidRedeemAmount()
-//}
-
 func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfo {
 	res := make([]*TimeOutBurnInfo, 0, 0)
-	for _, entity := range ee.ExChangeEntitys {
-		items := entity.BurnAmount.getBurnTimeout(height, update)
+	for _, entity := range ee.BurnAmounts {
+		items := entity.getBurnTimeout(height, update)
 		if len(items) > 0 {
 			res = append(res, &TimeOutBurnInfo{
 				Items:     items,
@@ -510,53 +479,53 @@ func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeO
 	return TypeTimeOutBurnInfo(res)
 }
 
-func (ee *UserExChangeInfo) updateBurnState(state byte, items TypeTimeOutBurnInfo) {
+func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnInfo) {
 	for _, v := range items {
-		entity := ee.getEntityByType(v.AssetType)
-		if entity != nil {
-			entity.updateBurnState(state, v.Items)
+		burn := ee.getBurnByType(v.AssetType)
+		if burn != nil {
+			burn.updateBurnState(state, v.Items)
 		}
 	}
 }
 
 func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
 	atype uint8, proof *BurnProofItem) {
-	for _, entity := range ee.ExChangeEntitys {
-		if entity.AssetType == atype {
-			entity.BurnAmount.updateBurn(height, amount, proof)
+	for _, burn := range ee.BurnAmounts {
+		if burn.AssetType == atype {
+			burn.updateBurn(height, amount, proof)
 		}
 	}
 }
 
 func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
 	atype uint8, proof *BurnProofItem) {
-	for _, entity := range ee.ExChangeEntitys {
-		if entity.AssetType == atype {
-			entity.BurnAmount.finishBurn(height, amount, proof)
+	for _, burn := range ee.BurnAmounts {
+		if burn.AssetType == atype {
+			burn.finishBurn(height, amount, proof)
 		}
 	}
 }
 
 func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-	for _, entity := range ee.ExChangeEntitys {
-		if entity.AssetType == info.AssetType {
-			return entity.BurnAmount.verifyProof(info, outHeight, curHeight)
+	for _, burn := range ee.BurnAmounts {
+		if burn.AssetType == info.AssetType {
+			return burn.verifyProof(info, outHeight, curHeight)
 		}
 	}
 	return nil, ErrNoUserAsset
 }
 
 func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, atype uint8) error {
-	for _, entity := range ee.ExChangeEntitys {
-		if entity.AssetType == atype {
-			return entity.BurnAmount.closeProofForPunished(item)
+	for _, burn := range ee.BurnAmounts {
+		if burn.AssetType == atype {
+			return burn.closeProofForPunished(item)
 		}
 	}
 	return ErrNoUserAsset
 }
 
 /////////////////////////////////////////////////////////////////
-func (u UserExChangeInfos) updateBurnState(state byte, items UserTimeOutBurnInfo) {
+func (u UserExChangeInfos) updateBurnState(state uint8, items UserTimeOutBurnInfo) {
 	for addr, infos := range items {
 		entitys, ok := u[addr]
 		if ok {
@@ -596,54 +565,90 @@ func (b *BurnItem) clone() *BurnItem {
 	}
 }
 
-type BurnInfos struct {
-	Items      []*BurnItem
+type BurnInfo struct {
+	AssetType  uint8
 	RAllAmount *big.Int // redeem asset for outside asset by burned czz
 	BAllAmount *big.Int // all burned asset on czz by the account
+	Items      []*BurnItem
 }
 
 type extBurnInfos struct {
+	AssetType  uint8
 	Items      []*BurnItem
 	RAllAmount *big.Int // redeem asset for outside asset by burned czz
 	BAllAmount *big.Int // all burned asset on czz by the account
 }
 
-// DecodeRLP decodes the truechain
-func (b *BurnInfos) DecodeRLP(s *rlp.Stream) error {
+// DecodeRLP decodes the
+func (b *BurnInfo) DecodeRLP(s *rlp.Stream) error {
 
 	var eb extBurnInfos
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	b.Items, b.RAllAmount, b.BAllAmount = eb.Items, eb.RAllAmount, eb.BAllAmount
+	b.AssetType, b.Items, b.RAllAmount, b.BAllAmount = eb.AssetType, eb.Items, eb.RAllAmount, eb.BAllAmount
 	return nil
 }
 
-// EncodeRLP serializes b into the truechain RLP block format.
-func (b *BurnInfos) EncodeRLP(w io.Writer) error {
+// EncodeRLP serializes b into the  RLP block format.
+func (b *BurnInfo) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extBurnInfos{
+		AssetType:  b.AssetType,
 		Items:      b.Items,
 		RAllAmount: b.RAllAmount,
 		BAllAmount: b.BAllAmount,
 	})
 }
 
-func newBurnInfos() *BurnInfos {
-	return &BurnInfos{
-		Items:      make([]*BurnItem, 0, 0),
+func newBurnInfos() []*BurnInfo {
+
+	burnInfos := make([]*BurnInfo, 0, 0)
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Doge,
 		RAllAmount: big.NewInt(0),
 		BAllAmount: big.NewInt(0),
-	}
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Bsv,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Bch,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Btc,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Ltc,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
+	return burnInfos
 }
 
 // GetAllAmountByOrigin returns all burned amount asset (czz)
-func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
+func (b *BurnInfo) GetAllAmountByOrigin() *big.Int {
 	return new(big.Int).Set(b.BAllAmount)
 }
-func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
+func (b *BurnInfo) GetAllBurnedAmountByOutside() *big.Int {
 	return new(big.Int).Set(b.RAllAmount)
 }
-func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
+func (b *BurnInfo) getBurnTimeout(height uint64, update bool) []*BurnItem {
 	res := make([]*BurnItem, 0, 0)
 	for _, v := range b.Items {
 		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
@@ -662,7 +667,7 @@ func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
 	}
 	return res
 }
-func (b *BurnInfos) addBurnItem(height uint64, amount, fee, outFee, outAmount *big.Int) {
+func (b *BurnInfo) addBurnItem(height uint64, amount, fee, outFee, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
 		RAmount:     new(big.Int).Set(outAmount),
@@ -686,7 +691,7 @@ func (b *BurnInfos) addBurnItem(height uint64, amount, fee, outFee, outAmount *b
 	}
 }
 
-func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
+func (b *BurnInfo) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
 			return v
@@ -695,7 +700,7 @@ func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnIte
 	return nil
 }
 
-func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem {
+func (b *BurnInfo) getBurnsItemByHeight(height uint64, state byte) []*BurnItem {
 	items := []*BurnItem{}
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState == state && v.RAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
@@ -705,7 +710,13 @@ func (b *BurnInfos) getBurnsItemByHeight(height uint64, state byte) []*BurnItem 
 	return items
 }
 
-func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
+func (b *BurnInfo) updateBurnState(state uint8, Items []*BurnItem) {
+	for _, v := range Items {
+		v.RedeemState = state
+	}
+}
+
+func (b *BurnInfo) updateBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		if v.Height == height && v.RedeemState != 2 &&
 			amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 {
@@ -714,7 +725,7 @@ func (b *BurnInfos) updateBurn(height uint64, amount *big.Int, proof *BurnProofI
 	}
 }
 
-func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
+func (b *BurnInfo) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		//&& v.RedeemState != 1 && sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
 		if v.Height == height {
@@ -723,10 +734,10 @@ func (b *BurnInfos) finishBurn(height uint64, amount *big.Int, proof *BurnProofI
 	}
 }
 
-func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
+func (b *BurnInfo) recoverOutAmountForPunished(amount *big.Int) {
 	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
-func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
+func (b *BurnInfo) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	height, used := uint64(0), false
 	for _, v := range b.Items {
 		if v.Proof.TxHash != "" {
@@ -740,7 +751,7 @@ func (b *BurnInfos) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	}
 	return height, used
 }
-func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
+func (b *BurnInfo) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
 	if info.IsBeacon {
 		if outHeight >= eHeight && !used {
@@ -765,7 +776,7 @@ func (b *BurnInfos) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64
 
 	return nil, ErrBurnProof
 }
-func (b *BurnInfos) closeProofForPunished(item *BurnItem) error {
+func (b *BurnInfo) closeProofForPunished(item *BurnItem) error {
 	if v := b.getItem(item.Height, item.Amount, item.RedeemState); v != nil {
 		v.RedeemState = 2
 	}

@@ -391,29 +391,56 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 }
 
 // Only txOut[0] is valid
-func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
+//func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
+//
+//	// make sure at least one txout in OUTPUT
+//	einfos := make(map[uint32]*ExChangeTxInfo)
+//	for i, v := range tx.TxOut {
+//		info, err := ExChangeTxFromScript(v.PkScript)
+//		if err == nil && i == 0 {
+//			if v.Value != 0 {
+//				return nil, errors.New("the output value must be 0 in ExChange tx.")
+//			}
+//			einfos[uint32(i)] = info
+//		}
+//	}
+//	if len(einfos) > 0 {
+//		return einfos, nil
+//	}
+//	return nil, NoExChange
+//}
+
+// Only txOut[0] is valid
+func IsExChangeTx(tx *wire.MsgTx) (*ExChangeTxInfo, error) {
 
 	// make sure at least one txout in OUTPUT
-	einfos := make(map[uint32]*ExChangeTxInfo)
-	for i, v := range tx.TxOut {
-		info, err := ExChangeTxFromScript(v.PkScript)
-		if err == nil && i == 0 {
-			if v.Value != 0 {
-				return nil, errors.New("the output value must be 0 in ExChange tx.")
-			}
-			einfos[uint32(i)] = info
+	var err error
+
+	if len(tx.TxOut) > 0 {
+		txout1 := tx.TxOut[0]
+		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout1.PkScript)) {
+			return nil, NoExChange
 		}
+	} else {
+		return nil, NoExChange
 	}
-	if len(einfos) > 0 {
-		return einfos, nil
+	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("IsExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
 	}
-	return nil, NoExChange
+
+	info, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
+	if err != nil {
+		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
+		return nil, errors.New(e)
+	}
+
+	return info, NoExChange
 }
 
 // Only txOut[0] is valid
 func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo, *BurnTxInfo, error) {
 
-	var es *BurnTxInfo
 	var err error
 
 	if len(tx.TxOut) > 1 {
@@ -467,7 +494,7 @@ func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo,
 
 	info.Address = address.String()
 
-	return exInfo, es, nil
+	return exInfo, info, nil
 }
 
 // BeaconRegistration

@@ -549,14 +549,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 			if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), b.chainParams); einfo != nil && burnTx != nil {
 
-				_, err := b.GetExChangeVerify().VerifyExChangeTx(tx.MsgTx(), eState)
-				obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState)
-				if err != nil && len(obj) > 0 {
+				err := b.GetExChangeVerify().VerifyFastExChangeTx(tx.MsgTx(), eState)
+				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
+						"VerifyFastExChangeTx: %v", tx.Hash(), err)
 				}
 				height := big.NewInt(int64(einfo.Height))
-				if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType),
+				if czzAsset, err := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType),
 					einfo.BeaconID, height, einfo.Amount, prevHeight+1); err != nil {
 					return err
 				} else {
@@ -583,20 +582,20 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
-			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0[0] != nil {
+			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0 != nil {
 				if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 					return err
 				} else {
-					height := big.NewInt(int64(info0[0].Height))
-					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0[0].AssetType),
-						info0[0].BeaconID, height, info0[0].Amount, prevHeight+1); err != nil {
+					height := big.NewInt(int64(info0.Height))
+					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0.AssetType),
+						info0.BeaconID, height, info0.Amount, prevHeight+1); err != nil {
 						return err
 					} else {
 						item := &cross.ExChangeItem{
-							AssetType: info0[0].AssetType,
+							AssetType: info0.AssetType,
 							Addr:      obj[0].Address,
 							Value:     czzAsset,
-							BeaconID:  info0[0].BeaconID,
+							BeaconID:  info0.BeaconID,
 						}
 						if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
 							return err
@@ -1850,19 +1849,18 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 }
 
 func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
-	infos map[uint32]*cross.ExChangeTxInfo, fork bool) {
-	for _, v := range infos {
-		item := &cross.ExChangeItem{
-			AssetType: v.AssetType,
-			Value:     new(big.Int).Set(v.Amount),
-		}
-		summay.KeepedAmountInBlock.Add(cross.KeepedItem{
-			AssetType: item.AssetType,
-			Amount:    new(big.Int).Set(item.Value),
-		})
-		cross.PreCalcEntangleAmount(item, keepedInfo, fork)
-		summay.EntangleAmount += item.Value.Int64()
+	info *cross.ExChangeTxInfo, fork bool) {
+
+	item := &cross.ExChangeItem{
+		AssetType: info.AssetType,
+		Value:     new(big.Int).Set(info.Amount),
 	}
+	summay.KeepedAmountInBlock.Add(cross.KeepedItem{
+		AssetType: item.AssetType,
+		Amount:    new(big.Int).Set(item.Value),
+	})
+	cross.PreCalcEntangleAmount(item, keepedInfo, fork)
+	summay.EntangleAmount += item.Value.Int64()
 }
 
 func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint, subsidy,
