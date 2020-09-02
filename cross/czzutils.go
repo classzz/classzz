@@ -306,6 +306,37 @@ type ExChangeEntity struct {
 	EnOutsideAmount *big.Int `json:"en_outside_amount"` // out asset
 }
 
+func newExChangeEntitys() []*ExChangeEntity {
+
+	exChangeEntitys := make([]*ExChangeEntity, 0, 0)
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Doge,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Bsv,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Bch,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Btc,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Ltc,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
+	return exChangeEntitys
+}
+
 type UserExChangeInfo struct {
 	BeaconID        uint64            `json:"beacon_id"`     // beaconID id
 	Address         string            `json:"address"`       // 兑换的地址
@@ -325,7 +356,7 @@ func newUserExChangeInfo() *UserExChangeInfo {
 		OriginAmount:    big.NewInt(0),
 		MaxRedeem:       big.NewInt(0),
 		BurnAmounts:     newBurnInfos(),
-		ExChangeEntitys: make([]*ExChangeEntity, 0, 0),
+		ExChangeEntitys: newExChangeEntitys(),
 	}
 	return uci
 }

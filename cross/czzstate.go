@@ -551,24 +551,23 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 			userExChangeInfo = newUserExChangeInfo()
 		}
 
-		found := false
-		var userEntity *ExChangeEntity
+		//var userEntity *ExChangeEntity
 		for _, v := range userExChangeInfo.ExChangeEntitys {
 			if aType == v.AssetType {
-				found = true
+				//found = true
 				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-				userEntity = v
+				//userEntity = v
 				break
 			}
 		}
 
-		if !found {
-			userEntity = &ExChangeEntity{
-				AssetType:       aType,
-				EnOutsideAmount: new(big.Int).Set(amount),
-			}
-			userExChangeInfo.ExChangeEntitys = append(userExChangeInfo.ExChangeEntitys, userEntity)
-		}
+		//if !found {
+		//	userEntity = &ExChangeEntity{
+		//		AssetType:       aType,
+		//		EnOutsideAmount: new(big.Int).Set(amount),
+		//	}
+		//	userExChangeInfo.ExChangeEntitys = append(userExChangeInfo.ExChangeEntitys, userEntity)
+		//}
 
 		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHetgit)))
 		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(czzHetgit)), amount)
@@ -956,15 +955,19 @@ func (es *EntangleState) ToBytes() []byte {
 	}
 	return data
 }
+
 func (es *EntangleState) Save() error {
 	return nil
 }
+
 func (es *EntangleState) Load() error {
 	return nil
 }
+
 func Hash(es *EntangleState) chainhash.Hash {
 	return chainhash.HashH(es.ToBytes())
 }
+
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
 		EnInfos:             make(map[string]*BeaconAddressInfo),

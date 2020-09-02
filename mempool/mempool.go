@@ -1075,6 +1075,20 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// ExChangeTx
+	//einfos1, err := cross.IsFastExChangeTx(tx.MsgTx(),mp.cfg.ChainParams)
+	//if err != nil && err != cross.NoExChange {
+	//	return err
+	//}
+	//
+	//if einfos != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+	//	return errors.New("err ExChangeTx tx  BeaconHeight < nextBlockHeight ")
+	//} else if einfos != nil {
+	//	if _, err := mp.cfg.ExChangeVerify.VerifyExChangeTx(tx.MsgTx(), eState); err != nil {
+	//		return err
+	//	}
+	//}
+
+	// ExChangeTx
 	einfos, err2 := cross.IsExChangeTx(tx.MsgTx())
 	if err2 != nil && err2 != cross.NoExChange {
 		return err2
