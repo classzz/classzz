@@ -676,8 +676,11 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
 			}
 
-			from, _ := czzutil.NewAddressPubKeyHash(coinBaseTx.MsgTx().TxOut[0].PkScript, b.chainParams)
+			_, addrs, _, err := txscript.ExtractPkScriptAddrs(
+				coinBaseTx.MsgTx().TxOut[0].PkScript, b.chainParams)
+			fmt.Println("err", err)
 
+			from := addrs[0]
 			res := &cross.PunishedRewardItem{
 				Addr1:  from,
 				Addr2:  cross.ZeroAddrsss,
