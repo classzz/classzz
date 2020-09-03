@@ -975,12 +975,7 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 }
 
 func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-
-	if info.IsBeacon {
-		return ev.VerifyBurnProofBeacon(info, eState, curHeight)
-	} else {
-		return ev.VerifyBurnProofRobot(info, eState, curHeight)
-	}
+	return ev.VerifyBurnProofBeacon(info, eState, curHeight)
 }
 
 func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
@@ -1024,8 +1019,8 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 
 	outHeight := uint64(0)
 	var bi *BurnItem
-	for addr1, userEntity := range uei {
-		if info.Address == addr1 {
+	for addr, userEntity := range uei {
+		if info.Address == addr {
 			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
 			if err != nil {
 				return 0, nil, err
@@ -1038,28 +1033,28 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	return 0, bi, nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-
-	uei := eState.EnUserExChangeInfos[info.BeaconID]
-	if uei == nil {
-		return 0, nil, errors.New("VerifyBurnProofRobot EnUserExChangeInfos is nil")
-	}
-
-	outHeight := uint64(0)
-	var bi *BurnItem
-	var err error
-	for addr1, userEntity := range uei {
-		if info.Address == addr1 {
-			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
-			if err != nil {
-				return 0, nil, err
-			}
-		} else {
-			return 0, nil, ErrNotMatchUser
-		}
-	}
-	return 0, bi, nil
-}
+//func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+//
+//	uei := eState.EnUserExChangeInfos[info.BeaconID]
+//	if uei == nil {
+//		return 0, nil, errors.New("VerifyBurnProofRobot EnUserExChangeInfos is nil")
+//	}
+//
+//	outHeight := uint64(0)
+//	var bi *BurnItem
+//	var err error
+//	for addr1, userEntity := range uei {
+//		if info.Address == addr1 {
+//			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
+//			if err != nil {
+//				return 0, nil, err
+//			}
+//		} else {
+//			return 0, nil, ErrNotMatchUser
+//		}
+//	}
+//	return 0, bi, nil
+//}
 
 func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.Client) (*czzutil.Tx, czzutil.Address, error) {
 

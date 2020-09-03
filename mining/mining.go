@@ -927,63 +927,6 @@ mempoolLoop:
 			continue
 		}
 
-		// BurnProof
-		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			oHeight, item, err1 := g.chain.GetExChangeVerify().VerifyBurnProof(tx, info, eState, uint64(nextBlockHeight))
-			if err1 != nil {
-				log.Tracef("Skipping tx %s due to error in "+
-					"BurnProofTx: %v", tx.Hash(), err1)
-				logSkippedDeps(tx, deps)
-				continue
-			}
-			if info.IsBeacon {
-				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
-					Height: oHeight,
-					TxHash: info.TxHash,
-				})
-			} else {
-				if once >= 1 {
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				// send reward to the robot and Punished the beacon address
-				// estate.
-				fromAddress, err := cross.GetAddressFromProofTx(tx, g.chainParams)
-				if err != nil {
-					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
-					logSkippedDeps(tx, deps)
-					continue
-				}
-
-				toAddress := eState.GetBeaconToAddrByID(info.BeaconID, g.chainParams)
-				exInfos := eState.GetBaExInfoByID(info.BeaconID)
-				if fromAddress == nil || toAddress == nil || exInfos == nil {
-					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"FetchUtxoForBeacon: %v", tx.Hash(), err1)
-					logSkippedDeps(tx, deps)
-					continue
-				} else {
-					if item, err2 := toRewardsByPunished(info, view, fromAddress, toAddress); err2 != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toRewardsByPunished: %v", tx.Hash(), err2)
-						logSkippedDeps(tx, deps)
-						continue
-					} else {
-						rewards = append(rewards, item)
-					}
-				}
-				// reset the amount in beacon
-				cross.CloseProofForPunished(info, item, eState)
-				once = 1
-
-			}
-		}
-
 		// BurnTx
 		if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 			if info != nil {
@@ -997,6 +940,21 @@ mempoolLoop:
 				// now will be seed fee to beacon address
 				log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 			}
+		}
+
+		// BurnProof
+		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+			oHeight, _, err1 := g.chain.GetExChangeVerify().VerifyBurnProof(tx, info, eState, uint64(nextBlockHeight))
+			if err1 != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"BurnProofTx: %v", tx.Hash(), err1)
+				logSkippedDeps(tx, deps)
+				continue
+			}
+			eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+				Height: oHeight,
+				TxHash: info.TxHash,
+			})
 		}
 
 		// BurnReportWhiteListTx

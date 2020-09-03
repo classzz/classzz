@@ -567,6 +567,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
 				return err
 			}
+
 			//if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
 			//	return err
 			//}
@@ -574,21 +575,23 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 		// BurnProof
 		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			if info.IsBeacon {
-				eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
-					Height: uint64(pHeight + 1),
-					TxHash: info.TxHash,
-				})
-			} else {
-				eState.UpdateHandleUserBurn(info, &cross.BurnProofItem{
-					Height: uint64(pHeight + 1),
-					TxHash: info.TxHash,
-				})
-				BurnProofTx_beaconID = info.BeaconID
-			}
-			if err := dbRemoveBurnTxInfoEntry(dbTx, info); err != nil {
-				return err
-			}
+
+			eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+				Height: uint64(pHeight + 1),
+				TxHash: info.TxHash,
+			})
+
+			//else {
+			//	eState.UpdateHandleUserBurn(info, &cross.BurnProofItem{
+			//		Height: uint64(pHeight + 1),
+			//		TxHash: info.TxHash,
+			//	})
+			//	BurnProofTx_beaconID = info.BeaconID
+			//}
+
+			//if err := dbRemoveBurnTxInfoEntry(dbTx, info); err != nil {
+			//	return err
+			//}
 		}
 
 		// FastExChange
@@ -615,20 +618,22 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
-	if BurnProofTx_beaconID > 0 {
-		if exInfos := eState.GetBaExInfoByID(BurnProofTx_beaconID); exInfos != nil {
-			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
-				Hash:  *block.Transactions()[0].Hash(),
-				Index: 5,
-			}}
-
-			eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
-		} else {
-			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", BurnProofTx_beaconID)
-		}
-	}
-
 	if eState != nil {
+		burnTimeout := eState.TourAllUserBurnInfo(uint64(pHeight + 1))
+		index := uint32(5)
+		for k, _ := range burnTimeout {
+			if exInfos := eState.GetBaExInfoByID(k); exInfos != nil {
+				exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
+					Hash:  *block.Transactions()[0].Hash(),
+					Index: index,
+				}}
+				eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
+			} else {
+				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", BurnProofTx_beaconID)
+			}
+			index = index + 3
+		}
+
 		if err := eState.UpdateQuotaOnBlock(uint64(block.Height())); err != nil {
 			return err
 		}

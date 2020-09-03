@@ -593,6 +593,7 @@ func (b *BurnItem) equal(o *BurnItem) bool {
 		b.RAmount.Cmp(o.Amount) == 0 && b.FeeRAmount.Cmp(o.FeeRAmount) == 0 &&
 		b.FeeAmount.Cmp(o.FeeAmount) == 0
 }
+
 func (b *BurnItem) clone() *BurnItem {
 	return &BurnItem{
 		Amount:     new(big.Int).Set(b.Amount),
@@ -801,21 +802,11 @@ func (b *BurnInfo) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 }
 func (b *BurnInfo) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
-	if info.IsBeacon {
-		if outHeight >= eHeight && !used {
-			if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
-				for _, v := range items {
-					if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
-						return v.clone(), nil
-					}
-				}
-			}
-		}
-	} else {
+
+	if outHeight >= eHeight && !used {
 		if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
 			for _, v := range items {
-				if int64(curHeight-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
-					// deficiency or timeout
+				if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
 					return v.clone(), nil
 				}
 			}
