@@ -496,22 +496,31 @@ func (ee *UserExChangeInfo) getBurnByType(atype uint8) *BurnInfo {
 	return nil
 }
 
-func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfo {
+func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfos {
 	res := make([]*TimeOutBurnInfo, 0, 0)
+	AmountSum := big.NewInt(0)
+
 	for _, entity := range ee.BurnAmounts {
-		items := entity.getBurnTimeout(height, update)
+		items, Amount := entity.getBurnTimeout(height, update)
 		if len(items) > 0 {
 			res = append(res, &TimeOutBurnInfo{
 				Items:     items,
 				AssetType: entity.AssetType,
 			})
 		}
+		AmountSum = big.NewInt(0).Add(AmountSum, Amount)
 	}
-	return TypeTimeOutBurnInfo(res)
+
+	ttobi := TypeTimeOutBurnInfos{
+		TypeTimeOutBurnInfo: res,
+		AmountSum:           AmountSum,
+	}
+
+	return ttobi
 }
 
-func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnInfo) {
-	for _, v := range items {
+func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnInfos) {
+	for _, v := range items.TypeTimeOutBurnInfo {
 		burn := ee.getBurnByType(v.AssetType)
 		if burn != nil {
 			burn.updateBurnState(state, v.Items)
@@ -535,6 +544,9 @@ func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
 			burn.finishBurn(height, amount, proof)
 		}
 	}
+}
+func (ee *UserExChangeInfo) getBurn() {
+
 }
 
 func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
@@ -676,11 +688,14 @@ func newBurnInfos() []*BurnInfo {
 func (b *BurnInfo) GetAllAmountByOrigin() *big.Int {
 	return new(big.Int).Set(b.BAllAmount)
 }
+
 func (b *BurnInfo) GetAllBurnedAmountByOutside() *big.Int {
 	return new(big.Int).Set(b.RAllAmount)
 }
-func (b *BurnInfo) getBurnTimeout(height uint64, update bool) []*BurnItem {
+
+func (b *BurnInfo) getBurnTimeout(height uint64, update bool) ([]*BurnItem, *big.Int) {
 	res := make([]*BurnItem, 0, 0)
+	AmountSum := big.NewInt(0)
 	for _, v := range b.Items {
 		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
 			res = append(res, &BurnItem{
@@ -691,13 +706,15 @@ func (b *BurnInfo) getBurnTimeout(height uint64, update bool) []*BurnItem {
 				Height:      v.Height,
 				RedeemState: v.RedeemState,
 			})
+			AmountSum = big.NewInt(0).Add(AmountSum, v.Amount)
 			if update {
 				v.RedeemState = 2
 			}
 		}
 	}
-	return res
+	return res, AmountSum
 }
+
 func (b *BurnInfo) addBurnItem(height uint64, amount, fee, outFee, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
@@ -827,12 +844,18 @@ func (t *TimeOutBurnInfo) getAll() *big.Int {
 	return res
 }
 
-type TypeTimeOutBurnInfo []*TimeOutBurnInfo
-type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfo
+//type TypeTimeOutBurnInfo []*TimeOutBurnInfo
 
-func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
+type TypeTimeOutBurnInfos struct {
+	TypeTimeOutBurnInfo []*TimeOutBurnInfo
+	AmountSum           *big.Int
+}
+
+type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfos
+
+func (uu *TypeTimeOutBurnInfos) getAll() *big.Int {
 	res := big.NewInt(0)
-	for _, v := range *uu {
+	for _, v := range uu.TypeTimeOutBurnInfo {
 		res = res.Add(res, v.getAll())
 	}
 	return res

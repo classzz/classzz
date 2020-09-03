@@ -500,7 +500,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					BeaconID := eState.GetBeaconIdByTo(info.ToAddress)
-					to := eState.GetBeaconToAddrByID(BeaconID)
+					to := eState.GetBeaconToAddrByID(BeaconID, b.chainParams)
 					if exInfos := eState.GetBaExInfoByID(BeaconID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,tx:%s,id:%v", tx.Hash(), BeaconID))
 					} else {
@@ -621,7 +621,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 							return proofError
 						}
 						from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
-						to := eState.GetBeaconToAddrByID(info2.BeaconID)
+						to := eState.GetBeaconToAddrByID(info2.BeaconID, b.chainParams)
 						res := &cross.PunishedRewardItem{
 							Addr1:  from,
 							Addr2:  cross.ZeroAddrsss,
@@ -661,7 +661,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return e
 				} else {
 					from, _ := cross.GetAddressFromProofTx(tx, b.chainParams)
-					to := eState.GetBeaconToAddrByID(info3.BeaconID)
+					to := eState.GetBeaconToAddrByID(info3.BeaconID, b.chainParams)
 					res := &cross.PunishedRewardItem{
 						Addr1:  from,
 						Addr2:  cross.ZeroAddrsss,

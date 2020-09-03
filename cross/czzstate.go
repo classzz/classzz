@@ -338,9 +338,9 @@ func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
 	}
 	return nil
 }
-func (es *EntangleState) GetBeaconToAddrByID(i uint64) czzutil.Address {
+func (es *EntangleState) GetBeaconToAddrByID(i uint64, params *chaincfg.Params) czzutil.Address {
 	if b := es.getBeaconToAddressByID(i); b != nil {
-		addr, err := czzutil.NewLegacyAddressPubKeyHash(b, &chaincfg.MainNetParams)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(b, params)
 		if err == nil {
 			return addr
 		}
@@ -816,10 +816,10 @@ func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeO
 	// maybe get cache for recently burned user
 	res := make(map[uint64]UserTimeOutBurnInfo)
 	for k, users := range es.EnUserExChangeInfos {
-		userItems := make(map[string]TypeTimeOutBurnInfo)
+		userItems := make(map[string]TypeTimeOutBurnInfos)
 		for k1, entitys := range users {
 			items := entitys.getBurnTimeout(height, true)
-			if len(items) > 0 {
+			if len(items.TypeTimeOutBurnInfo) > 0 {
 				userItems[k1] = items
 			}
 		}

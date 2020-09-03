@@ -955,7 +955,7 @@ mempoolLoop:
 					continue
 				}
 
-				toAddress := eState.GetBeaconToAddrByID(info.BeaconID)
+				toAddress := eState.GetBeaconToAddrByID(info.BeaconID, g.chainParams)
 				exInfos := eState.GetBaExInfoByID(info.BeaconID)
 				if fromAddress == nil || toAddress == nil || exInfos == nil {
 					log.Tracef("Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
@@ -968,7 +968,7 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				} else {
-					if item, err2 := toRewardsByPunished(info, view, eState, fromAddress, toAddress); err2 != nil {
+					if item, err2 := toRewardsByPunished(info, view, fromAddress, toAddress); err2 != nil {
 						log.Tracef("Skipping tx %s due to error in "+
 							"toRewardsByPunished: %v", tx.Hash(), err2)
 						logSkippedDeps(tx, deps)
@@ -1012,7 +1012,7 @@ mempoolLoop:
 				continue
 			}
 			fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
-			toAddress := eState.GetBeaconToAddrByID(info.BeaconID)
+			toAddress := eState.GetBeaconToAddrByID(info.BeaconID, g.chainParams)
 			exInfos := eState.GetBaExInfoByID(info.BeaconID)
 			if fromAddress == nil || toAddress == nil || exInfos == nil {
 				log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
@@ -1084,7 +1084,7 @@ mempoolLoop:
 				if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
 					return nil, nil, errors.New(fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID))
 				} else {
-					if mergeItem, to := toMergeBeaconItems(view, beaconID, eState); mergeItem == nil {
+					if mergeItem, to := toMergeBeaconItems(view, beaconID, eState, g.chainParams); mergeItem == nil {
 						return nil, nil, fmt.Errorf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID)
 					} else {
 						mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
@@ -1172,6 +1172,36 @@ mempoolLoop:
 
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
+
+	if g.chainParams.BeaconHeight <= nextBlockHeight && eState != nil {
+		burnTimeout := eState.TourAllUserBurnInfo(uint64(nextBlockHeight))
+		for beaconID, bit := range burnTimeout {
+
+			toAddress := eState.GetBeaconToAddrByID(beaconID, g.chainParams)
+			exInfos := eState.GetBaExInfoByID(beaconID)
+
+			if toAddress == nil || exInfos == nil {
+
+			}
+
+			var view *blockchain.UtxoViewpoint
+			if view, err = g.chain.FetchUtxoForBeacon(exInfos.EnItems); err != nil {
+				return nil, nil, err
+			}
+
+			AmountSum := big.NewInt(0)
+			for k, v := range bit {
+				fmt.Println("burnTimeout k:", k)
+				AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
+			}
+
+			if item, err := toRewardsByPunishedBurn(view, payToAddress, toAddress, AmountSum); err != nil {
+				return nil, nil, err
+			} else {
+				rewards = append(rewards, item)
+			}
+		}
+	}
 
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight {
@@ -1338,11 +1368,11 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
-func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.EntangleState) (*cross.BeaconMergeItem, czzutil.Address) {
+func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.EntangleState, params *chaincfg.Params) (*cross.BeaconMergeItem, czzutil.Address) {
 	if view == nil {
 		return nil, nil
 	}
-	to := state.GetBeaconToAddrByID(id)
+	to := state.GetBeaconToAddrByID(id, params)
 	if to == nil {
 		return nil, to
 	}
@@ -1356,8 +1386,9 @@ func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.
 	}
 	return items, to
 }
+
 func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint,
-	state *cross.EntangleState, rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
+	rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
 	if view == nil {
 		return nil, errors.New("view is nil")
 	}
@@ -1374,6 +1405,25 @@ func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoi
 	}
 	return res, nil
 }
+
+func toRewardsByPunishedBurn(view *blockchain.UtxoViewpoint, rewardAddress, changeAddress czzutil.Address, Amount *big.Int) (*cross.PunishedRewardItem, error) {
+	if view == nil {
+		return nil, errors.New("view is nil")
+	}
+	res := &cross.PunishedRewardItem{
+		Amount: new(big.Int).Mul(big.NewInt(1), Amount),
+		Addr1:  rewardAddress,
+		Addr2:  cross.ZeroAddrsss,
+		Addr3:  changeAddress,
+	}
+	m := view.Entries()
+	for k, v := range m {
+		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+		break
+	}
+	return res, nil
+}
+
 func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint, height uint64,
 	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
 	if view == nil {

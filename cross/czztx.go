@@ -120,6 +120,7 @@ type PoolAddrItem struct {
 	Script [][]byte
 	Amount []*big.Int
 }
+
 type PunishedRewardItem struct {
 	POut         wire.OutPoint
 	Script       []byte
