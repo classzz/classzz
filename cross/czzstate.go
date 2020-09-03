@@ -155,6 +155,7 @@ func (e *ExBeaconInfo) UpdateFreeQuato(all *big.Int, es *EntangleState) error {
 	}
 	return nil
 }
+
 func (e *ExBeaconInfo) CanBurn(all *big.Int, atype uint8, es *EntangleState) (*big.Int, error) {
 	out, err := getAssetForBaRedeem(all, atype, es)
 	if err != nil {
@@ -800,7 +801,7 @@ func (es *EntangleState) UpdateQuotaOnBlock(height uint64) error {
 			if ba := es.GetBaExInfoByID(lh.BeaconID); ba != nil {
 				err := ba.UpdateFreeQuato(all, es)
 				if err != nil {
-					fmt.Println("UpdateFreeQuato in the BeaconAddress was wrong,err::", lh.BeaconID, err)
+					fmt.Println("UpdateFreeQuato in the BeaconAddress was wrong,err:", lh.BeaconID, err)
 				}
 			} else {
 				fmt.Println("cann't found exInfos in the BeaconAddress id:", lh.BeaconID)

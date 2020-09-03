@@ -582,7 +582,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
-			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil && info0 != nil {
+			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil {
 				if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 					return err
 				} else {
