@@ -419,13 +419,13 @@ func IsExChangeTx(tx *wire.MsgTx) (*ExChangeTxInfo, error) {
 
 	if len(tx.TxOut) > 0 {
 		txout1 := tx.TxOut[0]
-		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout1.PkScript)) {
+		if !txscript.IsExChangeTy(txout1.PkScript) {
 			return nil, NoExChange
 		}
 	} else {
 		return nil, NoExChange
 	}
-	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 2 || len(tx.TxOut) < 1 {
 		e := fmt.Sprintf("IsExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
 		return nil, errors.New(e)
 	}

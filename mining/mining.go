@@ -1177,7 +1177,9 @@ mempoolLoop:
 			return nil, nil, err
 		}
 		CIDRoot = cross.Hash(eState)
+		fmt.Println("eState", *eState)
 	}
+
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
