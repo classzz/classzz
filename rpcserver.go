@@ -3620,6 +3620,7 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 			BeaconID:        info.BeaconID,
 			Address:         info.Address,
 			ToAddress:       hex.EncodeToString(info.ToAddress),
+			PubKey:          info.PubKey,
 			StakingAmount:   info.StakingAmount,
 			AssetFlag:       info.AssetFlag,
 			Fee:             info.Fee,
@@ -3800,11 +3801,11 @@ func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 		return nil, errors.New("EnUserExChangeInfos is nil")
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]map[string][]map[string]interface{})
 	for k, v := range info {
-		result1 := make(map[string]interface{})
+		result1 := make(map[string][]map[string]interface{})
 		for _, burn := range v.BurnAmounts {
-			result2 := make([]interface{}, 0, 0)
+			result2 := make([]map[string]interface{}, 0, 0)
 			for _, item := range burn.Items {
 				result3 := make(map[string]interface{})
 				result3["r_amount"] = item.RAmount
