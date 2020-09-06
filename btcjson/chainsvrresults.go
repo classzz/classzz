@@ -482,6 +482,7 @@ type StateInfoChainResult struct {
 	BeaconID        uint64       `json:"beacon_id"`
 	Address         string       `json:"address"`
 	ToAddress       string       `json:"toAddress_pk_hex"`
+	PubKey          []byte       `json:"pub_key"`
 	StakingAmount   *big.Int     `json:"staking_amount"` // in
 	AssetFlag       uint32       `json:"asset_flag"`
 	Fee             uint64       `json:"fee"`
