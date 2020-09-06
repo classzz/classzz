@@ -273,7 +273,6 @@ type BurnProofInfo struct {
 	AssetType uint8
 	TxHash    string // the tx hash of outside
 	OutIndex  uint64
-	IsBeacon  bool
 }
 
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue

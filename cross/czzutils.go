@@ -890,7 +890,6 @@ type BurnProofInfo struct {
 	AssetType uint8
 	TxHash    string // the tx hash of outside
 	OutIndex  uint64
-	IsBeacon  bool
 }
 
 type WhiteListProof struct {
