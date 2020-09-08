@@ -348,7 +348,7 @@ type UserExChangeInfo struct {
 	ExChangeEntitys []*ExChangeEntity `json:"ex_change_entitys"`
 }
 
-func newUserExChangeInfo() *UserExChangeInfo {
+func NewUserExChangeInfo() *UserExChangeInfo {
 	uci := &UserExChangeInfo{
 		BeaconID:        0,
 		Height:          big.NewInt(0),
@@ -363,7 +363,7 @@ func newUserExChangeInfo() *UserExChangeInfo {
 
 type UserExChangeInfos map[string]*UserExChangeInfo
 
-func newUserExChangeInfos() UserExChangeInfos {
+func NewUserExChangeInfos() UserExChangeInfos {
 	return UserExChangeInfos(make(map[string]*UserExChangeInfo))
 }
 

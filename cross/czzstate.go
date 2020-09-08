@@ -414,9 +414,10 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []
 	es.CurBeaconID = info.BeaconID
 	es.EnInfos[addr] = info
 	es.BaExInfo[info.BeaconID] = NewExBeaconInfo()
-	es.EnUserExChangeInfos[info.BeaconID] = newUserExChangeInfos()
+	es.EnUserExChangeInfos[info.BeaconID] = NewUserExChangeInfos()
 	return nil
 }
+
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		cnt := len(val.WhiteList)
@@ -518,7 +519,7 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint64,
-	height, amount *big.Int, czzHetgit int32) (*big.Int, error) {
+	height, amount *big.Int, czzHeight int32) (*big.Int, error) {
 	if es.AddressInWhiteList(addr, true) {
 		return nil, ErrAddressInWhiteList
 	}
@@ -544,34 +545,23 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 
 	userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]
 	if !ok {
-		userExChangeInfos = newUserExChangeInfos()
+		userExChangeInfos = NewUserExChangeInfos()
 	}
 	if userExChangeInfos != nil {
 		userExChangeInfo, ok1 := userExChangeInfos[addr]
 		if !ok1 {
-			userExChangeInfo = newUserExChangeInfo()
+			userExChangeInfo = NewUserExChangeInfo()
 		}
 
-		//var userEntity *ExChangeEntity
 		for _, v := range userExChangeInfo.ExChangeEntitys {
 			if aType == v.AssetType {
-				//found = true
 				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-				//userEntity = v
 				break
 			}
 		}
 
-		//if !found {
-		//	userEntity = &ExChangeEntity{
-		//		AssetType:       aType,
-		//		EnOutsideAmount: new(big.Int).Set(amount),
-		//	}
-		//	userExChangeInfo.ExChangeEntitys = append(userExChangeInfo.ExChangeEntitys, userEntity)
-		//}
-
-		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHetgit)))
-		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(czzHetgit)), amount)
+		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHeight)))
+		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(czzHeight)), amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
 		userExChangeInfos[addr] = userExChangeInfo
