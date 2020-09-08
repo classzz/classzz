@@ -1126,7 +1126,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	if bpt != nil && mp.cfg.ChainParams.ExChangeHeight > nextBlockHeight {
 		return errors.New("err ExChangeTx tx  ExChangeHeight < nextBlockHeight ")
 	} else if bpt != nil {
-		if _, _, err := mp.cfg.ExChangeVerify.VerifyBurnProof(tx, bpt, eState, uint64(nextBlockHeight)); err != nil {
+		if _, _, err := mp.cfg.ExChangeVerify.VerifyBurnProofBeacon(bpt, eState, uint64(nextBlockHeight)); err != nil {
 			return err
 		}
 	}

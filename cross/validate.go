@@ -974,9 +974,9 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	return nil
 }
 
-func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-	return ev.VerifyBurnProofBeacon(info, eState, curHeight)
-}
+//func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
+//	return ev.VerifyBurnProofBeacon(info, eState, curHeight)
+//}
 
 func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 	// 1. check the from address is equal beacon address
@@ -999,6 +999,11 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
 	case ExpandedTxEntangle_Bsv:
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
+	}
+
+	if client == nil {
+		e := fmt.Sprintf("VerifyBurnProofBeacon client is nil , AssetType = %v", info.AssetType)
+		return 0, nil, errors.New(e)
 	}
 
 	bai := eState.getBeaconAddress(info.BeaconID)

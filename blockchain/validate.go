@@ -605,24 +605,24 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
-			if info2, _ := cross.IsBurnProofTx(tx.MsgTx()); info2 != nil {
-				if h, _, e := b.GetExChangeVerify().VerifyBurnProof(tx, info2, eState, uint64(prevHeight+1)); e != nil {
+			if info1, _ := cross.IsBurnProofTx(tx.MsgTx()); info1 != nil {
+				if h, _, e := b.GetExChangeVerify().VerifyBurnProofBeacon(info1, eState, uint64(prevHeight+1)); e != nil {
 					return e
 				} else {
-					eState.FinishHandleUserBurn(info2, &cross.BurnProofItem{
+					eState.FinishHandleUserBurn(info1, &cross.BurnProofItem{
 						Height: h,
-						TxHash: info2.TxHash,
+						TxHash: info1.TxHash,
 					})
 				}
 				continue
 			}
 
-			if info1, _ := cross.IsBurnTx(tx.MsgTx(), b.chainParams); info1 != nil {
+			if info2, _ := cross.IsBurnTx(tx.MsgTx(), b.chainParams); info2 != nil {
 				if cross.SameHeightTxForBurn(tx, burnTxs, b.chainParams) {
 					return errors.New("same height in burnTx at same address")
 				}
 				// update the state
-				if _, _, err := eState.BurnAsset(info1.Address, uint8(info1.AssetType), info1.BeaconID, uint64(prevHeight+1), info1.Amount); err != nil {
+				if _, _, err := eState.BurnAsset(info2.Address, uint8(info2.AssetType), info2.BeaconID, uint64(prevHeight+1), info2.Amount); err != nil {
 					return err
 				}
 				burnTxs = append(burnTxs, tx)
