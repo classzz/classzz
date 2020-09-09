@@ -1146,11 +1146,6 @@ mempoolLoop:
 		}
 	}
 
-	// if ok := cross.OverEntangleAmount(coinbaseTx.MsgTx(), poolItem, exItems, lastScriptInfo, fork, eState); !ok {
-	// 	//e := fmt.Sprintf("cross.OverEntangleAmount err")
-	// 	//return nil, nil, errors.New(e)
-	// }
-
 	// Now that the actual transactions have been selected, update the
 	// block size for the real transaction count and coinbase value with
 	// the total fees accordingly.
@@ -1223,7 +1218,6 @@ mempoolLoop:
 			return nil, nil, err
 		}
 		CIDRoot = cross.Hash(eState)
-		fmt.Println("eState", *eState)
 	}
 
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)

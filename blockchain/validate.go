@@ -65,7 +65,7 @@ const (
 	// transaction after the UAHF hard fork
 	MaxTransactionSigOps = 20000
 
-	allowedFutureBlockTime = 10 * time.Second
+	allowedFutureBlockTime = 10
 )
 
 var (
@@ -966,7 +966,8 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 		return ruleError(ErrInvalidTime, str)
 	}
 
-	if header.Timestamp.After(time.Now().Add(allowedFutureBlockTime)) {
+	if header.Timestamp.Unix() > (time.Now().Unix() + int64(allowedFutureBlockTime)) {
+		fmt.Println(header.Timestamp, time.Now().Add(allowedFutureBlockTime), time.Now())
 		str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
 		return ruleError(ErrInvalidTime, str)
 	}
