@@ -5,6 +5,7 @@
 package indexers
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/blockchain"
@@ -182,7 +183,7 @@ func dbPutTxIndexEntry(dbTx database.Tx, txHash *chainhash.Hash, serializedData 
 	return txIndex.Put(txHash[:], serializedData)
 }
 
-func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+func dbPutExChangeTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
 	var err error
 	if txIndex == nil {
@@ -190,39 +191,49 @@ func dbPutEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 			return err
 		}
 	}
-	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-	if einfos == nil {
-		return nil
-	}
-	for _, v := range einfos {
-		AssetType := byte(v.AssetType)
-		key := append(v.ExtTxHash, AssetType)
-		if err := txIndex.Put(key, v.Serialize()); err != nil {
-			return err
+
+	einfo, _ := cross.IsExChangeTx(tx.MsgTx())
+	if einfo == nil {
+		einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
+		if einfo == nil {
+			return nil
 		}
 	}
+
+	AssetType := byte(einfo.AssetType)
+	ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
+	key := append(ExtTxHash, AssetType)
+	if err := txIndex.Put(key, einfo.ToBytes()); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // dbRemoveTxIndexEntry uses an existing database transaction to remove the most
 // recent transaction index entry for the given hash.
-func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
+func dbRemoveExChangeTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 	txIndex := dbTx.Metadata().Bucket(cross.BucketKey)
-	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-	if einfos == nil {
-		return nil
+
+	einfo, _ := cross.IsExChangeTx(tx.MsgTx())
+	if einfo == nil {
+		einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
+		if einfo == nil {
+			return nil
+		}
 	}
-	for _, v := range einfos {
-		AssetType := byte(v.AssetType)
-		key := append(v.ExtTxHash, AssetType)
-		serializedData := txIndex.Get(key)
-		if len(serializedData) == 0 {
-			return fmt.Errorf("can't remove non-existent Entangle transaction %s "+
-				"from the  Entangle transaction index", key)
-		}
-		if err := txIndex.Delete(key); err != nil {
-			return fmt.Errorf("can't Delete  Entangle transaction %s ", key)
-		}
+
+	AssetType := byte(einfo.AssetType)
+	ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
+	key := append(ExtTxHash, AssetType)
+	serializedData := txIndex.Get(key)
+	if len(serializedData) == 0 {
+		return fmt.Errorf("can't remove non-existent Entangle transaction %s "+
+			"from the Entangle transaction index", key)
+	}
+
+	if err := txIndex.Delete(key); err != nil {
+		return fmt.Errorf("can't Delete  Entangle transaction %s ", key)
 	}
 
 	return nil
@@ -230,9 +241,9 @@ func dbRemoveEntangleTxIndexEntry(dbTx database.Tx, tx *czzutil.Tx) error {
 
 // dbRemoveTxIndexEntries uses an existing database transaction to remove the
 // latest transaction entry for every transaction in the passed block.
-func dbRemoveEntangleTxIndexEntries(dbTx database.Tx, block *czzutil.Block) error {
+func dbRemoveExChangeTxIndexEntries(dbTx database.Tx, block *czzutil.Block) error {
 	for _, tx := range block.Transactions() {
-		err := dbRemoveEntangleTxIndexEntry(dbTx, tx)
+		err := dbRemoveExChangeTxIndexEntry(dbTx, tx)
 		if err != nil {
 			return err
 		}
@@ -307,7 +318,7 @@ func dbAddTxIndexEntries(dbTx database.Tx, block *czzutil.Block, blockID uint32)
 		}
 
 		// Entangle
-		err = dbPutEntangleTxIndexEntry(dbTx, tx)
+		err = dbPutExChangeTxIndexEntry(dbTx, tx)
 		if err != nil {
 			return err
 		}
@@ -500,7 +511,7 @@ func (idx *TxIndex) DisconnectBlock(dbTx database.Tx, block *czzutil.Block,
 	}
 
 	// Remove all of the Entangle transactions in the block from the index.
-	if err := dbRemoveEntangleTxIndexEntries(dbTx, block); err != nil {
+	if err := dbRemoveExChangeTxIndexEntries(dbTx, block); err != nil {
 		return err
 	}
 

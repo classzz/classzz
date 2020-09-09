@@ -172,6 +172,16 @@ type ExChangeTxInfo struct {
 	BeaconID  uint64
 }
 
+////////////////////////////////////////////////////////////////////////////
+func (ec *ExChangeTxInfo) ToBytes() []byte {
+	// maybe rlp encode
+	data, err := rlp.EncodeToBytes(ec)
+	if err != nil {
+		log.Fatal("Failed to RLP encode EntangleState: ", "err", err)
+	}
+	return data
+}
+
 type EntangleTxInfo struct {
 	AssetType ExpandedTxType
 	Index     uint32
@@ -494,6 +504,41 @@ func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo,
 	}
 
 	info.Address = address.String()
+
+	return exInfo, info, nil
+}
+
+// Only txOut[0] is valid
+func IsFastExChangeTxToStorage(tx *wire.MsgTx) (*ExChangeTxInfo, *BurnTxInfo, error) {
+
+	var err error
+
+	if len(tx.TxOut) > 1 {
+		txout1 := tx.TxOut[0]
+		txout2 := tx.TxOut[1]
+		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
+			return nil, nil, NoFastExChange
+		}
+	} else {
+		return nil, nil, NoFastExChange
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, nil, errors.New(e)
+	}
+
+	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
+	if err != nil {
+		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
+		return nil, nil, errors.New(e)
+	}
+
+	txout := tx.TxOut[1]
+	info, err := BurnInfoFromScript(txout.PkScript)
+	if err != nil {
+		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
+	}
 
 	return exInfo, info, nil
 }

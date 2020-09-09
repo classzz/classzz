@@ -582,20 +582,20 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
-			if info0, _ := cross.IsExChangeTx(tx.MsgTx()); info0 != nil {
+			if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
 				if obj, err := cross.ToAddressFromExChange(tx, b.GetExChangeVerify(), eState); err != nil && len(obj) > 0 {
 					return err
 				} else {
-					height := big.NewInt(int64(info0.Height))
-					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(info0.AssetType),
-						info0.BeaconID, height, info0.Amount, prevHeight+1); err != nil {
+					height := big.NewInt(int64(einfo.Height))
+					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType),
+						einfo.BeaconID, height, einfo.Amount, prevHeight+1); err != nil {
 						return err
 					} else {
 						item := &cross.ExChangeItem{
-							AssetType: info0.AssetType,
+							AssetType: einfo.AssetType,
 							Addr:      obj[0].Address,
 							Value:     czzAsset,
-							BeaconID:  info0.BeaconID,
+							BeaconID:  einfo.BeaconID,
 						}
 						if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
 							return err

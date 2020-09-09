@@ -567,10 +567,6 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
 				return err
 			}
-
-			//if err := dbPutBurnTxInfoEntry(dbTx, info); err != nil {
-			//	return err
-			//}
 		}
 
 		// BurnProof
@@ -638,7 +634,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			return err
 		}
 
-		if err := dbPutEntangleStateEntry(dbTx, block, eState); err != nil {
+		if err := dbPutEntangleState(dbTx, block, eState); err != nil {
 			return err
 		}
 	}
@@ -705,7 +701,7 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 	return nil
 }
 
-func dbPutEntangleStateEntry(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
+func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 

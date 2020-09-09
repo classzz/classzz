@@ -81,9 +81,19 @@ func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleS
 		3. check the correct tx
 		4. check the pool reserve enough reward
 	*/
-	einfo, _, _ := IsFastExChangeTx(tx, ev.Params)
+	einfo, binfo, _ := IsFastExChangeTx(tx, ev.Params)
 	if einfo == nil {
 		return errors.New("not entangle tx")
+	}
+
+	if _, err := ev.verifyTx(einfo, eState); err != nil {
+		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
+		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
+	}
+
+	if err := ev.VerifyBurn(binfo, eState); err != nil {
+		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
+		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 	}
 
 	return nil
@@ -102,7 +112,7 @@ func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState)
 	case ExpandedTxEntangle_Bch:
 		return ev.verifyBchTx(eInfo, eState)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("verifyTx AssetType is %v", eInfo.AssetType)
 }
 
 func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
@@ -207,10 +217,9 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		addr2Str := addr2.String()
 		fmt.Println("addr2Str", addrStr, "addr3Str", addr2Str)
 
-		//if addr.String() != addr2.String() {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return nil, errors.New(e)
-		//}
+		if addr.String() != addr2.String() {
+			return nil, fmt.Errorf("doge PoolPub err add1 %s add2 %s", addrStr, addr2Str)
+		}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
@@ -335,15 +344,9 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr3Str := addr3.String()
 		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		//if addr3.String() != addr2.String() {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return nil, errors.New(e)
-		//}
-
-		//if addr.String() != ltcPoolAddr {
-		//	e := fmt.Sprintf("ltc PoolAddr err")
-		//	return nil, errors.New(e)
-		//}
+		if addr3.String() != addr2.String() {
+			return nil, fmt.Errorf("ltc ltcPoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
@@ -463,10 +466,9 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr3Str := addr3.String()
 		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		//if addr3.String() != addr2.String() {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return nil, errors.New(e)
-		//}
+		if addr3.String() != addr2.String() {
+			return nil, fmt.Errorf("btc PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
@@ -586,10 +588,9 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr3Str := addr3.String()
 		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		//if addr3.String() != addr2.String() {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return nil, errors.New(e)
-		//}
+		if addr3.String() != addr2.String() {
+			return nil, fmt.Errorf("bch PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		}
 
 		if addr.String() != ltcPoolAddr {
 			e := fmt.Sprintf("Bch PoolAddr err")
@@ -714,10 +715,9 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		addr3Str := addr3.String()
 		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		//if addr3.String() != addr2.String() {
-		//	e := fmt.Sprintf("doge dogePoolPub err")
-		//	return nil, errors.New(e)
-		//}
+		if addr3.String() != addr2.String() {
+			return nil, fmt.Errorf("bsv PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		}
 
 		if addr.String() != ltcPoolAddr {
 			e := fmt.Sprintf("Bsv PoolAddr err")
@@ -903,7 +903,7 @@ func (ev *ExChangeVerify) VerifyUpdateBeaconFreeQuotaTx(tx *wire.MsgTx, eState *
 
 	bp, _ := IsUpdateBeaconFreeQuotaTx(tx, ev.Params)
 	if bp == nil {
-		return nil, NoUpdateBeaconCoinbase
+		return nil, NoUpdateBeaconFreeQuota
 	}
 
 	if len(tx.TxIn) > 1 || len(tx.TxOut) > 2 || len(tx.TxOut) < 1 {
@@ -1038,29 +1038,6 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	return 0, bi, nil
 }
 
-//func (ev *ExChangeVerify) VerifyBurnProofRobot(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-//
-//	uei := eState.EnUserExChangeInfos[info.BeaconID]
-//	if uei == nil {
-//		return 0, nil, errors.New("VerifyBurnProofRobot EnUserExChangeInfos is nil")
-//	}
-//
-//	outHeight := uint64(0)
-//	var bi *BurnItem
-//	var err error
-//	for addr1, userEntity := range uei {
-//		if info.Address == addr1 {
-//			bi, err = userEntity.verifyBurnProof(info, outHeight, curHeight)
-//			if err != nil {
-//				return 0, nil, err
-//			}
-//		} else {
-//			return 0, nil, ErrNotMatchUser
-//		}
-//	}
-//	return 0, bi, nil
-//}
-
 func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.Client) (*czzutil.Tx, czzutil.Address, error) {
 
 	if tx, err := client.GetWitnessRawTransaction(info.TxHash); err != nil {
@@ -1114,8 +1091,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 
 	_, in, out, err := ev.GetTxInPk(info, client)
 	if !bytes.Equal(bai.PubKey, in) {
-		e := fmt.Sprintf("address err %s", err)
-		return errors.New(e)
+		return fmt.Errorf("address err %s", err)
 	}
 
 	whiteList := state.GetWhiteList(info.BeaconID)
@@ -1123,13 +1099,11 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 
 		addrs, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(wu.Pk), ev.Params)
 		if err != nil {
-			e := fmt.Sprintf("NewAddressPubKeyHash err")
-			return errors.New(e)
+			return fmt.Errorf("NewAddressPubKeyHash err")
 		}
 
 		if wu.AssetType == info.AssetType && bytes.Equal(out, addrs.ScriptAddress()) {
-			e := fmt.Sprintf("Illegal transfer err %s", err)
-			return errors.New(e)
+			return fmt.Errorf("Illegal transfer err %s", err)
 		}
 	}
 

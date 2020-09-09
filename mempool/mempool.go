@@ -9,6 +9,7 @@ import (
 	"container/list"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/cross"
@@ -174,7 +175,7 @@ type TxPool struct {
 	mtx           sync.RWMutex
 	cfg           Config
 	pool          map[chainhash.Hash]*TxDesc
-	entanglepool  map[string]*TxDesc
+	exchangePool  map[string]*TxDesc
 	orphans       map[chainhash.Hash]*orphanTx
 	orphansByPrev map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx
 	outpoints     map[wire.OutPoint]*czzutil.Tx
@@ -489,11 +490,16 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 
 		delete(mp.pool, *txHash)
 
-		einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-		for _, v := range einfos {
-			AssetType := byte(v.AssetType)
-			key := append(v.ExtTxHash, AssetType)
-			delete(mp.entanglepool, string(key))
+		einfo, _ := cross.IsExChangeTx(tx.MsgTx())
+		if einfo == nil {
+			einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
+		}
+
+		if einfo != nil {
+			AssetType := byte(einfo.AssetType)
+			ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
+			key := append(ExtTxHash, AssetType)
+			delete(mp.exchangePool, string(key))
 		}
 
 		atomic.StoreInt64(&mp.lastUpdated, time.Now().Unix())
@@ -555,11 +561,16 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 
 	mp.pool[*tx.Hash()] = txD
 
-	einfos, _ := cross.IsEntangleTx(tx.MsgTx())
-	for _, v := range einfos {
-		AssetType := byte(v.AssetType)
-		key := append(v.ExtTxHash, AssetType)
-		mp.entanglepool[string(key)] = txD
+	einfo, _ := cross.IsExChangeTx(tx.MsgTx())
+	if einfo == nil {
+		einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
+	}
+
+	if einfo != nil {
+		AssetType := byte(einfo.AssetType)
+		ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
+		key := append(ExtTxHash, AssetType)
+		mp.exchangePool[string(key)] = txD
 	}
 
 	for _, txIn := range tx.MsgTx().TxIn {
@@ -1074,19 +1085,22 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		}
 	}
 
-	// ExChangeTx
-	//einfos1, err := cross.IsFastExChangeTx(tx.MsgTx(),mp.cfg.ChainParams)
-	//if err != nil && err != cross.NoExChange {
-	//	return err
-	//}
-	//
-	//if einfos != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-	//	return errors.New("err ExChangeTx tx  BeaconHeight < nextBlockHeight ")
-	//} else if einfos != nil {
-	//	if _, err := mp.cfg.ExChangeVerify.VerifyExChangeTx(tx.MsgTx(), eState); err != nil {
-	//		return err
-	//	}
-	//}
+	// FastExChangeTx
+	einfo, binfo, err := cross.IsFastExChangeTx(tx.MsgTx(), mp.cfg.ChainParams)
+	if err != nil && err != cross.NoFastExChange {
+		return err
+	}
+
+	if einfo != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err FastExChangeTx tx  BeaconHeight < nextBlockHeight ")
+	} else if einfo != nil {
+		if _, err := mp.cfg.ExChangeVerify.VerifyExChangeTx(tx.MsgTx(), eState); err != nil {
+			return err
+		}
+		if err := mp.cfg.ExChangeVerify.VerifyBurn(binfo, eState); err != nil {
+			return err
+		}
+	}
 
 	// ExChangeTx
 	einfos, err2 := cross.IsExChangeTx(tx.MsgTx())
@@ -1118,7 +1132,6 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 
 	// BurnProofTx
 	bpt, err4 := cross.IsBurnProofTx(tx.MsgTx())
-
 	if err4 != nil && err4 != cross.NoBurnProofTx {
 		return err4
 	}
@@ -1559,7 +1572,7 @@ func New(cfg *Config) *TxPool {
 	return &TxPool{
 		cfg:            *cfg,
 		pool:           make(map[chainhash.Hash]*TxDesc),
-		entanglepool:   make(map[string]*TxDesc),
+		exchangePool:   make(map[string]*TxDesc),
 		orphans:        make(map[chainhash.Hash]*orphanTx),
 		orphansByPrev:  make(map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx),
 		nextExpireScan: time.Now().Add(orphanExpireScanInterval),
