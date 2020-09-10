@@ -941,8 +941,9 @@ func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype
 func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)
+
 	if err != nil {
-		log.Fatal("Failed to RLP encode EntangleState: ", "err", err)
+		log.Fatal("Failed to RLP encode EntangleState: ", err)
 	}
 	return data
 }

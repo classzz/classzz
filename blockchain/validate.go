@@ -966,11 +966,12 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 		return ruleError(ErrInvalidTime, str)
 	}
 
-	if header.Timestamp.Unix() > (time.Now().Unix() + int64(allowedFutureBlockTime)) {
-		fmt.Println(header.Timestamp, time.Now().Add(allowedFutureBlockTime), time.Now())
-		str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
-		return ruleError(ErrInvalidTime, str)
-	}
+	//fmt.Println(header.Timestamp, time.Now().Add(allowedFutureBlockTime), time.Now())
+	//if header.Timestamp.Unix() > (time.Now().Unix() + int64(allowedFutureBlockTime)) {
+	//
+	//	str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
+	//	return ruleError(ErrInvalidTime, str)
+	//}
 
 	if int64(params.Deployments[chaincfg.DeploymentSEQ].StartTime) < header.Timestamp.Unix() && prevHeader != nil && prevHeader.Timestamp.After(header.Timestamp) {
 		str := fmt.Sprintf("prevheader timestamp %v > header %v", prevHeader.Timestamp, header.Timestamp)

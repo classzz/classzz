@@ -177,7 +177,7 @@ func (ec *ExChangeTxInfo) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(ec)
 	if err != nil {
-		log.Fatal("Failed to RLP encode EntangleState: ", "err", err)
+		log.Fatal("Failed to RLP encode ExChangeTxInfo: ", err)
 	}
 	return data
 }
@@ -400,26 +400,6 @@ func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
 	}
 	return nil, NoEntangle
 }
-
-// Only txOut[0] is valid
-//func IsExChangeTx(tx *wire.MsgTx) (map[uint32]*ExChangeTxInfo, error) {
-//
-//	// make sure at least one txout in OUTPUT
-//	einfos := make(map[uint32]*ExChangeTxInfo)
-//	for i, v := range tx.TxOut {
-//		info, err := ExChangeTxFromScript(v.PkScript)
-//		if err == nil && i == 0 {
-//			if v.Value != 0 {
-//				return nil, errors.New("the output value must be 0 in ExChange tx.")
-//			}
-//			einfos[uint32(i)] = info
-//		}
-//	}
-//	if len(einfos) > 0 {
-//		return einfos, nil
-//	}
-//	return nil, NoExChange
-//}
 
 // Only txOut[0] is valid
 func IsExChangeTx(tx *wire.MsgTx) (*ExChangeTxInfo, error) {
