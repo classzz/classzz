@@ -30,6 +30,7 @@ func newBeaconFreeQuotaInfo() *BeaconFreeQuotaInfo {
 		}},
 	}
 }
+
 func (e *BeaconFreeQuotaInfo) SetRate(atype uint8, vv uint64) error {
 	find, i, all := false, 0, uint64(0)
 	var v *BaseAmountUint = nil

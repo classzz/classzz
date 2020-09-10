@@ -950,24 +950,16 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 		return errors.New("EnUserExChangeInfos is nil")
 	}
 
-	ees := uei[info.Address]
-	if ees == nil {
+	es := uei[info.Address]
+	if es == nil {
 		return errors.New("UserEntangleInfos is nil")
 	}
 
-	//var ee *ExChangeEntity
-	//for _, e := range ees.ExChangeEntitys {
-	//	if e.AssetType == uint8(info.AssetType) {
-	//		ee = e
-	//		break
-	//	}
-	//}
+	if info.Amount.Cmp(es.MaxRedeem) > 0 {
+		return errors.New("Amount < MaxRedeem")
+	}
 
-	//if ee == nil {
-	//	return errors.New("AssetType is nil")
-	//}
-
-	if info.Amount.Cmp(ees.OriginAmount) > 0 {
+	if info.Amount.Cmp(es.OriginAmount) > 0 {
 		return errors.New("Amount > OriginAmount")
 	}
 
