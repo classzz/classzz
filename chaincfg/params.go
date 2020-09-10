@@ -250,7 +250,7 @@ var MainNetParams = Params{
 
 	EntangleHeight: 120000,
 	BeaconHeight:   420000,
-	ExChangeHeight: 500000,
+	ExChangeHeight: 800000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
@@ -265,8 +265,10 @@ var MainNetParams = Params{
 		{Height: 190000, Hash: newHashFromStr("bbccbab407a2755d3bac95c1dd02d4a25641e7fe40cc3e866f485125e5733b15")},
 		{Height: 210000, Hash: newHashFromStr("07f5e9acc27edfd1ff6252f1005e3984a374d05a92aead6914c9f5b2b1ef14c8")},
 		{Height: 225000, Hash: newHashFromStr("fc0e1538e7369862e41c8cedbf2b0b73eaf1a3f76cdad7496ec7884e3aad3e9d")},
+		{Height: 240000, Hash: newHashFromStr("20eee292ff11838d500fe0ad1f449e4f836bafd86c16fa576e75237fabaae7a2")},
 		{Height: 260000, Hash: newHashFromStr("c37dfc73a91484ef4279f67d14aeb7537c32203cc7463ea871877ead64af57eb")},
-		{Height: 290000, Hash: newHashFromStr("e105ec96c674d53b17eda46dd464ba0b3bcb9d4706d9a5c497f995f7e7d472b9")},
+		{Height: 280000, Hash: newHashFromStr("aca7293f28eae5e66bbb07d52585728b8d44b0a7fa00e43d0d77ebc47d9a50b3")},
+		{Height: 300000, Hash: newHashFromStr("287d3c7cde0d9e976a2952af0360885206a754dc9692b8ac2d5f614333bfa476")},
 		{Height: 320757, Hash: newHashFromStr("b5e2b5431de01a93efbcdef77b5a72ba216dcdcf14728e66e22d96387da3089b")},
 		{Height: 350757, Hash: newHashFromStr("19d78e5c64bd4f414ca13765dd7ff7639e3b58749969fd650170ff10db6b8b92")},
 		{Height: 370000, Hash: newHashFromStr("80258d53649075b0118ac709faa639061b1fc5780091487b71ec1dd9b1db2e6b")},
@@ -283,6 +285,13 @@ var MainNetParams = Params{
 		{Height: 560000, Hash: newHashFromStr("760ed354014721909e8ada1eea9f1034cd9539096229463c2dbd7c8f817ed296")},
 		{Height: 575000, Hash: newHashFromStr("db34f1b08bf99d0ac01d947b986b963f5ef08c7e02c3fcbe18d928896c0e3955")},
 		{Height: 590000, Hash: newHashFromStr("042b63f98e6aa538b49013b9d54f94a93df3ddc7db8223dbab6bdd64cd6c1bf0")},
+		{Height: 605000, Hash: newHashFromStr("a9c0a9a3cecb9c81f8869543294b62d21032ae06babfa38c1ec1e38e29f04d3d")},
+		{Height: 620000, Hash: newHashFromStr("01a24505faa400dabb59af3c8fadd01e81602c0aeaa41c07b87256649b8800ba")},
+		{Height: 635000, Hash: newHashFromStr("48b0114b72b2b34b6a72cee43a3b1cb229dc33ba3b39c60212afa6b9ca1a0a32")},
+		{Height: 650000, Hash: newHashFromStr("de76d2d2d3c5b8cfd9f3d54728a0897a6801464356d911b739f65167a99e2310")},
+		{Height: 665000, Hash: newHashFromStr("2334802c22635c90af5ce6a4d74ec4b2ea04eb0762c6b65868f72fb7067c4b32")},
+		{Height: 685000, Hash: newHashFromStr("797f6fde480487b287eaf3125871845828c58f60681e6d7764f3686f49df2ab7")},
+		{Height: 700000, Hash: newHashFromStr("4661878a23834501df529185a8141e6d693eac25b1b061e48164a812ccf7e00d")},
 	},
 
 	// Consensus rule change deployments.

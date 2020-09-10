@@ -488,11 +488,11 @@ func (sp *serverPeer) OnVersion(_ *peer.Peer, msg *wire.MsgVersion) *wire.MsgRej
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
-	if !strings.Contains(msg.UserAgent, "classzz:3.2.0") {
-		srvrLog.Debugf("Rejecting peer %s for running < v3.2.0", sp.Peer)
-		reason := fmt.Sprint("Not >= v3.2.0 node")
-		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
-	}
+	//if !strings.Contains(msg.UserAgent, "classzz:3.2.0") {
+	//	srvrLog.Debugf("Rejecting peer %s for running < v3.2.0", sp.Peer)
+	//	reason := fmt.Sprint("Not >= v3.2.0 node")
+	//	return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
+	//}
 
 	// Reject outbound peers that are not full nodes.
 	wantServices := wire.SFNodeNetwork

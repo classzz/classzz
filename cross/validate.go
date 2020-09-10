@@ -966,10 +966,6 @@ func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) er
 	return nil
 }
 
-//func (ev *ExChangeVerify) VerifyBurnProof(tx *czzutil.Tx, info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
-//	return ev.VerifyBurnProofBeacon(info, eState, curHeight)
-//}
-
 func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *EntangleState, curHeight uint64) (uint64, *BurnItem, error) {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
