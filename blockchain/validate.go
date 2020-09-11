@@ -446,6 +446,49 @@ func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem, 
 	}
 	return nil
 }
+
+func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
+
+	hash := block.MsgBlock().Header.PrevBlock
+	eState := b.GetEstateByHashAndHeight2(hash, prevHeight)
+
+	for _, tx := range block.Transactions() {
+
+		// BeaconRegistration
+		br, _ := cross.IsBeaconRegistrationTx2(tx.MsgTx(), b.chainParams)
+		if br != nil {
+
+			_, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx2(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
+
+			if err := eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				return err
+			}
+		}
+
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), b.chainParams)
+		if bp != nil {
+			_, err := b.GetExChangeVerify().VerifyAddBeaconPledgeTx2(tx.MsgTx(), eState)
+			if err != nil {
+				return err
+			}
+
+			if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				return err
+			}
+		}
+	}
+
+	if block.MsgBlock().Header.CIDRoot != cross.Hash2(eState) {
+		return errors.New("CIDRoot not in the block")
+	}
+
+	return nil
+}
+
 func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	eState := b.GetEstateByHashAndHeight(hash, prevHeight)
@@ -470,13 +513,6 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					if exInfos := eState.GetBaExInfoByID(BeaconID); exInfos == nil {
 						return errors.New(fmt.Sprintf("validate(GetExInfos)failed,ex not nil,tx:%s,id:%v", tx.Hash(), BeaconID))
 					} else {
-						//ex := &cross.ExBeaconInfo{
-						//	EnItems: []*wire.OutPoint{&wire.OutPoint{
-						//		Hash:  *tx.Hash(),
-						//		Index: 1,
-						//	}},
-						//	Proofs: []*cross.WhiteListProof{},
-						//}
 						ex := cross.NewExBeaconInfo()
 						ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
 							Hash:  *tx.Hash(),
@@ -704,6 +740,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		if err := eState.UpdateQuotaOnBlock(uint64(prevHeight + 1)); err != nil {
 			return err
 		}
+
 	}
 
 	if block.MsgBlock().Header.CIDRoot != cross.Hash(eState) {

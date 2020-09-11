@@ -1783,8 +1783,20 @@ func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	return eState
 }
 
+func (b *BlockChain) CurrentEstate2() *cross.EntangleState2 {
+	hash := b.bestChain.tip().hash
+	height := b.bestChain.tip().height
+	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
+	return eState
+}
+
 func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
 	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
+	return eState
+}
+
+func (b *BlockChain) GetEstateByHashAndHeight2(hash chainhash.Hash, height int32) *cross.EntangleState2 {
+	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
 	return eState
 }
 

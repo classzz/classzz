@@ -170,6 +170,21 @@ type BeaconAddressInfo struct {
 	CoinBaseAddress []string         `json:"coinbase_address"`
 }
 
+type BeaconAddressInfo2 struct {
+	ExchangeID      uint64           `json:"exchange_id"`
+	Address         string           `json:"address"`
+	ToAddress       []byte           `json:"toAddress"`
+	StakingAmount   *big.Int         `json:"staking_amount"`  // in
+	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
+	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
+	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
+	AssetFlag       uint32           `json:"asset_flag"`
+	Fee             uint64           `json:"fee"`
+	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit     `json:"white_list"`
+	CoinBaseAddress []string         `json:"CoinBaseAddress"`
+}
+
 type AddBeaconPledge struct {
 	Address       string   `json:"address"`
 	ToAddress     []byte   `json:"to_address"`

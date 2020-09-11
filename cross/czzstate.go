@@ -970,13 +970,120 @@ func Hash(es *EntangleState) chainhash.Hash {
 	return chainhash.HashH(es.ToBytes())
 }
 
+func Hash2(es *EntangleState2) chainhash.Hash {
+	return chainhash.HashH(es.ToBytes())
+}
+
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
 		EnInfos:             make(map[string]*BeaconAddressInfo),
 		EnUserExChangeInfos: make(map[uint64]UserExChangeInfos),
 		BaExInfo:            make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
-		CurBeaconID:         0,
 		PoolAmount1:         big.NewInt(0),
 		PoolAmount2:         big.NewInt(0),
+		CurBeaconID:         0,
+	}
+}
+
+type BurnInfos struct {
+	Items      []*BurnItem
+	RAllAmount *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount *big.Int // all burned asset on czz by the account
+}
+
+type EntangleEntity struct {
+	ExchangeID      uint64     `json:"exchange_id"`
+	Address         string     `json:"address"`
+	AssetType       uint32     `json:"asset_type"`
+	Height          *big.Int   `json:"height"`            // newest height for entangle
+	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
+	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
+	OriginAmount    *big.Int   `json:"origin_amount"`     // origin asset(czz) by entangle in
+	MaxRedeem       *big.Int   `json:"max_redeem"`        // out asset
+	BurnAmount      *BurnInfos `json:"burn_amount"`
+}
+
+type EntangleEntitys []*EntangleEntity
+type UserEntangleInfos map[string]EntangleEntitys
+
+type EntangleState2 struct {
+	EnInfos       map[string]*BeaconAddressInfo2
+	EnEntitys     map[uint64]UserEntangleInfos
+	PoolAmount1   *big.Int
+	PoolAmount2   *big.Int
+	CurExchangeID uint64
+}
+
+func (es *EntangleState2) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo2 {
+	for _, v := range es.EnInfos {
+		if bytes.Equal(v.ToAddress, to) {
+			return v
+		}
+	}
+	return nil
+}
+
+func (es *EntangleState2) AppendAmountForBeaconAddress(addr string, amount *big.Int) error {
+	if info, ok := es.EnInfos[addr]; !ok {
+		return ErrRepeatRegister
+	} else {
+		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
+		return nil
+	}
+}
+
+/////////////////////////////////////////////////////////////////
+// keep staking enough amount asset
+func (es *EntangleState2) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
+	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+		!ValidAssetType(uint8(assetType)) {
+		return ErrInvalidParam
+	}
+	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+		return ErrLessThanMin
+	}
+	if _, ok := es.EnInfos[addr]; ok {
+		return ErrRepeatRegister
+	}
+	if info := es.getBeaconAddressFromTo(to); info != nil {
+		return ErrRepeatToAddress
+	}
+	info := &BeaconAddressInfo2{
+		ExchangeID:      es.CurExchangeID + 1,
+		Address:         addr,
+		ToAddress:       to,
+		StakingAmount:   new(big.Int).Set(amount),
+		AssetFlag:       assetType,
+		Fee:             fee,
+		KeepTime:        keeptime,
+		EnAssets:        make([]*EnAssetItem, 0, 0),
+		EntangleAmount:  big.NewInt(0),
+		WhiteList:       wu,
+		CoinBaseAddress: cba,
+	}
+	es.CurExchangeID = info.ExchangeID
+	es.EnInfos[addr] = info
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////
+func (es *EntangleState2) ToBytes() []byte {
+	// maybe rlp encode
+	data, err := rlp.EncodeToBytes(es)
+
+	if err != nil {
+		log.Fatal("Failed to RLP encode EntangleState: ", err)
+	}
+	return data
+}
+
+func NewEntangleState2() *EntangleState2 {
+	return &EntangleState2{
+		EnInfos:       make(map[string]*BeaconAddressInfo2),
+		EnEntitys:     make(map[uint64]UserEntangleInfos),
+		PoolAmount1:   big.NewInt(0),
+		PoolAmount2:   big.NewInt(0),
+		CurExchangeID: 0,
 	}
 }

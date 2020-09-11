@@ -523,6 +523,64 @@ func IsFastExChangeTxToStorage(tx *wire.MsgTx) (*ExChangeTxInfo, *BurnTxInfo, er
 	return exInfo, info, nil
 }
 
+func IsBeaconRegistrationTx2(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo2, error) {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
+			return nil, NoBeaconRegistration
+		}
+	} else {
+		return nil, NoBeaconRegistration
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
+		return nil, errors.New(e)
+	}
+
+	var es *BeaconAddressInfo2
+	txout := tx.TxOut[0]
+	info, err := BeaconRegistrationTxFromScript2(txout.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txout.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = info
+	}
+
+	var pk []byte
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+		return nil, errors.New(e)
+	}
+
+	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
+	info.Address = address.String()
+
+	if es != nil {
+		return es, nil
+	}
+	return nil, NoBeaconRegistration
+}
+
 // BeaconRegistration
 func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
 
@@ -958,6 +1016,20 @@ func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	return info, nil
 }
 
+//  Beacon
+func BeaconRegistrationTxFromScript2(script []byte) (*BeaconAddressInfo2, error) {
+	data, err := txscript.GetBeaconRegistrationData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &BeaconAddressInfo2{}
+	err = rlp.DecodeBytes(data, info)
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
 func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 	data, err := txscript.GetAddBeaconPledgeData(script)
 	if err != nil {
@@ -1049,7 +1121,7 @@ func VerifyTxsSequence(infos []*EtsInfo) error {
 	return nil
 }
 
-func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, rewards []*PunishedRewardItem,
+func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, rewards []*PunishedRewardItem,
 	mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
@@ -1142,26 +1214,51 @@ func MakeMergeCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeIt
 	return nil
 }
 
-func MakeMergerCoinbaseTx2(height *big.Int, tx *wire.MsgTx, items []*ExChangeItem, state *EntangleState) error {
-	if len(items) == 0 || state == nil {
+func MakeMergerCoinbaseTx2(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+	lastScriptInfo []byte, fork bool) error {
+	if pool == nil || len(pool.POut) == 0 {
 		return nil
 	}
+	keepInfo, err := KeepedAmountFromScript(lastScriptInfo)
+	if err != nil {
+		return err
+	}
+	// make sure have enough Value to exchange
+	poolIn1 := &wire.TxIn{
+		PreviousOutPoint: pool.POut[0],
+		SignatureScript:  pool.Script[0],
+		Sequence:         wire.MaxTxInSequenceNum,
+	}
+	poolIn2 := &wire.TxIn{
+		PreviousOutPoint: pool.POut[1],
+		SignatureScript:  pool.Script[1],
+		Sequence:         wire.MaxTxInSequenceNum,
+	}
+	// merge pool tx
+	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
+
+	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
+	updateTxOutValue(tx.TxOut[2], reserve2)
+	if ok := EnoughAmount2(reserve1, items, keepInfo, fork); !ok {
+		return errors.New("not enough amount to be entangle...")
+	}
+
 	for i := range items {
-		amount, err := state.AddEntangleItem(items[i].Addr.EncodeAddress(), uint8(items[i].AssetType),
-			items[i].BeaconID, height, items[i].Value, 0)
+		calcExchange2(items[i], &reserve1, keepInfo, true, fork)
+		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
-			return errors.New(fmt.Sprintf("MakeMergerCoinbaseTx2 failed,i=%d,bid=%v,type=%d,amount=%v,err=%s",
-				i, items[i].BeaconID, items[i].AssetType, items[i].Value.String(), err.Error()))
-		}
-		pkScript, err1 := txscript.PayToAddrScript(items[i].Addr)
-		if err1 != nil {
-			return errors.New("Make Meger tx failed,err: " + err1.Error())
+			return errors.New("Make Meger tx failed,err: " + err.Error())
 		}
 		out := &wire.TxOut{
-			Value:    amount.Int64(),
+			Value:    items[i].Value.Int64(),
 			PkScript: pkScript,
 		}
 		tx.AddTxOut(out)
+	}
+	keepEntangleAmount(keepInfo, tx)
+	tx.TxOut[1].Value = reserve1
+	if reserve1 < reserve2 {
+		fmt.Println("as")
 	}
 	return nil
 }
@@ -1205,6 +1302,41 @@ func calcExchange(item *ExChangeItem, reserve *int64, keepInfo *KeepedAmount, ch
 	*reserve = *reserve - item.Value.Int64()
 }
 
+func calcExchange2(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, change, fork bool) {
+	amount := big.NewInt(0)
+	cur := keepInfo.GetValue(item.EType)
+	if cur != nil {
+		amount = new(big.Int).Set(cur)
+	}
+	if change {
+		kk := KeepedItem{
+			AssetType: item.EType,
+			Amount:    new(big.Int).Set(item.Value),
+		}
+		keepInfo.Add(kk)
+	}
+	if item.EType == ExpandedTxEntangle_Doge {
+		if fork {
+			item.Value = toDoge2(amount, item.Value)
+		} else {
+			item.Value = toDoge(amount, item.Value, fork)
+		}
+	} else if item.EType == ExpandedTxEntangle_Ltc {
+		if fork {
+			item.Value = toLtc2(amount, item.Value)
+		} else {
+			item.Value = toLtc(amount, item.Value, fork)
+		}
+	} else if item.EType == ExpandedTxEntangle_Btc {
+		item.Value = toBtc(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bch {
+		item.Value = toBchOrBsv(amount, item.Value)
+	} else if item.EType == ExpandedTxEntangle_Bsv {
+		item.Value = toBchOrBsv(amount, item.Value)
+	}
+	*reserve = *reserve - item.Value.Int64()
+}
+
 func PreCalcEntangleAmount(item *ExChangeItem, keepInfo *KeepedAmount, fork bool) {
 	var vv int64
 	calcExchange(item, &vv, keepInfo, true, fork)
@@ -1214,6 +1346,14 @@ func EnoughAmount(reserve int64, items []*ExChangeItem, keepInfo *KeepedAmount, 
 	amount := reserve
 	for _, v := range items {
 		calcExchange(v.Clone(), &amount, keepInfo, false, fork)
+	}
+	return amount > 0
+}
+
+func EnoughAmount2(reserve int64, items []*EntangleItem, keepInfo *KeepedAmount, fork bool) bool {
+	amount := reserve
+	for _, v := range items {
+		calcExchange2(v.Clone(), &amount, keepInfo, false, fork)
 	}
 	return amount > 0
 }
