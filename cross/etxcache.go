@@ -68,7 +68,7 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 		if value != nil {
 			err := rlp.DecodeBytes(value, es)
 			if err != nil {
-				log.Fatal("Failed to RLP encode EntangleState", "err", err)
+				log.Fatal("Failed to RLP encode LoadEntangleState EntangleState ", "err", err)
 				return err
 			}
 			return nil
@@ -101,7 +101,7 @@ func (c *CacheEntangleInfo) LoadEntangleState2(height int32, hash chainhash.Hash
 		if value != nil {
 			err := rlp.DecodeBytes(value, es)
 			if err != nil {
-				log.Fatal("Failed to RLP encode EntangleState", "err", err)
+				log.Fatal("Failed to RLP encode LoadEntangleState EntangleState2 ", "err", err)
 				return err
 			}
 			return nil

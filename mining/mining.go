@@ -617,12 +617,14 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	poolItem := toPoolAddrItems(lView)
 	rewards := make([]*cross.PunishedRewardItem, 0, 0)
 	mergeItems := make(map[uint64][]*cross.BeaconMergeItem)
-
-	sErr, lastScriptInfo := g.getlastScriptInfo(&cHash, cheight)
-	if sErr != nil {
-		return nil, nil, sErr
+	var lastScriptInfo []byte
+	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight {
+		var err error
+		lastScriptInfo, err = g.getlastScriptInfo(&cHash, cheight)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-
 	var eState *cross.EntangleState
 	if g.chainParams.ExChangeHeight < nextBlockHeight {
 		eState = g.chain.CurrentEstate()
@@ -1305,7 +1307,7 @@ mempoolLoop:
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
 
 	var eState3 *cross.EntangleState
-	if g.chainParams.BeaconHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight && eState2 != nil {
+	if g.chainParams.BeaconHeight <= nextBlockHeight-1 && g.chainParams.ExChangeHeight > nextBlockHeight-1 {
 		eState4 := g.chain.CurrentEstate2()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
@@ -1323,7 +1325,7 @@ mempoolLoop:
 			EnInfos: bai2s,
 		}
 
-	} else {
+	} else if g.chainParams.ExChangeHeight <= nextBlockHeight-1 {
 		eState3 = g.chain.CurrentEstate()
 	}
 
@@ -1407,23 +1409,23 @@ func (g *BlkTmplGenerator) BestSnapshot() *blockchain.BestState {
 func (g *BlkTmplGenerator) TxSource() TxSource {
 	return g.txSource
 }
-func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32) (error, []byte) {
+func (g *BlkTmplGenerator) getlastScriptInfo(hash *chainhash.Hash, height int32) ([]byte, error) {
 	block, err := g.chain.BlockByHash(hash)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	if block.Height() != height {
-		return errors.New("the height not match"), nil
+		return nil, errors.New("the height not match")
 	}
 	tx, err := block.Tx(0)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	if height < g.chainParams.EntangleHeight {
 		return nil, nil
 	}
 	txout := tx.MsgTx().TxOut[3]
-	return nil, txout.PkScript
+	return txout.PkScript, nil
 }
 func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	items := &cross.PoolAddrItem{

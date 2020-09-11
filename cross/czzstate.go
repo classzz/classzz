@@ -1043,10 +1043,10 @@ func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems2) {
 	*es = UserEntangleInfos(userInfos)
 }
 func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
+	type Store struct {
 		Value SortStoreUserItems2
 	}
-	var eb Store1
+	var eb Store
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
@@ -1054,11 +1054,11 @@ func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
+	type Store struct {
 		Value SortStoreUserItems2
 	}
 	s1 := es.toSlice()
-	return rlp.Encode(w, &Store1{
+	return rlp.Encode(w, &Store{
 		Value: s1,
 	})
 }
@@ -1138,12 +1138,12 @@ func (es *EntangleState2) fromSlice(v1 SortStoreBeaconAddress2, v2 SortStoreUser
 }
 
 func (es *EntangleState2) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
+	type Store struct {
 		ID     uint64
 		Value1 SortStoreBeaconAddress2
 		Value2 SortStoreUserInfos2
 	}
-	var eb Store1
+	var eb Store
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
@@ -1153,13 +1153,13 @@ func (es *EntangleState2) DecodeRLP(s *rlp.Stream) error {
 }
 
 func (es *EntangleState2) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
+	type Store struct {
 		ID     uint64
 		Value1 SortStoreBeaconAddress2
 		Value2 SortStoreUserInfos2
 	}
 	s1, s2 := es.toSlice()
-	return rlp.Encode(w, &Store1{
+	return rlp.Encode(w, &Store{
 		ID:     es.CurExchangeID,
 		Value1: s1,
 		Value2: s2,
@@ -1224,7 +1224,7 @@ func (es *EntangleState2) ToBytes() []byte {
 	data, err := rlp.EncodeToBytes(es)
 
 	if err != nil {
-		log.Fatal("Failed to RLP encode EntangleState: ", err)
+		log.Fatal("Failed to RLP encode EntangleState2: ", err)
 	}
 	return data
 }

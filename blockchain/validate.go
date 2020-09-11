@@ -1202,8 +1202,32 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 	tip := b.bestChain.Tip()
 
 	prevblock, _ := b.HeaderByHash(&header.PrevBlock)
-	eState := b.CurrentEstate()
-	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags, eState, addr)
+
+	//eState := b.CurrentEstate()
+	var eState3 *cross.EntangleState
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ExChangeHeight > tip.height {
+		eState4 := b.CurrentEstate2()
+
+		bai2s := make(map[string]*cross.BeaconAddressInfo)
+		for k, v := range eState4.EnInfos {
+			bai2 := &cross.BeaconAddressInfo{
+				BeaconID:        v.ExchangeID,
+				StakingAmount:   v.StakingAmount,
+				EntangleAmount:  v.EntangleAmount,
+				CoinBaseAddress: v.CoinBaseAddress,
+			}
+			bai2s[k] = bai2
+		}
+
+		eState3 = &cross.EntangleState{
+			EnInfos: bai2s,
+		}
+
+	} else {
+		eState3 = b.CurrentEstate()
+	}
+
+	err := checkBlockHeaderSanity(b.chainParams, &prevblock, header, b.chainParams.PowLimit, b.timeSource, flags, eState3, addr)
 	if err != nil {
 		return err
 	}
@@ -1843,11 +1867,34 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 
 	prevHeader, _ := b.HeaderByHash(&block.MsgBlock().Header.PrevBlock)
 
-	eState := b.CurrentEstate()
+	var eState3 *cross.EntangleState
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ExChangeHeight > tip.height {
+		eState4 := b.CurrentEstate2()
+
+		bai2s := make(map[string]*cross.BeaconAddressInfo)
+		for k, v := range eState4.EnInfos {
+			bai2 := &cross.BeaconAddressInfo{
+				BeaconID:        v.ExchangeID,
+				StakingAmount:   v.StakingAmount,
+				EntangleAmount:  v.EntangleAmount,
+				CoinBaseAddress: v.CoinBaseAddress,
+			}
+			bai2s[k] = bai2
+		}
+
+		eState3 = &cross.EntangleState{
+			EnInfos: bai2s,
+		}
+
+	} else if b.chainParams.ExChangeHeight <= tip.height {
+		eState3 = b.CurrentEstate()
+	}
+	//eState := b.CurrentEstate()
+
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)
 
-	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, eState, addrs[0])
+	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, eState3, addrs[0])
 	if err != nil {
 		return err
 	}
