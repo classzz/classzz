@@ -1228,10 +1228,21 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 	parentHash := &block.MsgBlock().Header.PrevBlock
 
 	err := b.db.Update(func(dbTx database.Tx) error {
-		err := dbBeaconTx(dbTx, block)
-		if err != nil {
-			return err
+
+		if NetParams.ExChangeHeight <= block.Height() {
+			err := dbBeaconTx(dbTx, block)
+			if err != nil {
+				return err
+			}
 		}
+
+		if NetParams.BeaconHeight <= block.Height() && NetParams.ExChangeHeight > block.Height() {
+			err := dbBeaconTx2(dbTx, block)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 
