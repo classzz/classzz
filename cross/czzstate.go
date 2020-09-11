@@ -644,13 +644,16 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
 	es.PoolAmount1, es.PoolAmount2 = new(big.Int).Set(amount1), new(big.Int).Set(amount2)
 }
+
 func (es *EntangleState) AddPoolAmount(amount1, amount2 *big.Int) {
 	es.PoolAmount1 = new(big.Int).Add(es.PoolAmount1, amount1)
 	es.PoolAmount2 = new(big.Int).Add(es.PoolAmount2, amount2)
 }
+
 func (es *EntangleState) SubPoolAmount1(amount *big.Int) {
 	es.PoolAmount1 = new(big.Int).Sub(es.PoolAmount1, amount)
 }
+
 func (es *EntangleState) SubPoolAmount2(amount *big.Int) {
 	es.PoolAmount2 = new(big.Int).Sub(es.PoolAmount2, amount)
 }
@@ -661,6 +664,7 @@ func redeemAmount(addr string, amount *big.Int) error {
 	}
 	return nil
 }
+
 func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
@@ -675,6 +679,7 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, err
 		return nil, ErrNoUserAsset
 	}
 }
+
 func CalcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, error) {
 	return calcEntangleAmount(reserve, reqAmount, atype)
 }
@@ -748,6 +753,7 @@ func (es *EntangleState) getBeaconAddress(bid uint64) *BeaconAddressInfo {
 	}
 	return nil
 }
+
 func (es *EntangleState) getAllEntangleAmount(atype uint8) *big.Int {
 	all := big.NewInt(0)
 	for _, val := range es.EnInfos {
@@ -820,6 +826,7 @@ func (es *EntangleState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeO
 	}
 	return res
 }
+
 func (es *EntangleState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurnInfo) {
 	for eid, items := range infos {
 		userEntitys, ok := es.EnUserExChangeInfos[eid]
@@ -829,6 +836,7 @@ func (es *EntangleState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurnI
 		}
 	}
 }
+
 func SummayPunishedInfos(infos map[uint64]UserTimeOutBurnInfo) map[uint64]LHPunishedItems {
 	res := make(map[uint64]LHPunishedItems)
 	for k, userInfos := range infos {
@@ -843,6 +851,7 @@ func SummayPunishedInfos(infos map[uint64]UserTimeOutBurnInfo) map[uint64]LHPuni
 	}
 	return res
 }
+
 func (es *EntangleState) FinishBeaconAddressPunished(eid uint64, amount *big.Int) error {
 	beacon := es.getBeaconByID(eid)
 	if beacon == nil {

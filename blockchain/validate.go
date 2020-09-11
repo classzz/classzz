@@ -711,6 +711,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	}
 	return nil
 }
+
 func (b *BlockChain) checkCoinBaseForRegister(items []*cross.BeaconMergeItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) (error, int) {
 	if len(items) != 2 {
 		return errors.New("wrong length merge itmes"), 0
