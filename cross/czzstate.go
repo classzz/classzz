@@ -1006,6 +1006,63 @@ type EntangleEntity struct {
 type EntangleEntitys []*EntangleEntity
 type UserEntangleInfos map[string]EntangleEntitys
 
+type StoreUserItme2 struct {
+	Addr      string
+	UserInfos EntangleEntitys
+}
+type SortStoreUserItems2 []*StoreUserItme2
+
+func (vs SortStoreUserItems2) Len() int {
+	return len(vs)
+}
+func (vs SortStoreUserItems2) Less(i, j int) bool {
+	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
+}
+func (vs SortStoreUserItems2) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+
+func (uinfos *UserEntangleInfos) toSlice() SortStoreUserItems2 {
+	v1 := make([]*StoreUserItme2, 0, 0)
+	for k, v := range *uinfos {
+		v1 = append(v1, &StoreUserItme2{
+			Addr:      k,
+			UserInfos: v,
+		})
+	}
+	sort.Sort(SortStoreUserItems2(v1))
+	return SortStoreUserItems2(v1)
+}
+func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems2) {
+	userInfos := make(map[string]EntangleEntitys)
+	for _, v := range vv {
+		userInfos[v.Addr] = v.UserInfos
+	}
+	*es = UserEntangleInfos(userInfos)
+}
+func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		Value SortStoreUserItems2
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.fromSlice(eb.Value)
+	return nil
+}
+func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		Value SortStoreUserItems2
+	}
+	s1 := es.toSlice()
+	return rlp.Encode(w, &Store1{
+		Value: s1,
+	})
+}
+
 type EntangleState2 struct {
 	EnInfos       map[string]*BeaconAddressInfo2
 	EnEntitys     map[uint64]UserEntangleInfos
@@ -1014,6 +1071,100 @@ type EntangleState2 struct {
 	CurExchangeID uint64
 }
 
+type StoreBeaconAddress2 struct {
+	Address string
+	Lh      *BeaconAddressInfo2
+}
+type StoreUserInfos2 struct {
+	EID       uint64
+	UserInfos UserEntangleInfos
+}
+type SortStoreBeaconAddress2 []*StoreBeaconAddress2
+
+func (vs SortStoreBeaconAddress2) Len() int {
+	return len(vs)
+}
+func (vs SortStoreBeaconAddress2) Less(i, j int) bool {
+	return bytes.Compare([]byte(vs[i].Address), []byte(vs[j].Address)) == -1
+}
+func (vs SortStoreBeaconAddress2) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+
+type SortStoreUserInfos2 []*StoreUserInfos2
+
+func (vs SortStoreUserInfos2) Len() int {
+	return len(vs)
+}
+func (vs SortStoreUserInfos2) Less(i, j int) bool {
+	return vs[i].EID < vs[j].EID
+}
+func (vs SortStoreUserInfos2) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+
+func (es *EntangleState2) toSlice() (SortStoreBeaconAddress2, SortStoreUserInfos2) {
+	v1, v2 := make([]*StoreBeaconAddress2, 0, 0), make([]*StoreUserInfos2, 0, 0)
+	for k, v := range es.EnInfos {
+		v1 = append(v1, &StoreBeaconAddress2{
+			Address: k,
+			Lh:      v,
+		})
+	}
+	for k, v := range es.EnEntitys {
+		v2 = append(v2, &StoreUserInfos2{
+			EID:       k,
+			UserInfos: v,
+		})
+	}
+	sort.Sort(SortStoreBeaconAddress2(v1))
+	sort.Sort(SortStoreUserInfos2(v2))
+	return SortStoreBeaconAddress2(v1), SortStoreUserInfos2(v2)
+}
+func (es *EntangleState2) fromSlice(v1 SortStoreBeaconAddress2, v2 SortStoreUserInfos2) {
+	enInfos := make(map[string]*BeaconAddressInfo2)
+	entitys := make(map[uint64]UserEntangleInfos)
+	for _, v := range v1 {
+		enInfos[v.Address] = v.Lh
+	}
+	for _, v := range v2 {
+		entitys[v.EID] = v.UserInfos
+	}
+	es.EnInfos, es.EnEntitys = enInfos, entitys
+}
+
+func (es *EntangleState2) DecodeRLP(s *rlp.Stream) error {
+	type Store1 struct {
+		ID     uint64
+		Value1 SortStoreBeaconAddress2
+		Value2 SortStoreUserInfos2
+	}
+	var eb Store1
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	es.CurExchangeID = eb.ID
+	es.fromSlice(eb.Value1, eb.Value2)
+	return nil
+}
+
+func (es *EntangleState2) EncodeRLP(w io.Writer) error {
+	type Store1 struct {
+		ID     uint64
+		Value1 SortStoreBeaconAddress2
+		Value2 SortStoreUserInfos2
+	}
+	s1, s2 := es.toSlice()
+	return rlp.Encode(w, &Store1{
+		ID:     es.CurExchangeID,
+		Value1: s1,
+		Value2: s2,
+	})
+}
 func (es *EntangleState2) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo2 {
 	for _, v := range es.EnInfos {
 		if bytes.Equal(v.ToAddress, to) {
