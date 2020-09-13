@@ -3690,7 +3690,7 @@ func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 	Num1 := 1.0
 	Num2 := 1.0
 
-	if c.Token1 == nil || c.Token2 == nil || (rate[*c.Token1] == 0.0 && rate[*c.Token1] == 0.0) {
+	if c.Token1 == nil || c.Token2 == nil || (rate[*c.Token1] == 0.0 && rate[*c.Token2] == 0.0) {
 		return nil, fmt.Errorf("err")
 	}
 
@@ -3722,7 +3722,7 @@ func handleGetAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-cha
 	}
 
 	result := make(map[string]interface{})
-	result["lastHeight"] = addrInfo.OldHeight
+	result["LastHeight"] = addrInfo.OldHeight
 	result["MaxRedeem"] = addrInfo.MaxRedeem
 
 	return result, nil
