@@ -104,6 +104,8 @@ func ExpandedTxTypeToAssetType(atype uint8) uint32 {
 		return LhAssetBCH
 	case ExpandedTxEntangle_Bsv:
 		return LhAssetBSV
+	case ExpandedTxEntangle_USDT:
+		return LhAssetUSDT
 	}
 	return 0
 }
@@ -343,12 +345,15 @@ func newExChangeEntitys() []*ExChangeEntity {
 		AssetType:       ExpandedTxEntangle_Btc,
 		EnOutsideAmount: big.NewInt(0),
 	})
-
+	
 	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
 		AssetType:       ExpandedTxEntangle_Ltc,
 		EnOutsideAmount: big.NewInt(0),
 	})
-
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_USDT,
+		EnOutsideAmount: big.NewInt(0),
+	})
 	return exChangeEntitys
 }
 
@@ -696,7 +701,12 @@ func newBurnInfos() []*BurnInfo {
 		BAllAmount: big.NewInt(0),
 		Items:      make([]*BurnItem, 0, 0),
 	})
-
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_USDT,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
 	return burnInfos
 }
 

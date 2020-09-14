@@ -26,6 +26,7 @@ const (
 	ExpandedTxEntangle_Btc  = 0xF2
 	ExpandedTxEntangle_Bsv  = 0xF3
 	ExpandedTxEntangle_Bch  = 0xF4
+	ExpandedTxEntangle_USDT  = 0xF5
 )
 
 func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
@@ -36,6 +37,8 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 		return LhAssetLTC
 	case ExpandedTxEntangle_Btc:
 		return LhAssetBTC
+	case ExpandedTxEntangle_USDT:
+		return LhAssetUSDT
 	case ExpandedTxEntangle_Bch:
 		return LhAssetBCH
 	case ExpandedTxEntangle_Bsv:
@@ -62,6 +65,7 @@ var (
 		ExpandedTxEntangle_Btc:  64,
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
+		ExpandedTxEntangle_USDT:  64,
 	}
 	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1      = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
@@ -212,7 +216,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	//data = data[4:]
 	info.AssetType = ExpandedTxType(data[0])
 	switch info.AssetType {
-	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
+	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch,ExpandedTxEntangle_USDT:
 		break
 	default:
 		return errors.New("Parse failed,not entangle tx")
@@ -1298,6 +1302,8 @@ func calcExchange(item *ExChangeItem, reserve *int64, keepInfo *KeepedAmount, ch
 		item.Value = toBchOrBsv(amount, item.Value)
 	} else if item.AssetType == ExpandedTxEntangle_Bsv {
 		item.Value = toBchOrBsv(amount, item.Value)
+	}else if item.AssetType == ExpandedTxEntangle_USDT {
+		item.Value = toUSDT(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
@@ -1333,6 +1339,8 @@ func calcExchange2(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, c
 		item.Value = toBchOrBsv(amount, item.Value)
 	} else if item.EType == ExpandedTxEntangle_Bsv {
 		item.Value = toBchOrBsv(amount, item.Value)
+	}else if item.EType == ExpandedTxEntangle_USDT {
+		item.Value = toUSDT(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
@@ -1811,7 +1819,39 @@ func toBchOrBsv(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
-
+func toUSDT(entangled, needed *big.Int) *big.Int {
+	if needed == nil || needed.Int64() <= 0 {
+		return big.NewInt(0)
+	}
+	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
+	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
+	res := big.NewInt(0)
+	for {
+		if change.Sign() <= 0 {
+			break
+		}
+		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
+		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+		l := new(big.Int).Sub(baseUnit, remainder)
+		if l.Cmp(change) >= 0 {
+			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
+			res = res.Add(res, res0)
+			break
+		} else {
+			change = change.Sub(change, l)
+			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
+			res = res.Add(res, res0)
+			keep = keep.Add(keep, l)
+		}
+	}
+	return res
+}
+func reverseToUSDT(keeped *big.Int) (*big.Int, *big.Int) {
+	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
+	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
+	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
+	return rate, big.NewInt(1)
+}
 func toCzz(val *big.Float) *big.Int {
 	val = val.Mul(val, big.NewFloat(float64(baseUnit.Int64())))
 	ii, _ := val.Int64()
