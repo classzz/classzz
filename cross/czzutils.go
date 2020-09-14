@@ -38,7 +38,7 @@ var (
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
-	LimitRedeemHeightForBeaconAddress = 10
+	LimitRedeemHeightForBeaconAddress = 50
 	MaxCoinBase                       = 4
 	MaxCoinType                       = 6
 	ChechWhiteListProof               = true
@@ -811,6 +811,7 @@ func (b *BurnInfo) finishBurn(height uint64, amount *big.Int, proof *BurnProofIt
 func (b *BurnInfo) recoverOutAmountForPunished(amount *big.Int) {
 	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
 }
+
 func (b *BurnInfo) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	height, used := uint64(0), false
 	for _, v := range b.Items {
@@ -825,6 +826,7 @@ func (b *BurnInfo) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
 	}
 	return height, used
 }
+
 func (b *BurnInfo) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
 
@@ -840,6 +842,7 @@ func (b *BurnInfo) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64)
 
 	return nil, ErrBurnProof
 }
+
 func (b *BurnInfo) closeProofForPunished(item *BurnItem) error {
 	if v := b.getItem(item.Height, item.Amount, item.RedeemState); v != nil {
 		v.RedeemState = 2
