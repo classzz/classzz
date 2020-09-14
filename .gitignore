@@ -36,5 +36,5 @@ _testmain.go
 
 .idea/
 *.iml
-
-./consensus/
+consensus/*
+data*

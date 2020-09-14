@@ -779,7 +779,7 @@ func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.En
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 
 	buf := new(bytes.Buffer)
-	fmt.Println("dbPutEntangleState", block.Height(), block.Hash().String())
+	//fmt.Println("dbPutEntangleState", block.Height(), block.Hash().String())
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
@@ -791,7 +791,7 @@ func dbPutEntangleState2(dbTx database.Tx, block *czzutil.Block, eState *cross.E
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 
 	buf := new(bytes.Buffer)
-	fmt.Println("dbPutEntangleState2", block.Height(), block.Hash().String())
+	//fmt.Println("dbPutEntangleState2", block.Height(), block.Hash().String())
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
