@@ -524,7 +524,7 @@ func dbBeaconTx2(dbTx database.Tx, block *czzutil.Block) error {
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState2(dbTx, pHeight, pHash)
 
-	fmt.Println("dbBeaconTx2", block.Height())
+	//fmt.Println("dbBeaconTx2", block.Height())
 	if block.Height() == NetParams.BeaconHeight {
 		eState = cross.NewEntangleState2()
 	}
@@ -574,7 +574,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		eState = cross.NewEntangleState()
 	}
 
-	fmt.Println("dbBeaconTx", block.Height())
+	//fmt.Println("dbBeaconTx", block.Height())
 	BurnProofTx_beaconID := uint64(0)
 	for _, tx := range block.Transactions() {
 		var err error
@@ -1864,7 +1864,7 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	fmt.Println("CurrentEstate", hash.String(), height)
+	//fmt.Println("CurrentEstate", hash.String(), height)
 	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
@@ -1872,7 +1872,7 @@ func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 func (b *BlockChain) CurrentEstate2() *cross.EntangleState2 {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	fmt.Println("CurrentEstate2", hash.String(), height)
+	//fmt.Println("CurrentEstate2", hash.String(), height)
 	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
 	return eState
 }

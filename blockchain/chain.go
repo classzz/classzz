@@ -1229,7 +1229,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	err := b.db.Update(func(dbTx database.Tx) error {
 
-		fmt.Println("connectBestChain", block.Height(), block.Hash().String())
+		//fmt.Println("connectBestChain", block.Height(), block.Hash().String())
 
 		if NetParams.ExChangeHeight <= block.Height() {
 			err := dbBeaconTx(dbTx, block)
