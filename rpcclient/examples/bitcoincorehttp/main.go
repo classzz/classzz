@@ -5,11 +5,22 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/classzz/classzz/rpcclient"
+	"github.com/classzz/czzutil"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 )
 
 func main() {
+
+	czzdHomeDir := czzutil.AppDataDir("classzz", false)
+	certs, err := ioutil.ReadFile(filepath.Join(czzdHomeDir, "rpc.cert"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Connect to local bitcoin core RPC server using HTTP POST mode.
 	connCfg := &rpcclient.ConnConfig{
@@ -17,8 +28,9 @@ func main() {
 		Endpoint:     "ws",
 		User:         "root",
 		Pass:         "admin",
-		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		HTTPPostMode: true,  // Bitcoin core only supports HTTP POST mode
+		DisableTLS:   false, // Bitcoin core does not provide TLS by default
+		Certificates: certs,
 	}
 
 	// Notice the notification parameter is nil since notifications are
@@ -29,14 +41,33 @@ func main() {
 	}
 	defer client.Shutdown()
 
-	// Get the current block count.
-	blockCount, err := client.GetBlockCount()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Block count: %d", blockCount)
+	msginfo := make(map[int64]interface{})
+	for i := 0; i < 20; i++ {
+		bhash, err := client.GetBlockHash(int64(i))
 
-	accounts, err := client.ListAccounts()
-	log.Printf("Block accounts: %d", accounts)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		block, err := client.GetBlock(bhash.String())
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, tx := range block.Transactions {
+			txHash := tx.TxHash()
+			txj, err := client.GetRawTransactionVerbose(&txHash)
+			if err != nil {
+				fmt.Println(err)
+			}
+			msginfo[int64(i)] = txj
+
+		}
+
+	}
+
+	msg, _ := json.Marshal(msginfo)
+	fmt.Println(string(msg))
 
 }

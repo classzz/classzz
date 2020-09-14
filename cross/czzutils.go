@@ -491,8 +491,8 @@ func (e *UserExChangeInfo) updateFreeQuotaOfHeight(height, amount *big.Int) {
 
 // updateFreeQuota returns the czz asset by user who can redeemable
 func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
-	limit := new(big.Int).Sub(curHeight, e.OldHeight)
-	if limit.Cmp(limitHeight) > 0 && e.MaxRedeem.Cmp(big.NewInt(0)) > 0 {
+
+	if curHeight.Cmp(e.OldHeight) > 0 && e.MaxRedeem.Cmp(big.NewInt(0)) > 0 {
 		// release user's quota
 		left := e.getRedeemableAmount()
 		e.MaxRedeem = big.NewInt(0)

@@ -574,8 +574,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		eState = cross.NewEntangleState()
 	}
 
-	//fmt.Println("dbBeaconTx", block.Height())
-	BurnProofTx_beaconID := uint64(0)
+	reportWhiteList := make([]uint64, 0, 0)
 	for _, tx := range block.Transactions() {
 		var err error
 
@@ -609,35 +608,6 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
-		// BurnTx
-		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
-		if info != nil {
-			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
-				return err
-			}
-		}
-
-		// BurnProof
-		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-
-			eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
-				Height: uint64(pHeight + 1),
-				TxHash: info.TxHash,
-			})
-
-			//else {
-			//	eState.UpdateHandleUserBurn(info, &cross.BurnProofItem{
-			//		Height: uint64(pHeight + 1),
-			//		TxHash: info.TxHash,
-			//	})
-			//	BurnProofTx_beaconID = info.BeaconID
-			//}
-
-			//if err := dbRemoveBurnTxInfoEntry(dbTx, info); err != nil {
-			//	return err
-			//}
-		}
-
 		// FastExChange
 		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), NetParams); einfo != nil && burnTx != nil {
 
@@ -660,6 +630,28 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 				return err
 			}
 		}
+
+		// BurnTx
+		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
+		if info != nil {
+			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
+				return err
+			}
+		}
+
+		// BurnProof
+		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+			eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+				Height: uint64(pHeight + 1),
+				TxHash: info.TxHash,
+			})
+		}
+
+		// BurnReportWhiteList
+		if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
+			reportWhiteList = append(reportWhiteList, info.BeaconID)
+		}
+
 	}
 
 	if eState != nil {
@@ -671,9 +663,22 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 					Hash:  *block.Transactions()[0].Hash(),
 					Index: index,
 				}}
-				eState.SetBaExInfo(BurnProofTx_beaconID, exInfos)
+				eState.SetBaExInfo(k, exInfos)
 			} else {
-				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", BurnProofTx_beaconID)
+				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", k)
+			}
+			index = index + 3
+		}
+
+		for _, v := range reportWhiteList {
+			if exInfos := eState.GetBaExInfoByID(v); exInfos != nil {
+				exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
+					Hash:  *block.Transactions()[0].Hash(),
+					Index: index,
+				}}
+				eState.SetBaExInfo(v, exInfos)
+			} else {
+				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", v)
 			}
 			index = index + 3
 		}
