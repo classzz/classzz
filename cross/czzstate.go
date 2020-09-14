@@ -562,7 +562,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 		}
 
 		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHeight)))
-		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(czzHeight)), amount)
+		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(lh.KeepBlock)), amount)
 		lh.addEnAsset(aType, amount)
 		lh.recordEntangleAmount(sendAmount)
 		userExChangeInfos[addr] = userExChangeInfo

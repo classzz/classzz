@@ -476,8 +476,8 @@ func (e *UserExChangeInfo) getValidOriginAmount() *big.Int {
 //}
 
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
-func (e *UserExChangeInfo) updateFreeQuotaOfHeight(height, amount *big.Int) {
-	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(big.NewInt(90), amount)
+func (e *UserExChangeInfo) updateFreeQuotaOfHeight(keepBlock, amount *big.Int) {
+	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(keepBlock, amount)
 
 	t1 := new(big.Int).Add(new(big.Int).Mul(t0, a0), f0)
 	t2 := new(big.Int).Add(a0, amount)
