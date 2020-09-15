@@ -673,7 +673,7 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, err
 		return toLtc2(reserve, reqAmount), nil
 	case ExpandedTxEntangle_Btc:
 		return toBtc(reserve, reqAmount), nil
-	case ExpandedTxEntangle_USDT:
+	case ExpandedTxEntangle_Usdt:
 		return toUSDT(reserve, reqAmount), nil
 	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
 		return toBchOrBsv(reserve, reqAmount), nil
@@ -697,7 +697,7 @@ func getRedeemRateByBurnCzz(reserve *big.Int, atype uint8) (*big.Int, *big.Int, 
 	case ExpandedTxEntangle_Btc:
 		base, divisor := reverseToBtc(reserve)
 		return base, divisor, nil
-	case ExpandedTxEntangle_USDT:
+	case ExpandedTxEntangle_Usdt:
 		base, divisor := reverseToUSDT(reserve)
 		return base, divisor, nil
 	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
