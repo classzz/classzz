@@ -512,6 +512,45 @@ type TxRawResult struct {
 	Blocktime     int64  `json:"blocktime,omitempty"`
 }
 
+//"txid": "1fc6ef3e006fce0f18d409e2a49f86472a47532913e954e4397e100a49ff0390",
+//"fee": "0.00002612",
+//"sendingaddress": "1FoWyxwPXuj4C6abqwhjDWdz6D4PZgYRjA",
+//"referenceaddress": "1CYUf3Uq3cqLswFApccRup84szbgYLq1H3",
+//"ismine": false,
+//"version": 0,
+//"type_int": 0,
+//"type": "Simple Send",
+//"propertyid": 31,
+//"divisible": true,
+//"amount": "12.70000000",
+//"valid": true,
+//"blockhash": "0000000000000000001647535108c3d997eeff8503e17369f3bd074fd3bd8ceb",
+//"blocktime": 1522303393,
+//"positioninblock": 503,
+//"block": 515635,
+//"confirmations": 7547
+
+// TxRawResult models the data from the getrawtransaction command.
+type OmniTxRawResult struct {
+	Txid             string `json:"txid"`
+	Fee              string `json:"fee"`
+	SendingAddress   string `json:"sendingaddress"`
+	ReferenceAddress string `json:"referenceaddress"`
+	IsMine           bool   `json:"ismine"`
+	Version          uint64 `json:"version"`
+	TypeInt          uint64 `json:"type_int"`
+	Type             string `json:"type"`
+	PropertyId       uint64 `json:"propertyid"`
+	Divisible        bool   `json:"divisible"`
+	Amount           string `json:"amount"`
+	Valid            bool   `json:"valid"`
+	BlockHash        string `json:"blockhash"`
+	BlockTime        uint64 `json:"blocktime"`
+	PositioninBlock  uint64 `json:"positioninblock"`
+	Block            uint64 `json:"block"`
+	Confirmations    uint64 `json:"confirmations"`
+}
+
 // SearchRawTransactionsResult models the data from the searchrawtransaction
 // command.
 type SearchRawTransactionsResult struct {

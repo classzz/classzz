@@ -207,6 +207,10 @@ type config struct {
 	BsvCoinRPCUser string   `long:"bsvcoinrpcuser" description:""`
 	BsvCoinRPCPass string   `long:"bsvcoinrpcpass" description:""`
 
+	UsdtCoinRPC     []string `long:"usdtcoinrpc" description:""`
+	UsdtCoinRPCUser string   `long:"usdtcoinrpcuser" description:""`
+	UsdtCoinRPCPass string   `long:"usdtcoinrpcpass" description:""`
+
 	lookup         func(string) ([]net.IP, error)
 	oniondial      func(string, string, time.Duration) (net.Conn, error)
 	dial           func(string, string, time.Duration) (net.Conn, error)

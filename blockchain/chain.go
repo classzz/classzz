@@ -2253,6 +2253,11 @@ type Config struct {
 	BsvCoinRPC     []string
 	BsvCoinRPCUser string
 	BsvCoinRPCPass string
+
+	// usdt
+	UsdtCoinRPC     []string
+	UsdtCoinRPCUser string
+	UsdtCoinRPCPass string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2409,6 +2414,29 @@ func New(config *Config) (*BlockChain, error) {
 		bsvclients = append(bsvclients, client)
 	}
 
+	var usdtclients []*rpcclient.Client
+	for _, usdtrpc := range config.UsdtCoinRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		connCfg := &rpcclient.ConnConfig{
+			Host:         usdtrpc,
+			Endpoint:     "ws",
+			User:         config.UsdtCoinRPCUser,
+			Pass:         config.UsdtCoinRPCPass,
+			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+			DisableTLS:   true, // Bitcoin core does not provide TLS by default
+		}
+		if err := rpcclient.HttpClientTest(connCfg); err != nil {
+			log.Warn(err)
+		}
+		// Notice the notification parameter is nil since notifications are
+		// not supported in HTTP POST mode.
+		client, err := rpcclient.New(connCfg, nil)
+		if err != nil {
+			return nil, err
+		}
+		usdtclients = append(usdtclients, client)
+	}
+
 	cacheEntangleInfo := &cross.CacheEntangleInfo{
 		DB: config.DB,
 	}
@@ -2421,6 +2449,7 @@ func New(config *Config) (*BlockChain, error) {
 		BtcCoinRPC:  btcclients,
 		BchCoinRPC:  bchclients,
 		BsvCoinRPC:  bsvclients,
+		UsdtCoinRPC: usdtclients,
 		Cache:       cacheEntangleInfo,
 		Params:      params,
 	}

@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"math/big"
 	"math/rand"
+	"strconv"
 
-	"github.com/classzz/classzz/btcjson"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/czzutil"
@@ -23,10 +24,12 @@ var (
 )
 
 const (
-	dogePoolAddr = "DNGzkoZbnVMihLTMq8M1m7L62XvN3d2cN2"
-	ltcPoolAddr  = "MUy9qiaLQtaqmKBSk27FXrEEfUkRBeddCZ"
 	dogeMaturity = 2
 	ltcMaturity  = 12
+	btcMaturity  = 12
+	bchMaturity  = 12
+	bsvMaturity  = 12
+	usdtMaturity = 12
 )
 
 type ExChangeVerify struct {
@@ -35,6 +38,7 @@ type ExChangeVerify struct {
 	BtcCoinRPC  []*rpcclient.Client
 	BchCoinRPC  []*rpcclient.Client
 	BsvCoinRPC  []*rpcclient.Client
+	UsdtCoinRPC []*rpcclient.Client
 	Cache       *CacheEntangleInfo
 	Params      *chaincfg.Params
 }
@@ -215,7 +219,6 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 
 		addrStr := addr.String()
 		addr2Str := addr2.String()
-		fmt.Println("addr2Str", addrStr, "addr3Str", addr2Str)
 
 		if addr.String() != addr2.String() {
 			return nil, fmt.Errorf("doge PoolPub err add1 %s add2 %s", addrStr, addr2Str)
@@ -311,41 +314,33 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		ltcparams := &chaincfg.Params{
+			LegacyScriptHashAddrID: 0x32,
+		}
+
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ltcparams)
+		if err != nil {
+			e := fmt.Sprintf("ltc addr err")
+			return nil, errors.New(e)
+		}
+
 		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		ltcparams := &chaincfg.Params{
-			LegacyScriptHashAddrID: 0x32,
-		}
-
-		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "ltc Invalid address or key: " + err.Error(),
-			}
-		}
-
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(addr.ScriptAddress(), ltcparams)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltc addr err")
 			return nil, errors.New(e)
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
-		if err != nil {
-			e := fmt.Sprintf("ltc addr err")
-			return nil, errors.New(e)
-		}
-
+		addrStr := addr.String()
 		addr2Str := addr2.String()
-		addr3Str := addr3.String()
-		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+		//fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		if addr3.String() != addr2.String() {
-			return nil, fmt.Errorf("ltc ltcPoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		if addr.String() != addr2.String() {
+			return nil, fmt.Errorf("ltc ltcPoolPub err add1 %s add2 %s", addrStr, addr2Str)
 		}
 
 		if count, err := client.GetBlockCount(); err != nil {
@@ -437,37 +432,28 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("btc addr err")
+			return nil, errors.New(e)
+		}
+
 		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		addr, err := czzutil.DecodeAddress(bai.Address, ev.Params)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "Invalid address or key: " + err.Error(),
-			}
-		}
-
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(addr.ScriptAddress(), ev.Params)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
 		}
 
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
-		if err != nil {
-			e := fmt.Sprintf("btc addr err")
-			return nil, errors.New(e)
-		}
-
+		addrStr := addr.String()
 		addr2Str := addr2.String()
-		addr3Str := addr3.String()
-		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		if addr3.String() != addr2.String() {
-			return nil, fmt.Errorf("btc PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		if addr.String() != addr2.String() {
+			return nil, fmt.Errorf("btc PoolPub err add1 %s add2 %s", addrStr, addr2Str)
 		}
 
 		if count, err := client.GetBlockCount(); err != nil {
@@ -559,43 +545,34 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("bch addr err")
+			return nil, errors.New(e)
+		}
+
 		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
-			e := fmt.Sprintf("Bch addr err")
+			e := fmt.Sprintf("bch addr err")
 			return nil, errors.New(e)
 		}
 
-		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "Bch Invalid address or key: " + err.Error(),
-			}
-		}
-
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
-		if err != nil {
-			e := fmt.Sprintf("Bch addr err")
-			return nil, errors.New(e)
-		}
-
+		addrStr := addr.String()
 		addr2Str := addr2.String()
-		addr3Str := addr3.String()
-		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		if addr3.String() != addr2.String() {
-			return nil, fmt.Errorf("bch PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
+		if addr.String() != addr2.String() {
+			return nil, fmt.Errorf("bch PoolPub err add1 %s add2 %s", addrStr, addr2Str)
 		}
 
-		if addr.String() != ltcPoolAddr {
-			e := fmt.Sprintf("Bch PoolAddr err")
-			return nil, errors.New(e)
-		}
+		//if addr.String() != ltcPoolAddr {
+		//	e := fmt.Sprintf("Bch PoolAddr err")
+		//	return nil, errors.New(e)
+		//}
 
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
@@ -686,42 +663,28 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
+		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		if err != nil {
+			e := fmt.Sprintf("Bsv addr err")
+			return nil, errors.New(e)
+		}
+
 		_, pub, err := txscript.ExtractPkScriptPub(tx.MsgTx().TxOut[eInfo.Index].PkScript)
 		if err != nil {
 			return nil, err
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
+		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
 			return nil, errors.New(e)
 		}
 
-		addr2, err := czzutil.DecodeAddress(bai.Address, ev.Params)
-		if err != nil {
-			return nil, &btcjson.RPCError{
-				Code:    btcjson.ErrRPCInvalidAddressOrKey,
-				Message: "Bsv Invalid address or key: " + err.Error(),
-			}
-		}
-
-		addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(addr2.ScriptAddress(), ev.Params)
-		if err != nil {
-			e := fmt.Sprintf("Bsv addr err")
-			return nil, errors.New(e)
-		}
-
+		addrStr := addr.String()
 		addr2Str := addr2.String()
-		addr3Str := addr3.String()
-		fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
 
-		if addr3.String() != addr2.String() {
-			return nil, fmt.Errorf("bsv PoolPub err add1 %s add2 %s", addr2Str, addr3Str)
-		}
-
-		if addr.String() != ltcPoolAddr {
-			e := fmt.Sprintf("Bsv PoolAddr err")
-			return nil, errors.New(e)
+		if addr.String() != addr2.String() {
+			return nil, fmt.Errorf("bsv PoolPub err add1 %s add2 %s", addrStr, addr2Str)
 		}
 
 		if count, err := client.GetBlockCount(); err != nil {
@@ -731,6 +694,124 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 				return pk, nil
 			} else {
 				e := fmt.Sprintf("Bsv Maturity err")
+				return nil, errors.New(e)
+			}
+		}
+	}
+}
+
+func (ev *ExChangeVerify) verifyUsdtTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
+
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client := ev.UsdtCoinRPC[rand.Intn(len(ev.UsdtCoinRPC))]
+
+	// Get the current block count.
+	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
+		return nil, err
+	} else {
+
+		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+			e := fmt.Sprintf("usdt Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+			return nil, errors.New(e)
+		}
+
+		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
+			return nil, errors.New("usdt TxOut index err")
+		}
+
+		var pk []byte
+		if tx.MsgTx().TxIn[0].Witness == nil {
+			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+			if err != nil {
+				e := fmt.Sprintf("usdt ComputePk err %s", err)
+				return nil, errors.New(e)
+			}
+		} else {
+			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+			if err != nil {
+				e := fmt.Sprintf("usdt ComputeWitnessPk err %s", err)
+				return nil, errors.New(e)
+			}
+		}
+
+		bai := eState.getBeaconAddress(eInfo.BeaconID)
+		if bai == nil {
+			e := fmt.Sprintf("usdt PkScript err")
+			return nil, errors.New(e)
+		}
+
+		ExtTxHash, err := chainhash.NewHashFromStr(eInfo.ExtTxHash)
+		if err != nil {
+			return nil, err
+		}
+
+		if tx2, err := client.OmniGetTransactionResult(ExtTxHash); err != nil {
+			return nil, err
+		} else {
+
+			if tx2.PropertyId != 31 {
+				return nil, err
+			}
+
+			if tx2.TypeInt != 0 {
+				return nil, err
+			}
+
+			ex_amount, err := strconv.ParseFloat(tx2.Amount, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			if eInfo.Amount.Int64() < 0 || int64(ex_amount*100000000) != eInfo.Amount.Int64() {
+				e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
+				return nil, errors.New(e)
+			}
+
+			addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+			if err != nil {
+				e := fmt.Sprintf("usdt addr err")
+				return nil, errors.New(e)
+			}
+
+			addrStr := addr.String()
+			if addr.String() != tx2.ReferenceAddress {
+				return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", addrStr, tx2.ReferenceAddress)
+			}
+
+		}
+
+		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
+			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
+					e := fmt.Sprintf("usdt Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
+					return nil, errors.New(e)
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Usdt))
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Usdt))
+
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+			e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
+			return nil, errors.New(e)
+		}
+
+		if count, err := client.GetBlockCount(); err != nil {
+			return nil, err
+		} else {
+			if count-int64(eInfo.Height) > usdtMaturity {
+				return pk, nil
+			} else {
+				e := fmt.Sprintf("usdt Maturity err")
 				return nil, errors.New(e)
 			}
 		}

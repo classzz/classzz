@@ -26,7 +26,7 @@ const (
 	ExpandedTxEntangle_Btc  = 0xF2
 	ExpandedTxEntangle_Bsv  = 0xF3
 	ExpandedTxEntangle_Bch  = 0xF4
-	ExpandedTxEntangle_USDT  = 0xF5
+	ExpandedTxEntangle_Usdt = 0xF5
 )
 
 func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
@@ -37,7 +37,7 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 		return LhAssetLTC
 	case ExpandedTxEntangle_Btc:
 		return LhAssetBTC
-	case ExpandedTxEntangle_USDT:
+	case ExpandedTxEntangle_Usdt:
 		return LhAssetUSDT
 	case ExpandedTxEntangle_Bch:
 		return LhAssetBCH
@@ -65,7 +65,7 @@ var (
 		ExpandedTxEntangle_Btc:  64,
 		ExpandedTxEntangle_Bsv:  64,
 		ExpandedTxEntangle_Bch:  64,
-		ExpandedTxEntangle_USDT:  64,
+		ExpandedTxEntangle_Usdt: 64,
 	}
 	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1      = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
@@ -216,7 +216,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	//data = data[4:]
 	info.AssetType = ExpandedTxType(data[0])
 	switch info.AssetType {
-	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch,ExpandedTxEntangle_USDT:
+	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch, ExpandedTxEntangle_Usdt:
 		break
 	default:
 		return errors.New("Parse failed,not entangle tx")
@@ -1302,7 +1302,7 @@ func calcExchange(item *ExChangeItem, reserve *int64, keepInfo *KeepedAmount, ch
 		item.Value = toBchOrBsv(amount, item.Value)
 	} else if item.AssetType == ExpandedTxEntangle_Bsv {
 		item.Value = toBchOrBsv(amount, item.Value)
-	}else if item.AssetType == ExpandedTxEntangle_USDT {
+	} else if item.AssetType == ExpandedTxEntangle_Usdt {
 		item.Value = toUSDT(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
@@ -1339,7 +1339,7 @@ func calcExchange2(item *EntangleItem, reserve *int64, keepInfo *KeepedAmount, c
 		item.Value = toBchOrBsv(amount, item.Value)
 	} else if item.EType == ExpandedTxEntangle_Bsv {
 		item.Value = toBchOrBsv(amount, item.Value)
-	}else if item.EType == ExpandedTxEntangle_USDT {
+	} else if item.EType == ExpandedTxEntangle_Usdt {
 		item.Value = toUSDT(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()

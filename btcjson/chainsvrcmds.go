@@ -919,6 +919,25 @@ func NewGetRawTransactionCmd(txHash string, verbose *int) *GetRawTransactionCmd 
 	}
 }
 
+// GetRawTransactionCmd defines the getrawtransaction JSON-RPC command.
+//
+// NOTE: This field is an int versus a bool to remain compatible with Bitcoin
+// Core even though it really should be a bool.
+type OmniGetTransactionCmd struct {
+	Txid string
+}
+
+// NewGetRawTransactionCmd returns a new instance which can be used to issue a
+// getrawtransaction JSON-RPC command.
+//
+// The parameters which are pointers indicate they are optional.  Passing nil
+// for optional parameters will use the default value.
+func NewOmniGetTransactionCmd(txHash string) *OmniGetTransactionCmd {
+	return &OmniGetTransactionCmd{
+		Txid: txHash,
+	}
+}
+
 // GetTxOutCmd defines the gettxout JSON-RPC command.
 type GetTxOutCmd struct {
 	Txid           string
@@ -1282,6 +1301,7 @@ func init() {
 	MustRegisterCmd("getpeerinfo", (*GetPeerInfoCmd)(nil), flags)
 	MustRegisterCmd("getrawmempool", (*GetRawMempoolCmd)(nil), flags)
 	MustRegisterCmd("getrawtransaction", (*GetRawTransactionCmd)(nil), flags)
+	MustRegisterCmd("omni_gettransaction", (*OmniGetTransactionCmd)(nil), flags)
 	MustRegisterCmd("gettxout", (*GetTxOutCmd)(nil), flags)
 	MustRegisterCmd("gettxoutproof", (*GetTxOutProofCmd)(nil), flags)
 	MustRegisterCmd("gettxoutsetinfo", (*GetTxOutSetInfoCmd)(nil), flags)

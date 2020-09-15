@@ -104,7 +104,7 @@ func ExpandedTxTypeToAssetType(atype uint8) uint32 {
 		return LhAssetBCH
 	case ExpandedTxEntangle_Bsv:
 		return LhAssetBSV
-	case ExpandedTxEntangle_USDT:
+	case ExpandedTxEntangle_Usdt:
 		return LhAssetUSDT
 	}
 	return 0
@@ -345,13 +345,13 @@ func newExChangeEntitys() []*ExChangeEntity {
 		AssetType:       ExpandedTxEntangle_Btc,
 		EnOutsideAmount: big.NewInt(0),
 	})
-	
+
 	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
 		AssetType:       ExpandedTxEntangle_Ltc,
 		EnOutsideAmount: big.NewInt(0),
 	})
 	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_USDT,
+		AssetType:       ExpandedTxEntangle_Usdt,
 		EnOutsideAmount: big.NewInt(0),
 	})
 	return exChangeEntitys
@@ -702,7 +702,7 @@ func newBurnInfos() []*BurnInfo {
 		Items:      make([]*BurnItem, 0, 0),
 	})
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_USDT,
+		AssetType:  ExpandedTxEntangle_Usdt,
 		RAllAmount: big.NewInt(0),
 		BAllAmount: big.NewInt(0),
 		Items:      make([]*BurnItem, 0, 0),
@@ -802,7 +802,7 @@ func (b *BurnInfo) updateBurn(height uint64, amount *big.Int, proof *BurnProofIt
 func (b *BurnInfo) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
 	for _, v := range b.Items {
 		//&& v.RedeemState != 1 && sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
-		if v.Height == height {
+		if v.Height == height && v.RedeemState != 1 && amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
 			v.RedeemState, v.Proof = 1, proof
 		}
 	}

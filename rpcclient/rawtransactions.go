@@ -209,6 +209,52 @@ func (c *Client) GetRawTransactionVerbose(txHash *chainhash.Hash) (*btcjson.TxRa
 	return c.GetRawTransactionVerboseAsync(txHash).Receive()
 }
 
+// FutureGetRawTransactionVerboseResult is a future promise to deliver the
+// result of a GetRawTransactionVerboseAsync RPC invocation (or an applicable
+// error).
+type FutureOmniGetTransactionVerboseResult chan *response
+
+// Receive waits for the response promised by the future and returns information
+// about a transaction given its hash.
+func (r FutureOmniGetTransactionVerboseResult) Receive() (*btcjson.OmniTxRawResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal result as a gettrawtransaction result object.
+	var rawTxResult btcjson.OmniTxRawResult
+	err = json.Unmarshal(res, &rawTxResult)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rawTxResult, nil
+}
+
+// GetRawTransactionVerboseAsync returns an instance of a type that can be used
+// to get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See GetRawTransactionVerbose for the blocking version and more details.
+func (c *Client) OmniGetTransactionResultAsync(txHash *chainhash.Hash) FutureOmniGetTransactionVerboseResult {
+	hash := ""
+	if txHash != nil {
+		hash = txHash.String()
+	}
+
+	cmd := btcjson.NewOmniGetTransactionCmd(hash)
+	return c.sendCmd(cmd)
+}
+
+// GetRawTransactionVerbose returns information about a transaction given
+// its hash.
+//
+// See GetRawTransaction to obtain only the transaction already deserialized.
+func (c *Client) OmniGetTransactionResult(txHash *chainhash.Hash) (*btcjson.OmniTxRawResult, error) {
+	return c.OmniGetTransactionResultAsync(txHash).Receive()
+}
+
 // FutureDecodeRawTransactionResult is a future promise to deliver the result
 // of a DecodeRawTransactionAsync RPC invocation (or an applicable error).
 type FutureDecodeRawTransactionResult chan *response
