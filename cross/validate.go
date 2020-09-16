@@ -25,8 +25,8 @@ var (
 
 const (
 	dogeMaturity = 2
-	ltcMaturity  = 12
-	btcMaturity  = 12
+	ltcMaturity  = 0
+	btcMaturity  = 0
 	bchMaturity  = 12
 	bsvMaturity  = 12
 	usdtMaturity = 12
@@ -433,7 +433,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
@@ -460,7 +460,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if count, err := client.GetBlockCount(); err != nil {
 			return nil, err
 		} else {
-			if count-int64(eInfo.Height) > ltcMaturity {
+			if count-int64(eInfo.Height) > btcMaturity {
 				return pk, nil
 			} else {
 				e := fmt.Sprintf("btc Maturity err")

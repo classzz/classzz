@@ -167,16 +167,16 @@ func TestGenesisSimNetAdderss(t *testing.T) {
 
 func TestConvertAddr(t *testing.T) {
 
-	keyBy, _ := hex.DecodeString("671ce2e03b9525d117ad15c9a30332bae386d0c87abe5d8827d8bbeaa0cb7087")
+	keyBy, _ := hex.DecodeString("496a5621a8210ec7f28521e104ea8c910d2eaddb4e57b282ddb67ae7a7fcf70b")
 	key, _ := czzec.PrivKeyFromBytes(czzec.S256(), keyBy)
-	wif, _ := czzutil.NewWIF(key, &chaincfg.TestNetParams, true)
+	wif, _ := czzutil.NewWIF(key, &chaincfg.MainNetParams, true)
 
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
 	fmt.Println("pub:", hex.EncodeToString(pk))
 	fmt.Println("pubhex:", hex.EncodeToString(key.PublicKey.Y.Bytes()))
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.TestNetParams)
+	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
 
 	if err != nil {
 		t.Errorf("failed to make address for: %v", err)
