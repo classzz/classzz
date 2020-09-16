@@ -1223,6 +1223,8 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
 	case ExpandedTxEntangle_Bsv:
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
+	case ExpandedTxEntangle_Usdt:
+		client = ev.UsdtCoinRPC[rand.Intn(len(ev.UsdtCoinRPC))]
 	}
 
 	if client == nil {
@@ -1306,6 +1308,8 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		client = ev.BchCoinRPC[rand.Intn(len(ev.BchCoinRPC))]
 	case ExpandedTxEntangle_Bsv:
 		client = ev.BsvCoinRPC[rand.Intn(len(ev.BsvCoinRPC))]
+	case ExpandedTxEntangle_Usdt:
+		client = ev.UsdtCoinRPC[rand.Intn(len(ev.UsdtCoinRPC))]
 	}
 
 	bai := state.getBeaconByID(info.BeaconID)

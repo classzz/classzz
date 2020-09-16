@@ -250,6 +250,7 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 type BurnTxInfo struct {
 	AssetType ExpandedTxType
 	Address   string
+	ToAddress string
 	BeaconID  uint64
 	Amount    *big.Int
 	Height    uint32

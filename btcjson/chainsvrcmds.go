@@ -113,6 +113,7 @@ type BurnTransactionOut struct {
 	AssetType uint8
 	BeaconID  uint64
 	Amount    float64
+	ToAddress string
 }
 
 type BurnProofOut struct {
