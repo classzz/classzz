@@ -3854,10 +3854,10 @@ func handleConversionAddress(s *rpcServer, cmd interface{}, closeChan <-chan str
 	addrs := make(map[string]string)
 
 	dogeparams := &chaincfg.Params{
-		LegacyScriptHashAddrID: 0x1e,
 		LegacyPubKeyHashAddrID: 0x1e,
+		LegacyScriptHashAddrID: 0x16,
 	}
-	addr1, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), dogeparams)
+	addr1, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), dogeparams)
 	if err != nil {
 		e := fmt.Sprintf("doge addr err")
 		return nil, errors.New(e)
@@ -3865,35 +3865,43 @@ func handleConversionAddress(s *rpcServer, cmd interface{}, closeChan <-chan str
 	addrs["DOGE"] = addr1.String()
 
 	ltcparams := &chaincfg.Params{
+		LegacyPubKeyHashAddrID: 0x30,
 		LegacyScriptHashAddrID: 0x32,
 	}
-	addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), ltcparams)
+	addr2, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), ltcparams)
 	if err != nil {
 		e := fmt.Sprintf("LTC addr err")
 		return nil, errors.New(e)
 	}
 	addrs["LTC"] = addr2.String()
 
-	addr3, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	addr3, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
 	if err != nil {
 		e := fmt.Sprintf("BTC addr err")
 		return nil, errors.New(e)
 	}
 	addrs["BTC"] = addr3.String()
 
-	addr4, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	addr4, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
 	if err != nil {
 		e := fmt.Sprintf("BCH addr err")
 		return nil, errors.New(e)
 	}
 	addrs["BCH"] = addr4.String()
 
-	addr5, err := czzutil.NewLegacyAddressScriptHashFromHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	addr5, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
 	if err != nil {
 		e := fmt.Sprintf("BSV addr err")
 		return nil, errors.New(e)
 	}
 	addrs["BSV"] = addr5.String()
+
+	addr6, err := czzutil.NewLegacyAddressPubKeyHash(czzaddr.ScriptAddress(), s.cfg.ChainParams)
+	if err != nil {
+		e := fmt.Sprintf("USDT addr err")
+		return nil, errors.New(e)
+	}
+	addrs["USDT"] = addr6.String()
 
 	return addrs, nil
 }

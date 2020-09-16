@@ -315,10 +315,11 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		}
 
 		ltcparams := &chaincfg.Params{
+			LegacyPubKeyHashAddrID: 0x30,
 			LegacyScriptHashAddrID: 0x32,
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ltcparams)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltc addr err")
 			return nil, errors.New(e)
@@ -329,7 +330,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ltcparams)
+		addr2, err := czzutil.NewLegacyAddressPubKeyHash(pub, ltcparams)
 		if err != nil {
 			e := fmt.Sprintf("ltc addr err")
 			return nil, errors.New(e)
@@ -337,7 +338,7 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 		addrStr := addr.String()
 		addr2Str := addr2.String()
-		//fmt.Println("addr2Str", addr2Str, "addr3Str", addr3Str)
+		fmt.Println("addr2Str", addrStr, "addr3Str", addr2Str)
 
 		if addr.String() != addr2.String() {
 			return nil, fmt.Errorf("ltc ltcPoolPub err add1 %s add2 %s", addrStr, addr2Str)
@@ -443,7 +444,7 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
+		addr2, err := czzutil.NewLegacyAddressPubKeyHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("btc addr err")
 			return nil, errors.New(e)
@@ -545,7 +546,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("bch addr err")
 			return nil, errors.New(e)
@@ -556,7 +557,7 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
+		addr2, err := czzutil.NewLegacyAddressPubKeyHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("bch addr err")
 			return nil, errors.New(e)
@@ -663,7 +664,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
 			return nil, errors.New(e)
@@ -674,7 +675,7 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, err
 		}
 
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, ev.Params)
+		addr2, err := czzutil.NewLegacyAddressPubKeyHash(pub, ev.Params)
 		if err != nil {
 			e := fmt.Sprintf("Bsv addr err")
 			return nil, errors.New(e)
@@ -768,7 +769,7 @@ func (ev *ExChangeVerify) verifyUsdtTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 				return nil, errors.New(e)
 			}
 
-			addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), ev.Params)
+			addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
 			if err != nil {
 				e := fmt.Sprintf("usdt addr err")
 				return nil, errors.New(e)
