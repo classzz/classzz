@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/czzutil/base58"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -21,6 +22,16 @@ import (
 var (
 	ErrHeightTooClose = errors.New("the block heigth to close for entangling")
 	ErrStakingAmount  = errors.New("StakingAmount Less than minimum 1000000 czz")
+
+	ltcparams = &chaincfg.Params{
+		LegacyPubKeyHashAddrID: 0x30,
+		LegacyScriptHashAddrID: 0x32,
+	}
+
+	dogeparams = &chaincfg.Params{
+		LegacyScriptHashAddrID: 0x1e,
+		LegacyPubKeyHashAddrID: 0x1e,
+	}
 )
 
 const (
@@ -85,7 +96,7 @@ func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleS
 		3. check the correct tx
 		4. check the pool reserve enough reward
 	*/
-	einfo, binfo, _ := IsFastExChangeTx(tx, ev.Params)
+	einfo, _, _ := IsFastExChangeTx(tx, ev.Params)
 	if einfo == nil {
 		return errors.New("not entangle tx")
 	}
@@ -95,7 +106,7 @@ func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleS
 		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 	}
 
-	if err := ev.VerifyBurn(binfo, eState); err != nil {
+	if err := ev.VerifyBurn(tx, eState); err != nil {
 		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
 		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
 	}
@@ -193,11 +204,6 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("doge PkScript err")
 			return nil, errors.New(e)
-		}
-
-		dogeparams := &chaincfg.Params{
-			LegacyScriptHashAddrID: 0x1e,
-			LegacyPubKeyHashAddrID: 0x1e,
 		}
 
 		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), dogeparams)
@@ -312,11 +318,6 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		if ScriptClass != txscript.PubKeyHashTy && ScriptClass != txscript.ScriptHashTy {
 			e := fmt.Sprintf("ltc PkScript err")
 			return nil, errors.New(e)
-		}
-
-		ltcparams := &chaincfg.Params{
-			LegacyPubKeyHashAddrID: 0x30,
-			LegacyScriptHashAddrID: 0x32,
 		}
 
 		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ltcparams)
@@ -1187,16 +1188,46 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 	}
 
 	bai := eState.EnInfos[info.Address]
-
 	if bai != nil {
-
+		baseAmount := big.NewInt(0)
 		ebInfo := eState.BaExInfo[bai.BeaconID]
 		for _, fqinfo := range ebInfo.Free.Items {
 			if fqinfo.AssetType == uint8(info.AssetType) {
-
+				baseAmount = fqinfo.Amount
+				break
 			}
 		}
 
+		//
+		if baseAmount.Cmp(info.Amount) > 0 {
+			return errors.New("VerifyBurn baseAmount > Amount")
+		}
+
+		_, version, err := base58.CheckDecode(info.ToAddress)
+		if err != nil {
+			return fmt.Errorf("VerifyBurn info.ToAddress is err %s", err)
+		}
+
+		switch info.AssetType {
+
+		case ExpandedTxEntangle_Doge:
+			if version != dogeparams.LegacyPubKeyHashAddrID {
+				return fmt.Errorf("VerifyBurn info.ToAddress is version %v", version)
+			}
+
+		case ExpandedTxEntangle_Ltc:
+			if version != ltcparams.LegacyPubKeyHashAddrID {
+				return fmt.Errorf("VerifyBurn info.ToAddress is version %v", version)
+			}
+
+		default:
+			if version != ev.Params.LegacyPubKeyHashAddrID {
+				return fmt.Errorf("VerifyBurn info.ToAddress is version %v", version)
+			}
+
+		}
+
+		return nil
 	}
 
 	uei := eState.EnUserExChangeInfos[info.BeaconID]
@@ -1213,9 +1244,9 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 		return errors.New("Amount < MaxRedeem")
 	}
 
-	if info.Amount.Cmp(es.OriginAmount) > 0 {
-		return errors.New("Amount > OriginAmount")
-	}
+	//if info.Amount.Cmp(es.OriginAmount) > 0 {
+	//	return errors.New("Amount > OriginAmount")
+	//}
 
 	return nil
 }
@@ -1251,20 +1282,56 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	}
 
 	bai := eState.getBeaconAddress(info.BeaconID)
-
-	_, bAdd, err := ev.GetTxInAddress(info, client)
-	if err != nil {
-		return 0, nil, err
-	}
-	if hex.EncodeToString(bai.PubKey) != bAdd.String() {
-		e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
+	if bai == nil {
+		e := fmt.Sprintf("VerifyBurnProofBeacon BeaconAddress is nil , BeaconID = %v", info.BeaconID)
 		return 0, nil, errors.New(e)
 	}
 
-	//if tx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64()*100000000 {
-	//	e := fmt.Sprintf("VerifyBurnProof Value != Amount")
-	//	return errors.New(e)
-	//}
+	etx, bAdd, err := ev.GetTxInAddress(info, client)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	paddr, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
+	if err != nil {
+		e := fmt.Sprintf("NewAddressPubKeyHash Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
+		return 0, nil, errors.New(e)
+	}
+
+	if paddr.String() != bAdd.String() {
+		e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
+		return 0, nil, errors.New(e)
+	}
+	if ExpandedTxEntangle_Usdt == info.AssetType {
+
+		exHash, err := chainhash.NewHashFromStr(info.TxHash)
+		if err != nil {
+			e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
+			return 0, nil, errors.New(e)
+		}
+
+		omresult, err := client.OmniGetTransactionResult(exHash)
+		if err != nil {
+			e := fmt.Sprintf("VerifyBurnProof Address %s != BeaconAddress %s", hex.EncodeToString(bai.PubKey), bAdd.String())
+			return 0, nil, errors.New(e)
+		}
+
+		ex_amount, err := strconv.ParseFloat(omresult.Amount, 64)
+		if err != nil {
+			return 0, nil, err
+		}
+
+		if int64(ex_amount*100000000) != info.Amount.Int64() {
+			e := fmt.Sprintf("VerifyBurnProof Value != Amount")
+			return 0, nil, errors.New(e)
+		}
+
+	} else {
+		if etx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64() {
+			e := fmt.Sprintf("VerifyBurnProof Value != Amount")
+			return 0, nil, errors.New(e)
+		}
+	}
 
 	outHeight := uint64(0)
 	var bi *BurnItem
@@ -1302,12 +1369,12 @@ func (ev *ExChangeVerify) GetTxInAddress(info *BurnProofInfo, client *rpcclient.
 			}
 		}
 
-		addrs, err := czzutil.NewAddressPubKey(pk, ev.Params)
-
+		addrs, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), ev.Params)
 		if err != nil {
-			e := fmt.Sprintf("doge addr err")
+			e := fmt.Sprintf("addr err")
 			return nil, nil, errors.New(e)
 		}
+
 		return tx, addrs, nil
 	}
 }
@@ -1348,21 +1415,25 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 			return fmt.Errorf("NewAddressPubKeyHash err")
 		}
 
-		if wu.AssetType == info.AssetType && bytes.Equal(out, addrs.ScriptAddress()) {
+		if wu.AssetType == info.AssetType && bytes.Equal(out, addrs.ScriptAddress()) && !bytes.Equal(out, czzutil.Hash160(in)) {
 			return fmt.Errorf("Illegal transfer err %s", err)
 		}
 	}
 
-	//addrs, err := czzutil.NewAddressPubKeyHash(out, ev.Params)
-	//if err != nil {
-	//	e := fmt.Sprintf("NewAddressPubKeyHash err")
-	//	return errors.New(e)
-	//}
+	infos := state.EnUserExChangeInfos[info.BeaconID]
 
-	//if bti := ev.Cache.LoadBurnTxInfo(addrs.String()); bti == nil {
-	//	e := fmt.Sprintf("LoadBurnTxInfo err")
-	//	return errors.New(e)
-	//}
+	for k, v := range infos {
+		addr, _ := czzutil.DecodeAddress(k, &chaincfg.MainNetParams)
+		if bytes.Equal(out, addr.ScriptAddress()) {
+			for _, burn := range v.BurnAmounts {
+				for _, item := range burn.Items {
+					if item.RedeemState == 0 {
+						return fmt.Errorf("Illegal transfer err %s", err)
+					}
+				}
+			}
+		}
+	}
 
 	return nil
 }

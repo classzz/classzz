@@ -1086,7 +1086,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	}
 
 	// FastExChangeTx
-	einfo, binfo, err := cross.IsFastExChangeTx(tx.MsgTx(), mp.cfg.ChainParams)
+	einfo, _, err := cross.IsFastExChangeTx(tx.MsgTx(), mp.cfg.ChainParams)
 	if err != nil && err != cross.NoFastExChange {
 		return err
 	}
@@ -1097,7 +1097,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 		if _, err := mp.cfg.ExChangeVerify.VerifyExChangeTx(tx.MsgTx(), eState); err != nil {
 			return err
 		}
-		if err := mp.cfg.ExChangeVerify.VerifyBurn(binfo, eState); err != nil {
+		if err := mp.cfg.ExChangeVerify.VerifyBurn(tx.MsgTx(), eState); err != nil {
 			return err
 		}
 	}
@@ -1125,7 +1125,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	if bt != nil && mp.cfg.ChainParams.ExChangeHeight > nextBlockHeight {
 		return errors.New("err ExChangeTx tx  ExChangeHeight < nextBlockHeight ")
 	} else if bt != nil {
-		if err := mp.cfg.ExChangeVerify.VerifyBurn(bt, eState); err != nil {
+		if err := mp.cfg.ExChangeVerify.VerifyBurn(tx.MsgTx(), eState); err != nil {
 			return err
 		}
 	}

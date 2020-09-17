@@ -6,6 +6,7 @@ import (
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/czzutil"
+	"github.com/classzz/czzutil/base58"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -221,5 +222,12 @@ func TestNewAddressFromPub(t *testing.T) {
 	}
 
 	fmt.Println("address: ", addr.String())
+
+}
+
+func TestDecodeAddress(t *testing.T) {
+
+	result, version, err := base58.CheckDecode("DKcSCmjSYUTXrFNSRiLHhDeLNrt4Dgu4G1")
+	fmt.Println("address: ", err, hex.EncodeToString(result), version)
 
 }

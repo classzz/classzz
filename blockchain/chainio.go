@@ -616,7 +616,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			if err1 != nil {
 				return err1
 			}
-			_, _, err1 = eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(pHeight+1), czzAsset)
+			_, _, err1 = eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(pHeight+1), czzAsset)
 			if err1 != nil {
 				return err1
 			}
@@ -634,7 +634,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		// BurnTx
 		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
 		if info != nil {
-			if _, _, err := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
+			if _, _, err := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
 				return err
 			}
 		}
