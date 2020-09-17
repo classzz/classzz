@@ -604,6 +604,7 @@ type BurnItem struct {
 	RAmount     *big.Int       `json:"ramount"`     // outside asset amount
 	FeeRAmount  *big.Int       `json:"fee_ramount"` // outside asset fee amount
 	Height      uint64         `json:"height"`
+	ToAddress   string         `json:"to_address"`
 	RedeemState byte           `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 	Proof       *BurnProofItem `json:"proof"`        // the tx of outside
 }
@@ -741,12 +742,13 @@ func (b *BurnInfo) getBurnTimeout(height uint64, update bool) ([]*BurnItem, *big
 	return res, AmountSum
 }
 
-func (b *BurnInfo) addBurnItem(height uint64, amount, fee, outFee, outAmount *big.Int) {
+func (b *BurnInfo) addBurnItem(toaddress string, height uint64, amount, fee, outFee, outAmount *big.Int) {
 	item := &BurnItem{
 		Amount:      new(big.Int).Set(amount),
 		RAmount:     new(big.Int).Set(outAmount),
 		FeeAmount:   new(big.Int).Set(fee),
 		FeeRAmount:  new(big.Int).Set(outFee),
+		ToAddress:   toaddress,
 		Height:      height,
 		Proof:       &BurnProofItem{},
 		RedeemState: 0,

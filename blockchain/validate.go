@@ -600,7 +600,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						return errors.New("same height in burnTx at same address")
 					}
 					// update the state
-					if _, _, err := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
+					if _, _, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
 						return err
 					}
 
@@ -641,6 +641,23 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
+			if info, _ := cross.IsBurnTx(tx.MsgTx(), b.chainParams); info != nil {
+				if cross.SameHeightTxForBurn(tx, burnTxs, b.chainParams) {
+					return errors.New("same height in burnTx at same address")
+				}
+
+				if err := b.GetExChangeVerify().VerifyBurn(tx.MsgTx(), eState); err != nil {
+					return err
+				} else {
+					// update the state
+					if _, _, err := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(prevHeight+1), info.Amount); err != nil {
+						return err
+					}
+				}
+				burnTxs = append(burnTxs, tx)
+				continue
+			}
+
 			if info1, _ := cross.IsBurnProofTx(tx.MsgTx()); info1 != nil {
 				if h, _, e := b.GetExChangeVerify().VerifyBurnProofBeacon(info1, eState, uint64(prevHeight+1)); e != nil {
 					return e
@@ -650,18 +667,6 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						TxHash: info1.TxHash,
 					})
 				}
-				continue
-			}
-
-			if info2, _ := cross.IsBurnTx(tx.MsgTx(), b.chainParams); info2 != nil {
-				if cross.SameHeightTxForBurn(tx, burnTxs, b.chainParams) {
-					return errors.New("same height in burnTx at same address")
-				}
-				// update the state
-				if _, _, err := eState.BurnAsset(info2.Address, uint8(info2.AssetType), info2.BeaconID, uint64(prevHeight+1), info2.Amount); err != nil {
-					return err
-				}
-				burnTxs = append(burnTxs, tx)
 				continue
 			}
 

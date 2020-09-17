@@ -104,7 +104,7 @@ func NewExBeaconInfo() *ExBeaconInfo {
 		Proofs:  make([]*WhiteListProof, 0, 0),
 		Free:    newBeaconFreeQuotaInfo(),
 		BItems: &BurnInfo{
-			AssetType:  ExpandedTxEntangle_Ltc,
+			AssetType:  ExpandedTxEntangle_Doge,
 			RAllAmount: big.NewInt(0),
 			BAllAmount: big.NewInt(0),
 			Items:      make([]*BurnItem, 0, 0),
@@ -574,7 +574,7 @@ func (es *EntangleState) AddEntangleItem(addr string, aType uint8, BeaconID uint
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
 // returns the amount czz by user's burnned, took out fee by beaconaddress
-func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height uint64,
+func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint8, BeaconID, height uint64,
 	amount *big.Int) (*big.Int, *big.Int, error) {
 
 	light := es.getBeaconAddress(BeaconID)
@@ -582,6 +582,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 		return nil, nil, ErrNoRegister
 	}
 
+	// is Beacon
 	if light.Address == addr {
 		ex := es.GetBaExInfoByID(BeaconID)
 		if ex == nil {
@@ -590,7 +591,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 		out, err := ex.CanBurn(amount, aType, es)
 		if err == nil {
 			z := big.NewInt(0)
-			ex.BItems.addBurnItem(height, amount, z, z, out)
+			ex.BItems.addBurnItem(toAddr, height, amount, z, z, out)
 		}
 		return out, big.NewInt(0), err
 	}
@@ -635,8 +636,7 @@ func (es *EntangleState) BurnAsset(addr string, aType uint8, BeaconID, height ui
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
 	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
 	outFeeAmount = big.NewInt(0).Div(outFeeAmount, baseUnit)
-
-	burnInfo.addBurnItem(height, amount, fee, outFeeAmount, outAllAmount)
+	burnInfo.addBurnItem(toAddr, height, amount, fee, outFeeAmount, outAllAmount)
 
 	return new(big.Int).Sub(amount, fee), fee, nil
 }

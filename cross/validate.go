@@ -1176,10 +1176,28 @@ func (ev *ExChangeVerify) VerifyUpdateBeaconFreeQuotaTx(tx *wire.MsgTx, eState *
 	return bp, nil
 }
 
-func (ev *ExChangeVerify) VerifyBurn(info *BurnTxInfo, eState *EntangleState) error {
+func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) error {
 	// 1. check the from address is equal beacon address
 	// 2. check the to address is equal the user's address within the info obj
 	// 3. check the amount from the tx(outsize tx) eq the amount(in info)
+
+	info, _ := IsBurnTx(tx, ev.Params)
+	if info == nil {
+		return NoBurnTx
+	}
+
+	bai := eState.EnInfos[info.Address]
+
+	if bai != nil {
+
+		ebInfo := eState.BaExInfo[bai.BeaconID]
+		for _, fqinfo := range ebInfo.Free.Items {
+			if fqinfo.AssetType == uint8(info.AssetType) {
+
+			}
+		}
+
+	}
 
 	uei := eState.EnUserExChangeInfos[info.BeaconID]
 	if uei == nil {

@@ -928,7 +928,7 @@ mempoolLoop:
 					continue
 				}
 
-				amount, fee, err := eState.BurnAsset(burnTx.Address, uint8(burnTx.AssetType), einfo.BeaconID, uint64(nextBlockHeight), czzAsset)
+				amount, fee, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(nextBlockHeight), czzAsset)
 				// now will be seed fee to beacon address
 				log.Info("user send burn tx, hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 				if err != nil {
@@ -971,7 +971,7 @@ mempoolLoop:
 			// BurnTx
 			if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
 				if info != nil {
-					amount, fee, err1 := eState.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
+					amount, fee, err1 := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
 					if err1 != nil {
 						log.Tracef("Skipping tx %s due to error in "+
 							"SetBurnAsset: %v", tx.Hash(), err1)
