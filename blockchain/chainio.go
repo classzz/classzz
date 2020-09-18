@@ -669,6 +669,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 			index = index + 3
 		}
+		eState.UpdateStateToPunished(burnTimeout)
 
 		for _, v := range reportWhiteList {
 			if exInfos := eState.GetBaExInfoByID(v); exInfos != nil {

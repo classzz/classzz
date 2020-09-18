@@ -1535,6 +1535,7 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		AssetType: btcjson.ExpandedTxType(c.BurnTransaction.AssetType),
 		BeaconID:  c.BurnTransaction.BeaconID,
 		Amount:    big.NewInt(int64(satoshi)),
+		ToAddress: c.BurnTransaction.ToAddress,
 	}
 
 	biByte, err := rlp.EncodeToBytes(bi)

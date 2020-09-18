@@ -261,6 +261,7 @@ type ExpandedTxType uint8
 type BurnInfo struct {
 	AssetType ExpandedTxType
 	Address   string
+	ToAddress string
 	BeaconID  uint64
 	Amount    *big.Int
 	Height    uint32

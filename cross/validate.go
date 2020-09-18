@@ -29,8 +29,8 @@ var (
 	}
 
 	dogeparams = &chaincfg.Params{
-		LegacyScriptHashAddrID: 0x1e,
 		LegacyPubKeyHashAddrID: 0x1e,
+		LegacyScriptHashAddrID: 0x16,
 	}
 )
 
@@ -177,7 +177,6 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		} else {
 			return nil, err
 		}
-
 		if eInfo.Amount.Int64() < 0 || tx.MsgTx().TxOut[eInfo.Index].Value != eInfo.Amount.Int64() {
 			e := fmt.Sprintf("doge amount err ,[request:%v,doge:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
 			return nil, errors.New(e)
@@ -206,7 +205,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		addr, err := czzutil.NewLegacyAddressScriptHashFromHash(czzutil.Hash160(bai.PubKey), dogeparams)
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
@@ -217,7 +216,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, err
 		}
 
-		addr2, err := czzutil.NewLegacyAddressScriptHashFromHash(pub, dogeparams)
+		addr2, err := czzutil.NewLegacyAddressPubKeyHash(pub, dogeparams)
 		if err != nil {
 			e := fmt.Sprintf("doge addr err")
 			return nil, errors.New(e)
@@ -1199,7 +1198,7 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 		}
 
 		//
-		if baseAmount.Cmp(info.Amount) > 0 {
+		if baseAmount.Cmp(info.Amount) < 0 {
 			return errors.New("VerifyBurn baseAmount > Amount")
 		}
 
@@ -1224,9 +1223,7 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 			if version != ev.Params.LegacyPubKeyHashAddrID {
 				return fmt.Errorf("VerifyBurn info.ToAddress is version %v", version)
 			}
-
 		}
-
 		return nil
 	}
 

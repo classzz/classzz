@@ -1238,6 +1238,7 @@ mempoolLoop:
 				rewards = append(rewards, item)
 			}
 		}
+		eState.UpdateStateToPunished(burnTimeout)
 	}
 
 	// make entangle tx if it exist
