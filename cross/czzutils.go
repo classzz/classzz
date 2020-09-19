@@ -453,6 +453,28 @@ func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
 	})
 }
 
+func (es *UserExChangeInfos) GetRedeemableAmountAll() *big.Int {
+	allAmount := big.NewInt(0)
+	for _, v := range *es {
+		allAmount = big.NewInt(0).Add(allAmount, v.MaxRedeem)
+	}
+	return allAmount
+}
+
+func (es *UserExChangeInfos) GetBurnAmount() *big.Int {
+	allAmount := big.NewInt(0)
+	for _, v := range *es {
+		for _, burn := range v.BurnAmounts {
+			for _, item := range burn.Items {
+				if item.RedeemState == 0 {
+					allAmount = big.NewInt(0).Add(allAmount, item.Amount)
+				}
+			}
+		}
+	}
+	return allAmount
+}
+
 /////////////////////////////////////////////////////////////////
 func (e *UserExChangeInfo) increaseOriginAmount(amount, height *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)

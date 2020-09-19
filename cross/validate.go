@@ -5,18 +5,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/classzz/classzz/chaincfg/chainhash"
-	"github.com/classzz/czzutil/base58"
 	"math/big"
 	"math/rand"
 	"strconv"
 
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/txscript"
-	"github.com/classzz/czzutil"
-
+	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rpcclient"
+	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
+	"github.com/classzz/czzutil"
+	"github.com/classzz/czzutil/base58"
 )
 
 var (
@@ -191,7 +190,14 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+		uinfos := eState.EnUserExChangeInfos[bai.BeaconID]
+
+		RedeemableAmount := uinfos.GetRedeemableAmountAll()
+		BurnAmount := uinfos.GetBurnAmount()
+		BurnAmount = big.NewInt(0).Mul(BurnAmount, big.NewInt(2))
+
+		ExChangeAmount := big.NewInt(0).Add(RedeemableAmount, BurnAmount)
+		ExChangeAmount = big.NewInt(0).Add(ExChangeAmount, sendAmount)
 		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
 
 		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
@@ -1240,10 +1246,6 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 	if info.Amount.Cmp(es.MaxRedeem) > 0 {
 		return errors.New("Amount < MaxRedeem")
 	}
-
-	//if info.Amount.Cmp(es.OriginAmount) > 0 {
-	//	return errors.New("Amount > OriginAmount")
-	//}
 
 	return nil
 }

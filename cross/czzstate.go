@@ -586,7 +586,7 @@ func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint8, BeaconID, h
 	if light.Address == addr {
 		ex := es.GetBaExInfoByID(BeaconID)
 		if ex == nil {
-			return nil, nil, errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:%v", BeaconID))
+			return nil, nil, errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id: %v", BeaconID))
 		}
 		out, err := ex.CanBurn(amount, aType, es)
 		if err == nil {

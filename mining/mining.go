@@ -978,6 +978,7 @@ mempoolLoop:
 						logSkippedDeps(tx, deps)
 						continue
 					}
+
 					// now will be seed fee to beacon address
 					log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
 				}
@@ -1218,7 +1219,7 @@ mempoolLoop:
 			exInfos := eState.GetBaExInfoByID(beaconID)
 
 			if toAddress == nil || exInfos == nil {
-
+				return nil, nil, errors.New("toAddress == nil || exInfos == nil")
 			}
 
 			var view *blockchain.UtxoViewpoint
