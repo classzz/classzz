@@ -593,6 +593,7 @@ func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint8, BeaconID, h
 			z := big.NewInt(0)
 			ex.BItems.addBurnItem(toAddr, height, amount, z, z, out)
 		}
+		light.reduceEntangleAmount(amount)
 		return out, big.NewInt(0), err
 	}
 
@@ -907,6 +908,7 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 			for addr1, userEntity := range userEntitys {
 				if info.Address == addr1 {
 					userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
+					light.reduceEntangleAmount(info.Amount)
 				}
 			}
 		}
