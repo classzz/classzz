@@ -221,6 +221,9 @@ func (lh *BeaconAddressInfo) addEnAsset(atype uint8, amount *big.Int) {
 func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
 }
+func (lh *BeaconAddressInfo) reduceEntangleAmount(amount *big.Int) {
+	lh.EntangleAmount = new(big.Int).Sub(lh.EntangleAmount, amount)
+}
 func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint8) {
 	for _, v := range lh.Frees {
 		if atype == v.AssetType {
