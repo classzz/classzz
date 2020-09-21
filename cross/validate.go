@@ -190,14 +190,7 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		uinfos := eState.EnUserExChangeInfos[bai.BeaconID]
-
-		RedeemableAmount := uinfos.GetRedeemableAmountAll()
-		BurnAmount := uinfos.GetBurnAmount()
-		BurnAmount = big.NewInt(0).Mul(BurnAmount, big.NewInt(2))
-
-		ExChangeAmount := big.NewInt(0).Add(RedeemableAmount, BurnAmount)
-		ExChangeAmount = big.NewInt(0).Add(ExChangeAmount, sendAmount)
+		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
 		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
 
 		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {

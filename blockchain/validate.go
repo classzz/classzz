@@ -603,17 +603,6 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					if _, _, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
 						return err
 					}
-
-					//item := &cross.ExChangeItem{
-					//	AssetType: info0[0].AssetType,
-					//	Addr:      obj[0].Address,
-					//	Value:     czzAsset,
-					//	BeaconID:  info0[0].BeaconID,
-					//}
-
-					//if err := b.checkCoinBaseForEntangle(item, coinBaseTx, &in, &out); err != nil {
-					//	return err
-					//}
 				}
 				continue
 			}

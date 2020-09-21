@@ -167,6 +167,17 @@ func (e *ExBeaconInfo) CanBurn(all *big.Int, atype uint8, es *EntangleState) (*b
 	return out, err
 }
 
+//
+func (es *ExBeaconInfo) GetBurnAmount() *big.Int {
+	allAmount := big.NewInt(0)
+	for _, item := range es.BItems.Items {
+		if item.RedeemState == 0 {
+			allAmount = big.NewInt(0).Add(allAmount, item.Amount)
+		}
+	}
+	return allAmount
+}
+
 type EntangleState struct {
 	EnInfos             map[string]*BeaconAddressInfo
 	EnUserExChangeInfos map[uint64]UserExChangeInfos
@@ -594,7 +605,7 @@ func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint8, BeaconID, h
 			z := big.NewInt(0)
 			ex.BItems.addBurnItem(toAddr, height, amount, z, z, out)
 		}
-		//light.reduceEntangleAmount(amount)
+		light.reduceEntangleAmount(amount)
 		return out, big.NewInt(0), err
 	}
 
@@ -909,7 +920,14 @@ func (es *EntangleState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnPr
 			for addr1, userEntity := range userEntitys {
 				if info.Address == addr1 {
 					userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
-					//light.reduceEntangleAmount(info.Amount)
+
+					reserve := es.GetEntangleAmountByAll(info.AssetType)
+					sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.AssetType)
+					if err != nil {
+						return err
+					}
+					light.reduceEntangleAmount(sendAmount)
+					break
 				}
 			}
 		}
