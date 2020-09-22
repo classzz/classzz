@@ -1318,6 +1318,8 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 			return 0, nil, errors.New(e)
 		}
 
+		return 0, nil, nil
+
 	} else {
 		if etx.MsgTx().TxOut[info.OutIndex].Value != info.Amount.Int64() {
 			e := fmt.Sprintf("VerifyBurnProof Value != Amount")
