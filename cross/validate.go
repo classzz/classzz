@@ -1396,7 +1396,7 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		return errors.New("VerifyBurnProof EnEntitys is nil")
 	}
 
-	_, in, out, err := ev.GetTxInPk(info, client)
+	_, in, out, value, err := ev.GetTxInPk(info, client)
 	if !bytes.Equal(bai.PubKey, in) {
 		return fmt.Errorf("address err %s", err)
 	}
@@ -1410,48 +1410,48 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 		}
 
 		if wu.AssetType == info.AssetType && bytes.Equal(out, addrs.ScriptAddress()) && !bytes.Equal(out, czzutil.Hash160(in)) {
-			return fmt.Errorf("Illegal transfer err %s", err)
+			return nil
 		}
 	}
 
 	infos := state.EnUserExChangeInfos[info.BeaconID]
-
 	for k, v := range infos {
-		addr, _ := czzutil.DecodeAddress(k, &chaincfg.MainNetParams)
+		addr, _ := czzutil.DecodeAddress(k, ev.Params)
 		if bytes.Equal(out, addr.ScriptAddress()) {
 			for _, burn := range v.BurnAmounts {
 				for _, item := range burn.Items {
-					if item.RedeemState == 0 {
-						return fmt.Errorf("Illegal transfer err %s", err)
+					if item.RedeemState == 0 && item.Amount.Int64()-item.FeeAmount.Int64() == value {
+						return nil
 					}
 				}
 			}
 		}
 	}
 
-	return nil
+	return fmt.Errorf("Illegal transfer err %s", err)
 }
 
-func (ev *ExChangeVerify) GetTxInPk(info *WhiteListProof, client *rpcclient.Client) (*czzutil.Tx, []byte, []byte, error) {
+func (ev *ExChangeVerify) GetTxInPk(info *WhiteListProof, client *rpcclient.Client) (*czzutil.Tx, []byte, []byte, int64, error) {
 
 	if tx, err := client.GetWitnessRawTransaction(info.TxHash); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, 0, err
 	} else {
 		var pk []byte
 		if tx.MsgTx().TxIn[info.InIndex].Witness == nil {
 			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[info.InIndex].SignatureScript)
 			if err != nil {
 				e := fmt.Sprintf("btc ComputePk err %s", err)
-				return nil, nil, nil, errors.New(e)
+				return nil, nil, nil, 0, errors.New(e)
 			}
 		} else {
 			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[info.InIndex].Witness)
 			if err != nil {
 				e := fmt.Sprintf("btc ComputeWitnessPk err %s", err)
-				return nil, nil, nil, errors.New(e)
+				return nil, nil, nil, 0, errors.New(e)
 			}
 		}
 		out := tx.MsgTx().TxOut[info.OutIndex].PkScript
-		return tx, pk, out, nil
+		value := tx.MsgTx().TxOut[info.OutIndex].Value
+		return tx, pk, out, value, nil
 	}
 }
