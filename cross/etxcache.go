@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
 	"github.com/classzz/classzz/rlp"
@@ -158,7 +157,7 @@ func (c *CacheEntangleInfo) LoadBurnTxInfoAll(BeaconID uint64) []*BurnTxInfo {
 
 		cursor := BurnTxInfoBucket.Cursor()
 		for ok := cursor.First(); ok; ok = cursor.Next() {
-			fmt.Printf("key=%s, value=%s\n", cursor.Key(), cursor.Value())
+			//fmt.Printf("key=%s, value=%s\n", cursor.Key(), cursor.Value())
 			bti := &BurnTxInfo{}
 			err := rlp.DecodeBytes(cursor.Value(), bti)
 			if err != nil {

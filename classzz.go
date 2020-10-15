@@ -323,7 +323,6 @@ func main() {
 	if runtime.GOOS == "windows" {
 		isService, err := winServiceMain()
 		if err != nil {
-			fmt.Println(err)
 			os.Exit(1)
 		}
 		if isService {

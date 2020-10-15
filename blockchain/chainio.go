@@ -524,7 +524,6 @@ func dbBeaconTx2(dbTx database.Tx, block *czzutil.Block) error {
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState2(dbTx, pHeight, pHash)
 
-	//fmt.Println("dbBeaconTx2", block.Height())
 	if block.Height() == NetParams.BeaconHeight {
 		eState = cross.NewEntangleState2()
 	}
@@ -785,7 +784,6 @@ func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.En
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 
 	buf := new(bytes.Buffer)
-	//fmt.Println("dbPutEntangleState", block.Height(), block.Hash().String())
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
@@ -797,7 +795,6 @@ func dbPutEntangleState2(dbTx database.Tx, block *czzutil.Block, eState *cross.E
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 
 	buf := new(bytes.Buffer)
-	//fmt.Println("dbPutEntangleState2", block.Height(), block.Hash().String())
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
@@ -1870,7 +1867,6 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	//fmt.Println("CurrentEstate", hash.String(), height)
 	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
@@ -1878,7 +1874,6 @@ func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 func (b *BlockChain) CurrentEstate2() *cross.EntangleState2 {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	//fmt.Println("CurrentEstate2", hash.String(), height)
 	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
 	return eState
 }

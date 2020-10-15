@@ -2,7 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -976,11 +975,9 @@ func (es *EntangleState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype
 ////////////////////////////////////////////////////////////////////////////
 func (es *EntangleState) ToBytes() []byte {
 	// maybe rlp encode
-	msg, err := json.Marshal(es)
-	fmt.Println("EntangleState = ", string(msg))
-
+	//msg, err := json.Marshal(es)
+	//fmt.Println("EntangleState = ", string(msg))
 	data, err := rlp.EncodeToBytes(es)
-
 	if err != nil {
 		log.Fatal("Failed to RLP encode EntangleState: ", err)
 	}
