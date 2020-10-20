@@ -51,6 +51,8 @@ const (
 	LhAssetLTC
 	LhAssetUSDT
 	LhAssetDOGE
+	LhAssetETH
+	LhAssetTRX
 )
 
 func equalAddress(addr1, addr2 string) bool {
@@ -71,7 +73,8 @@ func validKeepTime(kt *big.Int) bool {
 
 func ValidAssetFlag(utype uint32) bool {
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0  || 
+		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 {
 		return true
 	}
 	return false
@@ -80,7 +83,8 @@ func ValidAssetFlag(utype uint32) bool {
 func ValidAssetType(utype1 uint8) bool {
 	utype := uint32(utype1)
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 || 
+		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 {
 		return true
 	}
 	return false
@@ -106,6 +110,10 @@ func ExpandedTxTypeToAssetType(atype uint8) uint32 {
 		return LhAssetBSV
 	case ExpandedTxEntangle_Usdt:
 		return LhAssetUSDT
+	case ExpandedTxEntangle_Eth:
+		return LhAssetETH
+	case ExpandedTxEntangle_Trx:
+		return LhAssetTRX
 	}
 	return 0
 }
@@ -357,6 +365,17 @@ func newExChangeEntitys() []*ExChangeEntity {
 		AssetType:       ExpandedTxEntangle_Usdt,
 		EnOutsideAmount: big.NewInt(0),
 	})
+
+	// the height of fork
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Eth,
+		EnOutsideAmount: big.NewInt(0),
+	})
+	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
+		AssetType:       ExpandedTxEntangle_Trx,
+		EnOutsideAmount: big.NewInt(0),
+	})
+
 	return exChangeEntitys
 }
 
@@ -733,6 +752,21 @@ func newBurnInfos() []*BurnInfo {
 		BAllAmount: big.NewInt(0),
 		Items:      make([]*BurnItem, 0, 0),
 	})
+
+	// the height of fork
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Eth,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+	burnInfos = append(burnInfos, &BurnInfo{
+		AssetType:  ExpandedTxEntangle_Trx,
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
+		Items:      make([]*BurnItem, 0, 0),
+	})
+
 	return burnInfos
 }
 

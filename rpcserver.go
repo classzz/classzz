@@ -3766,6 +3766,10 @@ func handleGetBeaconFreeAsset(s *rpcServer, cmd interface{}, closeChan <-chan st
 			AssetType = "BCH"
 		case cross.ExpandedTxEntangle_Usdt:
 			AssetType = "USDT"
+		case cross.ExpandedTxEntangle_Eth:
+			AssetType = "ETH"
+		case cross.ExpandedTxEntangle_Trx:
+			AssetType = "TRX"
 		}
 		result[AssetType] = v.Amount
 	}
@@ -3828,6 +3832,10 @@ func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 				AssetType = "BCH"
 			case cross.ExpandedTxEntangle_Usdt:
 				AssetType = "USDT"
+			case cross.ExpandedTxEntangle_Eth:
+				AssetType = "ETH"
+			case cross.ExpandedTxEntangle_Trx:
+				AssetType = "TRX"
 			}
 
 			result1[AssetType] = result2

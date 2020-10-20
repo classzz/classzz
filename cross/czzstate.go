@@ -689,6 +689,10 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, err
 		return toUSDT(reserve, reqAmount), nil
 	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
 		return toBchOrBsv(reserve, reqAmount), nil
+	case ExpandedTxEntangle_Eth:
+		return toETH(reserve, reqAmount), nil
+	case ExpandedTxEntangle_Trx:
+		return toTRX(reserve, reqAmount), nil
 	default:
 		return nil, ErrNoUserAsset
 	}
@@ -714,6 +718,12 @@ func getRedeemRateByBurnCzz(reserve *big.Int, atype uint8) (*big.Int, *big.Int, 
 		return base, divisor, nil
 	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
 		base, divisor := reverseToBchOrBsv(reserve)
+		return base, divisor, nil
+	case ExpandedTxEntangle_Eth:
+		base, divisor := reverseToETH(reserve)
+		return base, divisor, nil
+	case ExpandedTxEntangle_Trx:
+		base, divisor := reverseToTRX(reserve)
 		return base, divisor, nil
 	default:
 		return nil, nil, ErrNoUserAsset
