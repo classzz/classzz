@@ -211,6 +211,10 @@ type config struct {
 	UsdtCoinRPCUser string   `long:"usdtcoinrpcuser" description:""`
 	UsdtCoinRPCPass string   `long:"usdtcoinrpcpass" description:""`
 
+	EthRPC []string `long:"ethrpc" description:""`
+
+	TrxRPC []string `long:"trxrpc" description:""`
+
 	lookup         func(string) ([]net.IP, error)
 	oniondial      func(string, string, time.Duration) (net.Conn, error)
 	dial           func(string, string, time.Duration) (net.Conn, error)

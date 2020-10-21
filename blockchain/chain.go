@@ -21,6 +21,7 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 const (
@@ -2256,6 +2257,12 @@ type Config struct {
 	UsdtCoinRPC     []string
 	UsdtCoinRPCUser string
 	UsdtCoinRPCPass string
+
+	// Eth
+	EthRPC []string
+
+	// Trx
+	TrxRPC []string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2435,6 +2442,28 @@ func New(config *Config) (*BlockChain, error) {
 		usdtclients = append(usdtclients, client)
 	}
 
+	var ethclients []*rpc.Client
+	for _, ethrpc := range config.EthRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		client, err := rpc.Dial(ethrpc)
+		if err != nil {
+			return nil, err
+		}
+
+		ethclients = append(ethclients, client)
+	}
+
+	var trxclients []*rpc.Client
+	for _, trxrpc := range config.TrxRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+		client, err := rpc.Dial(trxrpc)
+		if err != nil {
+			return nil, err
+		}
+
+		trxclients = append(trxclients, client)
+	}
+
 	cacheEntangleInfo := &cross.CacheEntangleInfo{
 		DB: config.DB,
 	}
@@ -2448,6 +2477,8 @@ func New(config *Config) (*BlockChain, error) {
 		BchCoinRPC:  bchclients,
 		BsvCoinRPC:  bsvclients,
 		UsdtCoinRPC: usdtclients,
+		EthRPC:      ethclients,
+		TrxRPC:      trxclients,
 		Cache:       cacheEntangleInfo,
 		Params:      params,
 	}

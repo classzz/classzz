@@ -16,6 +16,7 @@ import (
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 	"github.com/classzz/czzutil/base58"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 var (
@@ -41,7 +42,7 @@ const (
 	bsvMaturity  = 12
 	usdtMaturity = 12
 	ethMaturity  = 6
-	trxMaturity  = 6 
+	trxMaturity  = 6
 )
 
 type ExChangeVerify struct {
@@ -51,8 +52,8 @@ type ExChangeVerify struct {
 	BchCoinRPC  []*rpcclient.Client
 	BsvCoinRPC  []*rpcclient.Client
 	UsdtCoinRPC []*rpcclient.Client
-	EthCoinRPC []*rpcclient.Client
-	TrxCoinRPC []*rpcclient.Client
+	EthRPC      []*rpc.Client
+	TrxRPC      []*rpc.Client
 	Cache       *CacheEntangleInfo
 	Params      *chaincfg.Params
 }
@@ -831,10 +832,11 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client := ev.EthCoinRPC[rand.Intn(len(ev.EthCoinRPC))]
+	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
+	// eInfo.ExtTxHash
+	if tx, err := client.Call(); err != nil {
 		return nil, err
 	} else {
 

@@ -3168,6 +3168,9 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		UsdtCoinRPC:     cfg.UsdtCoinRPC,
 		UsdtCoinRPCUser: cfg.UsdtCoinRPCUser,
 		UsdtCoinRPCPass: cfg.UsdtCoinRPCPass,
+
+		EthRPC: cfg.EthRPC,
+		TrxRPC: cfg.TrxRPC,
 	})
 	if err != nil {
 		return nil, err
