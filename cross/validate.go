@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"golang.org/x/net/context"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 	"github.com/classzz/czzutil/base58"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -834,20 +836,11 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	// not supported in HTTP POST mode.
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
+	var txjson *rpcTransaction
 	// Get the current block count.
-	// eInfo.ExtTxHash
-	if tx, err := client.Call(); err != nil {
+	if err := client.CallContext(context.Background(), &txjson, eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
-
-		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
-			e := fmt.Sprintf("usdt Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
-			return nil, errors.New(e)
-		}
-
-		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
-			return nil, errors.New("usdt TxOut index err")
-		}
 
 		var pk []byte
 		if tx.MsgTx().TxIn[0].Witness == nil {
@@ -870,57 +863,19 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		ExtTxHash, err := chainhash.NewHashFromStr(eInfo.ExtTxHash)
+		if eInfo.Amount.Int64() < 0 || txjson.tx.Value().Int64() != eInfo.Amount.Int64() {
+			e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount)
+			return nil, errors.New(e)
+		}
+
+		epub, err := UnmarshalPubkey1(bai.PubKey)
 		if err != nil {
-			return nil, err
+			e := fmt.Sprintf("usdt addr err")
+			return nil, errors.New(e)
 		}
 
-		if tx2, err := client.OmniGetTransactionResult(ExtTxHash); err != nil {
-			return nil, err
-		} else {
-
-			if tx2.PropertyId != 31 {
-				return nil, err
-			}
-
-			if tx2.TypeInt != 0 {
-				return nil, err
-			}
-
-			ex_amount, err := strconv.ParseFloat(tx2.Amount, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			if eInfo.Amount.Int64() < 0 || int64(ex_amount*100000000) != eInfo.Amount.Int64() {
-				e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
-				return nil, errors.New(e)
-			}
-
-			addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
-			if err != nil {
-				e := fmt.Sprintf("usdt addr err")
-				return nil, errors.New(e)
-			}
-
-			addrStr := addr.String()
-			if addr.String() != tx2.ReferenceAddress {
-				return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", addrStr, tx2.ReferenceAddress)
-			}
-
-		}
-
-		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
-			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
-					e := fmt.Sprintf("usdt Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
-					return nil, errors.New(e)
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
+		if crypto.PubkeyToAddress(*epub).String() != txjson.tx.To().String() {
+			return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", crypto.PubkeyToAddress(*epub).String(), txjson.tx.To().String())
 		}
 
 		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Eth))
@@ -934,7 +889,7 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		if count, err := client.GetBlockCount(); err != nil {
+		if count, err := client.CallContext(); err != nil {
 			return nil, err
 		} else {
 			if count-int64(eInfo.Height) > ethMaturity {

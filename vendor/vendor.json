@@ -10,6 +10,12 @@
 			"revisionTime": "2020-07-14T08:55:54Z"
 		},
 		{
+			"checksumSHA1": "0xkHpKvdl8NZ+r8nXrQ5VY9SkmU=",
+			"path": "github.com/btcsuite/btcd/btcec",
+			"revision": "ba530c4abb35ea824a1d3c01d74969b5564c3b08",
+			"revisionTime": "2019-09-26T00:28:57Z"
+		},
+		{
 			"checksumSHA1": "j3yRnuia1i5Wb7C9Tc5g0d6gdpM=",
 			"path": "github.com/btcsuite/go-socks/socks",
 			"revision": "4720035b7bfd2a9bb130b1c184f8bbe41b6f0d0f",
@@ -208,8 +214,32 @@
 			"revisionTime": "2020-10-15T10:29:42Z"
 		},
 		{
+			"checksumSHA1": "fHPznp0/rkZmv0CuANdQyQRK+l4=",
+			"path": "github.com/ethereum/go-ethereum/common/math",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
 			"checksumSHA1": "6Re/0Pf+0xtopPX70Q2R6FYKFU0=",
 			"path": "github.com/ethereum/go-ethereum/common/mclock",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
+			"checksumSHA1": "FYMf784gTImEZQyyRf+JZEf6OYI=",
+			"path": "github.com/ethereum/go-ethereum/core/types",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
+			"checksumSHA1": "rwyQ+eStqmOXEBz5h7pM+NMLU14=",
+			"path": "github.com/ethereum/go-ethereum/crypto",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
+			"checksumSHA1": "qAKlHVOfOe/+Of8A8xL6xh6Vhx0=",
+			"path": "github.com/ethereum/go-ethereum/crypto/secp256k1",
 			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
 			"revisionTime": "2020-10-15T10:29:42Z"
 		},
@@ -228,6 +258,18 @@
 		{
 			"checksumSHA1": "Zgl02TtaRyv0D2i8UXYpI4JnSwo=",
 			"path": "github.com/ethereum/go-ethereum/p2p/netutil",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
+			"checksumSHA1": "IxoF3J/V1lwNVc6N1B5bsTJpvkE=",
+			"path": "github.com/ethereum/go-ethereum/params",
+			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
+			"revisionTime": "2020-10-15T10:29:42Z"
+		},
+		{
+			"checksumSHA1": "hqD7B+4/fV6uKQD3wedx63Uarx4=",
+			"path": "github.com/ethereum/go-ethereum/rlp",
 			"revision": "8c2f271528f9cccf541c6ea1c022e98407f26872",
 			"revisionTime": "2020-10-15T10:29:42Z"
 		},
