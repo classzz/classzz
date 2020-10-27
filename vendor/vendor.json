@@ -10,7 +10,7 @@
 			"revisionTime": "2020-07-14T08:55:54Z"
 		},
 		{
-			"checksumSHA1": "0xkHpKvdl8NZ+r8nXrQ5VY9SkmU=",
+			"checksumSHA1": "EdCpQiR5xW5rPShF3o386tarORQ=",
 			"path": "github.com/btcsuite/btcd/btcec",
 			"revision": "ba530c4abb35ea824a1d3c01d74969b5564c3b08",
 			"revisionTime": "2019-09-26T00:28:57Z"
@@ -437,7 +437,7 @@
 			"revisionTime": "2019-02-28T12:11:59Z"
 		},
 		{
-			"checksumSHA1": "igQSWuUMHLb7aOCp0wOKSH9ocQ4=",
+			"checksumSHA1": "bTqgsSa5YNNN8pdU3zsoO0bBCo0=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "a34e9553db1e492c9a76e60db2296ae7e5fbb772",
 			"revisionTime": "2019-02-28T12:11:59Z"

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"golang.org/x/net/context"
 	"math/big"
 	"math/rand"
@@ -836,25 +838,37 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	// not supported in HTTP POST mode.
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
+	cext := context.Background()
 	var txjson *rpcTransaction
 	// Get the current block count.
-	if err := client.CallContext(context.Background(), &txjson, eInfo.ExtTxHash); err != nil {
+	if err := client.CallContext(cext, &txjson, eInfo.ExtTxHash); err != nil {
 		return nil, err
 	} else {
 
 		var pk []byte
-		if tx.MsgTx().TxIn[0].Witness == nil {
-			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputePk err %s", err)
-				return nil, errors.New(e)
-			}
-		} else {
-			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputeWitnessPk err %s", err)
-				return nil, errors.New(e)
-			}
+
+		ethtx := txjson.tx
+		Vb, R, S := ethtx.RawSignatureValues()
+		if Vb.BitLen() > 8 {
+			return nil, fmt.Errorf("")
+		}
+
+		V := byte(Vb.Uint64() - 27)
+		if !crypto.ValidateSignatureValues(V, R, S, false) {
+			return nil, fmt.Errorf("")
+		}
+		// encode the signature in uncompressed format
+		r, s := R.Bytes(), S.Bytes()
+		sig := make([]byte, crypto.SignatureLength)
+		copy(sig[32-len(r):32], r)
+		copy(sig[64-len(s):64], s)
+		sig[64] = V
+
+		a := types.NewEIP155Signer(big.NewInt(1))
+
+		pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+		if err != nil {
+			return nil, fmt.Errorf("")
 		}
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
@@ -889,10 +903,11 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		if count, err := client.CallContext(); err != nil {
+		var lastNumber hexutil.Uint64
+		if err := client.Call(&lastNumber, "eth_blockNumber"); err != nil {
 			return nil, err
 		} else {
-			if count-int64(eInfo.Height) > ethMaturity {
+			if uint64(lastNumber)-eInfo.Height > ethMaturity {
 				return pk, nil
 			} else {
 				e := fmt.Sprintf("usdt Maturity err")
