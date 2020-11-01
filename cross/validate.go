@@ -920,118 +920,119 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
-	client := ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
-
-	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
-		return nil, err
-	} else {
-
-		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
-			e := fmt.Sprintf("usdt Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
-			return nil, errors.New(e)
-		}
-
-		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
-			return nil, errors.New("usdt TxOut index err")
-		}
-
-		var pk []byte
-		if tx.MsgTx().TxIn[0].Witness == nil {
-			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputePk err %s", err)
-				return nil, errors.New(e)
-			}
-		} else {
-			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputeWitnessPk err %s", err)
-				return nil, errors.New(e)
-			}
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BeaconID)
-		if bai == nil {
-			e := fmt.Sprintf("usdt PkScript err")
-			return nil, errors.New(e)
-		}
-
-		ExtTxHash, err := chainhash.NewHashFromStr(eInfo.ExtTxHash)
-		if err != nil {
-			return nil, err
-		}
-
-		if tx2, err := client.OmniGetTransactionResult(ExtTxHash); err != nil {
-			return nil, err
-		} else {
-
-			if tx2.PropertyId != 31 {
-				return nil, err
-			}
-
-			if tx2.TypeInt != 0 {
-				return nil, err
-			}
-
-			ex_amount, err := strconv.ParseFloat(tx2.Amount, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			if eInfo.Amount.Int64() < 0 || int64(ex_amount*100000000) != eInfo.Amount.Int64() {
-				e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
-				return nil, errors.New(e)
-			}
-
-			addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
-			if err != nil {
-				e := fmt.Sprintf("usdt addr err")
-				return nil, errors.New(e)
-			}
-
-			addrStr := addr.String()
-			if addr.String() != tx2.ReferenceAddress {
-				return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", addrStr, tx2.ReferenceAddress)
-			}
-
-		}
-
-		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
-			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
-					e := fmt.Sprintf("usdt Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
-					return nil, errors.New(e)
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Trx))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Trx))
-
-		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
-		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
-
-		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
-			e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
-			return nil, errors.New(e)
-		}
-
-		if count, err := client.GetBlockCount(); err != nil {
-			return nil, err
-		} else {
-			if count-int64(eInfo.Height) > trxMaturity {
-				return pk, nil
-			} else {
-				e := fmt.Sprintf("usdt Maturity err")
-				return nil, errors.New(e)
-			}
-		}
-	}
+	//client := ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
+	//
+	//// Get the current block count.
+	//if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
+	//	return nil, err
+	//} else {
+	//
+	//	if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
+	//		e := fmt.Sprintf("usdt Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
+	//		return nil, errors.New(e)
+	//	}
+	//
+	//	if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
+	//		return nil, errors.New("usdt TxOut index err")
+	//	}
+	//
+	//	var pk []byte
+	//	if tx.MsgTx().TxIn[0].Witness == nil {
+	//		pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
+	//		if err != nil {
+	//			e := fmt.Sprintf("usdt ComputePk err %s", err)
+	//			return nil, errors.New(e)
+	//		}
+	//	} else {
+	//		pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
+	//		if err != nil {
+	//			e := fmt.Sprintf("usdt ComputeWitnessPk err %s", err)
+	//			return nil, errors.New(e)
+	//		}
+	//	}
+	//
+	//	bai := eState.getBeaconAddress(eInfo.BeaconID)
+	//	if bai == nil {
+	//		e := fmt.Sprintf("usdt PkScript err")
+	//		return nil, errors.New(e)
+	//	}
+	//
+	//	ExtTxHash, err := chainhash.NewHashFromStr(eInfo.ExtTxHash)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	if tx2, err := client.OmniGetTransactionResult(ExtTxHash); err != nil {
+	//		return nil, err
+	//	} else {
+	//
+	//		if tx2.PropertyId != 31 {
+	//			return nil, err
+	//		}
+	//
+	//		if tx2.TypeInt != 0 {
+	//			return nil, err
+	//		}
+	//
+	//		ex_amount, err := strconv.ParseFloat(tx2.Amount, 64)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//
+	//		if eInfo.Amount.Int64() < 0 || int64(ex_amount*100000000) != eInfo.Amount.Int64() {
+	//			e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
+	//			return nil, errors.New(e)
+	//		}
+	//
+	//		addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
+	//		if err != nil {
+	//			e := fmt.Sprintf("usdt addr err")
+	//			return nil, errors.New(e)
+	//		}
+	//
+	//		addrStr := addr.String()
+	//		if addr.String() != tx2.ReferenceAddress {
+	//			return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", addrStr, tx2.ReferenceAddress)
+	//		}
+	//
+	//	}
+	//
+	//	if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
+	//		if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
+	//			if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
+	//				e := fmt.Sprintf("usdt Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
+	//				return nil, errors.New(e)
+	//			}
+	//		} else {
+	//			return nil, err
+	//		}
+	//	} else {
+	//		return nil, err
+	//	}
+	//
+	//	reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Trx))
+	//	sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Trx))
+	//
+	//	ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+	//	ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+	//
+	//	if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+	//		e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
+	//		return nil, errors.New(e)
+	//	}
+	//
+	//	if count, err := client.GetBlockCount(); err != nil {
+	//		return nil, err
+	//	} else {
+	//		if count-int64(eInfo.Height) > trxMaturity {
+	//			return pk, nil
+	//		} else {
+	//			e := fmt.Sprintf("usdt Maturity err")
+	//			return nil, errors.New(e)
+	//		}
+	//	}
+	//}
+	return nil, nil
 }
 
 func CheckTransactionisBlock(txhash string, block *rpcclient.DogecoinMsgBlock) bool {
@@ -1483,9 +1484,9 @@ func (ev *ExChangeVerify) VerifyBurnProofBeacon(info *BurnProofInfo, eState *Ent
 	case ExpandedTxEntangle_Usdt:
 		client = ev.UsdtCoinRPC[rand.Intn(len(ev.UsdtCoinRPC))]
 	case ExpandedTxEntangle_Eth:
-		client = ev.EthCoinRPC[rand.Intn(len(ev.EthCoinRPC))]
+		//client = ev.EthCoinRPC[rand.Intn(len(ev.EthCoinRPC))]
 	case ExpandedTxEntangle_Trx:
-		client = ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
+		//client = ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
 	}
 
 	if client == nil {
@@ -1610,9 +1611,9 @@ func (ev *ExChangeVerify) VerifyWhiteListProof(info *WhiteListProof, state *Enta
 	case ExpandedTxEntangle_Usdt:
 		client = ev.UsdtCoinRPC[rand.Intn(len(ev.UsdtCoinRPC))]
 	case ExpandedTxEntangle_Eth:
-		client = ev.EthCoinRPC[rand.Intn(len(ev.EthCoinRPC))]
+		//client = ev.EthCoinRPC[rand.Intn(len(ev.EthCoinRPC))]
 	case ExpandedTxEntangle_Trx:
-		client = ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
+		//client = ev.TrxCoinRPC[rand.Intn(len(ev.TrxCoinRPC))]
 	}
 
 	bai := state.getBeaconByID(info.BeaconID)

@@ -10,6 +10,12 @@
 			"revisionTime": "2020-07-14T08:55:54Z"
 		},
 		{
+			"checksumSHA1": "kto0asmOE+Nuhj7T8cvrvIwq2ak=",
+			"path": "github.com/aristanetworks/goarista/monotime",
+			"revision": "2cb20defcd666dda6cc5d3b32c901ce7e43bb03d",
+			"revisionTime": "2020-10-12T12:07:55Z"
+		},
+		{
 			"checksumSHA1": "EdCpQiR5xW5rPShF3o386tarORQ=",
 			"path": "github.com/btcsuite/btcd/btcec",
 			"revision": "ba530c4abb35ea824a1d3c01d74969b5564c3b08",
