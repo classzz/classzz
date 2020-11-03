@@ -2453,16 +2453,7 @@ func New(config *Config) (*BlockChain, error) {
 		ethclients = append(ethclients, client)
 	}
 
-	var trxclients []*rpc.Client
-	for _, trxrpc := range config.TrxRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		client, err := rpc.Dial(trxrpc)
-		if err != nil {
-			return nil, err
-		}
-
-		trxclients = append(trxclients, client)
-	}
+	var trxclients = config.TrxRPC
 
 	cacheEntangleInfo := &cross.CacheEntangleInfo{
 		DB: config.DB,
