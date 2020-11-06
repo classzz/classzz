@@ -1,6 +1,8 @@
 package cross
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -9,7 +11,9 @@ import (
 	_ "github.com/classzz/classzz/database/ffldb"
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
+	"io/ioutil"
 	"math/big"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -226,11 +230,11 @@ func ExChangeTx(state *EntangleState, ev *ExChangeVerify, store bool) error {
 		return err
 	}
 
-	height := big.NewInt(int64(info.Height))
-	_, err := state.AddEntangleItem(info.Address, uint8(info.AssetType), info.BeaconID, height, info.Amount)
-	if err != nil {
-		return err
-	}
+	//height := big.NewInt(int64(info.Height))
+	//_, err := state.AddEntangleItem(info.Address, uint8(info.AssetType), info.BeaconID, height, info.Amount)
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
@@ -255,23 +259,23 @@ func TestExChangeVerify_VerifyBurn(t *testing.T) {
 }
 
 func BurnTx(state *EntangleState, ev *ExChangeVerify, store bool) error {
-	info := &BurnTxInfo{
-		Address:   "cr3k7enc4ha867mx3k2y0t9x8u9z9wc5agjd64p3ea",
-		AssetType: 240,
-		Height:    30,
-		Amount:    big.NewInt(10),
-		BeaconID:  1,
-	}
+	//info := &BurnTxInfo{
+	//	Address:   "cr3k7enc4ha867mx3k2y0t9x8u9z9wc5agjd64p3ea",
+	//	AssetType: 240,
+	//	Height:    30,
+	//	Amount:    big.NewInt(10),
+	//	BeaconID:  1,
+	//}
 
-	if err := ev.VerifyBurn(info, state); err != nil {
-		return err
-	}
-
-	if store {
-		if _, _, err := state.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, 30, info.Amount); err != nil {
-			return err
-		}
-	}
+	//if err := ev.VerifyBurn(info, state); err != nil {
+	//	return err
+	//}
+	//
+	//if store {
+	//	if _, _, err := state.BurnAsset(info.Address, uint8(info.AssetType), info.BeaconID, 30, info.Amount); err != nil {
+	//		return err
+	//	}
+	//}
 
 	return nil
 }
@@ -309,7 +313,6 @@ func BurnProofTxBeacon(state *EntangleState, ev *ExChangeVerify, store bool) err
 		AssetType: 240,
 		TxHash:    "28c1f349d687888f408392bb5a930852a5899502f98702d25d3786780134cd90",
 		OutIndex:  0,
-		IsBeacon:  true,
 	}
 
 	if _, _, err := ev.VerifyBurnProofBeacon(info, state, 30); err != nil {
@@ -324,4 +327,31 @@ func BurnProofTxBeacon(state *EntangleState, ev *ExChangeVerify, store bool) err
 	}
 
 	return nil
+}
+
+func TestTrx(t *testing.T) {
+
+	data := make(map[string]interface{})
+	data["value"] = "d0807adb3c5412aa150787b944c96ee898c997debdc27e2f6a643c771edb5933"
+	data["visible"] = true
+	bytesData, _ := json.Marshal(data)
+
+	// Get the current block count.
+	// {"value":"d0807adb3c5412aa150787b944c96ee898c997debdc27e2f6a643c771edb5933","visible":true}
+	// bytes.NewReader(bytesData)
+
+	resp, err := http.Post("https://api.trongrid.io/wallet/gettransactionbyid", "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(resp)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	trxTx := &TrxTx{}
+	fmt.Println(string(body))
+	json.Unmarshal(body, trxTx)
+	fmt.Println(trxTx.RawData)
+
 }

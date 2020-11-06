@@ -2,16 +2,11 @@ package cross
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"golang.org/x/net/context"
-	"math/big"
-	"math/rand"
-	"strconv"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rpcclient"
@@ -19,8 +14,16 @@ import (
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 	"github.com/classzz/czzutil/base58"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"golang.org/x/net/context"
+	"io/ioutil"
+	"math/big"
+	"math/rand"
+	"net/http"
+	"strconv"
 )
 
 var (
@@ -878,7 +881,7 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		}
 
 		if eInfo.Amount.Int64() < 0 || txjson.tx.Value().Int64() != eInfo.Amount.Int64() {
-			e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount)
+			e := fmt.Sprintf("usdt amount err ,[request:%v]", eInfo.Amount)
 			return nil, errors.New(e)
 		}
 
@@ -919,120 +922,115 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
 
-	//Notice the notification parameter is nil since notifications are
-	//not supported in HTTP POST mode.
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
 	client := ev.TrxRPC[rand.Intn(len(ev.TrxRPC))]
 
+	data := make(map[string]interface{})
+	data["value"] = eInfo.ExtTxHash
+	data["visible"] = true
+	bytesData, _ := json.Marshal(data)
+
 	// Get the current block count.
-	if tx, err := client.GetWitnessRawTransaction(eInfo.ExtTxHash); err != nil {
-		return nil, err
-	} else {
+	// {"value":"d0807adb3c5412aa150787b944c96ee898c997debdc27e2f6a643c771edb5933","visible":true}
 
-		if len(tx.MsgTx().TxIn) < 1 || len(tx.MsgTx().TxOut) < 1 {
-			e := fmt.Sprintf("usdt Transactionis in or out len < 0  in : %v , out : %v", len(tx.MsgTx().TxIn), len(tx.MsgTx().TxOut))
-			return nil, errors.New(e)
-		}
-
-		if len(tx.MsgTx().TxOut) < int(eInfo.Index) {
-			return nil, errors.New("usdt TxOut index err")
-		}
-
-		var pk []byte
-		if tx.MsgTx().TxIn[0].Witness == nil {
-			pk, err = txscript.ComputePk(tx.MsgTx().TxIn[0].SignatureScript)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputePk err %s", err)
-				return nil, errors.New(e)
-			}
-		} else {
-			pk, err = txscript.ComputeWitnessPk(tx.MsgTx().TxIn[0].Witness)
-			if err != nil {
-				e := fmt.Sprintf("usdt ComputeWitnessPk err %s", err)
-				return nil, errors.New(e)
-			}
-		}
-
-		bai := eState.getBeaconAddress(eInfo.BeaconID)
-		if bai == nil {
-			e := fmt.Sprintf("usdt PkScript err")
-			return nil, errors.New(e)
-		}
-
-		ExtTxHash, err := chainhash.NewHashFromStr(eInfo.ExtTxHash)
-		if err != nil {
-			return nil, err
-		}
-
-		if tx2, err := client.OmniGetTransactionResult(ExtTxHash); err != nil {
-			return nil, err
-		} else {
-
-			if tx2.PropertyId != 31 {
-				return nil, err
-			}
-
-			if tx2.TypeInt != 0 {
-				return nil, err
-			}
-
-			ex_amount, err := strconv.ParseFloat(tx2.Amount, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			if eInfo.Amount.Int64() < 0 || int64(ex_amount*100000000) != eInfo.Amount.Int64() {
-				e := fmt.Sprintf("usdt amount err ,[request:%v,ltc:%v]", eInfo.Amount, tx.MsgTx().TxOut[eInfo.Index].Value)
-				return nil, errors.New(e)
-			}
-
-			addr, err := czzutil.NewLegacyAddressPubKeyHash(czzutil.Hash160(bai.PubKey), ev.Params)
-			if err != nil {
-				e := fmt.Sprintf("usdt addr err")
-				return nil, errors.New(e)
-			}
-
-			addrStr := addr.String()
-			if addr.String() != tx2.ReferenceAddress {
-				return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", addrStr, tx2.ReferenceAddress)
-			}
-
-		}
-
-		if bhash, err := client.GetBlockHash(int64(eInfo.Height)); err == nil {
-			if dblock, err := client.GetDogecoinBlock(bhash.String()); err == nil {
-				if !CheckTransactionisBlock(eInfo.ExtTxHash, dblock) {
-					e := fmt.Sprintf("usdt Transactionis %s not in BlockHeight %v", eInfo.ExtTxHash, eInfo.Height)
-					return nil, errors.New(e)
-				}
-			} else {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Trx))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Trx))
-
-		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
-		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
-
-		if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
-			e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
-			return nil, errors.New(e)
-		}
-
-		if count, err := client.GetBlockCount(); err != nil {
-			return nil, err
-		} else {
-			if count-int64(eInfo.Height) > trxMaturity {
-				return pk, nil
-			} else {
-				e := fmt.Sprintf("usdt Maturity err")
-				return nil, errors.New(e)
-			}
-		}
+	bytes.NewReader(bytesData)
+	resp, err := http.Post(client, "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		panic(err)
 	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		panic(err)
+	}
+
+	trxTx := &TrxTx{}
+	err = json.Unmarshal(body, trxTx)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(body, trxTx); err != nil {
+		return nil, err
+	}
+
+	// 判断是否成功
+	if nil == trxTx.Ret || len(trxTx.Ret) < 1 || trxTx.Ret[0].ContractRet != "SUCCESS" {
+		return nil, fmt.Errorf("trxTx ContractRet err")
+	}
+
+	hash_1, _ := hex.DecodeString(trxTx.RawDataHex)
+	hash := sha256.Sum256(hash_1)
+
+	r, _ := hex.DecodeString("eaf47de25ad21054afe5af7c40b29df89d8cef082978ceb59f49a7cdd15bb262")
+	s, _ := hex.DecodeString("26163f4b605945f667c56732125ae5488d29155b362cd8319d633e679822a864")
+
+	sig := make([]byte, crypto.SignatureLength)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = 0
+
+	pk, err := crypto.Ecrecover(hash[:], sig)
+
+	bai := eState.getBeaconAddress(eInfo.BeaconID)
+	if bai == nil {
+		e := fmt.Sprintf("usdt PkScript err")
+		return nil, errors.New(e)
+	}
+
+	epub, err := UnmarshalPubkey1(bai.PubKey)
+	if err != nil {
+		e := fmt.Sprintf("usdt addr err")
+		return nil, errors.New(e)
+	}
+
+	if crypto.PubkeyToAddress(*epub).String() != trxTx.RawData.Contract[0].Parameter.ParameterValue.ToAddress || nil == trxTx.RawData || nil == trxTx.RawData.Contract || len(trxTx.RawData.Contract) < 1 {
+		return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", crypto.PubkeyToAddress(*epub).String(), "")
+	}
+
+	reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Trx))
+	sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Trx))
+
+	ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
+	ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
+
+	if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+		e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
+		return nil, errors.New(e)
+	}
+
+	data = make(map[string]interface{})
+	data["num"] = 1
+	bytesData, _ = json.Marshal(data)
+
+	// Get the current block count.
+	bytes.NewReader(bytesData)
+	resp, err = http.Post(client, "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		panic(err)
+	}
+
+	body, err = ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		panic(err)
+	}
+
+	trxBlock := &TrxBlock{}
+	err = json.Unmarshal(body, trxTx)
+	if err != nil {
+		panic(err)
+	}
+
+	if trxBlock.block[0].BlockHeader.RawData.Number-eInfo.Height > trxMaturity {
+		return pk, nil
+	} else {
+		e := fmt.Sprintf("trx Maturity err")
+		return nil, errors.New(e)
+	}
+
 	return nil, nil
 }
 

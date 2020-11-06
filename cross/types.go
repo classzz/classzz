@@ -16,12 +16,35 @@ type txExtraInfo struct {
 	From        *common.Address `json:"from,omitempty"`
 }
 
-type trxTx struct {
-	Ret        []trxState `json:"ret"`
-	Signature  []string   `json:"signature"`
-	TxID       string     `json:"txID"`
-	RawDataHex string     `json:"raw_data_hex"`
-	RawData    string     `json:"raw_data"`
+type TrxBlock struct {
+	block []*TrxBlock_
+}
+
+type TrxBlock_ struct {
+	BlockID     string          `json:"blockID"`
+	BlockHeader *TrxBlockHeader `json:"block_header"`
+}
+
+type TrxBlockHeader struct {
+	RawData          *TrxBlockRawData `json:"raw_data"`
+	WitnessSignature string           `json:"witness_signature"`
+}
+
+type TrxBlockRawData struct {
+	Number         uint64 `json:"number"`
+	TxTrieRoot     string `json:"txTrieRoot"`
+	WitnessAddress string `json:"witness_address"`
+	ParentHash     string `json:"parentHash"`
+	Version        uint64 `json:"version"`
+	Timestamp      uint64 `json:"timestamp"`
+}
+
+type TrxTx struct {
+	Ret        []*trxState `json:"ret"`
+	Signature  []string    `json:"signature"`
+	TxID       string      `json:"txID"`
+	RawDataHex string      `json:"raw_data_hex"`
+	RawData    *TrxRawData `json:"raw_data"`
 }
 
 type trxState struct {
@@ -29,22 +52,26 @@ type trxState struct {
 }
 
 type Parameter_value struct {
-	amount       int64
-	assetName    string
-	ownerAddress string
-	toAddress    string
+	Amount       int64  `json:"amount"`
+	AssetName    string `json:"asset_name"`
+	OwnerAddress string `json:"owner_address"`
+	ToAddress    string `json:"to_address"`
 }
 
 type Parameter struct {
-	parameterValue Parameter_value
-	typeUrl        string
+	ParameterValue *Parameter_value `json:"value"`
+	TypeUrl        string           `json:"type_url"`
 }
 
 type Contract struct {
-	parameter Parameter
-	type_     string
+	Parameter *Parameter `json:"parameter"`
+	Type_     string     `json:"type"`
 }
 
-type trxRawData struct {
-	contract []Contract
+type TrxRawData struct {
+	Contract      []*Contract `json:"contract"`
+	RefBlockBytes string      `json:"ref_block_bytes"`
+	RefBlockHash  string      `json:"ref_block_hash"`
+	Expiration    uint64      `json:"expiration"`
+	Timestamp     uint64      `json:"timestamp"`
 }
