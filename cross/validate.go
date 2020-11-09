@@ -932,31 +932,28 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	bytesData, _ := json.Marshal(data)
 
 	// Get the current block count.
-	// {"value":"d0807adb3c5412aa150787b944c96ee898c997debdc27e2f6a643c771edb5933","visible":true}
-
 	bytes.NewReader(bytesData)
 	resp, err := http.Post(client, "application/json", bytes.NewReader(bytesData))
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
 
 	trxTx := &TrxTx{}
 	err = json.Unmarshal(body, trxTx)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
 
 	if err := json.Unmarshal(body, trxTx); err != nil {
 		return nil, err
 	}
 
-	// 判断是否成功
 	if nil == trxTx.Ret || len(trxTx.Ret) < 1 || trxTx.Ret[0].ContractRet != "SUCCESS" {
 		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
