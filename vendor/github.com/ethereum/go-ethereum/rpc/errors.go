@@ -18,15 +18,6 @@ package rpc
 
 import "fmt"
 
-var (
-	_ Error = new(methodNotFoundError)
-	_ Error = new(subscriptionNotFoundError)
-	_ Error = new(parseError)
-	_ Error = new(invalidRequestError)
-	_ Error = new(invalidMessageError)
-	_ Error = new(invalidParamsError)
-)
-
 const defaultErrorCode = -32000
 
 type methodNotFoundError struct{ method string }

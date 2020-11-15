@@ -18,22 +18,14 @@
 
 package metrics
 
-import (
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/shirou/gopsutil/cpu"
-)
+import "github.com/elastic/gosigar"
 
 // ReadCPUStats retrieves the current CPU stats.
 func ReadCPUStats(stats *CPUStats) {
-	// passing false to request all cpu times
-	timeStats, err := cpu.Times(false)
-	if err != nil {
-		log.Error("Could not read cpu stats", "err", err)
-		return
-	}
-	// requesting all cpu times will always return an array with only one time stats entry
-	timeStat := timeStats[0]
-	stats.GlobalTime = int64((timeStat.User + timeStat.Nice + timeStat.System) * cpu.ClocksPerSec)
-	stats.GlobalWait = int64((timeStat.Iowait) * cpu.ClocksPerSec)
+	global := gosigar.Cpu{}
+	global.Get()
+
+	stats.GlobalTime = int64(global.User + global.Nice + global.Sys)
+	stats.GlobalWait = int64(global.Wait)
 	stats.LocalTime = getProcessCPUTime()
 }

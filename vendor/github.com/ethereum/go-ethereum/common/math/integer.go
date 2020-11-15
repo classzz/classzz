@@ -18,7 +18,6 @@ package math
 
 import (
 	"fmt"
-	"math/bits"
 	"strconv"
 )
 
@@ -79,20 +78,22 @@ func MustParseUint64(s string) uint64 {
 	return v
 }
 
-// SafeSub returns x-y and checks for overflow.
+// NOTE: The following methods need to be optimised using either bit checking or asm
+
+// SafeSub returns subtraction result and whether overflow occurred.
 func SafeSub(x, y uint64) (uint64, bool) {
-	diff, borrowOut := bits.Sub64(x, y, 0)
-	return diff, borrowOut != 0
+	return x - y, x < y
 }
 
-// SafeAdd returns x+y and checks for overflow.
+// SafeAdd returns the result and whether overflow occurred.
 func SafeAdd(x, y uint64) (uint64, bool) {
-	sum, carryOut := bits.Add64(x, y, 0)
-	return sum, carryOut != 0
+	return x + y, y > MaxUint64-x
 }
 
-// SafeMul returns x*y and checks for overflow.
+// SafeMul returns multiplication result and whether overflow occurred.
 func SafeMul(x, y uint64) (uint64, bool) {
-	hi, lo := bits.Mul64(x, y)
-	return lo, hi != 0
+	if x == 0 || y == 0 {
+		return 0, false
+	}
+	return x * y, y > MaxUint64/x
 }

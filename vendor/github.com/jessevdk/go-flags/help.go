@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"reflect"
 	"runtime"
 	"strings"
 	"unicode/utf8"
@@ -73,6 +72,9 @@ func (p *Parser) getAlignmentInfo() alignmentInfo {
 	var prevcmd *Command
 
 	p.eachActiveGroup(func(c *Command, grp *Group) {
+		if !grp.showInHelp() {
+			return
+		}
 		if c != prevcmd {
 			for _, arg := range c.args {
 				ret.updateLen(arg.Name, c != p.Command)
@@ -80,7 +82,7 @@ func (p *Parser) getAlignmentInfo() alignmentInfo {
 		}
 
 		for _, info := range grp.options {
-			if !info.canCli() {
+			if !info.showInHelp() {
 				continue
 			}
 
@@ -92,9 +94,71 @@ func (p *Parser) getAlignmentInfo() alignmentInfo {
 				ret.hasValueName = true
 			}
 
-			ret.updateLen(info.LongNameWithNamespace()+info.ValueName, c != p.Command)
+			l := info.LongNameWithNamespace() + info.ValueName
+
+			if len(info.Choices) != 0 {
+				l += "[" + strings.Join(info.Choices, "|") + "]"
+			}
+
+			ret.updateLen(l, c != p.Command)
 		}
 	})
+
+	return ret
+}
+
+func wrapText(s string, l int, prefix string) string {
+	var ret string
+
+	if l < 10 {
+		l = 10
+	}
+
+	// Basic text wrapping of s at spaces to fit in l
+	lines := strings.Split(s, "\n")
+
+	for _, line := range lines {
+		var retline string
+
+		line = strings.TrimSpace(line)
+
+		for len(line) > l {
+			// Try to split on space
+			suffix := ""
+
+			pos := strings.LastIndex(line[:l], " ")
+
+			if pos < 0 {
+				pos = l - 1
+				suffix = "-\n"
+			}
+
+			if len(retline) != 0 {
+				retline += "\n" + prefix
+			}
+
+			retline += strings.TrimSpace(line[:pos]) + suffix
+			line = strings.TrimSpace(line[pos:])
+		}
+
+		if len(line) > 0 {
+			if len(retline) != 0 {
+				retline += "\n" + prefix
+			}
+
+			retline += line
+		}
+
+		if len(ret) > 0 {
+			ret += "\n"
+
+			if len(retline) > 0 {
+				ret += prefix
+			}
+		}
+
+		ret += retline
+	}
 
 	return ret
 }
@@ -106,6 +170,10 @@ func (p *Parser) writeHelpOption(writer *bufio.Writer, option *Option, info alig
 
 	if info.indent {
 		prefix += 4
+	}
+
+	if option.Hidden {
+		return
 	}
 
 	line.WriteString(strings.Repeat(" ", prefix))
@@ -136,6 +204,10 @@ func (p *Parser) writeHelpOption(writer *bufio.Writer, option *Option, info alig
 		if len(option.ValueName) > 0 {
 			line.WriteString(option.ValueName)
 		}
+
+		if len(option.Choices) > 0 {
+			line.WriteString("[" + strings.Join(option.Choices, "|") + "]")
+		}
 	}
 
 	written := line.Len()
@@ -145,48 +217,23 @@ func (p *Parser) writeHelpOption(writer *bufio.Writer, option *Option, info alig
 		dw := descstart - written
 		writer.WriteString(strings.Repeat(" ", dw))
 
-		def := ""
-		defs := option.Default
+		var def string
 
 		if len(option.DefaultMask) != 0 {
 			if option.DefaultMask != "-" {
 				def = option.DefaultMask
 			}
-		} else if len(defs) == 0 && option.canArgument() {
-			var showdef bool
-
-			switch option.field.Type.Kind() {
-			case reflect.Func, reflect.Ptr:
-				showdef = !option.value.IsNil()
-			case reflect.Slice, reflect.String, reflect.Array:
-				showdef = option.value.Len() > 0
-			case reflect.Map:
-				showdef = !option.value.IsNil() && option.value.Len() > 0
-			default:
-				zeroval := reflect.Zero(option.field.Type)
-				showdef = !reflect.DeepEqual(zeroval.Interface(), option.value.Interface())
-			}
-
-			if showdef {
-				def, _ = convertToString(option.value, option.tag)
-			}
-		} else if len(defs) != 0 {
-			l := len(defs) - 1
-
-			for i := 0; i < l; i++ {
-				def += quoteIfNeeded(defs[i]) + ", "
-			}
-
-			def += quoteIfNeeded(defs[l])
+		} else {
+			def = option.defaultLiteral
 		}
 
 		var envDef string
-		if option.EnvDefaultKey != "" {
+		if option.EnvKeyWithNamespace() != "" {
 			var envPrintable string
 			if runtime.GOOS == "windows" {
-				envPrintable = "%" + option.EnvDefaultKey + "%"
+				envPrintable = "%" + option.EnvKeyWithNamespace() + "%"
 			} else {
-				envPrintable = "$" + option.EnvDefaultKey
+				envPrintable = "$" + option.EnvKeyWithNamespace()
 			}
 			envDef = fmt.Sprintf(" [%s]", envPrintable)
 		}
@@ -194,7 +241,7 @@ func (p *Parser) writeHelpOption(writer *bufio.Writer, option *Option, info alig
 		var desc string
 
 		if def != "" {
-			desc = fmt.Sprintf("%s (%v)%s", option.Description, def, envDef)
+			desc = fmt.Sprintf("%s (default: %v)%s", option.Description, def, envDef)
 		} else {
 			desc = option.Description + envDef
 		}
@@ -261,7 +308,7 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 				}
 			} else if us, ok := allcmd.data.(Usage); ok {
 				usage = us.Usage()
-			} else if allcmd.hasCliOptions() {
+			} else if allcmd.hasHelpOptions() {
 				usage = fmt.Sprintf("[%s-OPTIONS]", allcmd.Name)
 			}
 
@@ -302,10 +349,12 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 					co, cc = "<", ">"
 				}
 
-				if len(allcmd.commands) > 3 {
+				visibleCommands := allcmd.visibleCommands()
+
+				if len(visibleCommands) > 3 {
 					fmt.Fprintf(wr, " %scommand%s", co, cc)
 				} else {
-					subcommands := allcmd.sortedCommands()
+					subcommands := allcmd.sortedVisibleCommands()
 					names := make([]string, len(subcommands))
 
 					for i, subc := range subcommands {
@@ -342,12 +391,12 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 
 			// Skip built-in help group for all commands except the top-level
 			// parser
-			if grp.isBuiltinHelp && c != p.Command {
+			if grp.Hidden || (grp.isBuiltinHelp && c != p.Command) {
 				return
 			}
 
 			for _, info := range grp.options {
-				if !info.canCli() {
+				if !info.showInHelp() {
 					continue
 				}
 
@@ -372,22 +421,41 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 			}
 		})
 
-		if len(c.args) > 0 {
+		var args []*Arg
+		for _, arg := range c.args {
+			if arg.Description != "" {
+				args = append(args, arg)
+			}
+		}
+
+		if len(args) > 0 {
 			if c == p.Command {
 				fmt.Fprintf(wr, "\nArguments:\n")
 			} else {
 				fmt.Fprintf(wr, "\n[%s command arguments]\n", c.Name)
 			}
 
-			maxlen := aligninfo.descriptionStart()
+			descStart := aligninfo.descriptionStart() + paddingBeforeOption
 
-			for _, arg := range c.args {
-				prefix := strings.Repeat(" ", paddingBeforeOption)
-				fmt.Fprintf(wr, "%s%s", prefix, arg.Name)
+			for _, arg := range args {
+				argPrefix := strings.Repeat(" ", paddingBeforeOption)
+				argPrefix += arg.Name
 
 				if len(arg.Description) > 0 {
-					align := strings.Repeat(" ", maxlen-len(arg.Name)-1)
-					fmt.Fprintf(wr, ":%s%s", align, arg.Description)
+					argPrefix += ":"
+					wr.WriteString(argPrefix)
+
+					// Space between "arg:" and the description start
+					descPadding := strings.Repeat(" ", descStart-len(argPrefix))
+					// How much space the description gets before wrapping
+					descWidth := aligninfo.terminalColumns - 1 - descStart
+					// Whitespace to which we can indent new description lines
+					descPrefix := strings.Repeat(" ", descStart)
+
+					wr.WriteString(descPadding)
+					wr.WriteString(wrapText(arg.Description, descWidth, descPrefix))
+				} else {
+					wr.WriteString(argPrefix)
 				}
 
 				fmt.Fprintln(wr)
@@ -397,7 +465,7 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 		c = c.Active
 	}
 
-	scommands := cmd.sortedCommands()
+	scommands := cmd.sortedVisibleCommands()
 
 	if len(scommands) > 0 {
 		maxnamelen := maxCommandLength(scommands)
@@ -423,4 +491,24 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 	}
 
 	wr.Flush()
+}
+
+// WroteHelp is a helper to test the error from ParseArgs() to
+// determine if the help message was written. It is safe to
+// call without first checking that error is nil.
+func WroteHelp(err error) bool {
+	if err == nil { // No error
+		return false
+	}
+
+	flagError, ok := err.(*Error)
+	if !ok { // Not a go-flag error
+		return false
+	}
+
+	if flagError.Type != ErrHelp { // Did not print the help message
+		return false
+	}
+
+	return true
 }
