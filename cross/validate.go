@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
+	"github.com/classzz/classzz/czzec"
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"math/big"
@@ -885,7 +887,7 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		epub, err := UnmarshalPubkey1(bai.PubKey)
+		epub, err := UnmarshalPubkey(bai.PubKey)
 		if err != nil {
 			e := fmt.Sprintf("usdt addr err")
 			return nil, errors.New(e)
@@ -933,7 +935,7 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Get the current block count.
 	bytes.NewReader(bytesData)
-	resp, err := http.Post(client, "application/json", bytes.NewReader(bytesData))
+	resp, err := http.Post("https://"+client+"/wallet/gettransactionbyid", "application/json", bytes.NewReader(bytesData))
 	if err != nil {
 		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
@@ -960,9 +962,9 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	hash_1, _ := hex.DecodeString(trxTx.RawDataHex)
 	hash := sha256.Sum256(hash_1)
-
-	r, _ := hex.DecodeString("eaf47de25ad21054afe5af7c40b29df89d8cef082978ceb59f49a7cdd15bb262")
-	s, _ := hex.DecodeString("26163f4b605945f667c56732125ae5488d29155b362cd8319d633e679822a864")
+	fmt.Println(len(trxTx.Signature[0]))
+	r, _ := hex.DecodeString(trxTx.Signature[0][:65])
+	s, _ := hex.DecodeString(trxTx.Signature[0][65:130])
 
 	sig := make([]byte, crypto.SignatureLength)
 	copy(sig[32-len(r):32], r)
@@ -970,19 +972,33 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 	sig[64] = 0
 
 	pk, err := crypto.Ecrecover(hash[:], sig)
-
 	bai := eState.getBeaconAddress(eInfo.BeaconID)
 	if bai == nil {
 		e := fmt.Sprintf("usdt PkScript err")
 		return nil, errors.New(e)
 	}
 
-	epub, err := UnmarshalPubkey1(bai.PubKey)
+	epub, err := UnmarshalPubkey(bai.PubKey)
 	if err != nil {
 		e := fmt.Sprintf("usdt addr err")
 		return nil, errors.New(e)
 	}
+	fmt.Println(crypto.PubkeyToAddress(*epub).String())
 
+	pub_un := (*czzec.PublicKey)(epub).SerializeUncompressed()
+	fmt.Println("pub1 ", hex.EncodeToString((*czzec.PublicKey)(epub).SerializeUncompressed()))
+	fmt.Println("pub2 ", hex.EncodeToString(bai.PubKey))
+
+	pub_un_b := sha3.NewLegacyKeccak256().Sum(pub_un)
+
+	pub_un_b1 := make([]byte, 21)
+	pub_un_b1[0] = 0x41
+	copy(pub_un_b1[1:21], pub_un_b[len(s)-20:])
+
+	fmt.Println("addr1", hex.EncodeToString(pub_un_b1))
+	addr := base58.CheckEncode(pub_un_b1, 65)
+
+	fmt.Println(addr)
 	if crypto.PubkeyToAddress(*epub).String() != trxTx.RawData.Contract[0].Parameter.ParameterValue.ToAddress || nil == trxTx.RawData || nil == trxTx.RawData.Contract || len(trxTx.RawData.Contract) < 1 {
 		return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", crypto.PubkeyToAddress(*epub).String(), "")
 	}
@@ -1004,7 +1020,7 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 
 	// Get the current block count.
 	bytes.NewReader(bytesData)
-	resp, err = http.Post(client, "application/json", bytes.NewReader(bytesData))
+	resp, err = http.Post("https://"+client+"/wallet/getblockbylatestnum", "application/json", bytes.NewReader(bytesData))
 	if err != nil {
 		panic(err)
 	}

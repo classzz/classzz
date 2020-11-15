@@ -24,21 +24,21 @@ var (
 func RecoverPublicFromBytes(pub []byte, t ExpandedTxType) (*ecdsa.PublicKey, error) {
 	switch t {
 	case ExpandedTxEntangle_Doge:
-		return UnmarshalPubkey1(pub)
+		return UnmarshalPubkey(pub)
 	case ExpandedTxEntangle_Ltc:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Btc:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Bsv:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Bch:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Usdt:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Eth:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	case ExpandedTxEntangle_Trx:
-		return UnmarshalPubkey1(pub) // tmp exc
+		return UnmarshalPubkey(pub) // tmp exc
 	default:
 		return nil, ErrCryptoType
 	}
