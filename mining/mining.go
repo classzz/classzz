@@ -645,7 +645,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		eState2 = cross.NewEntangleState2()
 	}
 
-	if g.chainParams.ExChangeHeight == nextBlockHeight {
+	if g.chainParams.BeaconHeight == nextBlockHeight {
 		eState.PoolAmount1 = big.NewInt(coinbaseTx.MsgTx().TxOut[1].Value)
 		eState.PoolAmount2 = big.NewInt(coinbaseTx.MsgTx().TxOut[2].Value)
 	}
@@ -870,6 +870,7 @@ mempoolLoop:
 		}
 
 		if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight {
+
 			// BeaconRegistrationTx
 			if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
 				if err = eState2.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepBlock, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
@@ -883,6 +884,7 @@ mempoolLoop:
 					return nil, nil, err
 				}
 			}
+
 		}
 
 		if nextBlockHeight >= g.chainParams.ExChangeHeight {
@@ -964,6 +966,7 @@ mempoolLoop:
 				})
 			}
 
+			// SameHeightTxForBurn
 			if cross.SameHeightTxForBurn(tx, blockTxns, g.chainParams) {
 				continue
 			}
@@ -1052,7 +1055,6 @@ mempoolLoop:
 			}
 
 			beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
-
 			// BeaconRegistrationTx
 			if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
 				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
