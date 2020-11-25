@@ -266,6 +266,13 @@ func isExChangeTy(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_UNKNOWN198
 }
 
+func isConverTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN199
+}
+
 // scriptType returns the type of the script being inspected from the known
 // standard types.
 func typeOfScript(pops []parsedOpcode) ScriptClass {
@@ -318,6 +325,14 @@ func IsExChangeTy(script []byte) bool {
 		return false
 	}
 	return isExChangeTy(pops)
+}
+
+func IsConverTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isConverTy(pops)
 }
 
 func IsBeaconRegistrationTy(script []byte) bool {
@@ -611,6 +626,16 @@ func ExChangeScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddData(data).Script()
 }
 
+// ConvertScript impl in
+func ConvertScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN199).AddData(data).Script()
+}
+
 // BeaconRegistration impl in
 func BeaconRegistrationScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
@@ -832,6 +857,17 @@ func GetExChangeInfoData(script []byte) ([]byte, error) {
 	}
 	if !isExChangeTy(pops) {
 		return nil, errors.New("not ExChange info type")
+	}
+	return pops[2].data, nil
+}
+
+func GetConverInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isConverTy(pops) {
+		return nil, errors.New("not Conver info type")
 	}
 	return pops[2].data, nil
 }

@@ -29,6 +29,8 @@ const (
 	ExpandedTxEntangle_Usdt = 0xF5
 	ExpandedTxEntangle_Eth  = 0xF6
 	ExpandedTxEntangle_Trx  = 0xF7
+	ExpandedTxEntangle_ECzz = 0xF8
+	ExpandedTxEntangle_TCzz = 0xF9
 )
 
 func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
@@ -49,6 +51,10 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 		return LhAssetETH
 	case ExpandedTxEntangle_Trx:
 		return LhAssetTRX
+	case ExpandedTxEntangle_ECzz:
+		return LhAssetECZZ
+	case ExpandedTxEntangle_TCzz:
+		return LhAssetTCZZ
 	}
 	return 0
 }
@@ -56,6 +62,7 @@ func (et ExpandedTxType) ExpandedTxTypeToAssetType() uint32 {
 var (
 	NoEntangle              = errors.New("no entangle info in transcation")
 	NoExChange              = errors.New("no NoExChange info in transcation")
+	NoConver                = errors.New("no NoConver info in transcation")
 	NoFastExChange          = errors.New("no NoFastExChange info in transcation")
 	NoBeaconRegistration    = errors.New("no BeaconRegistration info in transcation")
 	NoBurnTx                = errors.New("no BurnTx info in transcation")
@@ -74,6 +81,8 @@ var (
 		ExpandedTxEntangle_Usdt: 64,
 		ExpandedTxEntangle_Eth:  64,
 		ExpandedTxEntangle_Trx:  64,
+		ExpandedTxEntangle_ECzz: 64,
+		ExpandedTxEntangle_TCzz: 64,
 	}
 	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1      = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
@@ -194,6 +203,16 @@ func (ec *ExChangeTxInfo) ToBytes() []byte {
 	return data
 }
 
+type ConvertTxInfo struct {
+	AssetType ExpandedTxType
+	Address   string
+	Height    uint64
+	ExtTxHash string
+	Index     uint32
+	Amount    *big.Int
+	BeaconID  uint64
+}
+
 type EntangleTxInfo struct {
 	AssetType ExpandedTxType
 	Index     uint32
@@ -224,8 +243,8 @@ func (info *EntangleTxInfo) Parse(data []byte) error {
 	//data = data[4:]
 	info.AssetType = ExpandedTxType(data[0])
 	switch info.AssetType {
-	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc,ExpandedTxEntangle_Bsv, 
-	ExpandedTxEntangle_Bch, ExpandedTxEntangle_Usdt,ExpandedTxEntangle_Eth,ExpandedTxEntangle_Trx:
+	case ExpandedTxEntangle_Doge, ExpandedTxEntangle_Ltc, ExpandedTxEntangle_Btc, ExpandedTxEntangle_Bsv,
+		ExpandedTxEntangle_Bch, ExpandedTxEntangle_Usdt, ExpandedTxEntangle_Eth, ExpandedTxEntangle_Trx:
 		break
 	default:
 		return errors.New("Parse failed,not entangle tx")
@@ -441,6 +460,30 @@ func IsExChangeTx(tx *wire.MsgTx) (*ExChangeTxInfo, error) {
 	}
 
 	return info, NoExChange
+}
+
+func IsConverTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {
+	// make sure at least one txout in OUTPUT
+
+	cons := make(map[uint32]*ConvertTxInfo)
+	for i, txout := range tx.TxOut {
+
+		if !txscript.IsConverTy(txout.PkScript) {
+			continue
+		}
+		info, err := ConverTxFromScript(tx.TxOut[0].PkScript)
+		if err != nil {
+			e := fmt.Sprintf("ConverTxFromScript err %s", err)
+			return nil, errors.New(e)
+		}
+		cons[uint32(i)] = info
+	}
+
+	if len(cons) == 0 {
+		return nil, NoConver
+	}
+
+	return cons, nil
 }
 
 // Only txOut[0] is valid
@@ -1012,6 +1055,16 @@ func ExChangeTxFromScript(script []byte) (*ExChangeTxInfo, error) {
 		return nil, err
 	}
 	info := &ExChangeTxInfo{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
+func ConverTxFromScript(script []byte) (*ConvertTxInfo, error) {
+	data, err := txscript.GetConverInfoData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &ConvertTxInfo{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }

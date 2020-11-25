@@ -185,6 +185,8 @@ type Params struct {
 
 	ExChangeHeight int32
 
+	ConverHeight int32
+
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
 
@@ -251,6 +253,7 @@ var MainNetParams = Params{
 	EntangleHeight: 120000,
 	BeaconHeight:   420000,
 	ExChangeHeight: 800000,
+	ConverHeight:   800000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
@@ -436,7 +439,7 @@ var TestNetParams = Params{
 	EntangleHeight: 5,
 	BeaconHeight:   10,
 	ExChangeHeight: 15,
-
+	ConverHeight:   25,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -515,6 +518,7 @@ var SimNetParams = Params{
 	EntangleHeight: 10,
 	BeaconHeight:   12,
 	ExChangeHeight: 20,
+	ConverHeight:   25,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 

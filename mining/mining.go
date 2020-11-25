@@ -654,7 +654,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		len(sourceTxns))
 
 	txkeys := make(map[chainhash.Hash]string)
-	once := 0
+	//once := 0
 mempoolLoop:
 	for _, txDesc := range sourceTxns {
 		// A block can't have more than one coinbase or contain
@@ -884,266 +884,296 @@ mempoolLoop:
 					return nil, nil, err
 				}
 			}
-
 		}
 
-		if nextBlockHeight >= g.chainParams.ExChangeHeight {
+		//if nextBlockHeight >= g.chainParams.ExChangeHeight {
+		//
+		//	// UpdateBeaconCoinbase
+		//	if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), g.chainParams); bp != nil {
+		//		if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"IsUpdateBeaconCoinbaseTx UpdateCoinbaseAll: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//	}
+		//
+		//	// UpdateBeaconFreeQuota
+		//	if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), g.chainParams); bfq != nil {
+		//		if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"IsUpdateBeaconFreeQuotaTx UpdateBeaconFreeQuota: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//	}
+		//
+		//	// FastExChange
+		//	if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), g.chainParams); einfo != nil && burnTx != nil {
+		//
+		//		err := g.chain.GetExChangeVerify().VerifyFastExChangeTx(tx.MsgTx(), eState)
+		//		if err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"toAddressFromEntangle: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//
+		//		height := big.NewInt(int64(einfo.Height))
+		//		czzAsset, err := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
+		//
+		//		if err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"toAddressFromEntangle: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//
+		//		amount, fee, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(nextBlockHeight), czzAsset)
+		//		// now will be seed fee to beacon address
+		//		log.Info("user send burn tx, hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
+		//		if err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"toAddressFromEntangle: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//	}
+		//
+		//	// ExChange
+		//	if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
+		//		obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
+		//		if err != nil && len(obj) > 0 {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"toAddressFromEntangle: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		height := big.NewInt(int64(einfo.Height))
+		//		czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
+		//		if err1 != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"toAddressFromEntangle: %v", tx.Hash(), err1)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		entangleItems = append(entangleItems, &cross.ExChangeItem{
+		//			AssetType: einfo.AssetType,
+		//			Addr:      obj[0].Address,
+		//			Value:     czzAsset,
+		//			BeaconID:  einfo.BeaconID,
+		//		})
+		//	}
+		//
+		//
+		//	// SameHeightTxForBurn
+		//	if cross.SameHeightTxForBurn(tx, blockTxns, g.chainParams) {
+		//		continue
+		//	}
+		//
+		//	// BurnTx
+		//	if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
+		//		if info != nil {
+		//			amount, fee, err1 := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
+		//			if err1 != nil {
+		//				log.Tracef("Skipping tx %s due to error in "+
+		//					"SetBurnAsset: %v", tx.Hash(), err1)
+		//				logSkippedDeps(tx, deps)
+		//				continue
+		//			}
+		//
+		//			// now will be seed fee to beacon address
+		//			log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
+		//		}
+		//	}
+		//
+		//	// BurnProof
+		//	if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
+		//		oHeight, _, err := g.chain.GetExChangeVerify().VerifyBurnProofBeacon(info, eState, uint64(nextBlockHeight))
+		//		if err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"BurnProofTx: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//
+		//		err = eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
+		//			Height: oHeight,
+		//			TxHash: info.TxHash,
+		//		})
+		//		if err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"IsBurnProofTx FinishHandleUserBurn: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//	}
+		//
+		//	// BurnReportWhiteListTx
+		//	if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
+		//		if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"VerifyWhiteListProof: %v", tx.Hash(), err1)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		if once >= 1 {
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
+		//		toAddress := eState.GetBeaconToAddrByID(info.BeaconID, g.chainParams)
+		//		exInfos := eState.GetBaExInfoByID(info.BeaconID)
+		//		if fromAddress == nil || toAddress == nil || exInfos == nil {
+		//			log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+		//			log.Tracef("White proof:Skipping tx %s due to error in "+
+		//				"FetchUtxoForBeacon: %v", tx.Hash(), err1)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		} else {
+		//			if item, err2 := toRewardsByWhiteListPunished(info, view, uint64(nextBlockHeight), eState, fromAddress, toAddress); err2 != nil {
+		//				log.Tracef("Skipping tx %s due to error in "+
+		//					"toRewardsByWhiteListPunished: %v", tx.Hash(), err2)
+		//				logSkippedDeps(tx, deps)
+		//				continue
+		//			} else {
+		//				rewards = append(rewards, item)
+		//				err3 := cross.FinishWhiteListProof(info, eState)
+		//				if err3 != nil {
+		//					log.Tracef("Skipping tx %s due to error in "+
+		//						"IsBurnReportWhiteListTx FinishWhiteListProof: %v", tx.Hash(), err3)
+		//					logSkippedDeps(tx, deps)
+		//					continue
+		//				}
+		//				once = 1
+		//			}
+		//		}
+		//	}
+		//
+		//	beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
+		//	// BeaconRegistrationTx
+		//	if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
+		//		if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
+		//			info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
+		//	}
+		//
+		//	// AddBeaconPledgeTx
+		//	if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
+		//		if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+		//			log.Tracef("Skipping tx %s due to error in "+
+		//				"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
+		//	}
+		//
+		//	if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {
+		//		if once >= 1 {
+		//			logSkippedDeps(tx, deps)
+		//			continue
+		//		}
+		//		once = 1
+		//		if beaconMerge == 1 {
+		//			if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
+		//
+		//				ex := cross.NewExBeaconInfo()
+		//				ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
+		//					Hash:  *tx.Hash(),
+		//					Index: 1,
+		//				}}
+		//
+		//				err := eState.SetBaExInfo(beaconID, ex)
+		//				if err != nil {
+		//					log.Tracef("Skipping tx %s due to error in "+
+		//						"GetBaExInfoByID SetBaExInfo: %v", tx.Hash(), err)
+		//					logSkippedDeps(tx, deps)
+		//					continue
+		//				}
+		//			} else {
+		//				err := fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID)
+		//				log.Tracef("Skipping tx %s due to error in "+
+		//					"GetBaExInfoByID : %v", tx.Hash(), err)
+		//				logSkippedDeps(tx, deps)
+		//				continue
+		//			}
+		//		} else {
+		//			exInfos := eState.GetBaExInfoByID(beaconID)
+		//			if exInfos == nil {
+		//				err := fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID)
+		//				log.Tracef("Skipping tx %s due to error in "+
+		//					"GetBaExInfoByID : %v", tx.Hash(), err)
+		//				logSkippedDeps(tx, deps)
+		//				continue
+		//			}
+		//			if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
+		//				err := fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID)
+		//				log.Tracef("Skipping tx %s due to error in "+
+		//					"FetchUtxoForBeacon : %v", tx.Hash(), err)
+		//				logSkippedDeps(tx, deps)
+		//				continue
+		//			} else {
+		//				if mergeItem, to := toMergeBeaconItems(view, beaconID, eState, g.chainParams); mergeItem == nil {
+		//					err := fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID)
+		//					log.Tracef("Skipping tx %s due to error in "+
+		//						"toMergeBeaconItems : %v", tx.Hash(), err)
+		//					logSkippedDeps(tx, deps)
+		//					continue
+		//				} else {
+		//					mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
+		//					mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
+		//						POut: wire.OutPoint{
+		//							Hash:  *tx.Hash(),
+		//							Index: 1,
+		//						},
+		//						ToAddress: to,
+		//						Amount:    txAmount,
+		//					})
+		//				}
+		//			}
+		//		}
+		//	}
+		//
+		//}
 
-			// UpdateBeaconCoinbase
-			if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsUpdateBeaconCoinbaseTx UpdateCoinbaseAll: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-			}
+		if nextBlockHeight >= g.chainParams.ConverHeight {
 
-			// UpdateBeaconFreeQuota
-			if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), g.chainParams); bfq != nil {
-				if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsUpdateBeaconFreeQuotaTx UpdateBeaconFreeQuota: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-			}
-
-			// FastExChange
-			if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), g.chainParams); einfo != nil && burnTx != nil {
-
-				err := g.chain.GetExChangeVerify().VerifyFastExChangeTx(tx.MsgTx(), eState)
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-
-				height := big.NewInt(int64(einfo.Height))
-				czzAsset, err := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
-
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-
-				amount, fee, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(nextBlockHeight), czzAsset)
-				// now will be seed fee to beacon address
-				log.Info("user send burn tx, hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-			}
-
-			// ExChange
-			if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
-				obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
-				if err != nil && len(obj) > 0 {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				height := big.NewInt(int64(einfo.Height))
-				czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType), einfo.BeaconID, height, einfo.Amount, nextBlockHeight)
-				if err1 != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err1)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				entangleItems = append(entangleItems, &cross.ExChangeItem{
-					AssetType: einfo.AssetType,
-					Addr:      obj[0].Address,
-					Value:     czzAsset,
-					BeaconID:  einfo.BeaconID,
-				})
-			}
-
-			// SameHeightTxForBurn
-			if cross.SameHeightTxForBurn(tx, blockTxns, g.chainParams) {
-				continue
-			}
-
-			// BurnTx
-			if info, err := cross.IsBurnTx(tx.MsgTx(), g.chainParams); err == nil {
-				if info != nil {
-					amount, fee, err1 := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(nextBlockHeight), info.Amount)
+			// IsConverTx
+			if einfo, _ := cross.IsConverTx(tx.MsgTx()); einfo != nil {
+				for _, v := range einfo {
+					obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
+					if err != nil && len(obj) > 0 {
+						log.Tracef("Skipping tx %s due to error in "+
+							"toAddressFromEntangle: %v", tx.Hash(), err)
+						logSkippedDeps(tx, deps)
+						continue
+					}
+					height := big.NewInt(int64(v.Height))
+					czzAsset, err1 := eState.AddEntangleItem(obj[0].Address.String(), uint8(v.AssetType), v.BeaconID, height, v.Amount, nextBlockHeight)
 					if err1 != nil {
 						log.Tracef("Skipping tx %s due to error in "+
-							"SetBurnAsset: %v", tx.Hash(), err1)
+							"toAddressFromEntangle: %v", tx.Hash(), err1)
 						logSkippedDeps(tx, deps)
 						continue
 					}
-
-					// now will be seed fee to beacon address
-					log.Info("user send burn tx,hash: ", tx.Hash(), "amount by keep fee: ", amount, "fee:", fee)
+					entangleItems = append(entangleItems, &cross.ExChangeItem{
+						AssetType: v.AssetType,
+						Addr:      obj[0].Address,
+						Value:     czzAsset,
+						BeaconID:  v.BeaconID,
+					})
 				}
 			}
-
-			// BurnProof
-			if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-				oHeight, _, err := g.chain.GetExChangeVerify().VerifyBurnProofBeacon(info, eState, uint64(nextBlockHeight))
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"BurnProofTx: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-
-				err = eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
-					Height: oHeight,
-					TxHash: info.TxHash,
-				})
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsBurnProofTx FinishHandleUserBurn: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-			}
-
-			// BurnReportWhiteListTx
-			if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
-				if err1 := g.chain.GetExChangeVerify().VerifyWhiteListProof(info, eState); err1 != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyWhiteListProof: %v", tx.Hash(), err1)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				if once >= 1 {
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				fromAddress, _ := cross.GetAddressFromProofTx(tx, g.chainParams)
-				toAddress := eState.GetBeaconToAddrByID(info.BeaconID, g.chainParams)
-				exInfos := eState.GetBaExInfoByID(info.BeaconID)
-				if fromAddress == nil || toAddress == nil || exInfos == nil {
-					log.Tracef("White proof:Skipping tx %s due to can't parse the (from and to)address or ex is nil ", tx.Hash())
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
-					log.Tracef("White proof:Skipping tx %s due to error in "+
-						"FetchUtxoForBeacon: %v", tx.Hash(), err1)
-					logSkippedDeps(tx, deps)
-					continue
-				} else {
-					if item, err2 := toRewardsByWhiteListPunished(info, view, uint64(nextBlockHeight), eState, fromAddress, toAddress); err2 != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toRewardsByWhiteListPunished: %v", tx.Hash(), err2)
-						logSkippedDeps(tx, deps)
-						continue
-					} else {
-						rewards = append(rewards, item)
-						err3 := cross.FinishWhiteListProof(info, eState)
-						if err3 != nil {
-							log.Tracef("Skipping tx %s due to error in "+
-								"IsBurnReportWhiteListTx FinishWhiteListProof: %v", tx.Hash(), err3)
-							logSkippedDeps(tx, deps)
-							continue
-						}
-						once = 1
-					}
-				}
-			}
-
-			beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
-			// BeaconRegistrationTx
-			if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
-				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
-					info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
-			}
-
-			// AddBeaconPledgeTx
-			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
-			}
-
-			if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {
-				if once >= 1 {
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				once = 1
-				if beaconMerge == 1 {
-					if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
-
-						ex := cross.NewExBeaconInfo()
-						ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
-							Hash:  *tx.Hash(),
-							Index: 1,
-						}}
-
-						err := eState.SetBaExInfo(beaconID, ex)
-						if err != nil {
-							log.Tracef("Skipping tx %s due to error in "+
-								"GetBaExInfoByID SetBaExInfo: %v", tx.Hash(), err)
-							logSkippedDeps(tx, deps)
-							continue
-						}
-					} else {
-						err := fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"GetBaExInfoByID : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-				} else {
-					exInfos := eState.GetBaExInfoByID(beaconID)
-					if exInfos == nil {
-						err := fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"GetBaExInfoByID : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
-						err := fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"FetchUtxoForBeacon : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					} else {
-						if mergeItem, to := toMergeBeaconItems(view, beaconID, eState, g.chainParams); mergeItem == nil {
-							err := fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID)
-							log.Tracef("Skipping tx %s due to error in "+
-								"toMergeBeaconItems : %v", tx.Hash(), err)
-							logSkippedDeps(tx, deps)
-							continue
-						} else {
-							mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
-							mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
-								POut: wire.OutPoint{
-									Hash:  *tx.Hash(),
-									Index: 1,
-								},
-								ToAddress: to,
-								Amount:    txAmount,
-							})
-						}
-					}
-				}
-			}
-
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,

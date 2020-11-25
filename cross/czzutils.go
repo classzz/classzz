@@ -53,17 +53,21 @@ const (
 	LhAssetDOGE
 	LhAssetETH
 	LhAssetTRX
+	LhAssetECZZ
+	LhAssetTCZZ
 )
 
 func equalAddress(addr1, addr2 string) bool {
 	return bytes.Equal([]byte(addr1), []byte(addr2))
 }
+
 func validFee(fee *big.Int) bool {
 	if fee.Sign() < 0 || fee.Int64() > int64(MAXBASEFEE) {
 		return false
 	}
 	return true
 }
+
 func validKeepTime(kt *big.Int) bool {
 	if kt.Sign() < 0 || kt.Int64() > int64(MAXFREEQUOTA) {
 		return false
@@ -73,8 +77,9 @@ func validKeepTime(kt *big.Int) bool {
 
 func ValidAssetFlag(utype uint32) bool {
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0  || 
-		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 {
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 ||
+		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 || utype&LhAssetECZZ != 0 ||
+		utype&LhAssetTCZZ != 0 {
 		return true
 	}
 	return false
@@ -83,8 +88,9 @@ func ValidAssetFlag(utype uint32) bool {
 func ValidAssetType(utype1 uint8) bool {
 	utype := uint32(utype1)
 	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 || 
-		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 {
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 ||
+		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 || utype&LhAssetECZZ != 0 ||
+		utype&LhAssetTCZZ != 0 {
 		return true
 	}
 	return false

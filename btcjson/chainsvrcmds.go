@@ -70,6 +70,16 @@ type ExChangeOut struct {
 	BeaconID  uint64
 }
 
+type ConvertOut struct {
+	AssetType ExpandedTxType
+	Address   string
+	Height    uint64
+	ExtTxHash string
+	Index     uint32
+	Amount    *big.Int
+	BeaconID  uint64
+}
+
 type WhiteUnit struct {
 	AssetType uint32 `json:"assettype"`
 	Pk        []byte `json:"pk"`
@@ -151,6 +161,14 @@ type FastExChangeTransactionCmd struct {
 	BurnTransaction BurnTransactionOut
 	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime        *int64
+}
+
+// ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+type ConvertTransactionCmd struct {
+	Inputs   []TransactionInput
+	Convert  []ConvertOut
+	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime *int64
 }
 
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
