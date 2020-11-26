@@ -71,13 +71,14 @@ type ExChangeOut struct {
 }
 
 type ConvertOut struct {
-	AssetType ExpandedTxType
-	Address   string
-	Height    uint64
-	ExtTxHash string
-	Index     uint32
-	Amount    *big.Int
-	BeaconID  uint64
+	AssetType   ExpandedTxType
+	ConvertType ExpandedTxType
+	Address     string
+	Height      uint64
+	ExtTxHash   string
+	Index       uint32
+	Amount      *big.Int
+	BeaconID    uint64
 }
 
 type WhiteUnit struct {

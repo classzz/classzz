@@ -44,19 +44,6 @@ var (
 	ChechWhiteListProof               = true
 )
 
-const (
-	LhAssetBTC uint32 = 1 << iota
-	LhAssetBCH
-	LhAssetBSV
-	LhAssetLTC
-	LhAssetUSDT
-	LhAssetDOGE
-	LhAssetETH
-	LhAssetTRX
-	LhAssetECZZ
-	LhAssetTCZZ
-)
-
 func equalAddress(addr1, addr2 string) bool {
 	return bytes.Equal([]byte(addr1), []byte(addr2))
 }
@@ -76,52 +63,31 @@ func validKeepTime(kt *big.Int) bool {
 }
 
 func ValidAssetFlag(utype uint32) bool {
-	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 ||
-		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 || utype&LhAssetECZZ != 0 ||
-		utype&LhAssetTCZZ != 0 {
+
+	if utype&ExpandedTxEntangle_Btc != 0 || utype&ExpandedTxEntangle_Bch != 0 || utype&ExpandedTxEntangle_Bsv != 0 ||
+		utype&ExpandedTxEntangle_Ltc != 0 || utype&ExpandedTxEntangle_Usdt != 0 || utype&ExpandedTxEntangle_Doge != 0 ||
+		utype&ExpandedTxEntangle_Eth != 0 || utype&ExpandedTxEntangle_Trx != 0 || utype&ExpandedTxConvert_ECzz != 0 ||
+		utype&ExpandedTxConvert_TCzz != 0 || utype&ExpandedTxConvert_Czz != 0 {
 		return true
 	}
 	return false
 }
 
-func ValidAssetType(utype1 uint8) bool {
-	utype := uint32(utype1)
-	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
-		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 ||
-		utype&LhAssetETH != 0 || utype&LhAssetTRX != 0 || utype&LhAssetECZZ != 0 ||
-		utype&LhAssetTCZZ != 0 {
+func ValidAssetType(utype uint32) bool {
+	if utype&ExpandedTxEntangle_Btc != 0 || utype&ExpandedTxEntangle_Bch != 0 || utype&ExpandedTxEntangle_Bsv != 0 ||
+		utype&ExpandedTxEntangle_Ltc != 0 || utype&ExpandedTxEntangle_Usdt != 0 || utype&ExpandedTxEntangle_Doge != 0 ||
+		utype&ExpandedTxEntangle_Eth != 0 || utype&ExpandedTxEntangle_Trx != 0 || utype&ExpandedTxConvert_ECzz != 0 ||
+		utype&ExpandedTxConvert_TCzz != 0 || utype&ExpandedTxConvert_Czz != 0 {
 		return true
 	}
 	return false
 }
+
 func ValidPK(pk []byte) bool {
 	if len(pk) != 65 {
 		return false
 	}
 	return true
-}
-
-func ExpandedTxTypeToAssetType(atype uint8) uint32 {
-	switch atype {
-	case ExpandedTxEntangle_Doge:
-		return LhAssetDOGE
-	case ExpandedTxEntangle_Ltc:
-		return LhAssetLTC
-	case ExpandedTxEntangle_Btc:
-		return LhAssetBTC
-	case ExpandedTxEntangle_Bch:
-		return LhAssetBCH
-	case ExpandedTxEntangle_Bsv:
-		return LhAssetBSV
-	case ExpandedTxEntangle_Usdt:
-		return LhAssetUSDT
-	case ExpandedTxEntangle_Eth:
-		return LhAssetETH
-	case ExpandedTxEntangle_Trx:
-		return LhAssetTRX
-	}
-	return 0
 }
 
 func isValidAsset(atype, assetAll uint32) bool {
@@ -153,7 +119,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 //////////////////////////////////////////////////////////////////////////////
 
 type WhiteUnit struct {
-	AssetType uint8  `json:"asset_type"`
+	AssetType uint32 `json:"asset_type"`
 	Pk        []byte `json:"pk"`
 }
 
@@ -163,7 +129,7 @@ func (w *WhiteUnit) toAddress() string {
 }
 
 type BaseAmountUint struct {
-	AssetType uint8    `json:"asset_type"`
+	AssetType uint32   `json:"asset_type"`
 	Amount    *big.Int `json:"amount"`
 }
 
@@ -217,17 +183,17 @@ type UpdateBeaconFreeQuota struct {
 	FreeQuota []uint64 `json:"free_quota"`
 }
 
-func (lh *BeaconAddressInfo) addEnAsset(atype uint8, amount *big.Int) {
+func (lh *BeaconAddressInfo) addEnAsset(assetType uint32, amount *big.Int) {
 	found := false
 	for _, val := range lh.EnAssets {
-		if val.AssetType == atype {
+		if val.AssetType == assetType {
 			found = true
 			val.Amount = new(big.Int).Add(val.Amount, amount)
 		}
 	}
 	if !found {
 		lh.EnAssets = append(lh.EnAssets, &EnAssetItem{
-			AssetType: atype,
+			AssetType: assetType,
 			Amount:    amount,
 		})
 	}
@@ -238,16 +204,16 @@ func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
 func (lh *BeaconAddressInfo) reduceEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Sub(lh.EntangleAmount, amount)
 }
-func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint8) {
+func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, assetType uint32) {
 	for _, v := range lh.Frees {
-		if atype == v.AssetType {
+		if assetType == v.AssetType {
 			v.Amount = new(big.Int).Add(v.Amount, amount)
 		}
 	}
 }
-func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint8) {
+func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, assetType uint32) {
 	for _, v := range lh.Frees {
-		if atype == v.AssetType {
+		if assetType == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
 				v.Amount = new(big.Int).Sub(v.Amount, amount)
 			} else {
@@ -257,9 +223,9 @@ func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint8) {
 		}
 	}
 }
-func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, atype uint8) bool {
+func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, assetType uint32) bool {
 	for _, v := range lh.Frees {
-		if atype == v.AssetType {
+		if assetType == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
 				return true
 			} else {
@@ -281,9 +247,9 @@ func (lh *BeaconAddressInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	}
 	return nil
 }
-func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint8) *FreeQuotaItem {
+func (lh *BeaconAddressInfo) getFreeQuotaInfo(assetType uint32) *FreeQuotaItem {
 	for _, v := range lh.Frees {
-		if atype == v.AssetType {
+		if assetType == v.AssetType {
 			return v
 		}
 	}
@@ -310,10 +276,10 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 func (lh *BeaconAddressInfo) getToAddress() []byte {
 	return lh.ToAddress
 }
-func (lh *BeaconAddressInfo) getOutSideAsset(atype uint8) *big.Int {
+func (lh *BeaconAddressInfo) getOutSideAsset(assetType uint32) *big.Int {
 	all := big.NewInt(0)
 	for _, v := range lh.EnAssets {
-		if v.AssetType == atype {
+		if v.AssetType == assetType {
 			all = new(big.Int).Add(all, v.Amount)
 		}
 	}
@@ -336,7 +302,7 @@ func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
 ///////////////////////////////////////////////////////////////////
 //// Address > EntangleEntity
 type ExChangeEntity struct {
-	AssetType       uint8
+	AssetType       uint32
 	EnOutsideAmount *big.Int `json:"en_outside_amount"` // out asset
 }
 
@@ -557,9 +523,9 @@ func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big
 }
 
 /////////////////////////////////////////////////////////////////
-func (ee *UserExChangeInfo) getBurnByType(atype uint8) *BurnInfo {
+func (ee *UserExChangeInfo) getBurnByType(assetType uint32) *BurnInfo {
 	for _, v := range ee.BurnAmounts {
-		if atype == v.AssetType {
+		if assetType == v.AssetType {
 			return v
 		}
 	}
@@ -599,18 +565,18 @@ func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnIn
 }
 
 func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
-	atype uint8, proof *BurnProofItem) {
+	assetType uint32, proof *BurnProofItem) {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == atype {
+		if burn.AssetType == assetType {
 			burn.updateBurn(height, amount, proof)
 		}
 	}
 }
 
 func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
-	atype uint8, proof *BurnProofItem) {
+	assetType uint32, proof *BurnProofItem) {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == atype {
+		if burn.AssetType == assetType {
 			burn.finishBurn(height, amount, proof)
 		}
 	}
@@ -628,9 +594,9 @@ func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curH
 	return nil, ErrNoUserAsset
 }
 
-func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, atype uint8) error {
+func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, assetType uint32) error {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == atype {
+		if burn.AssetType == assetType {
 			return burn.closeProofForPunished(item)
 		}
 	}
@@ -681,14 +647,14 @@ func (b *BurnItem) clone() *BurnItem {
 }
 
 type BurnInfo struct {
-	AssetType  uint8
+	AssetType  uint32
 	RAllAmount *big.Int // redeem asset for outside asset by burned czz
 	BAllAmount *big.Int // all burned asset on czz by the account
 	Items      []*BurnItem
 }
 
 type extBurnInfos struct {
-	AssetType  uint8
+	AssetType  uint32
 	Items      []*BurnItem
 	RAllAmount *big.Int // redeem asset for outside asset by burned czz
 	BAllAmount *big.Int // all burned asset on czz by the account
@@ -919,7 +885,7 @@ func (b *BurnInfo) closeProofForPunished(item *BurnItem) error {
 
 type TimeOutBurnInfo struct {
 	Items     []*BurnItem
-	AssetType uint8
+	AssetType uint32
 }
 
 func (t *TimeOutBurnInfo) getAll() *big.Int {
@@ -982,14 +948,14 @@ type BurnProofInfo struct {
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
-	AssetType uint8
+	AssetType uint32
 	TxHash    string // the tx hash of outside
 	OutIndex  uint64
 }
 
 type WhiteListProof struct {
 	BeaconID  uint64 // the BeaconID for beaconAddress
-	AssetType uint8
+	AssetType uint32
 	Height    uint64 // the height of outside chain
 	TxHash    string
 	InIndex   uint64

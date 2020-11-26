@@ -584,7 +584,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						"VerifyFastExChangeTx: %v", tx.Hash(), err)
 				}
 				height := big.NewInt(int64(einfo.Height))
-				if czzAsset, err := eState.AddEntangleItem(einfo.Address, uint8(einfo.AssetType),
+				if czzAsset, err := eState.AddEntangleItem(einfo.Address, einfo.AssetType,
 					einfo.BeaconID, height, einfo.Amount, prevHeight+1); err != nil {
 					return err
 				} else {
@@ -593,7 +593,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 						return errors.New("same height in burnTx at same address")
 					}
 					// update the state
-					if _, _, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, uint8(burnTx.AssetType), einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
+					if _, _, err := eState.BurnAsset(burnTx.Address, burnTx.ToAddress, burnTx.AssetType, einfo.BeaconID, uint64(prevHeight+1), czzAsset); err != nil {
 						return err
 					}
 				}
@@ -605,7 +605,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					height := big.NewInt(int64(einfo.Height))
-					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(einfo.AssetType),
+					if czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), einfo.AssetType,
 						einfo.BeaconID, height, einfo.Amount, prevHeight+1); err != nil {
 						return err
 					} else {
@@ -632,7 +632,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					return err
 				} else {
 					// update the state
-					if _, _, err := eState.BurnAsset(info.Address, info.ToAddress, uint8(info.AssetType), info.BeaconID, uint64(prevHeight+1), info.Amount); err != nil {
+					if _, _, err := eState.BurnAsset(info.Address, info.ToAddress, info.AssetType, info.BeaconID, uint64(prevHeight+1), info.Amount); err != nil {
 						return err
 					}
 				}

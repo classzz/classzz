@@ -266,7 +266,7 @@ func isExChangeTy(pops []parsedOpcode) bool {
 		pops[1].opcode.value == OP_UNKNOWN198
 }
 
-func isConverTy(pops []parsedOpcode) bool {
+func isConvertTy(pops []parsedOpcode) bool {
 	// simple judge
 	return len(pops) >= 2 &&
 		pops[0].opcode.value == OP_RETURN &&
@@ -327,12 +327,12 @@ func IsExChangeTy(script []byte) bool {
 	return isExChangeTy(pops)
 }
 
-func IsConverTy(script []byte) bool {
+func IsConvertTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
 		return false
 	}
-	return isConverTy(pops)
+	return isConvertTy(pops)
 }
 
 func IsBeaconRegistrationTy(script []byte) bool {
@@ -861,13 +861,13 @@ func GetExChangeInfoData(script []byte) ([]byte, error) {
 	return pops[2].data, nil
 }
 
-func GetConverInfoData(script []byte) ([]byte, error) {
+func GetConvertInfoData(script []byte) ([]byte, error) {
 	pops, err := parseScript(script)
 	if err != nil {
 		return nil, err
 	}
-	if !isConverTy(pops) {
-		return nil, errors.New("not Conver info type")
+	if !isConvertTy(pops) {
+		return nil, errors.New("not Convert info type")
 	}
 	return pops[2].data, nil
 }

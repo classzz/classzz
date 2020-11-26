@@ -142,7 +142,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"createrawtransaction":    handleCreateRawTransaction,
 	"exchangetransaction":     handleExChangeTransaction,
 	"fastexchangetransaction": handleFastExChangeTransaction,
-	"convertransaction":       handleConverTransaction,
+	"converttransaction":      handleConvertTransaction,
 	"beaconregistration":      handleBeaconRegistration,
 	"addbeaconpledge":         handleAddBeaconPledge,
 	"updatebeaconcoinbase":    handleUpdateBeaconCoinbase,
@@ -923,7 +923,7 @@ func handleFastExChangeTransaction(s *rpcServer, cmd interface{}, closeChan <-ch
 }
 
 // handleExChangeTransaction
-func handleConverTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+func handleConvertTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.ConvertTransactionCmd)
 
 	// Validate the locktime, if given.
