@@ -21,7 +21,7 @@ var (
 )
 
 // RecoverPublic returns the public key of the marshal bytes.
-func RecoverPublicFromBytes(pub []byte, t ExpandedTxType) (*ecdsa.PublicKey, error) {
+func RecoverPublicFromBytes(pub []byte, t uint32) (*ecdsa.PublicKey, error) {
 	switch t {
 	case ExpandedTxEntangle_Doge:
 		return UnmarshalPubkey(pub)

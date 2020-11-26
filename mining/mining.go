@@ -1163,7 +1163,7 @@ mempoolLoop:
 						continue
 					}
 					height := big.NewInt(int64(v.Height))
-					czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), uint8(v.AssetType), v.BeaconID, height, v.Amount, nextBlockHeight)
+					czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), v.AssetType, v.BeaconID, height, v.Amount, nextBlockHeight)
 					if err != nil {
 						log.Tracef("Skipping tx %s due to error in "+
 							"toAddressFromEntangle: %v", tx.Hash(), err)

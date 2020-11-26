@@ -201,8 +201,8 @@ func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Doge))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Doge))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Doge)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Doge)
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
@@ -315,8 +315,8 @@ func (ev *ExChangeVerify) verifyLtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Ltc))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Ltc))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Ltc)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Ltc)
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
@@ -429,8 +429,8 @@ func (ev *ExChangeVerify) verifyBtcTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Btc))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Btc))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Btc)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Btc)
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
@@ -542,8 +542,8 @@ func (ev *ExChangeVerify) verifyBchTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Bch))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bch))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Bch)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Bch)
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
@@ -660,8 +660,8 @@ func (ev *ExChangeVerify) verifyBsvTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, errors.New(e)
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Bsv))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Bsv))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Bsv)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Bsv)
 
 		bai := eState.getBeaconAddress(eInfo.BeaconID)
 		if bai == nil {
@@ -814,8 +814,8 @@ func (ev *ExChangeVerify) verifyUsdtTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 			return nil, err
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Usdt))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Usdt))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Usdt)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Usdt)
 
 		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
 		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
@@ -897,8 +897,8 @@ func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 			return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", crypto.PubkeyToAddress(*epub).String(), txjson.tx.To().String())
 		}
 
-		reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Eth))
-		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Eth))
+		reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Eth)
+		sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Eth)
 
 		ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
 		ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
@@ -1003,8 +1003,8 @@ func (ev *ExChangeVerify) verifyTrxTx(eInfo *ExChangeTxInfo, eState *EntangleSta
 		return nil, fmt.Errorf("usdt PoolPub err add1 %s add2 %s", crypto.PubkeyToAddress(*epub).String(), "")
 	}
 
-	reserve := eState.GetEntangleAmountByAll(uint8(ExpandedTxEntangle_Trx))
-	sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, uint8(ExpandedTxEntangle_Trx))
+	reserve := eState.GetEntangleAmountByAll(ExpandedTxEntangle_Trx)
+	sendAmount, err := calcEntangleAmount(reserve, eInfo.Amount, ExpandedTxEntangle_Trx)
 
 	ExChangeAmount := big.NewInt(0).Add(bai.EntangleAmount, sendAmount)
 	ExChangeStakingAmount := big.NewInt(0).Sub(bai.StakingAmount, MinStakingAmountForBeaconAddress)
@@ -1114,7 +1114,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx2(tx *wire.MsgTx, eState *En
 		return nil, errors.New(e)
 	}
 
-	if !ValidAssetType(uint8(br.AssetFlag)) {
+	if !ValidAssetType(br.AssetFlag) {
 		e := fmt.Sprintf("AssetFlag err")
 		return nil, errors.New(e)
 	}
@@ -1419,7 +1419,7 @@ func (ev *ExChangeVerify) VerifyBurn(tx *wire.MsgTx, eState *EntangleState) erro
 		baseAmount := big.NewInt(0)
 		ebInfo := eState.BaExInfo[bai.BeaconID]
 		for _, fqinfo := range ebInfo.Free.Items {
-			if fqinfo.AssetType == uint8(info.AssetType) {
+			if fqinfo.AssetType == info.AssetType {
 				baseAmount = fqinfo.Amount
 				break
 			}
