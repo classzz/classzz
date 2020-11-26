@@ -809,17 +809,17 @@ func (b *BlockChain) checkCoinBaseForMergeUxto(coinTx *czzutil.Tx, in, out cross
 	return nil
 }
 
-func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
-	height := block.Height()
-	if chainParams.EntangleHeight >= height {
-		return nil
-	}
-	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
-	if err != nil {
-		return err
-	}
-	return cross.VerifyTxsSequence(infos)
-}
+//func checkTxSequence(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) error {
+//	height := block.Height()
+//	if chainParams.EntangleHeight >= height {
+//		return nil
+//	}
+//	infos, err := getEtsInfoInBlock(block, utxoView, chainParams)
+//	if err != nil {
+//		return err
+//	}
+//	return cross.VerifyTxsSequence(infos)
+//}
 
 // checkProofOfWork ensures the block header bits which indicate the target
 // difficulty is in min/max range and that the block hash is less than the
@@ -1718,9 +1718,11 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		// 	}
 		// }
 	}
-	if err := checkTxSequence(block, view, b.chainParams); err != nil {
-		return err
-	}
+
+	//if err := checkTxSequence(block, view, b.chainParams); err != nil {
+	//	return err
+	//}
+
 	// we can use Outputs-then-inputs validation to validate the utxos.
 	err = connectTransactions(view, block, stxos, false)
 	if err != nil {
