@@ -83,6 +83,23 @@ func (ii *ExChangeItem) Clone() *ExChangeItem {
 	return item
 }
 
+type ConvertItem struct {
+	AssetType uint32
+	Value     *big.Int
+	Addr      czzutil.Address
+	BeaconID  uint64
+}
+
+func (ci *ConvertItem) Clone() *ConvertItem {
+	item := &ConvertItem{
+		AssetType: ci.AssetType,
+		Value:     new(big.Int).Set(ci.Value),
+		Addr:      ci.Addr,
+		BeaconID:  ci.BeaconID,
+	}
+	return item
+}
+
 // entangle tx Sequence infomation
 type EtsInfo struct {
 	FeePerKB int64
@@ -984,7 +1001,7 @@ func WhiteListProofFromScript(script []byte) (*WhiteListProof, error) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-func GetMaxHeight(items map[uint32]*EntangleTxInfo) uint64 {
+func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	h := uint64(0)
 	for _, v := range items {
 		if h < v.Height {
@@ -1330,6 +1347,7 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleS
 
 	return nil, nil
 }
+
 func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,
 	lastScriptInfo []byte, fork bool, state *EntangleState) bool {
 	if items == nil || len(items) == 0 {

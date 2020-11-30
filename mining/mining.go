@@ -172,8 +172,8 @@ func txPQByFeeAndHeight(pq *txPriorityQueue, i, j int) bool {
 	// Using > here so that pop gives the highest fee item as opposed
 	// to the lowest.  Sort by fee first, then priority.
 	if pq.items[i].feePerKB == pq.items[j].feePerKB {
-		einfos1, _ := cross.IsEntangleTx(pq.items[i].tx.MsgTx())
-		einfos2, _ := cross.IsEntangleTx(pq.items[j].tx.MsgTx())
+		einfos1, _ := cross.IsConvertTx(pq.items[i].tx.MsgTx())
+		einfos2, _ := cross.IsConvertTx(pq.items[j].tx.MsgTx())
 		if einfos1 != nil && einfos2 != nil {
 			return cross.GetMaxHeight(einfos1) < cross.GetMaxHeight(einfos2)
 		}
@@ -591,6 +591,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
 	entangleItems := make([]*cross.ExChangeItem, 0, 0)
+	convertItems := make([]*cross.ConvertItem, 0, 0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
 	// dependsOn map kept with each dependent transaction helps quickly
@@ -1154,28 +1155,28 @@ mempoolLoop:
 
 					if v.ConvertType == cross.ExpandedTxConvert_Czz {
 
+						obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
+						if err != nil && len(obj) > 0 {
+							log.Tracef("Skipping tx %s due to error in "+
+								"toAddressFromEntangle: %v", tx.Hash(), err)
+							logSkippedDeps(tx, deps)
+							continue
+						}
+						height := big.NewInt(int64(v.Height))
+						czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), v.AssetType, v.BeaconID, height, v.Amount, nextBlockHeight)
+						if err != nil {
+							log.Tracef("Skipping tx %s due to error in "+
+								"toAddressFromEntangle: %v", tx.Hash(), err)
+							logSkippedDeps(tx, deps)
+							continue
+						}
+						entangleItems = append(entangleItems, &cross.ExChangeItem{
+							AssetType: v.AssetType,
+							Addr:      obj[0].Address,
+							Value:     czzAsset,
+							BeaconID:  v.BeaconID,
+						})
 					}
-					obj, err := cross.ToAddressFromExChange(tx, g.chain.GetExChangeVerify(), eState)
-					if err != nil && len(obj) > 0 {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toAddressFromEntangle: %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					height := big.NewInt(int64(v.Height))
-					czzAsset, err := eState.AddEntangleItem(obj[0].Address.String(), v.AssetType, v.BeaconID, height, v.Amount, nextBlockHeight)
-					if err != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toAddressFromEntangle: %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					entangleItems = append(entangleItems, &cross.ExChangeItem{
-						AssetType: v.AssetType,
-						Addr:      obj[0].Address,
-						Value:     czzAsset,
-						BeaconID:  v.BeaconID,
-					})
 				}
 			}
 		}

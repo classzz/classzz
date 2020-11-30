@@ -3769,36 +3769,36 @@ func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 		return rate, nil
 	}
 
-	reserve := estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Doge))
-	sendAmount, err := cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Doge))
+	reserve := estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Doge)
+	sendAmount, err := cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Doge)
 	if err != nil {
 		return nil, err
 	}
 	rate["DOGE"] = float64(sendAmount.Uint64())
 
-	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Ltc))
-	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Ltc))
+	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Ltc)
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Ltc)
 	if err != nil {
 		return nil, err
 	}
 	rate["LTC"] = float64(sendAmount.Uint64())
 
-	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Btc))
-	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Btc))
+	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Btc)
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Btc)
 	if err != nil {
 		return nil, err
 	}
 	rate["BTC"] = float64(sendAmount.Uint64())
 
-	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bch))
-	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bch))
+	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Bch)
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Bch)
 	if err != nil {
 		return nil, err
 	}
 	rate["BCH"] = float64(sendAmount.Uint64())
 
-	reserve = estate.GetEntangleAmountByAll(uint8(cross.ExpandedTxEntangle_Bsv))
-	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), uint8(cross.ExpandedTxEntangle_Bsv))
+	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Bsv)
+	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Bsv)
 	if err != nil {
 		return nil, err
 	}
