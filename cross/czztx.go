@@ -84,18 +84,20 @@ func (ii *ExChangeItem) Clone() *ExChangeItem {
 }
 
 type ConvertItem struct {
-	AssetType uint32
-	Value     *big.Int
-	Addr      czzutil.Address
-	BeaconID  uint64
+	AssetType   uint32
+	ConvertType uint32
+	Value       *big.Int
+	Addr        czzutil.Address
+	BeaconID    uint64
 }
 
 func (ci *ConvertItem) Clone() *ConvertItem {
 	item := &ConvertItem{
-		AssetType: ci.AssetType,
-		Value:     new(big.Int).Set(ci.Value),
-		Addr:      ci.Addr,
-		BeaconID:  ci.BeaconID,
+		AssetType:   ci.AssetType,
+		ConvertType: ci.ConvertType,
+		Value:       new(big.Int).Set(ci.Value),
+		Addr:        ci.Addr,
+		BeaconID:    ci.BeaconID,
 	}
 	return item
 }
@@ -159,6 +161,12 @@ type BeaconMergeItem struct {
 	ToAddress czzutil.Address
 }
 
+type ExtTxInfo interface {
+	ToBytes() []byte
+	GetAssetType() uint32
+	GetExtTxHash() string
+}
+
 type ExChangeTxInfo struct {
 	AssetType uint32
 	Address   string
@@ -179,6 +187,14 @@ func (ec *ExChangeTxInfo) ToBytes() []byte {
 	return data
 }
 
+func (ec *ExChangeTxInfo) GetAssetType() uint32 {
+	return ec.AssetType
+}
+
+func (ec *ExChangeTxInfo) GetExtTxHash() string {
+	return ec.ExtTxHash
+}
+
 type ConvertTxInfo struct {
 	AssetType   uint32
 	ConvertType uint32
@@ -190,12 +206,38 @@ type ConvertTxInfo struct {
 	BeaconID    uint64
 }
 
+func (es *ConvertTxInfo) ToBytes() []byte {
+	// maybe rlp encode
+	data, err := rlp.EncodeToBytes(es)
+	if err != nil {
+		log.Fatal("Failed to RLP encode BurnTxInfo: ", "err", err)
+	}
+	return data
+}
+
+func (ec *ConvertTxInfo) GetAssetType() uint32 {
+	return ec.AssetType
+}
+
+func (ec *ConvertTxInfo) GetExtTxHash() string {
+	return ec.ExtTxHash
+}
+
 type EntangleTxInfo struct {
 	AssetType uint32
 	Index     uint32
 	Height    uint64
 	Amount    *big.Int
 	ExtTxHash []byte
+}
+
+func (es *EntangleTxInfo) ToBytes() []byte {
+	// maybe rlp encode
+	data, err := rlp.EncodeToBytes(es)
+	if err != nil {
+		log.Fatal("Failed to RLP encode BurnTxInfo: ", "err", err)
+	}
+	return data
 }
 
 type BurnTxInfo struct {
@@ -1317,11 +1359,10 @@ type TmpAddressPair struct {
 
 // only pairs[0] is valid
 func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleState) ([]*TmpAddressPair, error) {
-	// txhash := tx.Hash()
+
 	einfo, _ := IsExChangeTx(tx.MsgTx())
 	if einfo != nil {
 		// verify the entangle tx
-
 		pairs := make([]*TmpAddressPair, 0)
 		tt, err := ev.VerifyExChangeTx(tx.MsgTx(), eState)
 		if err != nil {
@@ -1346,6 +1387,30 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleS
 	}
 
 	return nil, nil
+}
+
+func ToAddressFromConvert(info *ConvertTxInfo, ev *ExChangeVerify, eState *EntangleState) (*TmpAddressPair, error) {
+
+	// verify the entangle tx
+	tpi, err := ev.VerifyConvertTx(info, eState)
+	if err != nil {
+		return nil, err
+	}
+
+	pub, err1 := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
+	if err1 != nil {
+		return nil, err1
+	}
+	err2, addr := MakeAddress(*pub)
+	if err2 != nil {
+		return nil, err2
+	}
+	pair := &TmpAddressPair{
+		index:   tpi.Index,
+		Address: addr,
+	}
+
+	return pair, nil
 }
 
 func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,

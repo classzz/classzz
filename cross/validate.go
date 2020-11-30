@@ -81,7 +81,7 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 	pairs := make([]*TuplePubIndex, 0)
 	amount := int64(0)
 	if ev.Cache != nil {
-		if ok := ev.Cache.FetchExChangeUtxoView(einfo); ok {
+		if ok := ev.Cache.FetchExtUtxoView(einfo); ok {
 			errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Height)
 			return nil, errors.New("txid has already entangle:" + errStr)
 		}
@@ -100,6 +100,29 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 	}
 
 	return pairs, nil
+}
+
+func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, eState *EntangleState) (*TuplePubIndex, error) {
+
+	//amount := int64(0)
+	if ev.Cache != nil {
+		if ok := ev.Cache.FetchExtUtxoView(info); ok {
+			errStr := fmt.Sprintf("[txid:%s, height:%v]", info.ExtTxHash, info.Height)
+			return nil, errors.New("txid has already entangle:" + errStr)
+		}
+	}
+
+	if pub, err := ev.verifyConvertTx(info, eState); err != nil {
+		errStr := fmt.Sprintf("[txid:%s, height:%v]", info.ExtTxHash, info.Index)
+		return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
+	} else {
+		pair := &TuplePubIndex{
+			AssetType: info.AssetType,
+			Index:     0,
+			Pub:       pub,
+		}
+		return pair, nil
+	}
 }
 
 func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleState) error {
@@ -147,6 +170,24 @@ func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState)
 		return ev.verifyTrxTx(eInfo, eState)
 	}
 	return nil, fmt.Errorf("verifyTx AssetType is %v", eInfo.AssetType)
+}
+
+func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
+	switch eInfo.AssetType {
+	case ExpandedTxEntangle_Eth:
+		return ev.verifyConvertEthTx(eInfo, eState)
+	case ExpandedTxEntangle_Trx:
+		return ev.verifyConvertTrxTx(eInfo, eState)
+	}
+	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
+}
+
+func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
+	return nil, nil
+}
+
+func (ev *ExChangeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
+	return nil, nil
 }
 
 func (ev *ExChangeVerify) verifyDogeTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {

@@ -21,13 +21,13 @@ type CacheEntangleInfo struct {
 	DB database.DB
 }
 
-func (c *CacheEntangleInfo) FetchExChangeUtxoView(info *ExChangeTxInfo) bool {
+func (c *CacheEntangleInfo) FetchExtUtxoView(info ExtTxInfo) bool {
 
 	var err error
 	txExist := false
 
-	AssetType := byte(info.AssetType)
-	ExTxHash := []byte(info.ExtTxHash)
+	AssetType := byte(info.GetAssetType())
+	ExTxHash := []byte(info.GetExtTxHash())
 	key := append(ExTxHash, AssetType)
 	err = c.DB.View(func(tx database.Tx) error {
 		entangleBucket := tx.Metadata().Bucket(BucketKey)
