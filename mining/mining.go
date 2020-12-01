@@ -1150,33 +1150,15 @@ mempoolLoop:
 		if nextBlockHeight >= g.chainParams.ConverHeight {
 
 			// IsConvertTx
-			if einfo, _ := cross.IsConvertTx(tx.MsgTx()); einfo != nil {
-				for _, info := range einfo {
-
-					obj, err := cross.ToAddressFromConvert(info, g.chain.GetExChangeVerify(), eState)
-					if err != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toAddressFromEntangle: %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					height := big.NewInt(int64(info.Height))
-					czzAsset, err := eState.AddConvertItem(obj.Address.String(), info.AssetType, info.BeaconID, height, info.Amount, nextBlockHeight)
-					if err != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"toAddressFromEntangle: %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					convertItems = append(convertItems, &cross.ConvertItem{
-						AssetType:   info.AssetType,
-						ConvertType: info.ConvertType,
-						Addr:        obj.Address,
-						Value:       czzAsset,
-						BeaconID:    info.BeaconID,
-					})
-
+			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+				objs, err := cross.ToAddressFromConverts(cinfo, g.chain.GetExChangeVerify(), eState, nextBlockHeight)
+				if err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"toAddressFromEntangle: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
 				}
+				convertItems = append(convertItems, objs...)
 			}
 		}
 

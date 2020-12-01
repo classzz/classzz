@@ -87,7 +87,7 @@ type ConvertItem struct {
 	AssetType   uint32
 	ConvertType uint32
 	Value       *big.Int
-	Addr        czzutil.Address
+	Address     czzutil.Address
 	BeaconID    uint64
 }
 
@@ -96,7 +96,7 @@ func (ci *ConvertItem) Clone() *ConvertItem {
 		AssetType:   ci.AssetType,
 		ConvertType: ci.ConvertType,
 		Value:       new(big.Int).Set(ci.Value),
-		Addr:        ci.Addr,
+		Address:     ci.Address,
 		BeaconID:    ci.BeaconID,
 	}
 	return item
@@ -1389,28 +1389,39 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleS
 	return nil, nil
 }
 
-func ToAddressFromConvert(info *ConvertTxInfo, ev *ExChangeVerify, eState *EntangleState) (*TmpAddressPair, error) {
+func ToAddressFromConverts(cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify, eState *EntangleState, nextBlockHeight int32) ([]*ConvertItem, error) {
 
-	// verify the entangle tx
-	tpi, err := ev.VerifyConvertTx(info, eState)
-	if err != nil {
-		return nil, err
+	cis := make([]*ConvertItem, 0)
+	for _, info := range cinfo {
+		// verify the entangle tx
+		tpi, err := ev.VerifyConvertTx(info, eState)
+		if err != nil {
+			return nil, err
+		}
+
+		pub, err := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
+		if err != nil {
+			return nil, err
+		}
+		err, addr := MakeAddress(*pub)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := eState.AddConvertItem(info.Address, info.AssetType, info.BeaconID, info.Amount, nextBlockHeight); err != nil {
+			return nil, err
+		}
+
+		cis = append(cis, &ConvertItem{
+			Address:     addr,
+			AssetType:   info.AssetType,
+			ConvertType: info.ConvertType,
+			Value:       info.Amount,
+			BeaconID:    info.BeaconID,
+		})
 	}
 
-	pub, err1 := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
-	if err1 != nil {
-		return nil, err1
-	}
-	err2, addr := MakeAddress(*pub)
-	if err2 != nil {
-		return nil, err2
-	}
-	pair := &TmpAddressPair{
-		index:   tpi.Index,
-		Address: addr,
-	}
-
-	return pair, nil
+	return cis, nil
 }
 
 func OverEntangleAmount(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem,

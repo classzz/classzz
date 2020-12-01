@@ -583,28 +583,21 @@ func (es *EntangleState) AddEntangleItem(addr string, assetType uint32, BeaconID
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddConvertItem(addr string, assetType uint32, BeaconID uint64,
-	height, amount *big.Int, czzHeight int32) (*big.Int, error) {
+func (es *EntangleState) AddConvertItem(addr string, assetType uint32, BeaconID uint64, amount *big.Int, czzHeight int32) error {
 	if es.AddressInWhiteList(addr, true) {
-		return nil, ErrAddressInWhiteList
+		return ErrAddressInWhiteList
 	}
 	lh := es.getBeaconAddress(BeaconID)
 	if lh == nil {
-		return nil, ErrNoRegister
+		return ErrNoRegister
 	}
 	if !isValidAsset(assetType, lh.AssetFlag) {
-		return nil, ErrNoUserAsset
+		return ErrNoUserAsset
 	}
-	sendAmount := big.NewInt(0)
-	var err error
+
 	// calc the send amount
-	reserve := es.GetEntangleAmountByAll(assetType)
-	sendAmount, err = calcEntangleAmount(reserve, amount, assetType)
-	if err != nil {
-		return nil, err
-	}
-	if err := lh.EnoughToEntangle(sendAmount); err != nil {
-		return nil, err
+	if err := lh.EnoughToEntangle(amount); err != nil {
+		return err
 	}
 
 	userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]
@@ -624,14 +617,14 @@ func (es *EntangleState) AddConvertItem(addr string, assetType uint32, BeaconID 
 			}
 		}
 
-		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHeight)))
+		userExChangeInfo.increaseOriginAmount(amount, big.NewInt(int64(czzHeight)))
 		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(lh.KeepBlock)), amount)
 		lh.addEnAsset(assetType, amount)
-		lh.recordEntangleAmount(sendAmount)
+		lh.recordEntangleAmount(amount)
 		userExChangeInfos[addr] = userExChangeInfo
 		es.EnUserExChangeInfos[BeaconID] = userExChangeInfos
 	}
-	return sendAmount, nil
+	return nil
 }
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
