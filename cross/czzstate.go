@@ -290,13 +290,13 @@ func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserIn
 	es.EnInfos, es.EnUserExChangeInfos, es.BaExInfo = enInfos, entitys, exInfos
 }
 func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
+	type Store struct {
 		ID     uint64
 		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
 		Value3 SortStoreBeaconExInfos
 	}
-	var eb Store1
+	var eb Store
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
@@ -305,14 +305,14 @@ func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 func (es *EntangleState) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
+	type Store struct {
 		ID     uint64
 		Value1 SortStoreBeaconAddress
 		Value2 SortStoreUserInfos
 		Value3 SortStoreBeaconExInfos
 	}
 	s1, s2, s3 := es.toSlice()
-	return rlp.Encode(w, &Store1{
+	return rlp.Encode(w, &Store{
 		ID:     es.CurBeaconID,
 		Value1: s1,
 		Value2: s2,
