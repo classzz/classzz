@@ -593,62 +593,12 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
-		// UpdateBeaconCoinbase
-		if bp, _ := cross.IsUpdateBeaconCoinbaseTx(tx.MsgTx(), NetParams); bp != nil {
-			if err = eState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
-				return err
-			}
-		}
-
-		// UpdateBeaconFreeQuota
-		if bfq, _ := cross.IsUpdateBeaconFreeQuotaTx(tx.MsgTx(), NetParams); bfq != nil {
-			if err = eState.UpdateBeaconFreeQuota(bfq.Address, bfq.FreeQuota); err != nil {
-				return err
-			}
-		}
-
-		// FastExChange
-		if einfo, burnTx, _ := cross.IsFastExChangeTx(tx.MsgTx(), NetParams); einfo != nil && burnTx != nil {
-
-			height := big.NewInt(int64(einfo.Height))
-			czzAsset, err1 := eState.AddEntangleItem(einfo.Address, einfo.AssetType, einfo.BeaconID, height, einfo.Amount, block.Height())
-			if err1 != nil {
-				return err1
-			}
-			_, _, err1 = eState.BurnAsset(burnTx.Address, burnTx.ToAddress, burnTx.AssetType, einfo.BeaconID, uint64(pHeight+1), czzAsset)
-			if err1 != nil {
-				return err1
-			}
-		}
-
-		// ExChange
-		if einfo, _ := cross.IsExChangeTx(tx.MsgTx()); einfo != nil {
-			height := big.NewInt(int64(einfo.Height))
-			_, err = eState.AddEntangleItem(einfo.Address, einfo.AssetType, einfo.BeaconID, height, einfo.Amount, block.Height())
+		// IsConvertTx
+		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+			objs, err := cross.ToAddressFromConverts(cinfo, g.chain.GetExChangeVerify(), eState, pHeight)
 			if err != nil {
-				return err
+
 			}
-		}
-
-		// BurnTx
-		info, _ := cross.IsBurnTx(tx.MsgTx(), NetParams)
-		if info != nil {
-			if _, _, err := eState.BurnAsset(info.Address, info.ToAddress, info.AssetType, info.BeaconID, uint64(pHeight+1), info.Amount); err != nil {
-				return err
-			}
-		}
-
-		// BurnProof
-		if info, err := cross.IsBurnProofTx(tx.MsgTx()); err == nil {
-			eState.FinishHandleUserBurn(info, &cross.BurnProofItem{
-				Height: uint64(pHeight + 1),
-				TxHash: info.TxHash,
-			})
-		}
-
-		// BurnReportWhiteList
-		if info, err := cross.IsBurnReportWhiteListTx(tx.MsgTx()); err == nil {
-			reportWhiteList = append(reportWhiteList, info.BeaconID)
 		}
 
 	}
