@@ -575,7 +575,6 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	reportWhiteList := make([]uint64, 0, 0)
 	for _, tx := range block.Transactions() {
-		var err error
 
 		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
@@ -595,12 +594,12 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-			objs, err := cross.ToAddressFromConverts(cinfo, g.chain.GetExChangeVerify(), eState, pHeight)
-			if err != nil {
-
+			for _, info := range cinfo {
+				if err := eState.AddConvertItem(info.Address, info.AssetType, info.BeaconID, info.Amount, pHeight); err != nil {
+					return err
+				}
 			}
 		}
-
 	}
 
 	if eState != nil {
@@ -631,10 +630,6 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", v)
 			}
 			index = index + 3
-		}
-
-		if err := eState.UpdateQuotaOnBlock(uint64(block.Height())); err != nil {
-			return err
 		}
 
 		if err := dbPutEntangleState(dbTx, block, eState); err != nil {
