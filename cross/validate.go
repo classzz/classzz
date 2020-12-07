@@ -183,10 +183,22 @@ func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *Entangle
 }
 
 func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
+
+	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+
+	var r *types.Receipt
+	if err := client.Call(&r, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
+
+	}
+	// 获取交易
 	return nil, nil
 }
 
 func (ev *ExChangeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
+	return nil, nil
+}
+
+func (ev *ExChangeVerify) verifyConvertToCzzTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
 	return nil, nil
 }
 
@@ -878,6 +890,7 @@ func (ev *ExChangeVerify) verifyUsdtTx(eInfo *ExChangeTxInfo, eState *EntangleSt
 		}
 	}
 }
+
 func (ev *ExChangeVerify) verifyEthTx(eInfo *ExChangeTxInfo, eState *EntangleState) ([]byte, error) {
 
 	// Notice the notification parameter is nil since notifications are
