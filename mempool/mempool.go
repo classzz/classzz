@@ -66,7 +66,7 @@ type Config struct {
 	// transaction output information.
 	FetchUtxoView func(*czzutil.Tx) (*blockchain.UtxoViewpoint, error)
 
-	FetchExChangeUtxoView func(info *cross.ExChangeTxInfo) bool
+	FetchExtUtxoView func(info cross.ExtTxInfo) bool
 
 	ExChangeVerify *cross.ExChangeVerify
 	// BestHeight defines the function to use to access the block height of

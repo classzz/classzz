@@ -61,7 +61,7 @@ type CreateRawTransactionCmd struct {
 }
 
 type ExChangeOut struct {
-	AssetType ExpandedTxType
+	AssetType uint32
 	Address   string
 	Index     uint32
 	Height    uint64
@@ -71,8 +71,8 @@ type ExChangeOut struct {
 }
 
 type ConvertOut struct {
-	AssetType   ExpandedTxType
-	ConvertType ExpandedTxType
+	AssetType   uint32
+	ConvertType uint32
 	Address     string
 	Height      uint64
 	ExtTxHash   string
@@ -121,7 +121,7 @@ type UpdateBeaconFreeQuotaOut struct {
 }
 
 type BurnTransactionOut struct {
-	AssetType uint8
+	AssetType uint32
 	BeaconID  uint64
 	Amount    float64
 	ToAddress string
@@ -132,14 +132,14 @@ type BurnProofOut struct {
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
-	AssetType uint8
+	AssetType uint32
 	TxHash    string // the tx hash of outside
 	OutIndex  uint64
 }
 
 type BurnReportWhiteListOut struct {
 	BeaconID  uint64 // the BeaconID for beaconAddress
-	AssetType uint8
+	AssetType uint32
 	Height    uint64 // the height of outside chain
 	TxHash    string
 	InIndex   uint64
@@ -275,10 +275,8 @@ type UpdateBeaconFreeQuota struct {
 	FreeQuota []uint64 `json:"free_quota"`
 }
 
-type ExpandedTxType uint8
-
 type BurnInfo struct {
-	AssetType ExpandedTxType
+	AssetType uint32
 	Address   string
 	ToAddress string
 	BeaconID  uint64
@@ -291,7 +289,7 @@ type BurnProofInfo struct {
 	Height    uint64   // the height include the tx of user burn's asset
 	Amount    *big.Int // the amount of burned asset (czz)
 	Address   string
-	AssetType uint8
+	AssetType uint32
 	TxHash    string // the tx hash of outside
 	OutIndex  uint64
 }
@@ -1276,6 +1274,7 @@ func init() {
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
 	MustRegisterCmd("fastexchangetransaction", (*FastExChangeTransactionCmd)(nil), flags)
+	MustRegisterCmd("converttransaction", (*ConvertTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
 	MustRegisterCmd("updatebeaconcoinbase", (*UpdateBeaconCoinbaseCmd)(nil), flags)

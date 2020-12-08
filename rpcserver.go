@@ -829,7 +829,7 @@ func handleFastExChangeTransaction(s *rpcServer, cmd interface{}, closeChan <-ch
 	}
 
 	bi := &btcjson.BurnInfo{
-		AssetType: btcjson.ExpandedTxType(c.BurnTransaction.AssetType),
+		AssetType: c.BurnTransaction.AssetType,
 		BeaconID:  c.BurnTransaction.BeaconID,
 		Amount:    big.NewInt(int64(satoshi)),
 	}
@@ -1649,7 +1649,7 @@ func handleBurnTransaction(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	}
 
 	bi := &btcjson.BurnInfo{
-		AssetType: btcjson.ExpandedTxType(c.BurnTransaction.AssetType),
+		AssetType: c.BurnTransaction.AssetType,
 		BeaconID:  c.BurnTransaction.BeaconID,
 		Amount:    big.NewInt(int64(satoshi)),
 		ToAddress: c.BurnTransaction.ToAddress,

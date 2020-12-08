@@ -646,10 +646,10 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 		eState2 = cross.NewEntangleState2()
 	}
 
-	if g.chainParams.BeaconHeight == nextBlockHeight {
-		eState.PoolAmount1 = big.NewInt(coinbaseTx.MsgTx().TxOut[1].Value)
-		eState.PoolAmount2 = big.NewInt(coinbaseTx.MsgTx().TxOut[2].Value)
-	}
+	//if g.chainParams.BeaconHeight == nextBlockHeight {
+	//	eState.PoolAmount1 = big.NewInt(coinbaseTx.MsgTx().TxOut[1].Value)
+	//	eState.PoolAmount2 = big.NewInt(coinbaseTx.MsgTx().TxOut[2].Value)
+	//}
 
 	log.Debugf("Considering %d transactions for inclusion to new block",
 		len(sourceTxns))
