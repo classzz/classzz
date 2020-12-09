@@ -2445,6 +2445,10 @@ func New(config *Config) (*BlockChain, error) {
 	var ethclients []*rpc.Client
 	for _, ethrpc := range config.EthRPC {
 		// Connect to local bitcoin core RPC server using HTTP POST mode.
+
+		if ethrpc[:4] != "http" {
+			ethrpc = "http://" + ethrpc
+		}
 		client, err := rpc.Dial(ethrpc)
 		if err != nil {
 			return nil, err
