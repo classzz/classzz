@@ -13,9 +13,6 @@ import (
 	"github.com/classzz/classzz/chaincfg"
 	// "github.com/classzz/classzz/chaincfg/chainhash"
 
-	// "github.com/classzz/classzz/czzec"
-	"github.com/classzz/classzz/txscript"
-	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
 
@@ -90,73 +87,74 @@ func TestCaclMode3(t *testing.T) {
 
 	fmt.Println("finish")
 }
-func TestStruct(t *testing.T) {
-	d1 := EntangleTxInfo{
-		AssetType: ExpandedTxEntangle_Doge,
-		Index:     10,
-		Height:    200,
-		Amount:    big.NewInt(333311),
-		ExtTxHash: nil,
-	}
-	sByte := d1.Serialize()
-	fmt.Println("d1.Serialize():", sByte)
-	d2 := EntangleTxInfo{}
-	d2.Parse(sByte)
-	fmt.Println("AssetType:", d2.AssetType, " Index:", d2.Index, " Height:", d2.Height,
-		"Amount:", d2.Amount, "ExtTxHash:", d2.ExtTxHash)
 
-	Sum := byte(10)
-	items := KeepedAmount{
-		Count: 0,
-		Items: make([]KeepedItem, 0),
-	}
-	for i := 0; i < int(Sum); i++ {
-		v := KeepedItem{
-			AssetType: ExpandedTxEntangle_Doge,
-			Amount:    big.NewInt(int64(100 * i)),
-		}
-		items.Add(v)
-	}
-	fmt.Println("Count:", items.Count, "items:", items.Items)
-	sByte2 := items.Serialize()
-	fmt.Println("sByte2:", sByte2)
-	scriptInfo, err := txscript.KeepedAmountScript(sByte2)
-	if err != nil {
-		fmt.Println(err)
-	}
-	itme3, err2 := KeepedAmountFromScript(scriptInfo)
-	if err2 != nil {
-		fmt.Println(err2)
-	}
-	fmt.Println("Count:", itme3.Count, "items:", itme3.Items)
-	items2 := KeepedAmount{}
-	items2.Parse(sByte2)
-	fmt.Println("Count:", items2.Count, "items:", items2.Items)
-	fmt.Println("finish")
-}
-
-func makeTxIncludeEntx() *czzutil.Tx {
-	targetTx := czzutil.NewTx(&wire.MsgTx{
-		TxOut: []*wire.TxOut{{
-			PkScript: nil,
-			Value:    10,
-		}},
-	})
-
-	info := EntangleTxInfo{
-		AssetType: ExpandedTxEntangle_Doge,
-		Index:     1,
-		Height:    100,
-		Amount:    big.NewInt(20),
-		ExtTxHash: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9},
-	}
-
-	mstx, e := MakeEntangleTx(&chaincfg.MainNetParams, targetTx.MsgTx().TxIn, 10, 1000, changeAddr, &info)
-	if e != nil {
-		return nil
-	}
-	return czzutil.NewTx(mstx)
-}
+//func TestStruct(t *testing.T) {
+//	d1 := EntangleTxInfo{
+//		AssetType: ExpandedTxEntangle_Doge,
+//		Index:     10,
+//		Height:    200,
+//		Amount:    big.NewInt(333311),
+//		ExtTxHash: nil,
+//	}
+//	sByte := d1.Serialize()
+//	fmt.Println("d1.Serialize():", sByte)
+//	d2 := EntangleTxInfo{}
+//	d2.Parse(sByte)
+//	fmt.Println("AssetType:", d2.AssetType, " Index:", d2.Index, " Height:", d2.Height,
+//		"Amount:", d2.Amount, "ExtTxHash:", d2.ExtTxHash)
+//
+//	Sum := byte(10)
+//	items := KeepedAmount{
+//		Count: 0,
+//		Items: make([]KeepedItem, 0),
+//	}
+//	for i := 0; i < int(Sum); i++ {
+//		v := KeepedItem{
+//			AssetType: ExpandedTxEntangle_Doge,
+//			Amount:    big.NewInt(int64(100 * i)),
+//		}
+//		items.Add(v)
+//	}
+//	fmt.Println("Count:", items.Count, "items:", items.Items)
+//	sByte2 := items.Serialize()
+//	fmt.Println("sByte2:", sByte2)
+//	scriptInfo, err := txscript.KeepedAmountScript(sByte2)
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	itme3, err2 := KeepedAmountFromScript(scriptInfo)
+//	if err2 != nil {
+//		fmt.Println(err2)
+//	}
+//	fmt.Println("Count:", itme3.Count, "items:", itme3.Items)
+//	items2 := KeepedAmount{}
+//	items2.Parse(sByte2)
+//	fmt.Println("Count:", items2.Count, "items:", items2.Items)
+//	fmt.Println("finish")
+//}
+//
+//func makeTxIncludeEntx() *czzutil.Tx {
+//	targetTx := czzutil.NewTx(&wire.MsgTx{
+//		TxOut: []*wire.TxOut{{
+//			PkScript: nil,
+//			Value:    10,
+//		}},
+//	})
+//
+//	info := EntangleTxInfo{
+//		AssetType: ExpandedTxEntangle_Doge,
+//		Index:     1,
+//		Height:    100,
+//		Amount:    big.NewInt(20),
+//		ExtTxHash: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9},
+//	}
+//
+//	mstx, e := MakeEntangleTx(&chaincfg.MainNetParams, targetTx.MsgTx().TxIn, 10, 1000, changeAddr, &info)
+//	if e != nil {
+//		return nil
+//	}
+//	return czzutil.NewTx(mstx)
+//}
 func TestToolFunc1(t *testing.T) {
 	// entangleAddress := make(map[chainhash.Hash][]*TmpAddressPair)
 	// tx := makeTxIncludeEntx()

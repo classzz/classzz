@@ -11,6 +11,8 @@ import (
 	_ "github.com/classzz/classzz/database/ffldb"
 	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/wire"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rpc"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -353,5 +355,21 @@ func TestTrx(t *testing.T) {
 	fmt.Println(string(body))
 	json.Unmarshal(body, trxTx)
 	fmt.Println(trxTx.RawData)
+
+}
+
+func TestEth(t *testing.T) {
+
+	client, err := rpc.Dial("http://cloud.tocloud.link:18545")
+	if err != nil {
+		t.Error(err)
+	}
+
+	var result hexutil.Uint64
+	if err := client.Call(&result, "eth_blockNumber"); err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println("blockNumber", result)
 
 }
