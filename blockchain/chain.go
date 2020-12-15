@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/cross"
 	"github.com/classzz/classzz/rpcclient"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math"
 	"sync"
 	"time"
@@ -2451,9 +2452,16 @@ func New(config *Config) (*BlockChain, error) {
 		}
 		client, err := rpc.Dial(ethrpc)
 		if err != nil {
-			return nil, err
+			log.Warn(fmt.Printf("rpc:[failed][url:%s][err:%v]", ethrpc, err))
 		}
 
+		var number hexutil.Uint64
+		if err := client.Call(&number, "eth_blockNumber"); err != nil {
+			log.Warn(fmt.Printf("rpc :[failed][url:%s][err:%v]", ethrpc, err))
+			break
+		}
+		// 获取交易
+		log.Warnf("rpc test:[successed][url:%s][block:%d]", ethrpc, number)
 		ethclients = append(ethclients, client)
 	}
 

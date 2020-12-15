@@ -174,9 +174,9 @@ func (ev *ExChangeVerify) verifyTx(eInfo *ExChangeTxInfo, eState *EntangleState)
 
 func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *EntangleState) ([]byte, error) {
 	switch eInfo.AssetType {
-	case ExpandedTxEntangle_Eth:
+	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertEthTx(eInfo, eState)
-	case ExpandedTxEntangle_Trx:
+	case ExpandedTxConvert_TCzz:
 		return ev.verifyConvertTrxTx(eInfo, eState)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
@@ -188,8 +188,9 @@ func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, eState *Entan
 
 	var r *types.Receipt
 	if err := client.Call(&r, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-
+		fmt.Println(err)
 	}
+
 	// 获取交易
 	return nil, nil
 }

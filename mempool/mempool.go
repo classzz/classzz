@@ -1042,16 +1042,15 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 
 	// IsConvertTx
 	cinfo, err := cross.IsConvertTx(tx.MsgTx())
-
-	if err != nil && err != cross.NoAddBeaconPledge {
+	if err != nil && err != cross.NoConvert {
 		return err
 	}
 
-	if abp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
-	} else if abp != nil {
-		for _, info := range cinfo {
-			if _, err := mp.cfg.ExChangeVerify.VerifyConvertTx(info, eState); err != nil {
+	if cinfo != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
+		return errors.New("err ConvertTx tx  BeaconHeight < nextBlockHeight ")
+	} else if cinfo != nil {
+		for _, v := range cinfo {
+			if _, err := mp.cfg.ExChangeVerify.VerifyConvertTx(v, eState); err != nil {
 				return err
 			}
 		}

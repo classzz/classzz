@@ -360,7 +360,7 @@ func TestTrx(t *testing.T) {
 
 func TestEth(t *testing.T) {
 
-	client, err := rpc.Dial("http://cloud.tocloud.link:18545")
+	client, err := rpc.Dial("http://192.168.6.9:8545")
 	if err != nil {
 		t.Error(err)
 	}
