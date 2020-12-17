@@ -109,9 +109,10 @@ type EtsInfo struct {
 }
 
 type TuplePubIndex struct {
-	AssetType uint32
-	Index     uint32
-	Pub       []byte
+	AssetType   uint32
+	ConvertType uint32
+	Index       uint32
+	Pub         []byte
 }
 
 type PoolAddrItem struct {
@@ -1369,13 +1370,13 @@ func ToAddressFromExChange(tx *czzutil.Tx, ev *ExChangeVerify, eState *EntangleS
 			return nil, err
 		}
 		for _, v := range tt {
-			pub, err1 := RecoverPublicFromBytes(v.Pub, v.AssetType)
-			if err1 != nil {
-				return nil, err1
+			pub, err := RecoverPublicFromBytes(v.Pub, v.AssetType)
+			if err != nil {
+				return nil, err
 			}
-			err2, addr := MakeAddress(*pub)
-			if err2 != nil {
-				return nil, err2
+			addr, err := MakeAddress(*pub)
+			if err != nil {
+				return nil, err
 			}
 			pairs = append(pairs, &TmpAddressPair{
 				index:   v.Index,
@@ -1403,7 +1404,8 @@ func ToAddressFromConverts(cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify, 
 		if err != nil {
 			return nil, err
 		}
-		err, addr := MakeAddress(*pub)
+
+		addr, err := MakeAddress(*pub)
 		if err != nil {
 			return nil, err
 		}
@@ -1411,6 +1413,8 @@ func ToAddressFromConverts(cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify, 
 		if err := eState.AddConvertItem(info.Address, info.AssetType, info.BeaconID, info.Amount, nextBlockHeight); err != nil {
 			return nil, err
 		}
+
+		_, _, err = eState.BurnConvert(info.Address, info.Address, info.ConvertType, info.BeaconID, uint64(nextBlockHeight), info.Amount)
 
 		cis = append(cis, &ConvertItem{
 			Address:     addr,

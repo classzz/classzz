@@ -1009,4 +1009,24 @@ func (p ResCoinBasePos) GetOutCount() int {
 	return len(p)
 }
 
-//////////////////////////////////////////////////////////////////////////////
+func isProtectedV(V *big.Int) bool {
+	if V.BitLen() <= 8 {
+		v := V.Uint64()
+		return v != 27 && v != 28
+	}
+	// anything not 27 or 28 is considered protected
+	return true
+}
+
+// deriveChainId derives the chain id from the given v parameter
+func deriveChainId(v *big.Int) *big.Int {
+	if v.BitLen() <= 64 {
+		v := v.Uint64()
+		if v == 27 || v == 28 {
+			return new(big.Int)
+		}
+		return new(big.Int).SetUint64((v - 35) / 2)
+	}
+	v = new(big.Int).Sub(v, big.NewInt(35))
+	return v.Div(v, big.NewInt(2))
+}

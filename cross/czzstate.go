@@ -698,6 +698,74 @@ func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint32, BeaconID, 
 	return new(big.Int).Sub(amount, fee), fee, nil
 }
 
+func (es *EntangleState) BurnConvert(addr, toAddr string, aType uint32, BeaconID, height uint64,
+	amount *big.Int) (*big.Int, *big.Int, error) {
+
+	light := es.getBeaconAddress(BeaconID)
+	if light == nil {
+		return nil, nil, ErrNoRegister
+	}
+
+	// is Beacon
+	if light.Address == addr {
+		ex := es.GetBaExInfoByID(BeaconID)
+		if ex == nil {
+			return nil, nil, errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id: %v", BeaconID))
+		}
+		out, err := ex.CanBurn(amount, aType, es)
+		if err == nil {
+			z := big.NewInt(0)
+			ex.BItems.addBurnItem(toAddr, height, amount, z, z, out)
+		}
+		light.reduceEntangleAmount(amount)
+		return out, big.NewInt(0), err
+	}
+
+	lhEntitys, ok := es.EnUserExChangeInfos[BeaconID]
+	if !ok {
+		return nil, nil, ErrNoRegister
+	}
+
+	userEntitys, ok1 := lhEntitys[addr]
+	if !ok1 {
+		return nil, nil, ErrNoUserReg
+	}
+
+	// self redeem amount, maybe add the free quota in the BeaconAddress
+	validAmount := userEntitys.getRedeemableAmount()
+	if amount.Cmp(validAmount) > 0 {
+		return nil, nil, ErrNotEnouthBurn
+	}
+
+	var burnInfo *BurnInfo
+	for _, v := range userEntitys.BurnAmounts {
+		if aType == v.AssetType {
+			burnInfo = v
+			break
+		}
+	}
+
+	if burnInfo == nil {
+		return nil, nil, ErrNoUserAsset
+	}
+
+	reserve := es.GetEntangleAmountByAll(aType)
+	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// get out asset for burn czz
+	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
+	outAllAmount = big.NewInt(0).Div(outAllAmount, baseUnit)
+	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
+	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
+	outFeeAmount = big.NewInt(0).Div(outFeeAmount, baseUnit)
+	burnInfo.addBurnItem(toAddr, height, amount, fee, outFeeAmount, outAllAmount)
+
+	return new(big.Int).Sub(amount, fee), fee, nil
+}
+
 func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
 	es.PoolAmount1, es.PoolAmount2 = new(big.Int).Set(amount1), new(big.Int).Set(amount2)
 }

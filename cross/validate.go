@@ -42,7 +42,7 @@ var (
 		LegacyScriptHashAddrID: 0x16,
 	}
 
-	ethPoolAddr = "0x956c2d22d5bf96d14c9f9c2f2a732b8a1e068495"
+	ethPoolAddr = "0xB6475DAF416efAB1D70c893a53D7799be015Ed03"
 )
 
 const (
@@ -106,22 +106,22 @@ func (ev *ExChangeVerify) VerifyExChangeTx(tx *wire.MsgTx, eState *EntangleState
 
 func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, eState *EntangleState) (*TuplePubIndex, error) {
 
-	//amount := int64(0)
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
-			errStr := fmt.Sprintf("[txid:%s, height:%v]", info.ExtTxHash, info.Height)
-			return nil, errors.New("txid has already entangle:" + errStr)
+			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
+			return nil, errors.New("txid has already entangle: " + err)
 		}
 	}
 
 	if pub, err := ev.verifyConvertTx(info, eState); err != nil {
-		errStr := fmt.Sprintf("[txid:%s, height:%v]", info.ExtTxHash, info.Index)
-		return nil, errors.New("txid verify failed:" + errStr + " err:" + err.Error())
+		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
+		return nil, errors.New("txid verify failed:" + errStr + " err: " + err.Error())
 	} else {
 		pair := &TuplePubIndex{
-			AssetType: info.AssetType,
-			Index:     0,
-			Pub:       pub,
+			AssetType:   info.AssetType,
+			ConvertType: info.ConvertType,
+			Index:       0,
+			Pub:         pub,
 		}
 		return pair, nil
 	}
@@ -205,11 +205,15 @@ func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, eState *Entan
 
 	ethtx := txjson.tx
 	Vb, R, S := ethtx.RawSignatureValues()
-	if Vb.BitLen() > 8 {
-		return nil, fmt.Errorf("eth Vb.BitLen() > 8 ")
+
+	var V byte
+	if isProtectedV(Vb) {
+		chainID := deriveChainId(Vb).Uint64()
+		V = byte(Vb.Uint64() - 35 - 2*chainID)
+	} else {
+		V = byte(Vb.Uint64() - 27)
 	}
 
-	V := byte(Vb.Uint64() - 27)
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
 		return nil, fmt.Errorf("eth ValidateSignatureValues err")
 	}
@@ -244,7 +248,7 @@ func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, eState *Entan
 	txLog := receipt.Logs[0]
 	// amount
 	if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount ")
+		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
 	}
 
 	return pk, nil
