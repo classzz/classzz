@@ -353,7 +353,7 @@ func newExChangeEntitys() []*ExChangeEntity {
 
 type UserExChangeInfo struct {
 	BeaconID        uint64            `json:"beacon_id"`     // beaconID id
-	Address         string            `json:"address"`       // 兑换的地址
+	Address         string            `json:"address"`       // Exchange address
 	Height          *big.Int          `json:"height"`        // newest height for entangle
 	OldHeight       *big.Int          `json:"old_height"`    // oldest height for entangle
 	OriginAmount    *big.Int          `json:"origin_amount"` // origin asset(czz) by entangle in
@@ -525,7 +525,7 @@ func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big
 /////////////////////////////////////////////////////////////////
 func (ee *UserExChangeInfo) getBurnByType(assetType uint32) *BurnInfo {
 	for _, v := range ee.BurnAmounts {
-		if assetType == v.AssetType {
+		if assetType == v.ConvertType {
 			return v
 		}
 	}
@@ -541,7 +541,7 @@ func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeO
 		if len(items) > 0 {
 			res = append(res, &TimeOutBurnInfo{
 				Items:     items,
-				AssetType: entity.AssetType,
+				AssetType: entity.ConvertType,
 			})
 		}
 		AmountSum = big.NewInt(0).Add(AmountSum, Amount)
@@ -567,7 +567,7 @@ func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnIn
 func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
 	assetType uint32, proof *BurnProofItem) {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == assetType {
+		if burn.ConvertType == assetType {
 			burn.updateBurn(height, amount, proof)
 		}
 	}
@@ -576,7 +576,7 @@ func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
 func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
 	assetType uint32, proof *BurnProofItem) {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == assetType {
+		if burn.ConvertType == assetType {
 			burn.finishBurn(height, amount, proof)
 		}
 	}
@@ -587,7 +587,7 @@ func (ee *UserExChangeInfo) getBurn() {
 
 func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == info.AssetType {
+		if burn.ConvertType == info.AssetType {
 			return burn.verifyProof(info, outHeight, curHeight)
 		}
 	}
@@ -596,7 +596,7 @@ func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curH
 
 func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, assetType uint32) error {
 	for _, burn := range ee.BurnAmounts {
-		if burn.AssetType == assetType {
+		if burn.ConvertType == assetType {
 			return burn.closeProofForPunished(item)
 		}
 	}
@@ -647,17 +647,17 @@ func (b *BurnItem) clone() *BurnItem {
 }
 
 type BurnInfo struct {
-	AssetType  uint32
-	RAllAmount *big.Int // redeem asset for outside asset by burned czz
-	BAllAmount *big.Int // all burned asset on czz by the account
-	Items      []*BurnItem
+	ConvertType uint32
+	RAllAmount  *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount  *big.Int // all burned asset on czz by the account
+	Items       []*BurnItem
 }
 
 type extBurnInfos struct {
-	AssetType  uint32
-	Items      []*BurnItem
-	RAllAmount *big.Int // redeem asset for outside asset by burned czz
-	BAllAmount *big.Int // all burned asset on czz by the account
+	ConvertType uint32
+	Items       []*BurnItem
+	RAllAmount  *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount  *big.Int // all burned asset on czz by the account
 }
 
 // DecodeRLP decodes the
@@ -667,17 +667,17 @@ func (b *BurnInfo) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	b.AssetType, b.Items, b.RAllAmount, b.BAllAmount = eb.AssetType, eb.Items, eb.RAllAmount, eb.BAllAmount
+	b.ConvertType, b.Items, b.RAllAmount, b.BAllAmount = eb.ConvertType, eb.Items, eb.RAllAmount, eb.BAllAmount
 	return nil
 }
 
 // EncodeRLP serializes b into the  RLP block format.
 func (b *BurnInfo) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extBurnInfos{
-		AssetType:  b.AssetType,
-		Items:      b.Items,
-		RAllAmount: b.RAllAmount,
-		BAllAmount: b.BAllAmount,
+		ConvertType: b.ConvertType,
+		Items:       b.Items,
+		RAllAmount:  b.RAllAmount,
+		BAllAmount:  b.BAllAmount,
 	})
 }
 
@@ -685,58 +685,58 @@ func newBurnInfos() []*BurnInfo {
 
 	burnInfos := make([]*BurnInfo, 0, 0)
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Doge,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Doge,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Bsv,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Bsv,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Bch,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Bch,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Btc,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Btc,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Ltc,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Ltc,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Usdt,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Usdt,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	// the height of fork
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Eth,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Eth,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 	burnInfos = append(burnInfos, &BurnInfo{
-		AssetType:  ExpandedTxEntangle_Trx,
-		RAllAmount: big.NewInt(0),
-		BAllAmount: big.NewInt(0),
-		Items:      make([]*BurnItem, 0, 0),
+		ConvertType: ExpandedTxEntangle_Trx,
+		RAllAmount:  big.NewInt(0),
+		BAllAmount:  big.NewInt(0),
+		Items:       make([]*BurnItem, 0, 0),
 	})
 
 	return burnInfos
