@@ -1054,28 +1054,7 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
-//func VerifyTxsSequence(infos []*EtsInfo) error {
-//	if infos == nil {
-//		return nil
-//	}
-//	pre, pos := uint64(0), 0
-//	for i, v := range infos {
-//		einfos, _ := IsEntangleTx(v.Tx)
-//		if einfos != nil {
-//			h := GetMaxHeight(einfos)
-//			if pre > h && infos[pos].FeePerKB <= infos[i].FeePerKB {
-//				return errors.New(fmt.Sprintf("tx sequence wrong,[i=%d,h=%v,f=%v][i=%d,h=%v,f=%v]",
-//					pos, pre, infos[pos].FeePerKB, i, h, infos[i].FeePerKB))
-//			} else {
-//				pre, pos = h, i
-//			}
-//		}
-//	}
-//
-//	return nil
-//}
-
-func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, rewards []*PunishedRewardItem,
+func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, items2 []*ConvertItem, rewards []*PunishedRewardItem,
 	mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
@@ -1140,7 +1119,23 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeI
 	}
 	tx.TxOut[1].Value = reserve1 - allEntangle
 	if tx.TxOut[1].Value < 0 {
-		panic(errors.New("pool1 amount < 0"))
+		return errors.New("pool1 amount < 0")
+	}
+
+	for i := range items2 {
+		if items2[i].ConvertType != ExpandedTxConvert_Czz {
+			continue
+		}
+		pkScript, err := txscript.PayToAddrScript(items2[i].Address)
+		if err != nil {
+			return errors.New("items2 Make Meger tx failed,err: " + err.Error())
+		}
+		out := &wire.TxOut{
+			Value:    items2[i].Value.Int64(),
+			PkScript: pkScript,
+		}
+		allEntangle += out.Value
+		tx.AddTxOut(out)
 	}
 
 	// merge beacon utxo
@@ -1875,12 +1870,14 @@ func toETH(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
+
 func reverseToETH(keeped *big.Int) (*big.Int, *big.Int) {
 	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
 	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
 	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
 	return rate, big.NewInt(1)
 }
+
 func toTRX(entangled, needed *big.Int) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
@@ -1908,6 +1905,7 @@ func toTRX(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
+
 func reverseToTRX(keeped *big.Int) (*big.Int, *big.Int) {
 	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
 	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
@@ -1920,10 +1918,12 @@ func toCzz(val *big.Float) *big.Int {
 	ii, _ := val.Int64()
 	return big.NewInt(ii)
 }
+
 func fromCzz(val int64) *big.Float {
 	v := new(big.Float).Quo(big.NewFloat(float64(val)), big.NewFloat(float64(baseUnit.Int64())))
 	return v
 }
+
 func fromCzz1(val *big.Int) *big.Float {
 	fval := new(big.Float).SetInt(val)
 	fval = fval.Quo(fval, new(big.Float).SetInt(baseUnit))
@@ -1937,9 +1937,11 @@ func countMant(value *big.Float, prec int) int {
 	}
 	return 0
 }
+
 func makeExp(exp int) *big.Int {
 	return new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(exp)), nil)
 }
+
 func makeMant(value *big.Float, prec int) *big.Int {
 	base := new(big.Float).SetFloat64(float64(makeExp(countMant(value, prec)).Uint64()))
 	v := new(big.Float).Mul(value, base)

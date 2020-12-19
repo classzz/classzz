@@ -104,10 +104,10 @@ func NewExBeaconInfo() *ExBeaconInfo {
 		Proofs:  make([]*WhiteListProof, 0, 0),
 		Free:    newBeaconFreeQuotaInfo(),
 		BItems: &BurnInfo{
-			AssetType:  ExpandedTxEntangle_Doge,
-			RAllAmount: big.NewInt(0),
-			BAllAmount: big.NewInt(0),
-			Items:      make([]*BurnItem, 0, 0),
+			ConvertType: ExpandedTxEntangle_Doge,
+			RAllAmount:  big.NewInt(0),
+			BAllAmount:  big.NewInt(0),
+			Items:       make([]*BurnItem, 0, 0),
 		},
 	}
 }
@@ -671,7 +671,7 @@ func (es *EntangleState) BurnAsset(addr, toAddr string, aType uint32, BeaconID, 
 
 	var burnInfo *BurnInfo
 	for _, v := range userEntitys.BurnAmounts {
-		if aType == v.AssetType {
+		if aType == v.ConvertType {
 			burnInfo = v
 			break
 		}
@@ -716,12 +716,6 @@ func (es *EntangleState) BurnConvert(addr, toAddr string, aType uint32, BeaconID
 		return nil, nil, ErrNoUserReg
 	}
 
-	// self redeem amount, maybe add the free quota in the BeaconAddress
-	//validAmount := userEntitys.getRedeemableAmount()
-	//if amount.Cmp(validAmount) > 0 {
-	//	return nil, nil, ErrNotEnouthBurn
-	//}
-
 	var burnInfo *BurnInfo
 	for _, v := range userEntitys.BurnAmounts {
 		if aType == v.ConvertType {
@@ -734,21 +728,8 @@ func (es *EntangleState) BurnConvert(addr, toAddr string, aType uint32, BeaconID
 		return nil, nil, ErrNoUserAsset
 	}
 
-	//reserve := es.GetEntangleAmountByAll(aType)
-	//base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-
-	// get out asset for burn czz
-	//outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
-	//outAllAmount = big.NewInt(0).Div(outAllAmount, baseUnit)
 	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
-	//outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
-	//outFeeAmount = big.NewInt(0).Div(outFeeAmount, baseUnit)
-
-	burnInfo.addBurnItem(toAddr, height, amount, fee, outFeeAmount, outAllAmount)
-
+	burnInfo.addBurnItem(toAddr, height, amount, fee, big.NewInt(0), big.NewInt(0))
 	return new(big.Int).Sub(amount, fee), fee, nil
 }
 
