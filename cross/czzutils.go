@@ -137,19 +137,11 @@ type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
 type BeaconAddressInfo struct {
-	BeaconID        uint64           `json:"beacon_id"`
-	Address         string           `json:"address"`
-	PubKey          []byte           `json:"pub_key"`
-	ToAddress       []byte           `json:"toAddress"`
-	StakingAmount   *big.Int         `json:"staking_amount"`  // in
-	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
-	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
-	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
-	AssetFlag       uint32           `json:"asset_flag"`
-	Fee             uint64           `json:"fee"`
-	KeepBlock       uint64           `json:"keep_block"` // the time as the block count for finally redeem time
-	WhiteList       []*WhiteUnit     `json:"white_list"`
-	CoinBaseAddress []string         `json:"coinbase_address"`
+	BeaconID        uint64   `json:"beacon_id"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 type BeaconAddressInfo2 struct {
@@ -198,12 +190,15 @@ func (lh *BeaconAddressInfo) addEnAsset(assetType uint32, amount *big.Int) {
 		})
 	}
 }
+
 func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
 }
+
 func (lh *BeaconAddressInfo) reduceEntangleAmount(amount *big.Int) {
 	lh.EntangleAmount = new(big.Int).Sub(lh.EntangleAmount, amount)
 }
+
 func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, assetType uint32) {
 	for _, v := range lh.Frees {
 		if assetType == v.AssetType {
@@ -211,6 +206,7 @@ func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, assetType uint32) {
 		}
 	}
 }
+
 func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, assetType uint32) {
 	for _, v := range lh.Frees {
 		if assetType == v.AssetType {

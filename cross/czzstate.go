@@ -92,10 +92,7 @@ func (e *BeaconFreeQuotaInfo) canBurn(assetType uint32, val *big.Int) error {
 }
 
 type ExBeaconInfo struct {
-	EnItems []*wire.OutPoint
-	Proofs  []*WhiteListProof
-	Free    *BeaconFreeQuotaInfo
-	BItems  *BurnInfo
+	BItems *BurnInfo
 }
 
 func NewExBeaconInfo() *ExBeaconInfo {
@@ -178,12 +175,11 @@ func (es *ExBeaconInfo) GetBurnAmount() *big.Int {
 }
 
 type EntangleState struct {
-	EnInfos             map[string]*BeaconAddressInfo
-	EnUserExChangeInfos map[uint64]UserExChangeInfos
-	BaExInfo            map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
-	PoolAmount1         *big.Int
-	PoolAmount2         *big.Int
-	CurBeaconID         uint64
+	EnInfos     map[string]*BeaconAddressInfo
+	BaExInfo    map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
+	PoolAmount1 *big.Int
+	PoolAmount2 *big.Int
+	CurBeaconID uint64
 }
 
 /////////////////////////////////////////////////////////////////

@@ -17,7 +17,7 @@ import (
 
 const (
 	// Entangle Transcation type
-	ExpandedTxEntangle_Doge uint32 = 1 << iota
+	ExpandedTxEntangle_Doge uint32 = 1
 	ExpandedTxEntangle_Ltc
 	ExpandedTxEntangle_Btc
 	ExpandedTxEntangle_Bsv
@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	NoEntangle              = errors.New("no entangle info in transcation")
+	NoEntangle              = errors.New("no NoEntangle info in transcation")
 	NoExChange              = errors.New("no NoExChange info in transcation")
 	NoConvert               = errors.New("no NoConvert info in transcation")
 	NoFastExChange          = errors.New("no NoFastExChange info in transcation")
