@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"io"
 	"log"
 	"math/big"
@@ -91,8 +92,27 @@ func (e *BeaconFreeQuotaInfo) canBurn(assetType uint32, val *big.Int) error {
 	return ErrNotKindOfAsset
 }
 
+type CommitteeInfo struct {
+	Id          *big.Int
+	StartHeight *big.Int
+	EndHeight   *big.Int
+	Members     []*CommitteeMember
+	BackMembers []*CommitteeMember
+}
+
+//CommitteeMembers committee members
+type CommitteeMembers []*CommitteeMember
+
+type CommitteeMember struct {
+	Coinbase      czzutil.Address
+	CommitteeBase czzutil.Address
+	Publickey     []byte
+	Flag          uint32
+	MType         uint32
+}
+
 type ExBeaconInfo struct {
-	BItems *BurnInfo
+	CommitteeInfo *CommitteeInfo
 }
 
 func NewExBeaconInfo() *ExBeaconInfo {
