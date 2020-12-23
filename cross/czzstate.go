@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"io"
 	"log"
 	"math/big"
@@ -64,6 +63,7 @@ func (e *BeaconFreeQuotaInfo) SetRate(assetType uint32, vv uint64) error {
 
 	return nil
 }
+
 func (e *BeaconFreeQuotaInfo) add(assetType uint32, val *big.Int) error {
 	for _, v := range e.Items {
 		v.Amount.Add(v.Amount, val)
@@ -71,6 +71,7 @@ func (e *BeaconFreeQuotaInfo) add(assetType uint32, val *big.Int) error {
 	}
 	return ErrNotKindOfAsset
 }
+
 func (e *BeaconFreeQuotaInfo) sub(assetType uint32, val *big.Int) error {
 	for _, v := range e.Items {
 		if v.AssetType == assetType {
@@ -80,6 +81,7 @@ func (e *BeaconFreeQuotaInfo) sub(assetType uint32, val *big.Int) error {
 	}
 	return ErrNotKindOfAsset
 }
+
 func (e *BeaconFreeQuotaInfo) canBurn(assetType uint32, val *big.Int) error {
 	for _, v := range e.Items {
 		if v.AssetType == assetType {
@@ -111,39 +113,8 @@ type CommitteeMember struct {
 	MType         uint32
 }
 
-type ExBeaconInfo struct {
-	CommitteeInfo *CommitteeInfo
-}
-
-func NewExBeaconInfo() *ExBeaconInfo {
-	return &ExBeaconInfo{
-		EnItems: make([]*wire.OutPoint, 0, 0),
-		Proofs:  make([]*WhiteListProof, 0, 0),
-		Free:    newBeaconFreeQuotaInfo(),
-		BItems: &BurnInfo{
-			ConvertType: ExpandedTxEntangle_Doge,
-			RAllAmount:  big.NewInt(0),
-			BAllAmount:  big.NewInt(0),
-			Items:       make([]*BurnItem, 0, 0),
-		},
-	}
-}
-
-func (e *ExBeaconInfo) EqualProof(proof *WhiteListProof) bool {
-	for _, v := range e.Proofs {
-		if v.Height == proof.Height {
-			return true
-		}
-	}
-	return false
-}
-
-func (e *ExBeaconInfo) AppendProof(proof *WhiteListProof) error {
-	if !e.EqualProof(proof) {
-		e.Proofs = append(e.Proofs, proof.Clone())
-		return nil
-	}
-	return ErrRepeatProof
+type ExtendInfo struct {
+	CommitteeInfo []*CommitteeInfo
 }
 
 func getAssetForBaRedeem(all *big.Int, atype uint32, es *EntangleState) (*big.Int, error) {
@@ -195,11 +166,11 @@ func (es *ExBeaconInfo) GetBurnAmount() *big.Int {
 }
 
 type EntangleState struct {
-	EnInfos     map[string]*BeaconAddressInfo
-	BaExInfo    map[uint64]*ExBeaconInfo // merge tx(outpoint) in every lid
-	PoolAmount1 *big.Int
-	PoolAmount2 *big.Int
-	CurBeaconID uint64
+	Infos          map[string]*BeaconAddressInfo
+	CommitteeInfos []*CommitteeInfo
+	PoolAmount1    *big.Int
+	PoolAmount2    *big.Int
+	CurBeaconID    uint64
 }
 
 /////////////////////////////////////////////////////////////////
@@ -1108,12 +1079,11 @@ func Hash2(es *EntangleState2) chainhash.Hash {
 
 func NewEntangleState() *EntangleState {
 	return &EntangleState{
-		EnInfos:             make(map[string]*BeaconAddressInfo),
-		EnUserExChangeInfos: make(map[uint64]UserExChangeInfos),
-		BaExInfo:            make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
-		PoolAmount1:         big.NewInt(0),
-		PoolAmount2:         big.NewInt(0),
-		CurBeaconID:         0,
+		EnInfos:     make(map[string]*BeaconAddressInfo),
+		BaExInfo:    make(map[uint64]*ExBeaconInfo), // merge tx(outpoint) in every lid
+		PoolAmount1: big.NewInt(0),
+		PoolAmount2: big.NewInt(0),
+		CurBeaconID: 0,
 	}
 }
 
