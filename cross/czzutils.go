@@ -136,14 +136,6 @@ type BaseAmountUint struct {
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
-type BeaconAddressInfo struct {
-	BeaconID        uint64   `json:"beacon_id"`
-	PubKey          []byte   `json:"pub_key"`
-	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   *big.Int `json:"staking_amount"`
-	CoinBaseAddress []string `json:"coinbase_address"`
-}
-
 type BeaconAddressInfo2 struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
@@ -173,38 +165,6 @@ type UpdateBeaconCoinbase struct {
 type UpdateBeaconFreeQuota struct {
 	Address   string   `json:"address"`
 	FreeQuota []uint64 `json:"free_quota"`
-}
-
-func (lh *BeaconAddressInfo) addEnAsset(assetType uint32, amount *big.Int) {
-	found := false
-	for _, val := range lh.EnAssets {
-		if val.AssetType == assetType {
-			found = true
-			val.Amount = new(big.Int).Add(val.Amount, amount)
-		}
-	}
-	if !found {
-		lh.EnAssets = append(lh.EnAssets, &EnAssetItem{
-			AssetType: assetType,
-			Amount:    amount,
-		})
-	}
-}
-
-func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
-	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
-}
-
-func (lh *BeaconAddressInfo) reduceEntangleAmount(amount *big.Int) {
-	lh.EntangleAmount = new(big.Int).Sub(lh.EntangleAmount, amount)
-}
-
-func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, assetType uint32) {
-	for _, v := range lh.Frees {
-		if assetType == v.AssetType {
-			v.Amount = new(big.Int).Add(v.Amount, amount)
-		}
-	}
 }
 
 func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, assetType uint32) {

@@ -12,7 +12,6 @@ import (
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/rlp"
-	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 )
 
@@ -102,397 +101,248 @@ type CommitteeInfo struct {
 	BackMembers []*CommitteeMember
 }
 
-//CommitteeMembers committee members
-type CommitteeMembers []*CommitteeMember
+type extCommitteeInfo struct {
+	Id          *big.Int
+	StartHeight *big.Int
+	EndHeight   *big.Int
+	Members     []*CommitteeMember
+	BackMembers []*CommitteeMember
+}
+
+func (ci *CommitteeInfo) DecodeRLP(s *rlp.Stream) error {
+	var eci extCommitteeInfo
+	if err := s.Decode(&eci); err != nil {
+		return err
+	}
+	ci.Id, ci.StartHeight, ci.EndHeight, ci.Members, ci.BackMembers = eci.Id, eci.StartHeight, eci.EndHeight, eci.Members, eci.BackMembers
+	return nil
+}
+
+func (ci *CommitteeInfo) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extCommitteeInfo{
+		Id:          ci.Id,
+		StartHeight: ci.StartHeight,
+		EndHeight:   ci.EndHeight,
+		Members:     ci.Members,
+		BackMembers: ci.BackMembers,
+	})
+}
 
 type CommitteeMember struct {
-	Coinbase      czzutil.Address
-	CommitteeBase czzutil.Address
+	Coinbase      string
+	CommitteeBase string
 	Publickey     []byte
 	Flag          uint32
 	MType         uint32
 }
 
-type ExtendInfo struct {
-	CommitteeInfo []*CommitteeInfo
+type extCommitteeMember struct {
+	Coinbase      string
+	CommitteeBase string
+	Publickey     []byte
+	Flag          uint32
+	MType         uint32
 }
 
-func getAssetForBaRedeem(all *big.Int, atype uint32, es *EntangleState) (*big.Int, error) {
-	reserve := es.GetEntangleAmountByAll(atype)
-	base, divisor, err := getRedeemRateByBurnCzz(reserve, atype)
-	if err != nil {
-		return nil, err
-	}
-	return new(big.Int).Div(new(big.Int).Mul(all, base), divisor), nil
-}
-
-func (e *ExBeaconInfo) UpdateFreeQuato(all *big.Int, es *EntangleState) error {
-	use := big.NewInt(0)
-	for i, v := range e.Free.Items {
-		p := big.NewInt(0)
-		if i == len(e.Free.Rate)-1 {
-			p = new(big.Int).Sub(all, use)
-		} else {
-			p = new(big.Int).Div(new(big.Int).Mul(all, big.NewInt(100)), big.NewInt(int64(e.Free.Rate[i])))
-			use = use.Add(use, p)
-		}
-		if l, err := getAssetForBaRedeem(p, v.AssetType, es); err != nil {
-			return err
-		} else {
-			e.Free.add(v.AssetType, l)
-		}
-	}
-	return nil
-}
-
-func (e *ExBeaconInfo) CanBurn(all *big.Int, atype uint32, es *EntangleState) (*big.Int, error) {
-	out, err := getAssetForBaRedeem(all, atype, es)
-	if err != nil {
-		return nil, err
-	}
-	err = e.Free.canBurn(atype, out)
-	return out, err
-}
-
-//
-func (es *ExBeaconInfo) GetBurnAmount() *big.Int {
-	allAmount := big.NewInt(0)
-	for _, item := range es.BItems.Items {
-		if item.RedeemState == 0 {
-			allAmount = big.NewInt(0).Add(allAmount, item.Amount)
-		}
-	}
-	return allAmount
-}
-
-type EntangleState struct {
-	Infos          map[string]*BeaconAddressInfo
-	CommitteeInfos []*CommitteeInfo
-	PoolAmount1    *big.Int
-	PoolAmount2    *big.Int
-	CurBeaconID    uint64
-}
-
-/////////////////////////////////////////////////////////////////
-type StoreBeaconAddress struct {
-	Address string
-	Lh      *BeaconAddressInfo
-}
-
-type StoreUserInfos struct {
-	EID       uint64
-	UserInfos UserExChangeInfos
-}
-
-type StoreBeaconExInfos struct {
-	EID   uint64
-	EItem *ExBeaconInfo
-}
-
-type SortStoreBeaconAddress []*StoreBeaconAddress
-
-func (vs SortStoreBeaconAddress) Len() int {
-	return len(vs)
-}
-
-func (vs SortStoreBeaconAddress) Less(i, j int) bool {
-	return bytes.Compare([]byte(vs[i].Address), []byte(vs[j].Address)) == -1
-}
-
-func (vs SortStoreBeaconAddress) Swap(i, j int) {
-	it := vs[i]
-	vs[i] = vs[j]
-	vs[j] = it
-}
-
-type SortStoreUserInfos []*StoreUserInfos
-
-func (vs SortStoreUserInfos) Len() int {
-	return len(vs)
-}
-
-func (vs SortStoreUserInfos) Less(i, j int) bool {
-	return vs[i].EID < vs[j].EID
-}
-
-func (vs SortStoreUserInfos) Swap(i, j int) {
-	it := vs[i]
-	vs[i] = vs[j]
-	vs[j] = it
-}
-
-type SortStoreBeaconExInfos []*StoreBeaconExInfos
-
-func (vs SortStoreBeaconExInfos) Len() int {
-	return len(vs)
-}
-func (vs SortStoreBeaconExInfos) Less(i, j int) bool {
-	return vs[i].EID < vs[j].EID
-}
-func (vs SortStoreBeaconExInfos) Swap(i, j int) {
-	it := vs[i]
-	vs[i] = vs[j]
-	vs[j] = it
-}
-
-/////////////////////////////////////////////////////////////////
-func (es *EntangleState) toSlice() (SortStoreBeaconAddress, SortStoreUserInfos, SortStoreBeaconExInfos) {
-	v1, v2, v3 := make([]*StoreBeaconAddress, 0, 0), make([]*StoreUserInfos, 0, 0), make([]*StoreBeaconExInfos, 0, 0)
-	for k, v := range es.EnInfos {
-		v1 = append(v1, &StoreBeaconAddress{
-			Address: k,
-			Lh:      v,
-		})
-	}
-	for k, v := range es.EnUserExChangeInfos {
-		v2 = append(v2, &StoreUserInfos{
-			EID:       k,
-			UserInfos: v,
-		})
-	}
-	for k, v := range es.BaExInfo {
-		v3 = append(v3, &StoreBeaconExInfos{
-			EID:   k,
-			EItem: v,
-		})
-	}
-	sort.Sort(SortStoreBeaconAddress(v1))
-	sort.Sort(SortStoreUserInfos(v2))
-	sort.Sort(SortStoreBeaconExInfos(v3))
-	return SortStoreBeaconAddress(v1), SortStoreUserInfos(v2), SortStoreBeaconExInfos(v3)
-}
-func (es *EntangleState) fromSlice(v1 SortStoreBeaconAddress, v2 SortStoreUserInfos, v3 SortStoreBeaconExInfos) {
-	enInfos := make(map[string]*BeaconAddressInfo)
-	entitys := make(map[uint64]UserExChangeInfos)
-	exInfos := make(map[uint64]*ExBeaconInfo)
-	for _, v := range v1 {
-		enInfos[v.Address] = v.Lh
-	}
-	for _, v := range v2 {
-		entitys[v.EID] = v.UserInfos
-	}
-	for _, v := range v3 {
-		exInfos[v.EID] = v.EItem
-	}
-	es.EnInfos, es.EnUserExChangeInfos, es.BaExInfo = enInfos, entitys, exInfos
-}
-func (es *EntangleState) DecodeRLP(s *rlp.Stream) error {
-	type Store struct {
-		ID     uint64
-		Value1 SortStoreBeaconAddress
-		Value2 SortStoreUserInfos
-		Value3 SortStoreBeaconExInfos
-	}
-	var eb Store
-	if err := s.Decode(&eb); err != nil {
+func (cm *CommitteeMember) DecodeRLP(s *rlp.Stream) error {
+	var eci extCommitteeMember
+	if err := s.Decode(&eci); err != nil {
 		return err
 	}
-	es.CurBeaconID = eb.ID
-	es.fromSlice(eb.Value1, eb.Value2, eb.Value3)
+	cm.Coinbase, cm.CommitteeBase, cm.Publickey, cm.Flag, cm.MType = eci.Coinbase, eci.CommitteeBase, eci.Publickey, eci.Flag, eci.MType
 	return nil
 }
-func (es *EntangleState) EncodeRLP(w io.Writer) error {
-	type Store struct {
-		ID     uint64
-		Value1 SortStoreBeaconAddress
-		Value2 SortStoreUserInfos
-		Value3 SortStoreBeaconExInfos
+
+func (cm *CommitteeMember) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extCommitteeMember{
+		Coinbase:      cm.Coinbase,
+		CommitteeBase: cm.CommitteeBase,
+		Publickey:     cm.Publickey,
+		Flag:          cm.Flag,
+		MType:         cm.MType,
+	})
+}
+
+type PledgeInfo struct {
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
+type extPledgeInfo struct {
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
+func (pi *PledgeInfo) DecodeRLP(s *rlp.Stream) error {
+	var epi extPledgeInfo
+	if err := s.Decode(&epi); err != nil {
+		return err
 	}
-	s1, s2, s3 := es.toSlice()
-	return rlp.Encode(w, &Store{
-		ID:     es.CurBeaconID,
-		Value1: s1,
-		Value2: s2,
-		Value3: s3,
+	pi.ID, pi.Address, pi.PubKey, pi.ToAddress, pi.StakingAmount, pi.CoinBaseAddress = epi.ID, epi.Address, epi.PubKey, epi.ToAddress, epi.StakingAmount, epi.CoinBaseAddress
+	return nil
+}
+
+func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extPledgeInfo{
+		ID:              pi.ID,
+		Address:         pi.Address,
+		PubKey:          pi.PubKey,
+		ToAddress:       pi.ToAddress,
+		StakingAmount:   pi.StakingAmount,
+		CoinBaseAddress: pi.CoinBaseAddress,
+	})
+}
+
+type CommitteeState struct {
+	PledgeInfos    []*PledgeInfo
+	CommitteeInfos []*CommitteeInfo
+}
+
+type extCommitteeState struct {
+	PledgeInfos    []*PledgeInfo
+	CommitteeInfos []*CommitteeInfo
+}
+
+func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
+	var ecs extCommitteeState
+	if err := s.Decode(&ecs); err != nil {
+		return err
+	}
+	cs.PledgeInfos, cs.CommitteeInfos = ecs.PledgeInfos, ecs.CommitteeInfos
+	return nil
+}
+
+func (cs *CommitteeState) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extCommitteeState{
+		PledgeInfos:    cs.PledgeInfos,
+		CommitteeInfos: cs.CommitteeInfos,
 	})
 }
 
 /////////////////////////////////////////////////////////////////
-func (es *EntangleState) getBeaconByID(bid uint64) *BeaconAddressInfo {
-	for _, v := range es.EnInfos {
-		if v.BeaconID == bid {
+func (cs *CommitteeState) getPledgeInfoByID(id *big.Int) *PledgeInfo {
+	for _, v := range cs.PledgeInfos {
+		if v.ID.Cmp(id) == 0 {
 			return v
 		}
 	}
 	return nil
 }
-func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
-	for _, v := range es.EnInfos {
+
+func (cs *CommitteeState) getPledgeInfoByAddress(address string) *PledgeInfo {
+	for _, v := range cs.PledgeInfos {
+		if v.Address == address {
+			return v
+		}
+	}
+	return nil
+}
+
+func (cs *CommitteeState) getPledgeInfoFromTo(to []byte) *PledgeInfo {
+	for _, v := range cs.PledgeInfos {
 		if bytes.Equal(v.ToAddress, to) {
 			return v
 		}
 	}
 	return nil
 }
-func (es *EntangleState) GetBeaconIdByTo(to []byte) uint64 {
-	info := es.getBeaconAddressFromTo(to)
-	if info != nil {
-		return info.BeaconID
-	}
-	return 0
-}
-func (es *EntangleState) getBeaconToAddressByID(i uint64) []byte {
-	if info := es.getBeaconByID(i); info != nil {
-		return info.getToAddress()
-	}
-	return nil
-}
-func (es *EntangleState) GetBeaconToAddrByID(i uint64, params *chaincfg.Params) czzutil.Address {
-	if b := es.getBeaconToAddressByID(i); b != nil {
-		addr, err := czzutil.NewLegacyAddressPubKeyHash(b, params)
+
+func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.Params) czzutil.Address {
+	if b := cs.getPledgeInfoByID(id); b != nil {
+		addr, err := czzutil.NewLegacyAddressPubKeyHash(b.ToAddress, params)
 		if err == nil {
 			return addr
 		}
 	}
 	return nil
 }
-func (es *EntangleState) GetBaExInfoByID(id uint64) *ExBeaconInfo {
-	if v, ok := es.BaExInfo[id]; ok {
-		return v
-	}
-	return nil
-}
-func (es *EntangleState) SetBaExInfo(id uint64, info *ExBeaconInfo) error {
-	es.BaExInfo[id] = info
-	return nil
-}
-func (es *EntangleState) GetOutSideAsset(id uint64, assetType uint32) *big.Int {
-	lh := es.getBeaconByID(id)
-	if lh == nil {
-		return nil
-	}
-	return lh.getOutSideAsset(assetType)
-}
-func (es *EntangleState) GetWhiteList(id uint64) []*WhiteUnit {
-	lh := es.getBeaconByID(id)
-	if lh == nil {
-		return nil
-	}
-	return lh.getWhiteList()
-}
-func (es *EntangleState) getBeaconAddressByID(id uint64) string {
-	lh := es.getBeaconByID(id)
+
+func (cs *CommitteeState) getPledgeInfoAddressByID(id *big.Int) string {
+	lh := cs.getPledgeInfoByID(id)
 	if lh == nil {
 		return ""
 	}
 	return lh.Address
 }
 
+func (cs *CommitteeState) getPledgeInfoMaxId() *big.Int {
+	maxId := big.NewInt(0)
+	for _, v := range cs.PledgeInfos {
+		if maxId.Cmp(v.ID) < 0 {
+			maxId = v.ID
+		}
+	}
+	return maxId
+}
+
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, pubkey []byte, amount *big.Int,
-	fee, keepBlock uint64, assetFlag uint32, wu []*WhiteUnit, cba []string) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keepBlock))) ||
-		!ValidAssetFlag(assetFlag) {
-		return ErrInvalidParam
-	}
+func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
+
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
 	}
-	if _, ok := es.EnInfos[addr]; ok {
+
+	if info := cs.getPledgeInfoByAddress(address); info != nil {
 		return ErrRepeatRegister
 	}
-	if info := es.getBeaconAddressFromTo(to); info != nil {
+
+	if info := cs.getPledgeInfoFromTo(to); info != nil {
 		return ErrRepeatToAddress
 	}
-	info := &BeaconAddressInfo{
-		BeaconID:        es.CurBeaconID + 1,
-		Address:         addr,
-		PubKey:          pubkey,
+
+	maxId := cs.getPledgeInfoMaxId()
+	info := &PledgeInfo{
+		ID:              big.NewInt(0).Add(maxId, big.NewInt(1)),
+		Address:         address,
+		PubKey:          pubKey,
 		ToAddress:       to,
 		StakingAmount:   new(big.Int).Set(amount),
-		AssetFlag:       assetFlag,
-		Fee:             fee,
-		KeepBlock:       keepBlock,
-		EnAssets:        make([]*EnAssetItem, 0, 0),
-		EntangleAmount:  big.NewInt(0),
-		WhiteList:       wu,
 		CoinBaseAddress: cba,
 	}
 
-	es.CurBeaconID = info.BeaconID
-	es.EnInfos[addr] = info
-	es.BaExInfo[info.BeaconID] = NewExBeaconInfo()
-	es.EnUserExChangeInfos[info.BeaconID] = NewUserExChangeInfos()
+	cs.PledgeInfos = append(cs.PledgeInfos, info)
 	return nil
 }
 
-func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
-	if val, ok := es.EnInfos[addr]; ok {
-		cnt := len(val.WhiteList)
-		if cnt+len(wlist) >= MaxWhiteListCount {
-			return errors.New("more than max white list")
-		}
-		for _, v := range wlist {
-			if ValidAssetType(v.AssetType) && ValidPK(v.Pk) {
-				val.WhiteList = append(val.WhiteList, v)
-			}
-		}
-		return nil
-	} else {
+func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) error {
+	if info := cs.getPledgeInfoByAddress(address); info == nil {
 		return ErrNoRegister
-	}
-}
-
-func (es *EntangleState) UpdateCoinbaseAll(addr string, coinbases []string) error {
-	if val, ok := es.EnInfos[addr]; ok {
-		if len(coinbases) >= MaxCoinBase {
+	} else {
+		if len(coinBases) >= MaxCoinBase {
 			return errors.New("more than max coinbase")
 		}
-		val.CoinBaseAddress = coinbases
-		return nil
-	} else {
-		return ErrNoRegister
+		info.CoinBaseAddress = coinBases
 	}
+	return nil
 }
 
-func (es *EntangleState) UpdateBeaconFreeQuota(addr string, FreeQuota []uint64) error {
-
-	if val, ok := es.EnInfos[addr]; ok {
-
-		exinfo := es.BaExInfo[val.BeaconID]
-		if len(FreeQuota) >= MaxCoinType {
-			return errors.New("more than max coinbase")
-		}
-
-		exinfo.Free.Rate = FreeQuota
-		return nil
-	} else {
-		return ErrNoRegister
-	}
-}
-
-func (es *EntangleState) AppendAmountForBeaconAddress(addr string, amount *big.Int) error {
-	if info, ok := es.EnInfos[addr]; !ok {
+func (cs *CommitteeState) AddMortgage(addr string, amount *big.Int) error {
+	if info := cs.getPledgeInfoByAddress(addr); info == nil {
 		return ErrRepeatRegister
 	} else {
 		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
-		return nil
 	}
+	return nil
 }
 
-func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
-	if val, ok := es.EnInfos[addr]; ok {
-		for i, v := range val.CoinBaseAddress {
+func (cs *CommitteeState) UpdateCoinbase(addr, update, newAddr string) error {
+	if info := cs.getPledgeInfoByAddress(addr); info == nil {
+		return ErrNoRegister
+	} else {
+		for i, v := range info.CoinBaseAddress {
 			if v == update {
-				val.CoinBaseAddress[i] = newAddr
+				info.CoinBaseAddress[i] = newAddr
 			}
 		}
-		return nil
-	} else {
-		return ErrNoRegister
-	}
-}
-
-func (es *EntangleState) UpdateCfgForBeaconAddress(addr string, fee, keepBlock uint64, AssetFlag uint32) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keepBlock))) ||
-		!ValidAssetFlag(AssetFlag) {
-		return ErrInvalidParam
-	}
-	if info, ok := es.EnInfos[addr]; ok {
-		return ErrRepeatRegister
-	} else {
-		info.Fee, info.AssetFlag, info.KeepBlock = fee, AssetFlag, keepBlock
 	}
 	return nil
 }
@@ -503,70 +353,6 @@ func (es *EntangleState) GetCoinbase(addr string) []string {
 		res = append(res, val.CoinBaseAddress[:]...)
 	}
 	return nil
-}
-
-// UnregisterBeaconAddress need to check all the proves and handle all the user's burn coins
-func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
-	if val, ok := es.EnInfos[addr]; ok {
-		last := new(big.Int).Sub(val.StakingAmount, val.EntangleAmount)
-		redeemAmount(addr, last)
-	} else {
-		return ErrNoRegister
-	}
-	return nil
-}
-
-// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddEntangleItem(addr string, assetType uint32, BeaconID uint64,
-	height, amount *big.Int, czzHeight int32) (*big.Int, error) {
-	if es.AddressInWhiteList(addr, true) {
-		return nil, ErrAddressInWhiteList
-	}
-	lh := es.getBeaconAddress(BeaconID)
-	if lh == nil {
-		return nil, ErrNoRegister
-	}
-
-	if !isValidAsset(assetType, lh.AssetFlag) {
-		return nil, ErrNoUserAsset
-	}
-	sendAmount := big.NewInt(0)
-	var err error
-	// calc the send amount
-	reserve := es.GetEntangleAmountByAll(assetType)
-	sendAmount, err = calcEntangleAmount(reserve, amount, assetType)
-	if err != nil {
-		return nil, err
-	}
-	if err := lh.EnoughToEntangle(sendAmount); err != nil {
-		return nil, err
-	}
-
-	userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]
-	if !ok {
-		userExChangeInfos = NewUserExChangeInfos()
-	}
-	if userExChangeInfos != nil {
-		userExChangeInfo, ok1 := userExChangeInfos[addr]
-		if !ok1 {
-			userExChangeInfo = NewUserExChangeInfo()
-		}
-
-		for _, v := range userExChangeInfo.ExChangeEntitys {
-			if assetType == v.AssetType {
-				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-				break
-			}
-		}
-
-		userExChangeInfo.increaseOriginAmount(sendAmount, big.NewInt(int64(czzHeight)))
-		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(lh.KeepBlock)), amount)
-		lh.addEnAsset(assetType, amount)
-		lh.recordEntangleAmount(sendAmount)
-		userExChangeInfos[addr] = userExChangeInfo
-		es.EnUserExChangeInfos[BeaconID] = userExChangeInfos
-	}
-	return sendAmount, nil
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
