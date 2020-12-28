@@ -537,7 +537,7 @@ func NewBlkTmplGenerator(policy *Policy, params *chaincfg.Params,
 //  |  transactions (while block size   |   |
 //  |  <= policy.BlockMinSize)          |   |
 //   -----------------------------------  --
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, *cross.EntangleState, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, *cross.CommitteeState, error) {
 	// Extend the most recently known best block.
 	best := g.chain.BestSnapshot()
 	nextBlockHeight := best.Height + 1
@@ -590,8 +590,8 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleItems := make([]*cross.ExChangeItem, 0, 0)
-	convertItems := make([]*cross.ConvertItem, 0, 0)
+	entangleItems := make([]*cross.EntangleItem, 0, 0)
+	exChangeItems := make([]*cross.ExChangeItem, 0, 0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
 	// dependsOn map kept with each dependent transaction helps quickly
@@ -893,14 +893,14 @@ mempoolLoop:
 
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-				objs, err := cross.ToAddressFromConverts(cinfo, g.chain.GetExChangeVerify(), eState, nextBlockHeight)
+				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetExChangeVerify(), int64(nextBlockHeight))
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toAddressFromEntangle: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				convertItems = append(convertItems, objs...)
+				exChangeItems = append(exChangeItems, objs...)
 			}
 
 			beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
@@ -1100,7 +1100,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.ConverHeight <= nextBlockHeight {
-		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, entangleItems, convertItems, rewards, mergeItems)
+		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exChangeItems, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1151,14 +1151,14 @@ mempoolLoop:
 		"%064x)", len(msgBlock.Transactions), totalFees, blockSigOps,
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
 
-	var eState3 *cross.EntangleState
+	var cState3 *cross.EntangleState
 	if g.chainParams.BeaconHeight <= nextBlockHeight-1 && g.chainParams.ExChangeHeight > nextBlockHeight-1 {
-		eState4 := g.chain.CurrentEstate2()
+		eState4 := g.chain.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for k, v := range eState4.EnInfos {
 			bai2 := &cross.BeaconAddressInfo{
-				BeaconID:        v.ExchangeID,
+				ExchangeID:      v.ExchangeID,
 				StakingAmount:   v.StakingAmount,
 				EntangleAmount:  v.EntangleAmount,
 				CoinBaseAddress: v.CoinBaseAddress,
@@ -1166,12 +1166,12 @@ mempoolLoop:
 			bai2s[k] = bai2
 		}
 
-		eState3 = &cross.EntangleState{
+		cState3 = &cross.EntangleState{
 			EnInfos: bai2s,
 		}
 
 	} else if g.chainParams.ExChangeHeight <= nextBlockHeight-1 {
-		eState3 = g.chain.CurrentEstate()
+		cState3 = g.chain.CurrentEstate()
 	}
 
 	return &BlockTemplate{
@@ -1182,7 +1182,7 @@ mempoolLoop:
 		ValidPayAddress: payToAddress != nil,
 		MaxBlockSize:    uint32(maxBlockSize),
 		MaxSigOps:       uint32(maxSigOps),
-	}, eState3, nil
+	}, cState3, nil
 }
 
 // UpdateBlockTime updates the timestamp in the header of the passed block to
@@ -1307,59 +1307,59 @@ func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.
 	return items, to
 }
 
-func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint,
-	rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
-	if view == nil {
-		return nil, errors.New("view is nil")
-	}
-	res := &cross.PunishedRewardItem{
-		Amount: new(big.Int).Mul(big.NewInt(1), info.Amount),
-		Addr1:  rewardAddress,
-		Addr2:  cross.ZeroAddrsss,
-		Addr3:  changeAddress,
-	}
-	m := view.Entries()
-	for k, v := range m {
-		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
-		break
-	}
-	return res, nil
-}
+//func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint,
+//	rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
+//	if view == nil {
+//		return nil, errors.New("view is nil")
+//	}
+//	res := &cross.PunishedRewardItem{
+//		Amount: new(big.Int).Mul(big.NewInt(1), info.Amount),
+//		Addr1:  rewardAddress,
+//		Addr2:  cross.ZeroAddrsss,
+//		Addr3:  changeAddress,
+//	}
+//	m := view.Entries()
+//	for k, v := range m {
+//		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+//		break
+//	}
+//	return res, nil
+//}
 
-func toRewardsByPunishedBurn(view *blockchain.UtxoViewpoint, rewardAddress, changeAddress czzutil.Address, Amount *big.Int) (*cross.PunishedRewardItem, error) {
-	if view == nil {
-		return nil, errors.New("view is nil")
-	}
-	res := &cross.PunishedRewardItem{
-		Amount: new(big.Int).Mul(big.NewInt(1), Amount),
-		Addr1:  rewardAddress,
-		Addr2:  cross.ZeroAddrsss,
-		Addr3:  changeAddress,
-	}
-	m := view.Entries()
-	for k, v := range m {
-		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
-		break
-	}
-	return res, nil
-}
+//func toRewardsByPunishedBurn(view *blockchain.UtxoViewpoint, rewardAddress, changeAddress czzutil.Address, Amount *big.Int) (*cross.PunishedRewardItem, error) {
+//	if view == nil {
+//		return nil, errors.New("view is nil")
+//	}
+//	res := &cross.PunishedRewardItem{
+//		Amount: new(big.Int).Mul(big.NewInt(1), Amount),
+//		Addr1:  rewardAddress,
+//		Addr2:  cross.ZeroAddrsss,
+//		Addr3:  changeAddress,
+//	}
+//	m := view.Entries()
+//	for k, v := range m {
+//		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+//		break
+//	}
+//	return res, nil
+//}
 
-func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint, height uint64,
-	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
-	if view == nil {
-		return nil, errors.New("view is nil")
-	}
-	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.AssetType, info.BeaconID)
-	res := &cross.PunishedRewardItem{
-		Amount: new(big.Int).Mul(big.NewInt(1), amount),
-		Addr1:  rewardAddress,
-		Addr2:  cross.ZeroAddrsss,
-		Addr3:  toAddress,
-	}
-	m := view.Entries()
-	for k, v := range m {
-		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
-		break
-	}
-	return res, nil
-}
+//func toRewardsByWhiteListPunished(info *cross.WhiteListProof, view *blockchain.UtxoViewpoint, height uint64,
+//	state *cross.EntangleState, rewardAddress, toAddress czzutil.Address) (*cross.PunishedRewardItem, error) {
+//	if view == nil {
+//		return nil, errors.New("view is nil")
+//	}
+//	amount := state.CalcSlashingForWhiteListProof(info.Amount, info.AssetType, info.BeaconID)
+//	res := &cross.PunishedRewardItem{
+//		Amount: new(big.Int).Mul(big.NewInt(1), amount),
+//		Addr1:  rewardAddress,
+//		Addr2:  cross.ZeroAddrsss,
+//		Addr3:  toAddress,
+//	}
+//	m := view.Entries()
+//	for k, v := range m {
+//		res.POut, res.Script, res.OriginAmount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+//		break
+//	}
+//	return res, nil
+//}

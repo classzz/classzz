@@ -21,35 +21,23 @@ var (
 )
 
 // RecoverPublic returns the public key of the marshal bytes.
-func RecoverPublicFromBytes(pub []byte, t uint32) (*ecdsa.PublicKey, error) {
+func RecoverPublicFromBytes(pub []byte, t uint8) (*ecdsa.PublicKey, error) {
 	switch t {
 	case ExpandedTxEntangle_Doge:
 		return UnmarshalPubkey(pub)
 	case ExpandedTxEntangle_Ltc:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Btc:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Bsv:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Bch:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Usdt:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Eth:
-		return UnmarshalPubkey(pub) // tmp exc
-	case ExpandedTxEntangle_Trx:
 		return UnmarshalPubkey(pub) // tmp exc
 	default:
 		return nil, ErrCryptoType
 	}
 }
 
-func MakeAddress(puk ecdsa.PublicKey) (czzutil.Address, error) {
+func MakeAddress(puk ecdsa.PublicKey, params *chaincfg.Params) (czzutil.Address, error) {
 	pub := (*czzec.PublicKey)(&puk).SerializeCompressed()
-	if addrHash, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pub), &chaincfg.MainNetParams); err != nil {
+	if addrHash, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pub), params); err != nil {
 		return nil, err
 	} else {
-		address, err1 := czzutil.DecodeAddress(addrHash.String(), &chaincfg.MainNetParams)
+		address, err1 := czzutil.DecodeAddress(addrHash.String(), params)
 		if err1 != nil {
 			return nil, err
 		}

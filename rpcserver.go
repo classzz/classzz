@@ -3951,12 +3951,6 @@ func handleGetBeaconBurnInfo(s *rpcServer, cmd interface{}, closeChan <-chan str
 				AssetType = "BSV"
 			case cross.ExpandedTxEntangle_Bch:
 				AssetType = "BCH"
-			case cross.ExpandedTxEntangle_Usdt:
-				AssetType = "USDT"
-			case cross.ExpandedTxEntangle_Eth:
-				AssetType = "ETH"
-			case cross.ExpandedTxEntangle_Trx:
-				AssetType = "TRX"
 			}
 
 			result1[AssetType] = result2

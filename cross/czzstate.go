@@ -124,10 +124,8 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 }
 
 type ConvertItem struct {
-	Height      *big.Int        `json:"height"`
+	ExtTxHash   string          `json:"ext_tx_hash"`
 	Address     czzutil.Address `json:"address"`
-	AssetType   uint32          `json:"asset_type"`
-	ConvertType uint32          `json:"convert_type"`
 	Amount      *big.Int        `json:"amount"` // czz asset amount
 	ToAddress   string          `json:"to_address"`
 	RedeemState byte            `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
@@ -144,11 +142,11 @@ type ConvertItem struct {
 //	return item
 //}
 
-type ConvertItems map[uint8]*ConvertItem
+type ConvertItems map[uint8]ConvertItem
 
 type StoreConvertItem struct {
 	Type        uint8
-	ConvertItem *ConvertItem
+	ConvertItem ConvertItem
 }
 
 type SortStoreConvertItem []*StoreConvertItem
@@ -180,7 +178,7 @@ func (ci *ConvertItems) toSlice() SortStoreConvertItem {
 }
 
 func (ci *ConvertItems) fromSlice(vv SortStoreConvertItem) {
-	convertItems := make(map[uint8]*ConvertItem)
+	convertItems := make(map[uint8]ConvertItem)
 	for _, v := range vv {
 		convertItems[v.Type] = v.ConvertItem
 	}
@@ -403,287 +401,75 @@ func (cs *CommitteeState) UpdateCoinbase(addr, update, newAddr string) error {
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (cs *CommitteeState) AddConvertItem(addr string, assetType uint32, ID *big.Int, amount *big.Int, czzHeight int32) error {
+func (cs *CommitteeState) AddConvertItem(item *ExChangeItem) error {
 
-	pi := cs.getPledgeInfoByID(ID)
-	if pi == nil {
-		return ErrNoRegister
+	convertItem := ConvertItem{
+		ExtTxHash:   item.ExtTxHash,
+		Address:     item.Address,
+		Amount:      item.Amount,
+		ToAddress:   item.ToAddress,
+		RedeemState: 0,
 	}
 
-	userExChangeInfos, ok := cs.EnUserExChangeInfos[BeaconID]
-	if !ok {
-		userExChangeInfos = NewUserExChangeInfos()
-	}
-
-	if userExChangeInfos != nil {
-		userExChangeInfo, ok1 := userExChangeInfos[addr]
-		if !ok1 {
-			userExChangeInfo = NewUserExChangeInfo()
-		}
-
-		for _, v := range userExChangeInfo.ExChangeEntitys {
-			if assetType == v.AssetType {
-				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-				break
-			}
-		}
-
-		userExChangeInfo.increaseOriginAmount(amount, big.NewInt(int64(czzHeight)))
-		userExChangeInfo.updateFreeQuotaOfHeight(big.NewInt(int64(lh.KeepBlock)), amount)
-		lh.addEnAsset(assetType, amount)
-		lh.recordEntangleAmount(amount)
-		userExChangeInfos[addr] = userExChangeInfo
-		es.EnUserExChangeInfos[BeaconID] = userExChangeInfos
-	}
+	cs.ConvertItems[item.AssetType][item.AssetType] = convertItem
 	return nil
 }
 
-// BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
-// verify the txid,keep equal amount czz
-// returns the amount czz by user's burnned, took out fee by beaconaddress
-func (cs *CommitteeState) BurnAsset(addr, toAddr string, aType uint32, BeaconID, height uint64,
-	amount *big.Int) (*big.Int, *big.Int, error) {
-
-	light := es.getBeaconAddress(BeaconID)
-	if light == nil {
-		return nil, nil, ErrNoRegister
-	}
-
-	// is Beacon
-	if light.Address == addr {
-		ex := es.GetBaExInfoByID(BeaconID)
-		if ex == nil {
-			return nil, nil, errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id: %v", BeaconID))
-		}
-		out, err := ex.CanBurn(amount, aType, es)
-		if err == nil {
-			z := big.NewInt(0)
-			ex.BItems.addBurnItem(toAddr, height, amount, z, z, out)
-		}
-		light.reduceEntangleAmount(amount)
-		return out, big.NewInt(0), err
-	}
-
-	lhEntitys, ok := es.EnUserExChangeInfos[BeaconID]
-	if !ok {
-		return nil, nil, ErrNoRegister
-	}
-
-	userEntitys, ok1 := lhEntitys[addr]
-	if !ok1 {
-		return nil, nil, ErrNoUserReg
-	}
-
-	// self redeem amount, maybe add the free quota in the BeaconAddress
-	validAmount := userEntitys.getRedeemableAmount()
-	if amount.Cmp(validAmount) > 0 {
-		return nil, nil, ErrNotEnouthBurn
-	}
-
-	var burnInfo *BurnInfo
-	for _, v := range userEntitys.BurnAmounts {
-		if aType == v.ConvertType {
-			burnInfo = v
-			break
-		}
-	}
-
-	if burnInfo == nil {
-		return nil, nil, ErrNoUserAsset
-	}
-
-	reserve := es.GetEntangleAmountByAll(aType)
-	base, divisor, err := getRedeemRateByBurnCzz(reserve, aType)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// get out asset for burn czz
-	outAllAmount := new(big.Int).Div(new(big.Int).Mul(amount, base), divisor)
-	outAllAmount = big.NewInt(0).Div(outAllAmount, baseUnit)
-	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
-	outFeeAmount := new(big.Int).Div(new(big.Int).Mul(fee, base), divisor)
-	outFeeAmount = big.NewInt(0).Div(outFeeAmount, baseUnit)
-	burnInfo.addBurnItem(toAddr, height, amount, fee, outFeeAmount, outAllAmount)
-
-	return new(big.Int).Sub(amount, fee), fee, nil
-}
-
-func (cs *CommitteeState) BurnConvert(addr, toAddr string, aType uint32, BeaconID, height uint64,
-	amount *big.Int) (*big.Int, *big.Int, error) {
-
-	light := es.getBeaconAddress(BeaconID)
-	if light == nil {
-		return nil, nil, ErrNoRegister
-	}
-
-	lhEntitys, ok := es.EnUserExChangeInfos[BeaconID]
-	if !ok {
-		return nil, nil, ErrNoRegister
-	}
-
-	userEntitys, ok := lhEntitys[addr]
-	if !ok {
-		return nil, nil, ErrNoUserReg
-	}
-
-	var burnInfo *BurnInfo
-	for _, v := range userEntitys.BurnAmounts {
-		if aType == v.ConvertType {
-			burnInfo = v
-			break
-		}
-	}
-
-	if burnInfo == nil {
-		return nil, nil, ErrNoUserAsset
-	}
-
-	fee := new(big.Int).Div(new(big.Int).Mul(amount, big.NewInt(int64(light.Fee))), big.NewInt(int64(MAXBASEFEE)))
-	burnInfo.addBurnItem(toAddr, height, amount, fee, big.NewInt(0), big.NewInt(0))
-	return new(big.Int).Sub(amount, fee), fee, nil
-}
-
-//func (es *EntangleState) SetInitPoolAmount(amount1, amount2 *big.Int) {
-//	es.PoolAmount1, es.PoolAmount2 = new(big.Int).Set(amount1), new(big.Int).Set(amount2)
+//func (cs *CommitteeState) getEntangledAmount(BeaconID uint64, assetType uint32) *big.Int {
+//	aa := big.NewInt(0)
+//	if userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]; ok {
+//		for _, userEntitys := range userExChangeInfos {
+//			for _, vv := range userEntitys.ExChangeEntitys {
+//				if assetType == vv.AssetType {
+//					aa = aa.Add(aa, vv.EnOutsideAmount)
+//					break
+//				}
+//			}
+//		}
+//	}
+//	return aa
 //}
 //
-//func (es *EntangleState) AddPoolAmount(amount1, amount2 *big.Int) {
-//	es.PoolAmount1 = new(big.Int).Add(es.PoolAmount1, amount1)
-//	es.PoolAmount2 = new(big.Int).Add(es.PoolAmount2, amount2)
+//func (cs *CommitteeState) GetEntangleAmountByAll(atype uint32) *big.Int {
+//	aa := big.NewInt(0)
+//	for _, infos := range es.EnUserExChangeInfos {
+//		for _, exChangeEntitys := range infos {
+//			for _, vv := range exChangeEntitys.ExChangeEntitys {
+//				if atype == vv.AssetType {
+//					aa = aa.Add(aa, vv.EnOutsideAmount)
+//					break
+//				}
+//			}
+//		}
+//	}
+//	return aa
 //}
-//
-//func (es *EntangleState) SubPoolAmount1(amount *big.Int) {
-//	es.PoolAmount1 = new(big.Int).Sub(es.PoolAmount1, amount)
+
+//func (cs *CommitteeState) getAllEntangleAmount(assetType uint32) *big.Int {
+//	all := big.NewInt(0)
+//	for _, val := range es.EnInfos {
+//		for _, v := range val.EnAssets {
+//			if v.AssetType == assetType {
+//				all = all.Add(all, v.Amount)
+//				break
+//			}
+//		}
+//	}
+//	return all
 //}
-//
-//func (es *EntangleState) SubPoolAmount2(amount *big.Int) {
-//	es.PoolAmount2 = new(big.Int).Sub(es.PoolAmount2, amount)
-//}
-
-//////////////////////////////////////////////////////////////////////
-
-func (cs *CommitteeState) getEntangledAmount(BeaconID uint64, assetType uint32) *big.Int {
-	aa := big.NewInt(0)
-	if userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]; ok {
-		for _, userEntitys := range userExChangeInfos {
-			for _, vv := range userEntitys.ExChangeEntitys {
-				if assetType == vv.AssetType {
-					aa = aa.Add(aa, vv.EnOutsideAmount)
-					break
-				}
-			}
-		}
-	}
-	return aa
-}
-
-func (cs *CommitteeState) GetEntangleAmountByAll(atype uint32) *big.Int {
-	aa := big.NewInt(0)
-	for _, infos := range es.EnUserExChangeInfos {
-		for _, exChangeEntitys := range infos {
-			for _, vv := range exChangeEntitys.ExChangeEntitys {
-				if atype == vv.AssetType {
-					aa = aa.Add(aa, vv.EnOutsideAmount)
-					break
-				}
-			}
-		}
-	}
-	return aa
-}
-
-func (cs *CommitteeState) getBeaconAddress(bid uint64) *BeaconAddressInfo {
-	for _, val := range es.EnInfos {
-		if val.BeaconID == bid {
-			return val
-		}
-	}
-	return nil
-}
-
-func (cs *CommitteeState) getAllEntangleAmount(assetType uint32) *big.Int {
-	all := big.NewInt(0)
-	for _, val := range es.EnInfos {
-		for _, v := range val.EnAssets {
-			if v.AssetType == assetType {
-				all = all.Add(all, v.Amount)
-				break
-			}
-		}
-	}
-	return all
-}
 
 //Minimum pledge amount = 1 million CZZ + (cumulative cross-chain buying CZZ - cumulative cross-chain selling CZZ) x exchange rate ratio
-func (cs *CommitteeState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
-	lh := es.getBeaconAddress(eid)
-	if lh != nil {
-		l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
-		if l.Sign() > 0 {
-			l = new(big.Int).Sub(l, MinStakingAmountForBeaconAddress)
-			if l.Sign() > 0 {
-				return l
-			}
-		}
-	}
-	return nil
-}
-
-//////////////////////////////////////////////////////////////////////
-// UpdateQuotaOnBlock called in insertBlock for update user's quota state
-func (cs *CommitteeState) UpdateQuotaOnBlock(height uint64) error {
-	for _, lh := range es.EnInfos {
-		userExChangeInfos, ok := es.EnUserExChangeInfos[lh.BeaconID]
-		if !ok {
-			fmt.Println("cann't found the BeaconAddress id:", lh.BeaconID)
-		} else {
-			all := big.NewInt(0)
-			for _, userEntity := range userExChangeInfos {
-				res := userEntity.updateFreeQuota(big.NewInt(int64(height)), big.NewInt(int64(lh.KeepBlock)))
-				all = new(big.Int).Add(all, res)
-			}
-			if ba := es.GetBaExInfoByID(lh.BeaconID); ba != nil {
-				err := ba.UpdateFreeQuato(all, es)
-				if err != nil {
-					fmt.Println("UpdateFreeQuato in the BeaconAddress was wrong,err:", lh.BeaconID, err)
-				}
-			} else {
-				fmt.Println("cann't found exInfos in the BeaconAddress id:", lh.BeaconID)
-			}
-		}
-	}
-	return nil
-}
-
-// TourAllUserBurnInfo Tours all user's burned asset and check which is timeout to redeem
-func (cs *CommitteeState) TourAllUserBurnInfo(height uint64) map[uint64]UserTimeOutBurnInfo {
-	// maybe get cache for recently burned user
-	res := make(map[uint64]UserTimeOutBurnInfo)
-	for k, users := range es.EnUserExChangeInfos {
-		userItems := make(map[string]TypeTimeOutBurnInfos)
-		for k1, entitys := range users {
-			items := entitys.getBurnTimeout(height, true)
-			if len(items.TypeTimeOutBurnInfo) > 0 {
-				userItems[k1] = items
-			}
-		}
-		if len(userItems) > 0 {
-			res[k] = UserTimeOutBurnInfo(userItems)
-		}
-	}
-	return res
-}
-
-func (cs *CommitteeState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurnInfo) {
-	for eid, items := range infos {
-		userEntitys, ok := es.EnUserExChangeInfos[eid]
-		if ok {
-			// set state=3 after be punished by system consensus
-			userEntitys.updateBurnState(3, items)
-		}
-	}
-}
+//func (cs *CommitteeState) LimitStakingAmount() *big.Int {
+//
+//	l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
+//	if l.Sign() > 0 {
+//		l = new(big.Int).Sub(l, MinStakingAmountForBeaconAddress)
+//		if l.Sign() > 0 {
+//			return l
+//		}
+//	}
+//	return nil
+//}
 
 // FinishHandleUserBurn the BeaconAddress finish the burn item
 //func (cs *CommitteeState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
@@ -722,43 +508,6 @@ func (cs *CommitteeState) UpdateStateToPunished(infos map[uint64]UserTimeOutBurn
 //	return nil
 //}
 
-// FinishHandleUserBurn the BeaconAddress finish the burn item
-func (cs *CommitteeState) UpdateHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
-	userEntitys, ok := es.EnUserExChangeInfos[info.BeaconID]
-	if !ok {
-		fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
-		return ErrNoRegister
-	} else {
-		for addr1, userEntity := range userEntitys {
-			if info.Address == addr1 {
-				userEntity.updateBurnState2(info.Height, info.Amount, info.AssetType, proof)
-			}
-		}
-	}
-	return nil
-}
-
-func (cs *CommitteeState) FinishWhiteListProof(proof *WhiteListProof) error {
-	if info := es.GetBaExInfoByID(proof.BeaconID); info != nil {
-		info.AppendProof(proof)
-		es.SetBaExInfo(proof.BeaconID, info)
-		return nil
-	}
-	return ErrNoRegister
-}
-
-// calc the punished amount by outside asset in the height
-// the return value(flag by czz) will be mul * 2
-func (cs *CommitteeState) CalcSlashingForWhiteListProof(outAmount *big.Int, atype uint32, BeaconID uint64) *big.Int {
-	// get current rate with czz and outside asset in heigth
-	reserve := es.GetEntangleAmountByAll(atype)
-	sendAmount, err := calcEntangleAmount(reserve, outAmount, atype)
-	if err != nil {
-		return nil
-	}
-	return sendAmount
-}
-
 func (cs *CommitteeState) ToBytes() []byte {
 	// maybe rlp encode
 	//msg, err := json.Marshal(es)
@@ -768,14 +517,6 @@ func (cs *CommitteeState) ToBytes() []byte {
 		log.Fatal("Failed to RLP encode EntangleState: ", err)
 	}
 	return data
-}
-
-func (cs *CommitteeState) Save() error {
-	return nil
-}
-
-func (cs *CommitteeState) Load() error {
-	return nil
 }
 
 func (cs *CommitteeState) Hash() chainhash.Hash {
@@ -1165,10 +906,6 @@ func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, er
 		return toDoge2(reserve, reqAmount), nil
 	case ExpandedTxEntangle_Ltc:
 		return toLtc2(reserve, reqAmount), nil
-	case ExpandedTxEntangle_Btc:
-		return toBtc(reserve, reqAmount), nil
-	case ExpandedTxEntangle_Bsv, ExpandedTxEntangle_Bch:
-		return toBchOrBsv(reserve, reqAmount), nil
 	default:
 		return nil, ErrNoUserAsset
 	}

@@ -522,9 +522,9 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
-	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
+	cState := dbFetchCommitteeState(dbTx, pHeight, pHash)
 	if block.Height() == NetParams.ExChangeHeight {
-		eState = cross.NewEntangleState()
+		cState = cross.NewCommitteeState()
 	}
 
 	reportWhiteList := make([]uint64, 0, 0)
@@ -533,7 +533,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		// BeaconRegistration
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
-			if err := RegisterBeaconTxStore(eState, br, tx); err != nil {
+			if err := RegisterBeaconTxStore(cState, br, tx); err != nil {
 				return err
 			}
 		}
@@ -541,7 +541,8 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		// AddBeaconPledge
 		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
 		if bp != nil {
-			if err := AddBeaconPledgeTxStore(eState, bp); err != nil {
+
+			if err := AddBeaconPledgeTxStore(cState, bp); err != nil {
 				return err
 			}
 		}
@@ -606,7 +607,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	for _, tx := range block.Transactions() {
 		var err error
 		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx2(tx.MsgTx(), NetParams)
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
 		if br != nil {
 			if eState != nil {
 				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
@@ -630,7 +631,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	if eState != nil {
 		var err error
-		err = dbPutEntangleState2(dbTx, block, eState)
+		err = dbPutEntangleState(dbTx, block, eState)
 		if err != nil {
 			return err
 		}
@@ -740,26 +741,6 @@ func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.En
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
 	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
-	return err
-}
-
-func dbPutBurnTxInfoEntry(dbTx database.Tx, info *cross.BurnTxInfo) error {
-	BurnTxInfoBucket := dbTx.Metadata().Bucket(cross.BurnTxInfoKey)
-	buf, err := hex.DecodeString(info.Address)
-	if err != nil {
-		return err
-	}
-	err = BurnTxInfoBucket.Put(buf, info.ToBytes())
-	return err
-}
-
-func dbRemoveBurnTxInfoEntry(dbTx database.Tx, info *cross.BurnProofInfo) error {
-	BurnTxInfoBucket := dbTx.Metadata().Bucket(cross.BurnTxInfoKey)
-	buf, err := hex.DecodeString(info.Address)
-	if err != nil {
-		return err
-	}
-	err = BurnTxInfoBucket.Delete(buf)
 	return err
 }
 
@@ -1809,24 +1790,24 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentCstate() *cross.CommitteeState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.exChangeVerify.Cache.LoadCommitteeState(height, hash)
 	return eState
 }
 
-func (b *BlockChain) CurrentEstate() *cross.EntangleState2 {
+func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
+	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
 func (b *BlockChain) GetCstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.CommitteeState {
-	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.exChangeVerify.Cache.LoadCommitteeState(height, hash)
 	return eState
 }
 
-func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState2 {
-	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
+func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
+	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
