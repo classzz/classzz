@@ -1886,6 +1886,7 @@ func getPoolAddress(pk []byte, chainParams *chaincfg.Params) (czzutil.Address, e
 	addr, err := czzutil.NewAddressPubKeyHash(pk, chainParams)
 	return addr, err
 }
+
 func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params) error {
 	CoinPool1 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
 	CoinPool2 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}
@@ -1912,6 +1913,7 @@ func matchPoolFromUtxo(utxo *UtxoEntry, index int, chainParams *chaincfg.Params)
 	}
 	return nil
 }
+
 func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) (int64, error) {
 	if isCoinBaseInParam(tx, chainParams) {
 		return 0, nil
@@ -1958,6 +1960,7 @@ func getFee(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpoint, chainParams
 	txFeeInSatoshi := totalSatoshiIn - totalSatoshiOut
 	return txFeeInSatoshi, nil
 }
+
 func getEtsInfoInBlock(block *czzutil.Block, utxoView *UtxoViewpoint, chainParams *chaincfg.Params) ([]*cross.EtsInfo, error) {
 
 	txs := block.Transactions()

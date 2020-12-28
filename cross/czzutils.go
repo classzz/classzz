@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"math/big"
-	"sort"
-
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
+	"io"
+	"math/big"
+	"sort"
 )
 
 var (
@@ -26,35 +25,36 @@ var (
 	ErrNotEnouthBurn      = errors.New("not enough burn amount in beaconAddress")
 	ErrNotMatchUser       = errors.New("cann't find user address")
 	ErrBurnProof          = errors.New("burn proof info not match")
-	ErrWhiteListProof     = errors.New("white list proof not match")
 	ErrStakingNotEnough   = errors.New("staking not enough")
-	ErrRepeatProof        = errors.New("repeat proof")
-	ErrNotEnouthEntangle  = errors.New("not enough entangle amount in beaconAddress")
-	ErrNotKindOfAsset     = errors.New("no support the kind of asset")
 )
 
 var (
-	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
+	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
-	LimitRedeemHeightForBeaconAddress = 2000
+	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 4
-	MaxCoinType                       = 6
-	ChechWhiteListProof               = true
+)
+
+const (
+	LhAssetBTC uint32 = 1 << iota
+	LhAssetBCH
+	LhAssetBSV
+	LhAssetLTC
+	LhAssetUSDT
+	LhAssetDOGE
 )
 
 func equalAddress(addr1, addr2 string) bool {
 	return bytes.Equal([]byte(addr1), []byte(addr2))
 }
-
 func validFee(fee *big.Int) bool {
 	if fee.Sign() < 0 || fee.Int64() > int64(MAXBASEFEE) {
 		return false
 	}
 	return true
 }
-
 func validKeepTime(kt *big.Int) bool {
 	if kt.Sign() < 0 || kt.Int64() > int64(MAXFREEQUOTA) {
 		return false
@@ -62,59 +62,124 @@ func validKeepTime(kt *big.Int) bool {
 	return true
 }
 
-func ValidAssetFlag(utype uint32) bool {
+type BurnItem struct {
+	Amount      *big.Int `json:"amount"`  // czz asset amount
+	RAmount     *big.Int `json:"ramount"` // outside asset amount
+	Height      uint64   `json:"height"`
+	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+}
 
-	if utype&ExpandedTxEntangle_Btc != 0 || utype&ExpandedTxEntangle_Bch != 0 || utype&ExpandedTxEntangle_Bsv != 0 ||
-		utype&ExpandedTxEntangle_Ltc != 0 || utype&ExpandedTxEntangle_Usdt != 0 || utype&ExpandedTxEntangle_Doge != 0 ||
-		utype&ExpandedTxEntangle_Eth != 0 || utype&ExpandedTxEntangle_Trx != 0 || utype&ExpandedTxConvert_ECzz != 0 ||
-		utype&ExpandedTxConvert_TCzz != 0 || utype&ExpandedTxConvert_Czz != 0 {
-		return true
+func (b *BurnItem) equal(o *BurnItem) bool {
+	return b.Height == o.Height &&
+		b.Amount.Cmp(o.Amount) == 0 && b.RAmount.Cmp(o.Amount) == 0
+}
+
+type BurnInfos struct {
+	Items      []*BurnItem
+	RAllAmount *big.Int // redeem asset for outside asset by burned czz
+	BAllAmount *big.Int // all burned asset on czz by the account
+}
+
+func newBurnInfos() *BurnInfos {
+	return &BurnInfos{
+		Items:      make([]*BurnItem, 0, 0),
+		RAllAmount: big.NewInt(0),
+		BAllAmount: big.NewInt(0),
 	}
-	return false
 }
 
-func ValidAssetType(utype uint32) bool {
-	if utype&ExpandedTxEntangle_Btc != 0 || utype&ExpandedTxEntangle_Bch != 0 || utype&ExpandedTxEntangle_Bsv != 0 ||
-		utype&ExpandedTxEntangle_Ltc != 0 || utype&ExpandedTxEntangle_Usdt != 0 || utype&ExpandedTxEntangle_Doge != 0 ||
-		utype&ExpandedTxEntangle_Eth != 0 || utype&ExpandedTxEntangle_Trx != 0 || utype&ExpandedTxConvert_ECzz != 0 ||
-		utype&ExpandedTxConvert_TCzz != 0 || utype&ExpandedTxConvert_Czz != 0 {
-		return true
-	}
-	return false
+// GetAllAmountByOrigin returns all burned amount asset (czz)
+func (b *BurnInfos) GetAllAmountByOrigin() *big.Int {
+	return new(big.Int).Set(b.BAllAmount)
 }
-
-func ValidPK(pk []byte) bool {
-	if len(pk) != 65 {
-		return false
-	}
-	return true
+func (b *BurnInfos) GetAllBurnedAmountByOutside() *big.Int {
+	return new(big.Int).Set(b.RAllAmount)
 }
-
-func isValidAsset(atype, assetAll uint32) bool {
-	return atype&assetAll != 0
-}
-func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
-	found_t := 0
-	StakingAmount := big.NewInt(0)
-	for _, eninfo := range eState.EnInfos {
-		for _, eAddr := range eninfo.CoinBaseAddress {
-			if address.String() == eAddr {
-				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
-				found_t = 1
-				break
+func (b *BurnInfos) getBurnTimeout(height uint64, update bool) []*BurnItem {
+	res := make([]*BurnItem, 0, 0)
+	for _, v := range b.Items {
+		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
+			res = append(res, &BurnItem{
+				Amount:      new(big.Int).Set(v.Amount),
+				RAmount:     new(big.Int).Set(v.RAmount),
+				Height:      v.Height,
+				RedeemState: v.RedeemState,
+			})
+			if update {
+				v.RedeemState = 2
 			}
 		}
 	}
-	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
-		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
-		target = big.NewInt(0).Mul(target, result1)
-	}
-	if target.Cmp(params.PowLimit) > 0 {
-		target.Set(params.PowLimit)
-	}
-	return target
+	return res
 }
+func (b *BurnInfos) addBurnItem(height uint64, amount, outAmount *big.Int) {
+	item := &BurnItem{
+		Amount:      new(big.Int).Set(amount),
+		RAmount:     new(big.Int).Set(outAmount),
+		Height:      height,
+		RedeemState: 0,
+	}
+	found := false
+	for _, v := range b.Items {
+		if v.RedeemState == 0 && v.equal(item) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		b.Items = append(b.Items, item)
+		b.RAllAmount = new(big.Int).Add(b.RAllAmount, outAmount)
+		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
+	}
+}
+func (b *BurnInfos) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
+			return v
+		}
+	}
+	return nil
+}
+func (b *BurnInfos) finishBurn(height uint64, amount *big.Int) {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 3 && amount.Cmp(v.Amount) == 0 {
+			v.RedeemState = 1
+		}
+	}
+}
+func (b *BurnInfos) recoverOutAmountForPunished(amount *big.Int) {
+	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
+}
+func (b *BurnInfos) verifyProof(height uint64, amount *big.Int) error {
+	for _, v := range b.Items {
+		if v.Height == height && v.RedeemState == 0 && amount.Cmp(v.Amount) == 0 {
+			return nil
+		}
+	}
+	return ErrBurnProof
+}
+
+type TimeOutBurnInfo struct {
+	Items     []*BurnItem
+	AssetType uint32
+}
+
+func (t *TimeOutBurnInfo) getAll() *big.Int {
+	res := big.NewInt(0)
+	for _, v := range t.Items {
+		res = res.Add(res, v.Amount)
+	}
+	return res
+}
+
+type TypeTimeOutBurnInfo []*TimeOutBurnInfo
+type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfo
+
+type LHPunishedItem struct {
+	All  *big.Int // czz amount(all user burned item in timeout)
+	User string
+}
+type LHPunishedItems []*LHPunishedItem
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +201,7 @@ type BaseAmountUint struct {
 type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
-type BeaconAddressInfo2 struct {
+type BeaconAddressInfo struct {
 	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
 	ToAddress       []byte           `json:"toAddress"`
@@ -157,19 +222,34 @@ type AddBeaconPledge struct {
 	StakingAmount *big.Int `json:"staking_amount"`
 }
 
-type UpdateBeaconCoinbase struct {
-	Address         string   `json:"address"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+func (lh *BeaconAddressInfo) addEnAsset(atype uint32, amount *big.Int) {
+	found := false
+	for _, val := range lh.EnAssets {
+		if val.AssetType == atype {
+			found = true
+			val.Amount = new(big.Int).Add(val.Amount, amount)
+		}
+	}
+	if !found {
+		lh.EnAssets = append(lh.EnAssets, &EnAssetItem{
+			AssetType: atype,
+			Amount:    amount,
+		})
+	}
 }
-
-type UpdateBeaconFreeQuota struct {
-	Address   string   `json:"address"`
-	FreeQuota []uint64 `json:"free_quota"`
+func (lh *BeaconAddressInfo) recordEntangleAmount(amount *big.Int) {
+	lh.EntangleAmount = new(big.Int).Add(lh.EntangleAmount, amount)
 }
-
-func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, assetType uint32) {
+func (lh *BeaconAddressInfo) addFreeQuota(amount *big.Int, atype uint32) {
 	for _, v := range lh.Frees {
-		if assetType == v.AssetType {
+		if atype == v.AssetType {
+			v.Amount = new(big.Int).Add(v.Amount, amount)
+		}
+	}
+}
+func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, atype uint32) {
+	for _, v := range lh.Frees {
+		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
 				v.Amount = new(big.Int).Sub(v.Amount, amount)
 			} else {
@@ -179,9 +259,9 @@ func (lh *BeaconAddressInfo) useFreeQuota(amount *big.Int, assetType uint32) {
 		}
 	}
 }
-func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, assetType uint32) bool {
+func (lh *BeaconAddressInfo) canRedeem(amount *big.Int, atype uint32) bool {
 	for _, v := range lh.Frees {
-		if assetType == v.AssetType {
+		if atype == v.AssetType {
 			if v.Amount.Cmp(amount) >= 0 {
 				return true
 			} else {
@@ -203,9 +283,9 @@ func (lh *BeaconAddressInfo) updateFreeQuota(res []*BaseAmountUint) error {
 	}
 	return nil
 }
-func (lh *BeaconAddressInfo) getFreeQuotaInfo(assetType uint32) *FreeQuotaItem {
+func (lh *BeaconAddressInfo) getFreeQuotaInfo(atype uint32) *FreeQuotaItem {
 	for _, v := range lh.Frees {
-		if assetType == v.AssetType {
+		if atype == v.AssetType {
 			return v
 		}
 	}
@@ -229,156 +309,58 @@ func (lh *BeaconAddressInfo) updatePunished(amount *big.Int) error {
 	lh.StakingAmount = new(big.Int).Sub(lh.StakingAmount, amount)
 	return err
 }
-func (lh *BeaconAddressInfo) getToAddress() []byte {
-	return lh.ToAddress
+
+/////////////////////////////////////////////////////////////////
+// Address > EntangleEntity
+type EntangleEntity struct {
+	ExchangeID      uint64     `json:"exchange_id"`
+	Address         string     `json:"address"`
+	AssetType       uint32     `json:"asset_type"`
+	Height          *big.Int   `json:"height"`            // newest height for entangle
+	OldHeight       *big.Int   `json:"old_height"`        // oldest height for entangle
+	EnOutsideAmount *big.Int   `json:"en_outside_amount"` // out asset
+	OriginAmount    *big.Int   `json:"origin_amount"`     // origin asset(czz) by entangle in
+	MaxRedeem       *big.Int   `json:"max_redeem"`        // out asset
+	BurnAmount      *BurnInfos `json:"burn_amount"`
 }
-func (lh *BeaconAddressInfo) getOutSideAsset(assetType uint32) *big.Int {
-	all := big.NewInt(0)
-	for _, v := range lh.EnAssets {
-		if v.AssetType == assetType {
-			all = new(big.Int).Add(all, v.Amount)
-		}
-	}
-	return all
-}
-func (lh *BeaconAddressInfo) getWhiteList() []*WhiteUnit {
-	return lh.WhiteList
-}
-func (lh *BeaconAddressInfo) EnoughToEntangle(enAmount *big.Int) error {
-	tmp := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
-	if tmp.Sign() <= 0 {
-		return ErrNotEnouthEntangle
-	}
-	if tmp.Cmp(new(big.Int).Add(enAmount, MinStakingAmountForBeaconAddress)) < 0 {
-		return ErrNotEnouthEntangle
-	}
-	return nil
-}
-
-///////////////////////////////////////////////////////////////////
-//// Address > EntangleEntity
-type ExChangeEntity struct {
-	AssetType       uint32
-	EnOutsideAmount *big.Int `json:"en_outside_amount"` // out asset
-}
-
-func newExChangeEntitys() []*ExChangeEntity {
-
-	exChangeEntitys := make([]*ExChangeEntity, 0, 0)
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Doge,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Bsv,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Bch,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Btc,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Ltc,
-		EnOutsideAmount: big.NewInt(0),
-	})
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Usdt,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	// the height of fork
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Eth,
-		EnOutsideAmount: big.NewInt(0),
-	})
-	exChangeEntitys = append(exChangeEntitys, &ExChangeEntity{
-		AssetType:       ExpandedTxEntangle_Trx,
-		EnOutsideAmount: big.NewInt(0),
-	})
-
-	return exChangeEntitys
-}
-
-type UserExChangeInfo struct {
-	BeaconID        uint64            `json:"beacon_id"`     // beaconID id
-	Address         string            `json:"address"`       // Exchange address
-	Height          *big.Int          `json:"height"`        // newest height for entangle
-	OldHeight       *big.Int          `json:"old_height"`    // oldest height for entangle
-	OriginAmount    *big.Int          `json:"origin_amount"` // origin asset(czz) by entangle in
-	MaxRedeem       *big.Int          `json:"max_redeem"`    // redeem asset bt czz
-	BurnAmounts     []*BurnInfo       `json:"burn_amount"`
-	ExChangeEntitys []*ExChangeEntity `json:"ex_change_entitys"`
-}
-
-func NewUserExChangeInfo() *UserExChangeInfo {
-	uci := &UserExChangeInfo{
-		BeaconID:        0,
-		Height:          big.NewInt(0),
-		OldHeight:       big.NewInt(0),
-		OriginAmount:    big.NewInt(0),
-		MaxRedeem:       big.NewInt(0),
-		BurnAmounts:     newBurnInfos(),
-		ExChangeEntitys: newExChangeEntitys(),
-	}
-	return uci
-}
-
-type UserExChangeInfos map[string]*UserExChangeInfo
-
-func NewUserExChangeInfos() UserExChangeInfos {
-	return UserExChangeInfos(make(map[string]*UserExChangeInfo))
-}
-
+type EntangleEntitys []*EntangleEntity
+type UserEntangleInfos map[string]EntangleEntitys
 type StoreUserItme struct {
-	Addr     string
-	UserInfo *UserExChangeInfo
+	Addr      string
+	UserInfos EntangleEntitys
 }
-
 type SortStoreUserItems []*StoreUserItme
 
 func (vs SortStoreUserItems) Len() int {
 	return len(vs)
 }
-
 func (vs SortStoreUserItems) Less(i, j int) bool {
 	return bytes.Compare([]byte(vs[i].Addr), []byte(vs[j].Addr)) == -1
 }
-
 func (vs SortStoreUserItems) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it
 }
-
-func (uinfos *UserExChangeInfos) toSlice() SortStoreUserItems {
+func (uinfos *UserEntangleInfos) toSlice() SortStoreUserItems {
 	v1 := make([]*StoreUserItme, 0, 0)
 	for k, v := range *uinfos {
 		v1 = append(v1, &StoreUserItme{
-			Addr:     k,
-			UserInfo: v,
+			Addr:      k,
+			UserInfos: v,
 		})
 	}
 	sort.Sort(SortStoreUserItems(v1))
 	return SortStoreUserItems(v1)
 }
-
-func (es *UserExChangeInfos) fromSlice(vv SortStoreUserItems) {
-	userInfos := make(map[string]*UserExChangeInfo)
+func (es *UserEntangleInfos) fromSlice(vv SortStoreUserItems) {
+	userInfos := make(map[string]EntangleEntitys)
 	for _, v := range vv {
-		userInfos[v.Addr] = v.UserInfo
+		userInfos[v.Addr] = v.UserInfos
 	}
-	*es = userInfos
+	*es = UserEntangleInfos(userInfos)
 }
-
-func (es *UserExChangeInfos) DecodeRLP(s *rlp.Stream) error {
+func (es *UserEntangleInfos) DecodeRLP(s *rlp.Stream) error {
 	type Store1 struct {
 		Value SortStoreUserItems
 	}
@@ -389,8 +371,7 @@ func (es *UserExChangeInfos) DecodeRLP(s *rlp.Stream) error {
 	es.fromSlice(eb.Value)
 	return nil
 }
-
-func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
+func (es *UserEntangleInfos) EncodeRLP(w io.Writer) error {
 	type Store1 struct {
 		Value SortStoreUserItems
 	}
@@ -400,61 +381,26 @@ func (es *UserExChangeInfos) EncodeRLP(w io.Writer) error {
 	})
 }
 
-func (es *UserExChangeInfos) GetRedeemableAmountAll() *big.Int {
-	allAmount := big.NewInt(0)
-	for _, v := range *es {
-		allAmount = big.NewInt(0).Add(allAmount, v.MaxRedeem)
-	}
-	return allAmount
-}
-
-func (es *UserExChangeInfos) GetBurnAmount() *big.Int {
-	allAmount := big.NewInt(0)
-	for _, v := range *es {
-		for _, burn := range v.BurnAmounts {
-			for _, item := range burn.Items {
-				if item.RedeemState == 0 {
-					allAmount = big.NewInt(0).Add(allAmount, item.Amount)
-				}
-			}
-		}
-	}
-	return allAmount
-}
-
 /////////////////////////////////////////////////////////////////
-func (e *UserExChangeInfo) increaseOriginAmount(amount, height *big.Int) {
+func (e *EntangleEntity) increaseOriginAmount(amount *big.Int) {
 	e.OriginAmount = new(big.Int).Add(e.OriginAmount, amount)
-	if e.MaxRedeem.Sign() == 0 {
-		e.OldHeight = new(big.Int).Set(height)
-	}
 	e.MaxRedeem = new(big.Int).Add(e.MaxRedeem, amount)
 }
 
 // the returns maybe negative
-func (e *UserExChangeInfo) getRedeemableAmount() *big.Int {
-	allAmount := big.NewInt(0)
-	for _, v := range e.BurnAmounts {
-		allAmount = big.NewInt(0).Add(allAmount, v.GetAllAmountByOrigin())
-	}
-	return new(big.Int).Sub(e.MaxRedeem, allAmount)
+func (e *EntangleEntity) GetValidRedeemAmount() *big.Int {
+	return new(big.Int).Sub(e.MaxRedeem, e.BurnAmount.GetAllBurnedAmountByOutside())
 }
-
-func (e *UserExChangeInfo) getValidOriginAmount() *big.Int {
-	allAmount := big.NewInt(0)
-	for _, v := range e.BurnAmounts {
-		allAmount = big.NewInt(0).Add(allAmount, v.GetAllAmountByOrigin())
-	}
-	return new(big.Int).Sub(e.OriginAmount, allAmount)
+func (e *EntangleEntity) getValidOriginAmount() *big.Int {
+	return new(big.Int).Sub(e.OriginAmount, e.BurnAmount.GetAllAmountByOrigin())
 }
-
-//func (e *ExChangeEntity) getValidOutsideAmount() *big.Int {
-//	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
-//}
+func (e *EntangleEntity) getValidOutsideAmount() *big.Int {
+	return new(big.Int).Sub(e.EnOutsideAmount, e.BurnAmount.GetAllBurnedAmountByOutside())
+}
 
 // updateFreeQuotaOfHeight: update user's quota on the asset type by new entangle
-func (e *UserExChangeInfo) updateFreeQuotaOfHeight(keepBlock, amount *big.Int) {
-	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(keepBlock, amount)
+func (e *EntangleEntity) updateFreeQuotaOfHeight(height, amount *big.Int) {
+	t0, a0, f0 := e.OldHeight, e.getValidOriginAmount(), new(big.Int).Mul(big.NewInt(90), amount)
 
 	t1 := new(big.Int).Add(new(big.Int).Mul(t0, a0), f0)
 	t2 := new(big.Int).Add(a0, amount)
@@ -466,101 +412,93 @@ func (e *UserExChangeInfo) updateFreeQuotaOfHeight(keepBlock, amount *big.Int) {
 	e.OldHeight = new(big.Int).Add(e.OldHeight, interval)
 }
 
-// updateFreeQuota returns the czz asset by user who can redeemable
-func (e *UserExChangeInfo) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
-
-	if curHeight.Cmp(e.OldHeight) > 0 && e.MaxRedeem.Cmp(big.NewInt(0)) > 0 {
+// updateFreeQuota returns the outside asset by user who can redeemable
+func (e *EntangleEntity) updateFreeQuota(curHeight, limitHeight *big.Int) *big.Int {
+	limit := new(big.Int).Sub(curHeight, e.OldHeight)
+	if limit.Cmp(limitHeight) < 0 {
 		// release user's quota
-		left := e.getRedeemableAmount()
 		e.MaxRedeem = big.NewInt(0)
-		return left
 	}
-	return big.NewInt(0)
+	return e.getValidOutsideAmount()
+}
+func (e *EntangleEntity) updateBurnState(state byte, items []*BurnItem) {
+	for _, v := range items {
+		ii := e.BurnAmount.getItem(v.Height, v.Amount, v.RedeemState)
+		if ii != nil {
+			ii.RedeemState = state
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////
-func (ee *UserExChangeInfo) getBurnByType(assetType uint32) *BurnInfo {
-	for _, v := range ee.BurnAmounts {
-		if assetType == v.ConvertType {
+func (ee *EntangleEntitys) getEntityByType(atype uint32) *EntangleEntity {
+	for _, v := range *ee {
+		if atype == v.AssetType {
 			return v
 		}
 	}
 	return nil
 }
-
-func (ee *UserExChangeInfo) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfos {
+func (ee *EntangleEntitys) updateFreeQuotaForAllType(curHeight, limit *big.Int) []*BaseAmountUint {
+	res := make([]*BaseAmountUint, 0, 0)
+	for _, v := range *ee {
+		item := &BaseAmountUint{
+			AssetType: v.AssetType,
+		}
+		item.Amount = v.updateFreeQuota(curHeight, limit)
+		res = append(res, item)
+	}
+	return res
+}
+func (ee *EntangleEntitys) getAllRedeemableAmount() *big.Int {
+	res := big.NewInt(0)
+	for _, v := range *ee {
+		a := v.GetValidRedeemAmount()
+		if a != nil {
+			res = res.Add(res, a)
+		}
+	}
+	return res
+}
+func (ee *EntangleEntitys) getBurnTimeout(height uint64, update bool) TypeTimeOutBurnInfo {
 	res := make([]*TimeOutBurnInfo, 0, 0)
-	AmountSum := big.NewInt(0)
-
-	for _, entity := range ee.BurnAmounts {
-		items, Amount := entity.getBurnTimeout(height, update)
+	for _, entity := range *ee {
+		items := entity.BurnAmount.getBurnTimeout(height, update)
 		if len(items) > 0 {
 			res = append(res, &TimeOutBurnInfo{
 				Items:     items,
-				AssetType: entity.ConvertType,
+				AssetType: entity.AssetType,
 			})
 		}
-		AmountSum = big.NewInt(0).Add(AmountSum, Amount)
 	}
-
-	ttobi := TypeTimeOutBurnInfos{
-		TypeTimeOutBurnInfo: res,
-		AmountSum:           AmountSum,
-	}
-
-	return ttobi
+	return TypeTimeOutBurnInfo(res)
 }
-
-func (ee *UserExChangeInfo) updateBurnState(state uint8, items TypeTimeOutBurnInfos) {
-	for _, v := range items.TypeTimeOutBurnInfo {
-		burn := ee.getBurnByType(v.AssetType)
-		if burn != nil {
-			burn.updateBurnState(state, v.Items)
+func (ee *EntangleEntitys) updateBurnState(state byte, items TypeTimeOutBurnInfo) {
+	for _, v := range items {
+		entity := ee.getEntityByType(v.AssetType)
+		if entity != nil {
+			entity.updateBurnState(state, v.Items)
 		}
 	}
 }
-
-func (ee *UserExChangeInfo) updateBurnState2(height uint64, amount *big.Int,
-	assetType uint32, proof *BurnProofItem) {
-	for _, burn := range ee.BurnAmounts {
-		if burn.ConvertType == assetType {
-			burn.updateBurn(height, amount, proof)
+func (ee *EntangleEntitys) finishBurnState(height uint64, amount *big.Int, atype uint32) {
+	for _, entity := range *ee {
+		if entity.AssetType == atype {
+			entity.BurnAmount.finishBurn(height, amount)
 		}
 	}
 }
-
-func (ee *UserExChangeInfo) finishBurnState(height uint64, amount *big.Int,
-	assetType uint32, proof *BurnProofItem) {
-	for _, burn := range ee.BurnAmounts {
-		if burn.ConvertType == assetType {
-			burn.finishBurn(height, amount, proof)
-		}
-	}
-}
-func (ee *UserExChangeInfo) getBurn() {
-
-}
-
-func (ee *UserExChangeInfo) verifyBurnProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-	for _, burn := range ee.BurnAmounts {
-		if burn.ConvertType == info.AssetType {
-			return burn.verifyProof(info, outHeight, curHeight)
-		}
-	}
-	return nil, ErrNoUserAsset
-}
-
-func (ee *UserExChangeInfo) closeProofForPunished(item *BurnItem, assetType uint32) error {
-	for _, burn := range ee.BurnAmounts {
-		if burn.ConvertType == assetType {
-			return burn.closeProofForPunished(item)
+func (ee *EntangleEntitys) verifyBurnProof(info *BurnProofInfo) error {
+	for _, entity := range *ee {
+		if entity.AssetType == info.Atype {
+			entity.BurnAmount.verifyProof(info.Height, info.Amount)
 		}
 	}
 	return ErrNoUserAsset
 }
 
 /////////////////////////////////////////////////////////////////
-func (u UserExChangeInfos) updateBurnState(state uint8, items UserTimeOutBurnInfo) {
+func (u UserEntangleInfos) updateBurnState(state byte, items UserTimeOutBurnInfo) {
 	for addr, infos := range items {
 		entitys, ok := u[addr]
 		if ok {
@@ -568,421 +506,60 @@ func (u UserExChangeInfos) updateBurnState(state uint8, items UserTimeOutBurnInf
 		}
 	}
 }
-
-/////////////////////////////////////////////////////////////////
-type BurnItem struct {
-	Amount      *big.Int       `json:"amount"`      // czz asset amount
-	FeeAmount   *big.Int       `json:"fee_amount"`  // czz asset fee amount
-	RAmount     *big.Int       `json:"ramount"`     // outside asset amount
-	FeeRAmount  *big.Int       `json:"fee_ramount"` // outside asset fee amount
-	Height      uint64         `json:"height"`
-	ToAddress   string         `json:"to_address"`
-	RedeemState byte           `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
-	Proof       *BurnProofItem `json:"proof"`        // the tx of outside
-}
-
-func (b *BurnItem) equal(o *BurnItem) bool {
-	return b.Height == o.Height && b.Amount.Cmp(o.Amount) == 0 &&
-		b.RAmount.Cmp(o.Amount) == 0 && b.FeeRAmount.Cmp(o.FeeRAmount) == 0 &&
-		b.FeeAmount.Cmp(o.FeeAmount) == 0
-}
-
-func (b *BurnItem) clone() *BurnItem {
-	return &BurnItem{
-		Amount:     new(big.Int).Set(b.Amount),
-		RAmount:    new(big.Int).Set(b.RAmount),
-		FeeAmount:  new(big.Int).Set(b.FeeAmount),
-		FeeRAmount: new(big.Int).Set(b.FeeRAmount),
-		Height:     b.Height,
-		Proof: &BurnProofItem{
-			Height: b.Proof.Height,
-			TxHash: b.Proof.TxHash,
-		},
-		RedeemState: b.RedeemState,
-	}
-}
-
-type BurnInfo struct {
-	ConvertType uint32
-	RAllAmount  *big.Int // redeem asset for outside asset by burned czz
-	BAllAmount  *big.Int // all burned asset on czz by the account
-	Items       []*BurnItem
-}
-
-type extBurnInfos struct {
-	ConvertType uint32
-	Items       []*BurnItem
-	RAllAmount  *big.Int // redeem asset for outside asset by burned czz
-	BAllAmount  *big.Int // all burned asset on czz by the account
-}
-
-// DecodeRLP decodes the
-func (b *BurnInfo) DecodeRLP(s *rlp.Stream) error {
-
-	var eb extBurnInfos
-	if err := s.Decode(&eb); err != nil {
-		return err
-	}
-	b.ConvertType, b.Items, b.RAllAmount, b.BAllAmount = eb.ConvertType, eb.Items, eb.RAllAmount, eb.BAllAmount
-	return nil
-}
-
-// EncodeRLP serializes b into the  RLP block format.
-func (b *BurnInfo) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, extBurnInfos{
-		ConvertType: b.ConvertType,
-		Items:       b.Items,
-		RAllAmount:  b.RAllAmount,
-		BAllAmount:  b.BAllAmount,
-	})
-}
-
-func newBurnInfos() []*BurnInfo {
-
-	burnInfos := make([]*BurnInfo, 0, 0)
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Doge,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Bsv,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Bch,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Btc,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Ltc,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Usdt,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	// the height of fork
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Eth,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-	burnInfos = append(burnInfos, &BurnInfo{
-		ConvertType: ExpandedTxEntangle_Trx,
-		RAllAmount:  big.NewInt(0),
-		BAllAmount:  big.NewInt(0),
-		Items:       make([]*BurnItem, 0, 0),
-	})
-
-	return burnInfos
-}
-
-// GetAllAmountByOrigin returns all burned amount asset (czz)
-func (b *BurnInfo) GetAllAmountByOrigin() *big.Int {
-	return new(big.Int).Set(b.BAllAmount)
-}
-
-func (b *BurnInfo) GetAllBurnedAmountByOutside() *big.Int {
-	return new(big.Int).Set(b.RAllAmount)
-}
-
-func (b *BurnInfo) getBurnTimeout(height uint64, update bool) ([]*BurnItem, *big.Int) {
-	res := make([]*BurnItem, 0, 0)
-	AmountSum := big.NewInt(0)
-	for _, v := range b.Items {
-		if v.RedeemState == 0 && int64(height-v.Height) > int64(LimitRedeemHeightForBeaconAddress) {
-			res = append(res, &BurnItem{
-				Amount:      new(big.Int).Set(v.Amount),
-				RAmount:     new(big.Int).Set(v.RAmount),
-				FeeAmount:   new(big.Int).Set(v.FeeAmount),
-				FeeRAmount:  new(big.Int).Set(v.FeeRAmount),
-				Height:      v.Height,
-				RedeemState: v.RedeemState,
-			})
-			AmountSum = big.NewInt(0).Add(AmountSum, v.Amount)
-			if update {
-				v.RedeemState = 2
-			}
-		}
-	}
-	return res, AmountSum
-}
-
-func (b *BurnInfo) addBurnItem(toaddress string, height uint64, amount, fee, outFee, outAmount *big.Int) {
-	item := &BurnItem{
-		Amount:      new(big.Int).Set(amount),
-		RAmount:     new(big.Int).Set(outAmount),
-		FeeAmount:   new(big.Int).Set(fee),
-		FeeRAmount:  new(big.Int).Set(outFee),
-		ToAddress:   toaddress,
-		Height:      height,
-		Proof:       &BurnProofItem{},
-		RedeemState: 0,
-	}
-	found := false
-	for _, v := range b.Items {
-		if v.RedeemState == 0 && v.equal(item) {
-			found = true
-			break
-		}
-	}
-	if !found {
-		b.Items = append(b.Items, item)
-		b.RAllAmount = new(big.Int).Add(b.RAllAmount, outAmount)
-		b.BAllAmount = new(big.Int).Add(b.BAllAmount, amount)
-	}
-}
-
-func (b *BurnInfo) getItem(height uint64, amount *big.Int, state byte) *BurnItem {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == state && amount.Cmp(v.Amount) == 0 {
-			return v
-		}
-	}
-	return nil
-}
-
-func (b *BurnInfo) getBurnsItemByHeight(height uint64, state byte) []*BurnItem {
-	items := []*BurnItem{}
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState == state && v.RAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
-			items = append(items, v)
-		}
-	}
-	return items
-}
-
-func (b *BurnInfo) updateBurnState(state uint8, Items []*BurnItem) {
-	for _, v := range Items {
-		v.RedeemState = state
-	}
-}
-
-func (b *BurnInfo) updateBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
-	for _, v := range b.Items {
-		if v.Height == height && v.RedeemState != 2 &&
-			amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) < 0 {
-			v.RedeemState, v.Proof = 2, proof
-		}
-	}
-}
-
-func (b *BurnInfo) finishBurn(height uint64, amount *big.Int, proof *BurnProofItem) {
-	for _, v := range b.Items {
-		//&& v.RedeemState != 1 && sendAmount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0
-		if v.Height == height && v.RedeemState != 1 && amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 {
-			v.RedeemState, v.Proof = 1, proof
-		}
-	}
-}
-
-func (b *BurnInfo) recoverOutAmountForPunished(amount *big.Int) {
-	b.RAllAmount = new(big.Int).Sub(b.RAllAmount, amount)
-}
-
-func (b *BurnInfo) EarliestHeightAndUsedTx(tx string) (uint64, bool) {
-	height, used := uint64(0), false
-	for _, v := range b.Items {
-		if v.Proof.TxHash != "" {
-			if height == 0 || height < v.Proof.Height {
-				height = v.Proof.Height
-			}
-			if v.Proof.TxHash == tx {
-				used = true
-			}
-		}
-	}
-	return height, used
-}
-
-func (b *BurnInfo) verifyProof(info *BurnProofInfo, outHeight, curHeight uint64) (*BurnItem, error) {
-	eHeight, used := b.EarliestHeightAndUsedTx(info.TxHash)
-
-	if outHeight >= eHeight && !used {
-		if items := b.getBurnsItemByHeight(info.Height, byte(0)); len(items) > 0 {
-			for _, v := range items {
-				if info.Amount.Cmp(new(big.Int).Sub(v.RAmount, v.FeeRAmount)) >= 0 && v.Proof.TxHash == "" {
-					return v.clone(), nil
-				}
-			}
-		}
-	}
-
-	return nil, ErrBurnProof
-}
-
-func (b *BurnInfo) closeProofForPunished(item *BurnItem) error {
-	if v := b.getItem(item.Height, item.Amount, item.RedeemState); v != nil {
-		v.RedeemState = 2
-	}
-	return nil
-}
-
-type TimeOutBurnInfo struct {
-	Items     []*BurnItem
-	AssetType uint32
-}
-
-func (t *TimeOutBurnInfo) getAll() *big.Int {
+func (uu *TypeTimeOutBurnInfo) getAll() *big.Int {
 	res := big.NewInt(0)
-	for _, v := range t.Items {
-		res = res.Add(res, v.Amount)
-	}
-	return res
-}
-
-//type TypeTimeOutBurnInfo []*TimeOutBurnInfo
-
-type TypeTimeOutBurnInfos struct {
-	TypeTimeOutBurnInfo []*TimeOutBurnInfo
-	AmountSum           *big.Int
-}
-
-type UserTimeOutBurnInfo map[string]TypeTimeOutBurnInfos
-
-func (uu *TypeTimeOutBurnInfos) getAll() *big.Int {
-	res := big.NewInt(0)
-	for _, v := range uu.TypeTimeOutBurnInfo {
+	for _, v := range *uu {
 		res = res.Add(res, v.getAll())
 	}
 	return res
 }
 
-type BurnProofItem struct {
-	Height uint64
-	TxHash string
-}
-
-type extBurnProofItem struct {
-	Height uint64
-	TxHash string
-}
-
-func (b *BurnProofItem) DecodeRLP(s *rlp.Stream) error {
-	var eb extBurnProofItem
-	if err := s.Decode(&eb); err != nil {
-		return err
-	}
-	b.Height, b.TxHash = eb.Height, eb.TxHash
-	return nil
-}
-
-func (b *BurnProofItem) EncodeRLP(w io.Writer) error {
-	var eb extBurnProofItem
-	if b == nil {
-		eb = extBurnProofItem{
-			Height: b.Height,
-			TxHash: b.TxHash,
-		}
-	}
-	return rlp.Encode(w, eb)
-}
-
 type BurnProofInfo struct {
-	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
-	Height    uint64   // the height include the tx of user burn's asset
-	Amount    *big.Int // the amount of burned asset (czz)
-	Address   string
-	AssetType uint32
-	TxHash    string // the tx hash of outside
-	OutIndex  uint64
+	LightID uint64
+	Height  uint64
+	Amount  *big.Int
+	Address czzutil.Address
+	Atype   uint32
+	TxHash  []byte
 }
 
-type WhiteListProof struct {
-	BeaconID  uint64 // the BeaconID for beaconAddress
-	AssetType uint32
-	Height    uint64 // the height of outside chain
-	TxHash    string
-	InIndex   uint64
-	OutIndex  uint64
-	Amount    *big.Int // the amount of outside chain
-}
-
-func (wl *WhiteListProof) Clone() *WhiteListProof {
-	return &WhiteListProof{
-		BeaconID:  wl.BeaconID,
-		Height:    wl.Height,
-		Amount:    new(big.Int).Set(wl.Amount),
-		AssetType: wl.AssetType,
-	}
-}
-
-type LHPunishedItem struct {
-	All  *big.Int // czz amount(all user burned item in timeout)
-	User string
-}
-type LHPunishedItems []*LHPunishedItem
-
-//////////////////////////////////////////////////////////////////////////////
-type ResItem struct {
-	Index  int
-	Amount *big.Int
-}
-type ResCoinBasePos []*ResItem
-
-func NewResCoinBasePos() ResCoinBasePos {
-	return []*ResItem{}
-}
-func (p *ResCoinBasePos) Put(i int, amount *big.Int) {
-	*p = append(*p, &ResItem{
-		Index:  i,
-		Amount: new(big.Int).Set(amount),
-	})
-}
-func (p ResCoinBasePos) IsIn(i int) bool {
-	for _, v := range p {
-		if v.Index == i {
-			return true
-		}
+/////////////////////////////////////////////////////////////////
+func ValidAssetType(utype uint32) bool {
+	if utype&LhAssetBTC != 0 || utype&LhAssetBCH != 0 || utype&LhAssetBSV != 0 ||
+		utype&LhAssetLTC != 0 || utype&LhAssetUSDT != 0 || utype&LhAssetDOGE != 0 {
+		return true
 	}
 	return false
 }
-func (p ResCoinBasePos) GetInCount() int {
-	return len(p)
-}
-func (p ResCoinBasePos) GetOutCount() int {
-	return len(p)
-}
-
-func isProtectedV(V *big.Int) bool {
-	if V.BitLen() <= 8 {
-		v := V.Uint64()
-		return v != 27 && v != 28
+func ValidPK(pk []byte) bool {
+	if len(pk) != 64 {
+		return false
 	}
-	// anything not 27 or 28 is considered protected
 	return true
 }
+func isValidAsset(atype, assetAll uint32) bool {
+	return atype&assetAll != 0
+}
 
-// deriveChainId derives the chain id from the given v parameter
-func deriveChainId(v *big.Int) *big.Int {
-	if v.BitLen() <= 64 {
-		v := v.Uint64()
-		if v == 27 || v == 28 {
-			return new(big.Int)
+func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
+	found_t := 0
+	StakingAmount := big.NewInt(0)
+	for _, eninfo := range eState.EnInfos {
+		for _, eAddr := range eninfo.CoinBaseAddress {
+			if address.String() == eAddr {
+				StakingAmount = big.NewInt(0).Add(StakingAmount, eninfo.StakingAmount)
+				found_t = 1
+				break
+			}
 		}
-		return new(big.Int).SetUint64((v - 35) / 2)
 	}
-	v = new(big.Int).Sub(v, big.NewInt(35))
-	return v.Div(v, big.NewInt(2))
+	if found_t == 1 {
+		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
+		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
+		target = big.NewInt(0).Mul(target, result1)
+	}
+	if target.Cmp(params.PowLimit) > 0 {
+		target.Set(params.PowLimit)
+	}
+	return target
 }

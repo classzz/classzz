@@ -626,24 +626,25 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 			return nil, nil, err
 		}
 	}
-	var eState *cross.EntangleState
+
+	var cState *cross.CommitteeState
 	if g.chainParams.ExChangeHeight < nextBlockHeight {
-		eState = g.chain.CurrentEstate()
+		cState = g.chain.CurrentCstate()
 	}
 
 	if g.chainParams.ExChangeHeight == nextBlockHeight {
-		eState = cross.NewEntangleState()
+		cState = cross.NewCommitteeState()
 	}
 
 	fork := false
-	var eState2 *cross.EntangleState2
+	var eState *cross.EntangleState
 	if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight {
-		eState2 = g.chain.CurrentEstate2()
+		eState = g.chain.CurrentEstate()
 		fork = true
 	}
 
 	if g.chainParams.BeaconHeight == nextBlockHeight {
-		eState2 = cross.NewEntangleState2()
+		eState = cross.NewEntangleState()
 	}
 
 	//if g.chainParams.BeaconHeight == nextBlockHeight {
@@ -874,19 +875,20 @@ mempoolLoop:
 
 			// BeaconRegistrationTx
 			if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
-				if err = eState2.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepBlock, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+				if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
 					return nil, nil, err
 				}
 			}
 
 			// AddBeaconPledgeTx
 			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = eState2.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
 					return nil, nil, err
 				}
 			}
 		}
 
+		////////////////////////////////////
 		if nextBlockHeight >= g.chainParams.ConverHeight {
 
 			// IsConvertTx
@@ -898,26 +900,25 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
-
 				convertItems = append(convertItems, objs...)
 			}
 
 			beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
 			// BeaconRegistrationTx
 			if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
-				if err := eState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
+				if err := cState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
 					info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				beaconMerge, beaconID, txAmount = 1, eState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
+				beaconMerge, beaconID, txAmount = 1, cState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
 			}
 
 			// AddBeaconPledgeTx
 			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+				if err = cState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
@@ -937,7 +938,7 @@ mempoolLoop:
 							Index: 1,
 						}}
 
-						err := eState.SetBaExInfo(beaconID, ex)
+						err := cState.SetBaExInfo(beaconID, ex)
 						if err != nil {
 							log.Tracef("Skipping tx %s due to error in "+
 								"GetBaExInfoByID SetBaExInfo: %v", tx.Hash(), err)
@@ -1057,36 +1058,36 @@ mempoolLoop:
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
 
-	if g.chainParams.ExChangeHeight <= nextBlockHeight && eState != nil {
-		burnTimeout := eState.TourAllUserBurnInfo(uint64(nextBlockHeight))
-		for beaconID, bit := range burnTimeout {
-
-			toAddress := eState.GetBeaconToAddrByID(beaconID, g.chainParams)
-			exInfos := eState.GetBaExInfoByID(beaconID)
-
-			if toAddress == nil || exInfos == nil {
-				return nil, nil, errors.New("toAddress == nil || exInfos == nil")
-			}
-
-			var view *blockchain.UtxoViewpoint
-			if view, err = g.chain.FetchUtxoForBeacon(exInfos.EnItems); err != nil {
-				return nil, nil, err
-			}
-
-			AmountSum := big.NewInt(0)
-			for k, v := range bit {
-				fmt.Println("burnTimeout k:", k)
-				AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
-			}
-
-			if item, err := toRewardsByPunishedBurn(view, payToAddress, toAddress, AmountSum); err != nil {
-				return nil, nil, err
-			} else {
-				rewards = append(rewards, item)
-			}
-		}
-		eState.UpdateStateToPunished(burnTimeout)
-	}
+	//if g.chainParams.ExChangeHeight <= nextBlockHeight && eState != nil {
+	//	burnTimeout := eState.TourAllUserBurnInfo(uint64(nextBlockHeight))
+	//	for beaconID, bit := range burnTimeout {
+	//
+	//		toAddress := eState.GetBeaconToAddrByID(beaconID, g.chainParams)
+	//		exInfos := eState.GetBaExInfoByID(beaconID)
+	//
+	//		if toAddress == nil || exInfos == nil {
+	//			return nil, nil, errors.New("toAddress == nil || exInfos == nil")
+	//		}
+	//
+	//		var view *blockchain.UtxoViewpoint
+	//		if view, err = g.chain.FetchUtxoForBeacon(exInfos.EnItems); err != nil {
+	//			return nil, nil, err
+	//		}
+	//
+	//		AmountSum := big.NewInt(0)
+	//		for k, v := range bit {
+	//			fmt.Println("burnTimeout k:", k)
+	//			AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
+	//		}
+	//
+	//		if item, err := toRewardsByPunishedBurn(view, payToAddress, toAddress, AmountSum); err != nil {
+	//			return nil, nil, err
+	//		} else {
+	//			rewards = append(rewards, item)
+	//		}
+	//	}
+	//	eState.UpdateStateToPunished(burnTimeout)
+	//}
 
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight {
@@ -1098,7 +1099,7 @@ mempoolLoop:
 	}
 
 	// make entangle tx if it exist
-	if g.chainParams.ExChangeHeight <= nextBlockHeight {
+	if g.chainParams.ConverHeight <= nextBlockHeight {
 		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, entangleItems, convertItems, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
@@ -1106,14 +1107,15 @@ mempoolLoop:
 	}
 
 	CIDRoot := chainhash.Hash{}
-	// Beacon
-	if g.chainParams.BeaconHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight && eState2 != nil {
-		CIDRoot = cross.Hash2(eState2)
+
+	// eState
+	if g.chainParams.BeaconHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight && eState != nil {
+		CIDRoot = eState.Hash()
 	}
 
-	// ExChange
-	if g.chainParams.ExChangeHeight <= nextBlockHeight && eState != nil {
-		CIDRoot = cross.Hash(eState)
+	// cState
+	if g.chainParams.ConverHeight <= nextBlockHeight && cState != nil {
+		CIDRoot = cState.Hash()
 	}
 
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)

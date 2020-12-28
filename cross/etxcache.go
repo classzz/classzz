@@ -12,16 +12,17 @@ import (
 )
 
 var (
-	BucketKey        = []byte("entangle-tx")
-	EntangleStateKey = []byte("entanglestate")
-	BurnTxInfoKey    = []byte("burntxinfo")
+	BucketKey         = []byte("entangle-tx")
+	EntangleStateKey  = []byte("entanglestate")
+	CommitteeStateKey = []byte("committeestate")
+	BurnTxInfoKey     = []byte("burntxinfo")
 )
 
-type CacheEntangleInfo struct {
+type CacheCommitteeState struct {
 	DB database.DB
 }
 
-func (c *CacheEntangleInfo) FetchExtUtxoView(info ExtTxInfo) bool {
+func (c *CacheCommitteeState) FetchExtUtxoView(info ExtTxInfo) bool {
 
 	var err error
 	txExist := false
@@ -47,25 +48,23 @@ func (c *CacheEntangleInfo) FetchExtUtxoView(info ExtTxInfo) bool {
 	return txExist
 }
 
-func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash) *EntangleState {
+func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Hash) *CommitteeState {
 
 	var err error
-	es := NewEntangleState()
+	cs := NewCommitteeState()
 
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
 	buf.Write(hash.CloneBytes())
 
 	err = c.DB.Update(func(tx database.Tx) error {
-		entangleBucket := tx.Metadata().Bucket(EntangleStateKey)
-		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(EntangleStateKey); err != nil {
-				return err
-			}
+		committeeBucket := tx.Metadata().Bucket(CommitteeStateKey)
+		if committeeBucket == nil {
+			return nil
 		}
-		value := entangleBucket.Get(buf.Bytes())
+		value := committeeBucket.Get(buf.Bytes())
 		if value != nil {
-			err := rlp.DecodeBytes(value, es)
+			err := rlp.DecodeBytes(value, cs)
 			if err != nil {
 				log.Fatal("Failed to RLP encode LoadEntangleState EntangleState ", "err", err)
 				return err
@@ -77,13 +76,13 @@ func (c *CacheEntangleInfo) LoadEntangleState(height int32, hash chainhash.Hash)
 	if err != nil {
 		return nil
 	}
-	return es
+	return cs
 }
 
-func (c *CacheEntangleInfo) LoadEntangleState2(height int32, hash chainhash.Hash) *EntangleState2 {
+func (c *CacheCommitteeState) LoadEntangleState(height int32, hash chainhash.Hash) *EntangleState {
 
 	var err error
-	es := NewEntangleState2()
+	es := NewEntangleState()
 
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
@@ -113,7 +112,7 @@ func (c *CacheEntangleInfo) LoadEntangleState2(height int32, hash chainhash.Hash
 	return es
 }
 
-func (c *CacheEntangleInfo) LoadBurnTxInfo(address string) *BurnTxInfo {
+func (c *CacheCommitteeState) LoadBurnTxInfo(address string) *BurnTxInfo {
 
 	bti := &BurnTxInfo{}
 	buf, err := hex.DecodeString(address)
@@ -142,7 +141,7 @@ func (c *CacheEntangleInfo) LoadBurnTxInfo(address string) *BurnTxInfo {
 	return bti
 }
 
-func (c *CacheEntangleInfo) LoadBurnTxInfoAll(BeaconID uint64) []*BurnTxInfo {
+func (c *CacheCommitteeState) LoadBurnTxInfoAll(BeaconID uint64) []*BurnTxInfo {
 
 	btis := make([]*BurnTxInfo, 0)
 

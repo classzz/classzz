@@ -518,53 +518,7 @@ func dbRemoveSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash) erro
 	return spendBucket.Delete(blockHash[:])
 }
 
-func dbBeaconTx2(dbTx database.Tx, block *czzutil.Block) error {
-
-	pHeight := block.Height() - 1
-	pHash := block.MsgBlock().Header.PrevBlock
-	eState := dbFetchEntangleState2(dbTx, pHeight, pHash)
-
-	if block.Height() == NetParams.BeaconHeight {
-		eState = cross.NewEntangleState2()
-	}
-
-	for _, tx := range block.Transactions() {
-		var err error
-		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx2(tx.MsgTx(), NetParams)
-		if br != nil {
-			if eState != nil {
-				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
-			}
-			if err != nil {
-				return err
-			}
-		}
-
-		// AddBeaconPledge
-		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
-		if bp != nil {
-			if eState != nil {
-				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
-			}
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if eState != nil {
-		var err error
-		err = dbPutEntangleState2(dbTx, block, eState)
-		if err != nil {
-			return err
-		}
-
-	}
-	return nil
-}
-
-func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
+func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
@@ -639,6 +593,52 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	return nil
 }
 
+func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
+
+	pHeight := block.Height() - 1
+	pHash := block.MsgBlock().Header.PrevBlock
+	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
+
+	if block.Height() == NetParams.BeaconHeight {
+		eState = cross.NewEntangleState()
+	}
+
+	for _, tx := range block.Transactions() {
+		var err error
+		// BeaconRegistration
+		br, _ := cross.IsBeaconRegistrationTx2(tx.MsgTx(), NetParams)
+		if br != nil {
+			if eState != nil {
+				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
+			}
+			if err != nil {
+				return err
+			}
+		}
+
+		// AddBeaconPledge
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
+		if bp != nil {
+			if eState != nil {
+				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if eState != nil {
+		var err error
+		err = dbPutEntangleState2(dbTx, block, eState)
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
 func RegisterBeaconTxStore(state *cross.EntangleState, bai *cross.BeaconAddressInfo, tx *czzutil.Tx) error {
 
 	var err error
@@ -675,6 +675,28 @@ func AddBeaconPledgeTxStore(state *cross.EntangleState, abp *cross.AddBeaconPled
 }
 
 //load
+func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.CommitteeState {
+
+	cs := cross.NewCommitteeState()
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, height)
+	buf.Write(hash.CloneBytes())
+	entangleBucket := dbTx.Metadata().Bucket(cross.CommitteeStateKey)
+	if entangleBucket == nil {
+		return nil
+	}
+	value := entangleBucket.Get(buf.Bytes())
+	if value != nil {
+		err := rlp.DecodeBytes(value, cs)
+		if err != nil {
+			return nil
+		}
+		return cs
+	}
+	return nil
+}
+
+//load
 func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
 
 	es := cross.NewEntangleState()
@@ -699,34 +721,9 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 	return nil
 }
 
-//load
-func dbFetchEntangleState2(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState2 {
-
-	es := cross.NewEntangleState2()
-	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, height)
-	buf.Write(hash.CloneBytes())
+func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, eState *cross.CommitteeState) error {
 	var err error
-	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
-	if entangleBucket == nil {
-		if entangleBucket, err = dbTx.Metadata().CreateBucketIfNotExists(cross.EntangleStateKey); err != nil {
-			return nil
-		}
-	}
-	value := entangleBucket.Get(buf.Bytes())
-	if value != nil {
-		err := rlp.DecodeBytes(value, es)
-		if err != nil {
-			return nil
-		}
-		return es
-	}
-	return nil
-}
-
-func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
-	var err error
-	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
+	entangleBucket := dbTx.Metadata().Bucket(cross.CommitteeStateKey)
 
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, block.Height())
@@ -735,7 +732,7 @@ func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.En
 	return err
 }
 
-func dbPutEntangleState2(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState2) error {
+func dbPutEntangleState(dbTx database.Tx, block *czzutil.Block, eState *cross.EntangleState) error {
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.EntangleStateKey)
 
@@ -1809,26 +1806,26 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 	return indexKey
 }
 
-func (b *BlockChain) CurrentEstate() *cross.EntangleState {
+func (b *BlockChain) CurrentCstate() *cross.CommitteeState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
 	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
-func (b *BlockChain) CurrentEstate2() *cross.EntangleState2 {
+func (b *BlockChain) CurrentEstate() *cross.EntangleState2 {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
 	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
 	return eState
 }
 
-func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
+func (b *BlockChain) GetCstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.CommitteeState {
 	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
-func (b *BlockChain) GetEstateByHashAndHeight2(hash chainhash.Hash, height int32) *cross.EntangleState2 {
+func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState2 {
 	eState := b.exChangeVerify.Cache.LoadEntangleState2(height, hash)
 	return eState
 }

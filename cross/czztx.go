@@ -22,9 +22,6 @@ const (
 	ExpandedTxEntangle_Btc
 	ExpandedTxEntangle_Bsv
 	ExpandedTxEntangle_Bch
-	ExpandedTxEntangle_Usdt
-	ExpandedTxEntangle_Eth
-	ExpandedTxEntangle_Trx
 	ExpandedTxConvert_ECzz
 	ExpandedTxConvert_TCzz
 	ExpandedTxConvert_Czz
@@ -43,12 +40,13 @@ var (
 	NoUpdateBeaconCoinbase  = errors.New("no UpdateBeaconCoinbase info in transcation")
 	NoUpdateBeaconFreeQuota = errors.New("no UpdateBeaconFreeQuota info in transcation")
 
-	baseUnit       = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
-	baseUnit1      = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit       = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
-	dogeUnit1      = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
-	MinPunished    = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.TestNetParams)
+	baseUnit    = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit1   = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	dogeUnit    = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit1   = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
+	MinPunished = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
+	ZeroAddrsss = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	//ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.TestNetParams)
 )
 
 type EntangleItem struct {
@@ -79,25 +77,6 @@ func (ii *ExChangeItem) Clone() *ExChangeItem {
 		Value:     new(big.Int).Set(ii.Value),
 		Addr:      ii.Addr,
 		BeaconID:  ii.BeaconID,
-	}
-	return item
-}
-
-type ConvertItem struct {
-	AssetType   uint32
-	ConvertType uint32
-	Value       *big.Int
-	Address     czzutil.Address
-	BeaconID    uint64
-}
-
-func (ci *ConvertItem) Clone() *ConvertItem {
-	item := &ConvertItem{
-		AssetType:   ci.AssetType,
-		ConvertType: ci.ConvertType,
-		Value:       new(big.Int).Set(ci.Value),
-		Address:     ci.Address,
-		BeaconID:    ci.BeaconID,
 	}
 	return item
 }
@@ -271,7 +250,6 @@ type KeepedAmount struct {
 
 func (info *KeepedAmount) Serialize() []byte {
 	buf := new(bytes.Buffer)
-
 	buf.WriteByte(info.Count)
 	for _, v := range info.Items {
 		buf.WriteByte(byte(v.AssetType))
@@ -313,6 +291,7 @@ func (info *KeepedAmount) Add(item KeepedItem) {
 	info.Count++
 	info.Items = append(info.Items, item)
 }
+
 func (info *KeepedAmount) GetValue(t uint32) *big.Int {
 	for _, v := range info.Items {
 		if v.AssetType == t {
@@ -322,152 +301,25 @@ func (info *KeepedAmount) GetValue(t uint32) *big.Int {
 	return nil
 }
 
-// Only txOut[0] is valid
-func IsExChangeTx(tx *wire.MsgTx) (*ExChangeTxInfo, error) {
+//func IsEntangleTx(tx *wire.MsgTx) (map[uint32]*EntangleTxInfo, error) {
+//	// make sure at least one txout in OUTPUT
+//	einfos := make(map[uint32]*EntangleTxInfo)
+//	for i, v := range tx.TxOut {
+//		info, err := EntangleTxFromScript(v.PkScript)
+//		if err == nil {
+//			if v.Value != 0 {
+//				return nil, errors.New("the output value must be 0 in entangle tx.")
+//			}
+//			einfos[uint32(i)] = info
+//		}
+//	}
+//	if len(einfos) > 0 {
+//		return einfos, nil
+//	}
+//	return nil, NoEntangle
+//}
 
-	// make sure at least one txout in OUTPUT
-	var err error
-
-	if len(tx.TxOut) > 0 {
-		txout1 := tx.TxOut[0]
-		if !txscript.IsExChangeTy(txout1.PkScript) {
-			return nil, NoExChange
-		}
-	} else {
-		return nil, NoExChange
-	}
-	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 2 || len(tx.TxOut) < 1 {
-		e := fmt.Sprintf("IsExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
-		return nil, errors.New(e)
-	}
-
-	info, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
-	if err != nil {
-		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
-		return nil, errors.New(e)
-	}
-
-	return info, NoExChange
-}
-
-func IsConvertTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {
-	// make sure at least one txout in OUTPUT
-
-	cons := make(map[uint32]*ConvertTxInfo)
-	for i, txout := range tx.TxOut {
-		if !txscript.IsConvertTy(txout.PkScript) {
-			continue
-		}
-		info, err := ConvertTxFromScript(tx.TxOut[0].PkScript)
-		if err != nil {
-			e := fmt.Sprintf("ConverTxFromScript err %s", err)
-			return nil, errors.New(e)
-		}
-		cons[uint32(i)] = info
-	}
-
-	if len(cons) == 0 {
-		return nil, NoConvert
-	}
-
-	return cons, nil
-}
-
-// Only txOut[0] is valid
-func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo, *BurnTxInfo, error) {
-
-	var err error
-
-	if len(tx.TxOut) > 1 {
-		txout1 := tx.TxOut[0]
-		txout2 := tx.TxOut[1]
-		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
-			return nil, nil, NoFastExChange
-		}
-	} else {
-		return nil, nil, NoFastExChange
-	}
-
-	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
-		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
-		return nil, nil, errors.New(e)
-	}
-
-	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
-	if err != nil {
-		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
-		return nil, nil, errors.New(e)
-	}
-
-	var pk []byte
-	// get from address
-	if tx.TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
-		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
-			return nil, nil, errors.New(e)
-		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return nil, nil, errors.New(e)
-		}
-	}
-
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[1]
-	info, err := BurnInfoFromScript(txout.PkScript)
-	if err != nil {
-		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
-	}
-
-	info.Address = address.String()
-
-	return exInfo, info, nil
-}
-
-// Only txOut[0] is valid
-func IsFastExChangeTxToStorage(tx *wire.MsgTx) (*ExChangeTxInfo, *BurnTxInfo, error) {
-
-	var err error
-
-	if len(tx.TxOut) > 1 {
-		txout1 := tx.TxOut[0]
-		txout2 := tx.TxOut[1]
-		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
-			return nil, nil, NoFastExChange
-		}
-	} else {
-		return nil, nil, NoFastExChange
-	}
-
-	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
-		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
-		return nil, nil, errors.New(e)
-	}
-
-	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
-	if err != nil {
-		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
-		return nil, nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[1]
-	info, err := BurnInfoFromScript(txout.PkScript)
-	if err != nil {
-		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
-	}
-
-	return exInfo, info, nil
-}
-
-func IsBeaconRegistrationTx2(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo2, error) {
+func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
@@ -483,9 +335,9 @@ func IsBeaconRegistrationTx2(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAd
 		return nil, errors.New(e)
 	}
 
-	var es *BeaconAddressInfo2
+	var es *BeaconAddressInfo
 	txout := tx.TxOut[0]
-	info, err := BeaconRegistrationTxFromScript2(txout.PkScript)
+	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
 	if err != nil {
 		return nil, errors.New("the output tx.")
 	} else {
@@ -525,77 +377,6 @@ func IsBeaconRegistrationTx2(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAd
 	return nil, NoBeaconRegistration
 }
 
-// BeaconRegistration
-func IsBeaconRegistrationTx(tx *wire.MsgTx, params *chaincfg.Params) (*BeaconAddressInfo, error) {
-
-	// make sure at least one txout in OUTPUT
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsBeaconRegistrationTy(txout.PkScript) {
-			return nil, NoBeaconRegistration
-		}
-	} else {
-		return nil, NoBeaconRegistration
-	}
-
-	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
-		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
-		return nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[0]
-	info, err := BeaconRegistrationTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("BeaconRegistrationTxFromScript the output tx.")
-	} else if txout.Value != 0 {
-		return nil, errors.New("the output value must be 0 in tx.")
-	}
-
-	var pk []byte
-	if tx.TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
-		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
-			return nil, errors.New(e)
-		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return nil, errors.New(e)
-		}
-	}
-
-	fromAddress, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, errors.New(e)
-	}
-
-	addr, err := czzutil.NewAddressPubKeyHash(info.ToAddress, params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, errors.New(e)
-	}
-
-	// Create a new script which pays to the provided address.
-	pkScript, err := txscript.PayToAddrScript(addr)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
-		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
-		return nil, errors.New(e)
-	}
-
-	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
-	info.Address = fromAddress.String()
-	info.PubKey = pk
-
-	return info, nil
-}
-
 func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
@@ -618,7 +399,7 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	txout := tx.TxOut[0]
 	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
 	if err != nil {
-		return nil, errors.New("AddBeaconPledgeTxFromScript the output tx.")
+		return nil, errors.New("the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
@@ -656,191 +437,191 @@ func IsAddBeaconPledgeTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPle
 	return nil, NoAddBeaconPledge
 }
 
-func IsUpdateBeaconCoinbaseTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateBeaconCoinbase, error) {
+///////////////////////////////////////////////////
+func IsConvertTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {
 	// make sure at least one txout in OUTPUT
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsUpdateBeaconCoinbaseTy(txout.PkScript) {
-			return nil, NoUpdateBeaconCoinbase
+
+	cons := make(map[uint32]*ConvertTxInfo)
+	for i, txout := range tx.TxOut {
+		if !txscript.IsConvertTy(txout.PkScript) {
+			continue
 		}
-	} else {
-		return nil, NoUpdateBeaconCoinbase
-	}
-
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
-		return nil, errors.New(e)
-	}
-
-	// make sure at least one txout in OUTPUT
-	var bp *UpdateBeaconCoinbase
-
-	txout := tx.TxOut[0]
-	info, err := UpdateBeaconCoinbaseTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("UpdateBeaconCoinbaseTxFromScript the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		bp = info
-	}
-
-	var pk []byte
-	if tx.TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		info, err := ConvertTxFromScript(tx.TxOut[0].PkScript)
 		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
+			e := fmt.Sprintf("ConverTxFromScript err %s", err)
 			return nil, errors.New(e)
 		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return nil, errors.New(e)
-		}
+		cons[uint32(i)] = info
 	}
 
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, errors.New(e)
+	if len(cons) == 0 {
+		return nil, NoConvert
 	}
 
-	info.Address = address.String()
-
-	if bp != nil {
-		return bp, nil
-	}
-	return nil, NoUpdateBeaconCoinbase
+	return cons, nil
 }
 
-func IsUpdateBeaconFreeQuotaTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateBeaconFreeQuota, error) {
-	// make sure at least one txout in OUTPUT
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsUpdateBeaconFreeQuotaTy(txout.PkScript) {
-			return nil, NoUpdateBeaconFreeQuota
-		}
-	} else {
-		return nil, NoUpdateBeaconFreeQuota
-	}
+// Only txOut[0] is valid
+//func IsFastExChangeTx(tx *wire.MsgTx, params *chaincfg.Params) (*ExChangeTxInfo, *BurnTxInfo, error) {
+//
+//	var err error
+//
+//	if len(tx.TxOut) > 1 {
+//		txout1 := tx.TxOut[0]
+//		txout2 := tx.TxOut[1]
+//		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
+//			return nil, nil, NoFastExChange
+//		}
+//	} else {
+//		return nil, nil, NoFastExChange
+//	}
+//
+//	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+//		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+//		return nil, nil, errors.New(e)
+//	}
+//
+//	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
+//	if err != nil {
+//		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
+//		return nil, nil, errors.New(e)
+//	}
+//
+//	var pk []byte
+//	// get from address
+//	if tx.TxIn[0].Witness == nil {
+//		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+//		if err != nil {
+//			e := fmt.Sprintf("ComputePk err %s", err)
+//			return nil, nil, errors.New(e)
+//		}
+//	} else {
+//		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+//		if err != nil {
+//			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+//			return nil, nil, errors.New(e)
+//		}
+//	}
+//
+//	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+//	if err != nil {
+//		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+//		return nil, nil, errors.New(e)
+//	}
+//
+//	txout := tx.TxOut[1]
+//	info, err := BurnInfoFromScript(txout.PkScript)
+//	if err != nil {
+//		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
+//	}
+//
+//	info.Address = address.String()
+//
+//	return exInfo, info, nil
+//}
+//
+//// Only txOut[0] is valid
+//func IsFastExChangeTxToStorage(tx *wire.MsgTx) (*ExChangeTxInfo, *BurnTxInfo, error) {
+//
+//	var err error
+//
+//	if len(tx.TxOut) > 1 {
+//		txout1 := tx.TxOut[0]
+//		txout2 := tx.TxOut[1]
+//		if !(txscript.IsExChangeTy(txout1.PkScript) && txscript.IsBurnTy(txout2.PkScript)) {
+//			return nil, nil, NoFastExChange
+//		}
+//	} else {
+//		return nil, nil, NoFastExChange
+//	}
+//
+//	if len(tx.TxIn) > 1 || len(tx.TxIn) < 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+//		e := fmt.Sprintf("FastExChangeTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+//		return nil, nil, errors.New(e)
+//	}
+//
+//	exInfo, err := ExChangeTxFromScript(tx.TxOut[0].PkScript)
+//	if err != nil {
+//		e := fmt.Sprintf("ExChangeTxFromScript err %s", err)
+//		return nil, nil, errors.New(e)
+//	}
+//
+//	txout := tx.TxOut[1]
+//	info, err := BurnInfoFromScript(txout.PkScript)
+//	if err != nil {
+//		return nil, nil, errors.New("BurnInfoFromScript the output tx.")
+//	}
+//
+//	return exInfo, info, nil
+//}
 
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
-		e := fmt.Sprintf("not UpdateBeaconFreeQuota tx TxOut >3 or TxIn >1")
-		return nil, errors.New(e)
-	}
-
-	// make sure at least one txout in OUTPUT
-	var bp *UpdateBeaconFreeQuota
-
-	txout := tx.TxOut[0]
-	info, err := UpdateBeaconFreeQuotaTxFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("UpdateBeaconFreeQuotaTxFromScript the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		bp = info
-	}
-
-	var pk []byte
-	if tx.TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
-		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
-			return nil, errors.New(e)
-		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return nil, errors.New(e)
-		}
-	}
-
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, errors.New(e)
-	}
-
-	info.Address = address.String()
-
-	if bp != nil {
-		return bp, nil
-	}
-	return nil, NoUpdateBeaconFreeQuota
-}
-
-func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
-	// make sure at least one txout in OUTPUT
-	var es *BurnTxInfo
-
-	var pk []byte
-	var err error
-
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsBurnTy(txout.PkScript) {
-			return nil, NoBurnTx
-		}
-	} else {
-		return nil, NoBurnTx
-	}
-
-	// get to address
-	if len(tx.TxOut) < 2 {
-		return nil, errors.New("BurnTx Must be at least two TxOut")
-	}
-	if r, err := IsSendToZeroAddress(tx.TxOut[1].PkScript); err != nil {
-		return nil, err
-	} else {
-		if !r {
-			return nil, errors.New("not send to burn address")
-		}
-	}
-	// get from address
-	if tx.TxIn[0].Witness == nil {
-		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
-		if err != nil {
-			e := fmt.Sprintf("ComputePk err %s", err)
-			return nil, errors.New(e)
-		}
-	} else {
-		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
-		if err != nil {
-			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
-			return nil, errors.New(e)
-		}
-	}
-
-	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
-	if err != nil {
-		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
-		return nil, errors.New(e)
-	}
-
-	txout := tx.TxOut[0]
-	info, err := BurnInfoFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("BurnInfoFromScript the output tx " + err.Error())
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
-	}
-
-	info.Amount = big.NewInt(tx.TxOut[1].Value)
-	info.Address = address.String()
-
-	if es != nil {
-		return es, nil
-	}
-	return nil, NoBurnTx
-}
+//func IsBurnTx(tx *wire.MsgTx, params *chaincfg.Params) (*BurnTxInfo, error) {
+//	// make sure at least one txout in OUTPUT
+//	var es *BurnTxInfo
+//
+//	var pk []byte
+//	var err error
+//
+//	if len(tx.TxOut) > 0 {
+//		txout := tx.TxOut[0]
+//		if !txscript.IsBurnTy(txout.PkScript) {
+//			return nil, NoBurnTx
+//		}
+//	} else {
+//		return nil, NoBurnTx
+//	}
+//
+//	// get to address
+//	if len(tx.TxOut) < 2 {
+//		return nil, errors.New("BurnTx Must be at least two TxOut")
+//	}
+//	if r, err := IsSendToZeroAddress(tx.TxOut[1].PkScript); err != nil {
+//		return nil, err
+//	} else {
+//		if !r {
+//			return nil, errors.New("not send to burn address")
+//		}
+//	}
+//	// get from address
+//	if tx.TxIn[0].Witness == nil {
+//		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+//		if err != nil {
+//			e := fmt.Sprintf("ComputePk err %s", err)
+//			return nil, errors.New(e)
+//		}
+//	} else {
+//		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+//		if err != nil {
+//			e := fmt.Sprintf("ComputeWitnessPk err %s", err)
+//			return nil, errors.New(e)
+//		}
+//	}
+//
+//	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), params)
+//	if err != nil {
+//		e := fmt.Sprintf("NewAddressPubKeyHash err %s", err)
+//		return nil, errors.New(e)
+//	}
+//
+//	txout := tx.TxOut[0]
+//	info, err := BurnInfoFromScript(txout.PkScript)
+//	if err != nil {
+//		return nil, errors.New("BurnInfoFromScript the output tx " + err.Error())
+//	} else {
+//		if txout.Value != 0 {
+//			return nil, errors.New("the output value must be 0 in tx.")
+//		}
+//		es = info
+//	}
+//
+//	info.Amount = big.NewInt(tx.TxOut[1].Value)
+//	info.Address = address.String()
+//
+//	if es != nil {
+//		return es, nil
+//	}
+//	return nil, NoBurnTx
+//}
 
 func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	if pks, err := txscript.ParsePkScript(PkScript); err != nil {
@@ -861,70 +642,70 @@ func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	return true, nil
 }
 
-func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
-	// make sure at least one txout in OUTPUT
-	var es *BurnProofInfo
-	var err error
-
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsBurnProofTy(txout.PkScript) {
-			return nil, NoBurnProofTx
-		}
-	} else {
-		return nil, NoBurnProofTx
-	}
-
-	if len(tx.TxOut) < 1 {
-		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
-	}
-
-	txout := tx.TxOut[0]
-	info, err := BurnProofInfoFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("BurnProofInfoFromScript the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
-	}
-
-	if es != nil {
-		return es, nil
-	}
-	return nil, NoBurnProofTx
-}
-
-func IsBurnReportWhiteListTx(tx *wire.MsgTx) (*WhiteListProof, error) {
-	// make sure at least one txout in OUTPUT
-	var es *WhiteListProof
-	var err error
-
-	if len(tx.TxOut) > 0 {
-		txout := tx.TxOut[0]
-		if !txscript.IsBurnReportWhiteListTy(txout.PkScript) {
-			return nil, NoBurnReportWhiteListTx
-		}
-	} else {
-		return nil, NoBurnReportWhiteListTx
-	}
-
-	txout := tx.TxOut[0]
-	info, err := WhiteListProofFromScript(txout.PkScript)
-	if err != nil {
-		return nil, errors.New("WhiteListProofFromScript the output tx.")
-	} else {
-		if txout.Value != 0 {
-			return nil, errors.New("the output value must be 0 in tx.")
-		}
-		es = info
-	}
-	if es != nil {
-		return es, nil
-	}
-	return nil, NoBurnReportWhiteListTx
-}
+//func IsBurnProofTx(tx *wire.MsgTx) (*BurnProofInfo, error) {
+//	// make sure at least one txout in OUTPUT
+//	var es *BurnProofInfo
+//	var err error
+//
+//	if len(tx.TxOut) > 0 {
+//		txout := tx.TxOut[0]
+//		if !txscript.IsBurnProofTy(txout.PkScript) {
+//			return nil, NoBurnProofTx
+//		}
+//	} else {
+//		return nil, NoBurnProofTx
+//	}
+//
+//	if len(tx.TxOut) < 1 {
+//		return nil, errors.New("BurnProofInfo Must be at least two TxOut")
+//	}
+//
+//	txout := tx.TxOut[0]
+//	info, err := BurnProofInfoFromScript(txout.PkScript)
+//	if err != nil {
+//		return nil, errors.New("BurnProofInfoFromScript the output tx.")
+//	} else {
+//		if txout.Value != 0 {
+//			return nil, errors.New("the output value must be 0 in tx.")
+//		}
+//		es = info
+//	}
+//
+//	if es != nil {
+//		return es, nil
+//	}
+//	return nil, NoBurnProofTx
+//}
+//
+//func IsBurnReportWhiteListTx(tx *wire.MsgTx) (*WhiteListProof, error) {
+//	// make sure at least one txout in OUTPUT
+//	var es *WhiteListProof
+//	var err error
+//
+//	if len(tx.TxOut) > 0 {
+//		txout := tx.TxOut[0]
+//		if !txscript.IsBurnReportWhiteListTy(txout.PkScript) {
+//			return nil, NoBurnReportWhiteListTx
+//		}
+//	} else {
+//		return nil, NoBurnReportWhiteListTx
+//	}
+//
+//	txout := tx.TxOut[0]
+//	info, err := WhiteListProofFromScript(txout.PkScript)
+//	if err != nil {
+//		return nil, errors.New("WhiteListProofFromScript the output tx.")
+//	} else {
+//		if txout.Value != 0 {
+//			return nil, errors.New("the output value must be 0 in tx.")
+//		}
+//		es = info
+//	}
+//	if es != nil {
+//		return es, nil
+//	}
+//	return nil, NoBurnReportWhiteListTx
+//}
 
 //func EntangleTxFromScript(script []byte) (*EntangleTxInfo, error) {
 //	data, err := txscript.GetEntangleInfoData(script)
@@ -936,15 +717,15 @@ func IsBurnReportWhiteListTx(tx *wire.MsgTx) (*WhiteListProof, error) {
 //	return info, err
 //}
 
-func ExChangeTxFromScript(script []byte) (*ExChangeTxInfo, error) {
-	data, err := txscript.GetExChangeInfoData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &ExChangeTxInfo{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
+//func ExChangeTxFromScript(script []byte) (*ExChangeTxInfo, error) {
+//	data, err := txscript.GetExChangeInfoData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &ExChangeTxInfo{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
 
 func ConvertTxFromScript(script []byte) (*ConvertTxInfo, error) {
 	data, err := txscript.GetConvertInfoData(script)
@@ -971,12 +752,12 @@ func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 }
 
 //  Beacon
-func BeaconRegistrationTxFromScript2(script []byte) (*BeaconAddressInfo2, error) {
+func BeaconRegistrationTxFromScript2(script []byte) (*BeaconAddressInfo, error) {
 	data, err := txscript.GetBeaconRegistrationData(script)
 	if err != nil {
 		return nil, err
 	}
-	info := &BeaconAddressInfo2{}
+	info := &BeaconAddressInfo{}
 	err = rlp.DecodeBytes(data, info)
 	if err != nil {
 		return nil, err
@@ -994,53 +775,53 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 	return info, err
 }
 
-func UpdateBeaconCoinbaseTxFromScript(script []byte) (*UpdateBeaconCoinbase, error) {
-	data, err := txscript.GetUpdateBeaconCoinbaseData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &UpdateBeaconCoinbase{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
+//func UpdateBeaconCoinbaseTxFromScript(script []byte) (*UpdateBeaconCoinbase, error) {
+//	data, err := txscript.GetUpdateBeaconCoinbaseData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &UpdateBeaconCoinbase{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
 
-func UpdateBeaconFreeQuotaTxFromScript(script []byte) (*UpdateBeaconFreeQuota, error) {
-	data, err := txscript.GetUpdateBeaconFreeQuotaData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &UpdateBeaconFreeQuota{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
+//func UpdateBeaconFreeQuotaTxFromScript(script []byte) (*UpdateBeaconFreeQuota, error) {
+//	data, err := txscript.GetUpdateBeaconFreeQuotaData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &UpdateBeaconFreeQuota{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
 
-func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
-	data, err := txscript.GetBurnInfoData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &BurnTxInfo{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
-func BurnProofInfoFromScript(script []byte) (*BurnProofInfo, error) {
-	data, err := txscript.GetBurnProofInfoData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &BurnProofInfo{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
-func WhiteListProofFromScript(script []byte) (*WhiteListProof, error) {
-	data, err := txscript.GetWhiteListProofData(script)
-	if err != nil {
-		return nil, err
-	}
-	info := &WhiteListProof{}
-	err = rlp.DecodeBytes(data, info)
-	return info, err
-}
+//func BurnInfoFromScript(script []byte) (*BurnTxInfo, error) {
+//	data, err := txscript.GetBurnInfoData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &BurnTxInfo{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
+//func BurnProofInfoFromScript(script []byte) (*BurnProofInfo, error) {
+//	data, err := txscript.GetBurnProofInfoData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &BurnProofInfo{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
+//func WhiteListProofFromScript(script []byte) (*WhiteListProof, error) {
+//	data, err := txscript.GetWhiteListProofData(script)
+//	if err != nil {
+//		return nil, err
+//	}
+//	info := &WhiteListProof{}
+//	err = rlp.DecodeBytes(data, info)
+//	return info, err
+//}
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1131,7 +912,7 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeI
 			return errors.New("items2 Make Meger tx failed,err: " + err.Error())
 		}
 		out := &wire.TxOut{
-			Value:    items2[i].Value.Int64(),
+			Value:    items2[i].Amount.Int64(),
 			PkScript: pkScript,
 		}
 		allEntangle += out.Value
@@ -1165,6 +946,7 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeI
 
 func MakeMergerCoinbaseTx2(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
 	lastScriptInfo []byte, fork bool) error {
+
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
 	}
@@ -1188,12 +970,12 @@ func MakeMergerCoinbaseTx2(tx *wire.MsgTx, pool *PoolAddrItem, items []*Entangle
 
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
 	updateTxOutValue(tx.TxOut[2], reserve2)
-	if ok := EnoughAmount2(reserve1, items, keepInfo, fork); !ok {
+	if ok := EnoughAmount(reserve1, items, keepInfo, fork); !ok {
 		return errors.New("not enough amount to be entangle...")
 	}
 
 	for i := range items {
-		calcExchange2(items[i], &reserve1, keepInfo, true, fork)
+		calcExchange(items[i], &reserve1, keepInfo, true, fork)
 		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
 		if err != nil {
 			return errors.New("Make Meger tx failed,err: " + err.Error())
@@ -1211,6 +993,56 @@ func MakeMergerCoinbaseTx2(tx *wire.MsgTx, pool *PoolAddrItem, items []*Entangle
 	}
 	return nil
 }
+
+//func MakeMergerCoinbaseTx2(tx *wire.MsgTx, pool *PoolAddrItem, items []*EntangleItem,
+//	lastScriptInfo []byte, fork bool) error {
+//	if pool == nil || len(pool.POut) == 0 {
+//		return nil
+//	}
+//	keepInfo, err := KeepedAmountFromScript(lastScriptInfo)
+//	if err != nil {
+//		return err
+//	}
+//	// make sure have enough Value to exchange
+//	poolIn1 := &wire.TxIn{
+//		PreviousOutPoint: pool.POut[0],
+//		SignatureScript:  pool.Script[0],
+//		Sequence:         wire.MaxTxInSequenceNum,
+//	}
+//	poolIn2 := &wire.TxIn{
+//		PreviousOutPoint: pool.POut[1],
+//		SignatureScript:  pool.Script[1],
+//		Sequence:         wire.MaxTxInSequenceNum,
+//	}
+//	// merge pool tx
+//	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
+//
+//	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
+//	updateTxOutValue(tx.TxOut[2], reserve2)
+//	if ok := EnoughAmount2(reserve1, items, keepInfo, fork); !ok {
+//		return errors.New("not enough amount to be entangle...")
+//	}
+//
+//	for i := range items {
+//		calcExchange2(items[i], &reserve1, keepInfo, true, fork)
+//		pkScript, err := txscript.PayToAddrScript(items[i].Addr)
+//		if err != nil {
+//			return errors.New("Make Meger tx failed,err: " + err.Error())
+//		}
+//		out := &wire.TxOut{
+//			Value:    items[i].Value.Int64(),
+//			PkScript: pkScript,
+//		}
+//		tx.AddTxOut(out)
+//	}
+//	keepEntangleAmount(keepInfo, tx)
+//	tx.TxOut[1].Value = reserve1
+//	if reserve1 < reserve2 {
+//		fmt.Println("as")
+//	}
+//	return nil
+//}
+
 func updateTxOutValue(out *wire.TxOut, value int64) error {
 	out.Value += value
 	return nil
@@ -1247,12 +1079,6 @@ func calcExchange(item *ExChangeItem, reserve *int64, keepInfo *KeepedAmount, ch
 		item.Value = toBchOrBsv(amount, item.Value)
 	} else if item.AssetType == ExpandedTxEntangle_Bsv {
 		item.Value = toBchOrBsv(amount, item.Value)
-	} else if item.AssetType == ExpandedTxEntangle_Usdt {
-		item.Value = toUSDT(amount, item.Value)
-	} else if item.AssetType == ExpandedTxEntangle_Eth {
-		item.Value = toETH(amount, item.Value)
-	} else if item.AssetType == ExpandedTxEntangle_Trx {
-		item.Value = toTRX(amount, item.Value)
 	}
 	*reserve = *reserve - item.Value.Int64()
 }
@@ -1612,6 +1438,7 @@ func toDoge2(entangled, needed *big.Int) *big.Int {
 	}
 	return res
 }
+
 func toDoge(entangled, needed *big.Int, fork bool) *big.Int {
 	if needed == nil || needed.Int64() <= 0 {
 		return big.NewInt(0)
@@ -1642,6 +1469,7 @@ func toDoge(entangled, needed *big.Int, fork bool) *big.Int {
 		return new(big.Int).Add(toCzz(v1), toCzz(v2))
 	}
 }
+
 func toLtc1(entangled, needed int64) int64 {
 	if needed <= 0 {
 		return 0
@@ -1741,169 +1569,6 @@ func toLtc(entangled, needed *big.Int, fork bool) *big.Int {
 		f2 = f2.Quo(f2, rate)
 		return new(big.Int).Add(toCzz(f1), toCzz(f2))
 	}
-}
-func reverseToBtc(keeped *big.Int) (*big.Int, *big.Int) {
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
-	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-	return rate, big.NewInt(1)
-}
-func toBtc(entangled, needed *big.Int) *big.Int {
-	if needed == nil || needed.Int64() <= 0 {
-		return big.NewInt(0)
-	}
-	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	res := big.NewInt(0)
-	for {
-		if change.Sign() <= 0 {
-			break
-		}
-		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
-		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-		l := new(big.Int).Sub(baseUnit, remainder)
-		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
-			res = res.Add(res, res0)
-			break
-		} else {
-			change = change.Sub(change, l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
-			res = res.Add(res, res0)
-			keep = keep.Add(keep, l)
-		}
-	}
-	return res
-}
-func reverseToBchOrBsv(keeped *big.Int) (*big.Int, *big.Int) {
-	unit, base := big.NewInt(int64(1000)), big.NewInt(int64(10000))
-	loopUnit := new(big.Int).Mul(big.NewInt(300), baseUnit)
-	divisor, _ := new(big.Int).DivMod(keeped, loopUnit, new(big.Int).Set(loopUnit))
-	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-	return rate, big.NewInt(1)
-}
-func toBchOrBsv(entangled, needed *big.Int) *big.Int {
-	if needed == nil || needed.Int64() <= 0 {
-		return big.NewInt(0)
-	}
-	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
-	unit, base := big.NewInt(int64(1000)), big.NewInt(int64(10000))
-	loopUnit := new(big.Int).Mul(big.NewInt(300), baseUnit)
-	res := big.NewInt(0)
-	for {
-		if change.Sign() <= 0 {
-			break
-		}
-		divisor, remainder := new(big.Int).DivMod(keep, loopUnit, new(big.Int).Set(loopUnit))
-		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-		l := new(big.Int).Sub(loopUnit, remainder)
-		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
-			res = res.Add(res, res0)
-			break
-		} else {
-			change = change.Sub(change, l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
-			res = res.Add(res, res0)
-			keep = keep.Add(keep, l)
-		}
-	}
-	return res
-}
-func toUSDT(entangled, needed *big.Int) *big.Int {
-	if needed == nil || needed.Int64() <= 0 {
-		return big.NewInt(0)
-	}
-	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	res := big.NewInt(0)
-	for {
-		if change.Sign() <= 0 {
-			break
-		}
-		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
-		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-		l := new(big.Int).Sub(baseUnit, remainder)
-		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
-			res = res.Add(res, res0)
-			break
-		} else {
-			change = change.Sub(change, l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
-			res = res.Add(res, res0)
-			keep = keep.Add(keep, l)
-		}
-	}
-	return res
-}
-func reverseToUSDT(keeped *big.Int) (*big.Int, *big.Int) {
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
-	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-	return rate, big.NewInt(1)
-}
-func toETH(entangled, needed *big.Int) *big.Int {
-	if needed == nil || needed.Int64() <= 0 {
-		return big.NewInt(0)
-	}
-	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	res := big.NewInt(0)
-	for {
-		if change.Sign() <= 0 {
-			break
-		}
-		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
-		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-		l := new(big.Int).Sub(baseUnit, remainder)
-		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
-			res = res.Add(res, res0)
-			break
-		} else {
-			change = change.Sub(change, l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
-			res = res.Add(res, res0)
-			keep = keep.Add(keep, l)
-		}
-	}
-	return res
-}
-
-func reverseToETH(keeped *big.Int) (*big.Int, *big.Int) {
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	divisor, _ := new(big.Int).DivMod(keeped, baseUnit, new(big.Int).Set(baseUnit))
-	rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-	return rate, big.NewInt(1)
-}
-
-func toTRX(entangled, needed *big.Int) *big.Int {
-	if needed == nil || needed.Int64() <= 0 {
-		return big.NewInt(0)
-	}
-	keep, change := new(big.Int).Set(entangled), new(big.Int).Set(needed)
-	unit, base := big.NewInt(int64(10)), big.NewInt(int64(200))
-	res := big.NewInt(0)
-	for {
-		if change.Sign() <= 0 {
-			break
-		}
-		divisor, remainder := new(big.Int).DivMod(keep, baseUnit, new(big.Int).Set(baseUnit))
-		rate := new(big.Int).Add(base, new(big.Int).Mul(unit, divisor))
-		l := new(big.Int).Sub(baseUnit, remainder)
-		if l.Cmp(change) >= 0 {
-			res0 := new(big.Int).Quo(new(big.Int).Mul(change, baseUnit), rate)
-			res = res.Add(res, res0)
-			break
-		} else {
-			change = change.Sub(change, l)
-			res0 := new(big.Int).Quo(new(big.Int).Mul(l, baseUnit), rate)
-			res = res.Add(res, res0)
-			keep = keep.Add(keep, l)
-		}
-	}
-	return res
 }
 
 func reverseToTRX(keeped *big.Int) (*big.Int, *big.Int) {
