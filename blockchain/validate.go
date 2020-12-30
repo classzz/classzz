@@ -1062,12 +1062,12 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 	//eState := b.CurrentEstate()
 	var eState3 *cross.EntangleState
 	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ExChangeHeight > tip.height {
-		eState4 := b.CurrentEstate2()
+		eState4 := b.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for k, v := range eState4.EnInfos {
 			bai2 := &cross.BeaconAddressInfo{
-				BeaconID:        v.ExchangeID,
+				ExchangeID:      v.ExchangeID,
 				StakingAmount:   v.StakingAmount,
 				EntangleAmount:  v.EntangleAmount,
 				CoinBaseAddress: v.CoinBaseAddress,

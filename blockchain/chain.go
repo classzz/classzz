@@ -1231,7 +1231,7 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	err := b.db.Update(func(dbTx database.Tx) error {
 
-		if NetParams.ExChangeHeight <= block.Height() {
+		if NetParams.ConverHeight <= block.Height() {
 			err := dbStateTx(dbTx, block)
 			if err != nil {
 				return err
@@ -2467,7 +2467,7 @@ func New(config *Config) (*BlockChain, error) {
 
 	var trxclients = config.TrxRPC
 
-	cacheEntangleInfo := &cross.CacheEntangleInfo{
+	cacheEntangleInfo := &cross.CacheCommitteeState{
 		DB: config.DB,
 	}
 
@@ -2479,11 +2479,10 @@ func New(config *Config) (*BlockChain, error) {
 		BtcCoinRPC:  btcclients,
 		BchCoinRPC:  bchclients,
 		BsvCoinRPC:  bsvclients,
-		//UsdtCoinRPC: usdtclients,
-		EthRPC: ethclients,
-		TrxRPC: trxclients,
-		Cache:  cacheEntangleInfo,
-		Params: params,
+		EthRPC:      ethclients,
+		TrxRPC:      trxclients,
+		Cache:       cacheEntangleInfo,
+		Params:      params,
 	}
 
 	targetTimespan := int64(params.TargetTimespan / time.Second)

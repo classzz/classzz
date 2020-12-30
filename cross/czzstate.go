@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/classzz/classzz/wire"
 	"io"
 	"log"
 	"math/big"
@@ -86,12 +87,13 @@ func (cm *CommitteeMember) EncodeRLP(w io.Writer) error {
 }
 
 type PledgeInfo struct {
-	ID              *big.Int `json:"id"`
-	Address         string   `json:"address"`
-	PubKey          []byte   `json:"pub_key"`
-	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   *big.Int `json:"staking_amount"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+	ID              *big.Int         `json:"id"`
+	Address         string           `json:"address"`
+	PubKey          []byte           `json:"pub_key"`
+	ToAddress       []byte           `json:"toAddress"`
+	StakingAmount   *big.Int         `json:"staking_amount"`
+	CoinBaseAddress []string         `json:"coinbase_address"`
+	NoCostUtxo      []*wire.OutPoint `json:"no_cost_utxo"`
 }
 
 type extPledgeInfo struct {
@@ -126,21 +128,9 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 type ConvertItem struct {
 	ExtTxHash   string          `json:"ext_tx_hash"`
 	Address     czzutil.Address `json:"address"`
-	Amount      *big.Int        `json:"amount"` // czz asset amount
-	ToAddress   string          `json:"to_address"`
+	Amount      *big.Int        `json:"amount"`       // czz asset amount
 	RedeemState byte            `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
-
-//func (ci *ConvertItem) Clone() *ConvertItem {
-//	item := &ConvertItem{
-//		AssetType:   ci.AssetType,
-//		ConvertType: ci.ConvertType,
-//		Value:       new(big.Int).Set(ci.Value),
-//		Address:     ci.Address,
-//		BeaconID:    ci.BeaconID,
-//	}
-//	return item
-//}
 
 type ConvertItems map[uint8]ConvertItem
 
@@ -281,7 +271,7 @@ func (cs *CommitteeState) EncodeRLP(w io.Writer) error {
 }
 
 /////////////////////////////////////////////////////////////////
-func (cs *CommitteeState) getPledgeInfoByID(id *big.Int) *PledgeInfo {
+func (cs *CommitteeState) GetPledgeInfoByID(id *big.Int) *PledgeInfo {
 	for _, v := range cs.PledgeInfos {
 		if v.ID.Cmp(id) == 0 {
 			return v
@@ -290,7 +280,7 @@ func (cs *CommitteeState) getPledgeInfoByID(id *big.Int) *PledgeInfo {
 	return nil
 }
 
-func (cs *CommitteeState) getPledgeInfoByAddress(address string) *PledgeInfo {
+func (cs *CommitteeState) GetPledgeInfoByAddress(address string) *PledgeInfo {
 	for _, v := range cs.PledgeInfos {
 		if v.Address == address {
 			return v
@@ -299,7 +289,7 @@ func (cs *CommitteeState) getPledgeInfoByAddress(address string) *PledgeInfo {
 	return nil
 }
 
-func (cs *CommitteeState) getPledgeInfoFromTo(to []byte) *PledgeInfo {
+func (cs *CommitteeState) GetPledgeInfoByAddressTo(to []byte) *PledgeInfo {
 	for _, v := range cs.PledgeInfos {
 		if bytes.Equal(v.ToAddress, to) {
 			return v
@@ -309,7 +299,7 @@ func (cs *CommitteeState) getPledgeInfoFromTo(to []byte) *PledgeInfo {
 }
 
 func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.Params) czzutil.Address {
-	if b := cs.getPledgeInfoByID(id); b != nil {
+	if b := cs.GetPledgeInfoByID(id); b != nil {
 		addr, err := czzutil.NewLegacyAddressPubKeyHash(b.ToAddress, params)
 		if err == nil {
 			return addr
@@ -318,15 +308,15 @@ func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.
 	return nil
 }
 
-func (cs *CommitteeState) getPledgeInfoAddressByID(id *big.Int) string {
-	lh := cs.getPledgeInfoByID(id)
+func (cs *CommitteeState) GetPledgeInfoAddressByID(id *big.Int) string {
+	lh := cs.GetPledgeInfoByID(id)
 	if lh == nil {
 		return ""
 	}
 	return lh.Address
 }
 
-func (cs *CommitteeState) getPledgeInfoMaxId() *big.Int {
+func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
 	maxId := big.NewInt(0)
 	for _, v := range cs.PledgeInfos {
 		if maxId.Cmp(v.ID) < 0 {
@@ -344,15 +334,15 @@ func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amo
 		return ErrLessThanMin
 	}
 
-	if info := cs.getPledgeInfoByAddress(address); info != nil {
+	if info := cs.GetPledgeInfoByAddress(address); info != nil {
 		return ErrRepeatRegister
 	}
 
-	if info := cs.getPledgeInfoFromTo(to); info != nil {
+	if info := cs.GetPledgeInfoByAddressTo(to); info != nil {
 		return ErrRepeatToAddress
 	}
 
-	maxId := cs.getPledgeInfoMaxId()
+	maxId := cs.GetPledgeInfoMaxId()
 	info := &PledgeInfo{
 		ID:              big.NewInt(0).Add(maxId, big.NewInt(1)),
 		Address:         address,
@@ -366,8 +356,17 @@ func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amo
 	return nil
 }
 
+func (cs *CommitteeState) AddMortgage(addr string, amount *big.Int) error {
+	if info := cs.GetPledgeInfoByAddress(addr); info == nil {
+		return ErrRepeatRegister
+	} else {
+		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
+	}
+	return nil
+}
+
 func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) error {
-	if info := cs.getPledgeInfoByAddress(address); info == nil {
+	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrNoRegister
 	} else {
 		if len(coinBases) >= MaxCoinBase {
@@ -378,36 +377,13 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 	return nil
 }
 
-func (cs *CommitteeState) AddMortgage(addr string, amount *big.Int) error {
-	if info := cs.getPledgeInfoByAddress(addr); info == nil {
-		return ErrRepeatRegister
-	} else {
-		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
-	}
-	return nil
-}
-
-func (cs *CommitteeState) UpdateCoinbase(addr, update, newAddr string) error {
-	if info := cs.getPledgeInfoByAddress(addr); info == nil {
-		return ErrNoRegister
-	} else {
-		for i, v := range info.CoinBaseAddress {
-			if v == update {
-				info.CoinBaseAddress[i] = newAddr
-			}
-		}
-	}
-	return nil
-}
-
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (cs *CommitteeState) AddConvertItem(item *ExChangeItem) error {
+func (cs *CommitteeState) Convert(item *ExChangeItem) error {
 
 	convertItem := ConvertItem{
 		ExtTxHash:   item.ExtTxHash,
 		Address:     item.Address,
 		Amount:      item.Amount,
-		ToAddress:   item.ToAddress,
 		RedeemState: 0,
 	}
 
@@ -770,69 +746,69 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint64,
-	height, amount *big.Int) (*big.Int, error) {
-	if es.AddressInWhiteList(addr, true) {
-		return nil, ErrAddressInWhiteList
-	}
-	lh := es.getBeaconAddress(lightID)
-	if lh == nil {
-		return nil, ErrNoRegister
-	}
-	if !isValidAsset(aType, lh.AssetFlag) {
-		return nil, ErrNoUserAsset
-	}
-	sendAmount := big.NewInt(0)
-	var err error
-	lhEntitys, ok := es.EnEntitys[lightID]
-	if !ok {
-		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
-	}
-	if lhEntitys != nil {
-		userEntitys, ok1 := lhEntitys[addr]
-		if !ok1 {
-			userEntitys = EntangleEntitys(make([]*EntangleEntity, 0, 0))
-		}
-		found := false
-		var userEntity *EntangleEntity
-		for _, v := range userEntitys {
-			if aType == v.AssetType {
-				found = true
-				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-				userEntity = v
-				break
-			}
-		}
-		if !found {
-			userEntity = &EntangleEntity{
-				ExchangeID:      lightID,
-				Address:         addr,
-				AssetType:       aType,
-				Height:          new(big.Int).Set(height),
-				OldHeight:       new(big.Int).Set(height), // init same the Height
-				EnOutsideAmount: new(big.Int).Set(amount),
-				BurnAmount:      newBurnInfos(),
-				MaxRedeem:       big.NewInt(0),
-				OriginAmount:    big.NewInt(0),
-			}
-			userEntitys = append(userEntitys, userEntity)
-		}
-
-		// calc the send amount
-		reserve := es.getEntangledAmount(lightID, aType)
-		sendAmount, err = calcEntangleAmount(reserve, amount, aType)
-		if err != nil {
-			return nil, err
-		}
-		userEntity.increaseOriginAmount(sendAmount)
-		userEntity.updateFreeQuotaOfHeight(height, amount)
-		lh.addEnAsset(aType, amount)
-		lh.recordEntangleAmount(sendAmount)
-		lhEntitys[addr] = userEntitys
-		es.EnEntitys[lightID] = lhEntitys
-	}
-	return sendAmount, nil
-}
+//func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint64,
+//	height, amount *big.Int) (*big.Int, error) {
+//	if es.AddressInWhiteList(addr, true) {
+//		return nil, ErrAddressInWhiteList
+//	}
+//	lh := es.getBeaconAddress(lightID)
+//	if lh == nil {
+//		return nil, ErrNoRegister
+//	}
+//	if !isValidAsset(aType, lh.AssetFlag) {
+//		return nil, ErrNoUserAsset
+//	}
+//	sendAmount := big.NewInt(0)
+//	var err error
+//	lhEntitys, ok := es.EnEntitys[lightID]
+//	if !ok {
+//		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
+//	}
+//	if lhEntitys != nil {
+//		userEntitys, ok1 := lhEntitys[addr]
+//		if !ok1 {
+//			userEntitys = EntangleEntitys(make([]*EntangleEntity, 0, 0))
+//		}
+//		found := false
+//		var userEntity *EntangleEntity
+//		for _, v := range userEntitys {
+//			if aType == v.AssetType {
+//				found = true
+//				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
+//				userEntity = v
+//				break
+//			}
+//		}
+//		if !found {
+//			userEntity = &EntangleEntity{
+//				ExchangeID:      lightID,
+//				Address:         addr,
+//				AssetType:       aType,
+//				Height:          new(big.Int).Set(height),
+//				OldHeight:       new(big.Int).Set(height), // init same the Height
+//				EnOutsideAmount: new(big.Int).Set(amount),
+//				BurnAmount:      newBurnInfos(),
+//				MaxRedeem:       big.NewInt(0),
+//				OriginAmount:    big.NewInt(0),
+//			}
+//			userEntitys = append(userEntitys, userEntity)
+//		}
+//
+//		// calc the send amount
+//		reserve := es.getEntangledAmount(lightID, aType)
+//		sendAmount, err = calcEntangleAmount(reserve, amount, aType)
+//		if err != nil {
+//			return nil, err
+//		}
+//		userEntity.increaseOriginAmount(sendAmount)
+//		userEntity.updateFreeQuotaOfHeight(height, amount)
+//		lh.addEnAsset(aType, amount)
+//		lh.recordEntangleAmount(sendAmount)
+//		lhEntitys[addr] = userEntitys
+//		es.EnEntitys[lightID] = lhEntitys
+//	}
+//	return sendAmount, nil
+//}
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz
@@ -900,7 +876,7 @@ func redeemAmount(addr string, amount *big.Int) error {
 	return nil
 }
 
-func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint32) (*big.Int, error) {
+func calcEntangleAmount(reserve, reqAmount *big.Int, atype uint8) (*big.Int, error) {
 	switch atype {
 	case ExpandedTxEntangle_Doge:
 		return toDoge2(reserve, reqAmount), nil

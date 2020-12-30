@@ -3,7 +3,6 @@ package cross
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/database"
@@ -22,42 +21,35 @@ type CacheCommitteeState struct {
 	DB database.DB
 }
 
-func (c *CacheCommitteeState) FetchExtUtxoView(info ExtTxInfo) bool {
+func (c *CacheCommitteeState) FetchExtUtxoView(info *ConvertTxInfo) bool {
 
-	var err error
 	txExist := false
-
-	AssetType := byte(info.GetAssetType())
-	ExTxHash := []byte(info.GetExtTxHash())
+	AssetType := info.AssetType
+	ExTxHash := []byte(info.ExtTxHash)
 	key := append(ExTxHash, AssetType)
-	err = c.DB.View(func(tx database.Tx) error {
-		entangleBucket := tx.Metadata().Bucket(BucketKey)
-		if entangleBucket == nil {
-			if entangleBucket, err = tx.Metadata().CreateBucketIfNotExists(BucketKey); err != nil {
-				return err
-			}
+	c.DB.View(func(tx database.Tx) error {
+		committeeBucket := tx.Metadata().Bucket(CommitteeStateKey)
+		if committeeBucket == nil {
+			return nil
 		}
-
-		value := entangleBucket.Get(key)
+		value := committeeBucket.Get(key)
 		if value != nil {
 			txExist = true
 		}
 		return nil
 	})
-
 	return txExist
 }
 
 func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Hash) *CommitteeState {
 
-	var err error
 	cs := NewCommitteeState()
 
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
 	buf.Write(hash.CloneBytes())
 
-	err = c.DB.Update(func(tx database.Tx) error {
+	err := c.DB.Update(func(tx database.Tx) error {
 		committeeBucket := tx.Metadata().Bucket(CommitteeStateKey)
 		if committeeBucket == nil {
 			return nil
@@ -66,7 +58,6 @@ func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Ha
 		if value != nil {
 			err := rlp.DecodeBytes(value, cs)
 			if err != nil {
-				log.Fatal("Failed to RLP encode LoadEntangleState EntangleState ", "err", err)
 				return err
 			}
 			return nil
@@ -74,6 +65,7 @@ func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Ha
 		return errors.New("value is nil")
 	})
 	if err != nil {
+		log.Fatal("Failed to LoadCommitteeState ", "err", err)
 		return nil
 	}
 	return cs
@@ -110,69 +102,4 @@ func (c *CacheCommitteeState) LoadEntangleState(height int32, hash chainhash.Has
 		return nil
 	}
 	return es
-}
-
-func (c *CacheCommitteeState) LoadBurnTxInfo(address string) *BurnTxInfo {
-
-	bti := &BurnTxInfo{}
-	buf, err := hex.DecodeString(address)
-
-	err = c.DB.View(func(tx database.Tx) error {
-		BurnTxInfoBucket := tx.Metadata().Bucket(BurnTxInfoKey)
-		if BurnTxInfoBucket == nil {
-			if BurnTxInfoBucket, err = tx.Metadata().CreateBucketIfNotExists(BurnTxInfoKey); err != nil {
-				return err
-			}
-		}
-		value := BurnTxInfoBucket.Get(buf)
-		if value != nil {
-			err := rlp.DecodeBytes(value, bti)
-			if err != nil {
-				log.Fatal("Failed to RLP encode BurnTxInfo", "err", err)
-				return err
-			}
-			return nil
-		}
-		return errors.New("value is nil")
-	})
-	if err != nil {
-		return nil
-	}
-	return bti
-}
-
-func (c *CacheCommitteeState) LoadBurnTxInfoAll(BeaconID uint64) []*BurnTxInfo {
-
-	btis := make([]*BurnTxInfo, 0)
-
-	err := c.DB.View(func(tx database.Tx) error {
-		BurnTxInfoBucket := tx.Metadata().Bucket(BurnTxInfoKey)
-		var err error
-		if BurnTxInfoBucket == nil {
-			if BurnTxInfoBucket, err = tx.Metadata().CreateBucketIfNotExists(BurnTxInfoKey); err != nil {
-				return err
-			}
-		}
-
-		cursor := BurnTxInfoBucket.Cursor()
-		for ok := cursor.First(); ok; ok = cursor.Next() {
-			//fmt.Printf("key=%s, value=%s\n", cursor.Key(), cursor.Value())
-			bti := &BurnTxInfo{}
-			err := rlp.DecodeBytes(cursor.Value(), bti)
-			if err != nil {
-				log.Fatal("Failed to RLP encode BurnTxInfo", "err", err)
-				return err
-			}
-			if bti.BeaconID == BeaconID {
-				btis = append(btis, bti)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil
-	}
-	return btis
 }

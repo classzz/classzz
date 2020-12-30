@@ -7,7 +7,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -530,67 +529,82 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 	reportWhiteList := make([]uint64, 0, 0)
 	for _, tx := range block.Transactions() {
 
-		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
+		// Mortgage
+		br, _ := cross.IsMortgageTx(tx.MsgTx(), NetParams)
 		if br != nil {
-			if err := RegisterBeaconTxStore(cState, br, tx); err != nil {
+			if err := MortgageTxStore(cState, br, tx); err != nil {
 				return err
 			}
 		}
 
-		// AddBeaconPledge
-		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
+		// AddMortgage
+		bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), NetParams)
 		if bp != nil {
-
-			if err := AddBeaconPledgeTxStore(cState, bp); err != nil {
-				return err
+			if cState != nil {
+				if err := cState.AddMortgage(bp.Address, bp.StakingAmount); err != nil {
+					return err
+				}
 			}
+		}
+
+		// AddMortgage
+		ubc, _ := cross.IsUpdateBeaconCoinbaseAllTx(tx.MsgTx(), NetParams)
+		if bp != nil {
+			if cState != nil {
+				if err := cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
 
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 			for _, info := range cinfo {
-				if err := eState.AddConvertItem(info.Address, info.AssetType, info.BeaconID, info.Amount, pHeight); err != nil {
-					return err
+				if cState != nil {
+					if err := cState.Convert(info); err != nil {
+						return err
+					}
 				}
 			}
 		}
+
 	}
 
-	if eState != nil {
-		burnTimeout := eState.TourAllUserBurnInfo(uint64(pHeight + 1))
-		index := uint32(5)
-		for k, _ := range burnTimeout {
-			if exInfos := eState.GetBaExInfoByID(k); exInfos != nil {
-				exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
-					Hash:  *block.Transactions()[0].Hash(),
-					Index: index,
-				}}
-				eState.SetBaExInfo(k, exInfos)
-			} else {
-				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", k)
-			}
-			index = index + 3
-		}
-		eState.UpdateStateToPunished(burnTimeout)
+	//if eState != nil {
+	//	burnTimeout := eState.TourAllUserBurnInfo(uint64(pHeight + 1))
+	//	index := uint32(5)
+	//	for k, _ := range burnTimeout {
+	//		if exInfos := eState.GetBaExInfoByID(k); exInfos != nil {
+	//			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
+	//				Hash:  *block.Transactions()[0].Hash(),
+	//				Index: index,
+	//			}}
+	//			eState.SetBaExInfo(k, exInfos)
+	//		} else {
+	//			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", k)
+	//		}
+	//		index = index + 3
+	//	}
+	//	eState.UpdateStateToPunished(burnTimeout)
+	//
+	//	for _, v := range reportWhiteList {
+	//		if exInfos := eState.GetBaExInfoByID(v); exInfos != nil {
+	//			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
+	//				Hash:  *block.Transactions()[0].Hash(),
+	//				Index: index,
+	//			}}
+	//			eState.SetBaExInfo(v, exInfos)
+	//		} else {
+	//			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", v)
+	//		}
+	//		index = index + 3
+	//	}
 
-		for _, v := range reportWhiteList {
-			if exInfos := eState.GetBaExInfoByID(v); exInfos != nil {
-				exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
-					Hash:  *block.Transactions()[0].Hash(),
-					Index: index,
-				}}
-				eState.SetBaExInfo(v, exInfos)
-			} else {
-				return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", v)
-			}
-			index = index + 3
-		}
-
-		if err := dbPutEntangleState(dbTx, block, eState); err != nil {
-			return err
-		}
+	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
+		return err
 	}
+	//}
 	return nil
 }
 
@@ -640,34 +654,32 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 	return nil
 }
 
-func RegisterBeaconTxStore(state *cross.EntangleState, bai *cross.BeaconAddressInfo, tx *czzutil.Tx) error {
+func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czzutil.Tx) error {
 
 	var err error
 	if state != nil {
-		err = state.RegisterBeaconAddress(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.Fee, bai.KeepBlock, bai.AssetFlag, bai.WhiteList, bai.CoinBaseAddress)
+		err = state.Mortgage(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.CoinBaseAddress)
 	}
 	if err != nil {
 		return err
 	}
-	beaconID := state.GetBeaconIdByTo(bai.ToAddress)
-	if exInfos := state.GetBaExInfoByID(beaconID); exInfos != nil {
-		ex := cross.NewExBeaconInfo()
-		ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
+
+	if pledgeInfo := state.GetPledgeInfoByAddressTo(bai.ToAddress); pledgeInfo != nil {
+		pledgeInfo.NoCostUtxo = []*wire.OutPoint{&wire.OutPoint{
 			Hash:  *tx.Hash(),
 			Index: 1,
 		}}
-
-		state.SetBaExInfo(beaconID, ex)
 	} else {
-		return errors.New(fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID))
+		return errors.New(fmt.Sprintf("pledgeInfo merge failed,exInfo not nil, id: %v", pledgeInfo.ID))
 	}
+
 	return nil
 }
 
-func AddBeaconPledgeTxStore(state *cross.EntangleState, abp *cross.AddBeaconPledge) error {
+func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage) error {
 	var err error
 	if state != nil {
-		err = state.AppendAmountForBeaconAddress(abp.Address, abp.StakingAmount)
+		err = state.AddMortgage(abp.Address, abp.StakingAmount)
 	}
 	if err != nil {
 		return err
