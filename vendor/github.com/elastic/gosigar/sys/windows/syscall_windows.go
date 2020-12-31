@@ -2,7 +2,6 @@ package windows
 
 import (
 	"fmt"
-	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -336,23 +335,6 @@ func GetDriveType(rootPathName string) (DriveType, error) {
 	return dt, nil
 }
 
-// GetFilesystemType returns file system type information at the given root path.
-// https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationw
-func GetFilesystemType(rootPathName string) (string, error) {
-	rootPathNamePtr, err := syscall.UTF16PtrFromString(rootPathName)
-	if err != nil {
-		return "", errors.Wrapf(err, "UTF16PtrFromString failed for rootPathName=%v", rootPathName)
-	}
-
-	buffer := make([]uint16, MAX_PATH+1)
-	success, err := _GetVolumeInformation(rootPathNamePtr, nil, 0, nil, nil, nil, &buffer[0], MAX_PATH)
-	if !success {
-		return "", errors.Wrap(err, "GetVolumeInformationW failed")
-	}
-
-	return strings.ToLower(syscall.UTF16ToString(buffer)), nil
-}
-
 // EnumProcesses retrieves the process identifier for each process object in the
 // system. This function can return a max of 65536 PIDs. If there are more
 // processes than that then this will not return them all.
@@ -598,6 +580,11 @@ func GetTickCount64() (uptime uint64, err error) {
 	return uptime, nil
 }
 
+// Use "GOOS=windows go generate -v -x ." to generate the source.
+
+// Add -trace to enable debug prints around syscalls.
+//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -systemdll=false -output zsyscall_windows.go syscall_windows.go
+
 // Windows API calls
 //sys   _GlobalMemoryStatusEx(buffer *MemoryStatusEx) (err error) = kernel32.GlobalMemoryStatusEx
 //sys   _GetLogicalDriveStringsW(bufferLength uint32, buffer *uint16) (length uint32, err error) = kernel32.GetLogicalDriveStringsW
@@ -605,7 +592,6 @@ func GetTickCount64() (uptime uint64, err error) {
 //sys   _GetProcessImageFileName(handle syscall.Handle, outImageFileName *uint16, size uint32) (length uint32, err error) = psapi.GetProcessImageFileNameW
 //sys   _GetSystemTimes(idleTime *syscall.Filetime, kernelTime *syscall.Filetime, userTime *syscall.Filetime) (err error) = kernel32.GetSystemTimes
 //sys   _GetDriveType(rootPathName *uint16) (dt DriveType, err error) = kernel32.GetDriveTypeW
-//sys   _GetVolumeInformation(rootPathName *uint16, volumeName *uint16, volumeNameSize uint32, volumeSerialNumber *uint32, maximumComponentLength *uint32, fileSystemFlags *uint32, fileSystemName *uint16, fileSystemNameSize uint32) (success bool, err error) [true] = kernel32.GetVolumeInformationW
 //sys   _EnumProcesses(processIds *uint32, sizeBytes uint32, bytesReturned *uint32) (err error) = psapi.EnumProcesses
 //sys   _GetDiskFreeSpaceEx(directoryName *uint16, freeBytesAvailable *uint64, totalNumberOfBytes *uint64, totalNumberOfFreeBytes *uint64) (err error) = kernel32.GetDiskFreeSpaceExW
 //sys   _Process32First(handle syscall.Handle, processEntry32 *ProcessEntry32) (err error) = kernel32.Process32FirstW

@@ -14,7 +14,6 @@ var (
 	BucketKey         = []byte("entangle-tx")
 	EntangleStateKey  = []byte("entanglestate")
 	CommitteeStateKey = []byte("committeestate")
-	BurnTxInfoKey     = []byte("burntxinfo")
 )
 
 type CacheCommitteeState struct {

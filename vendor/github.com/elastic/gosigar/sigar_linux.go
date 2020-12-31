@@ -21,7 +21,6 @@ func getMountTableFileName() string {
 	return "/etc/mtab"
 }
 
-// Get returns uptime data
 func (self *Uptime) Get() error {
 	sysinfo := syscall.Sysinfo_t{}
 
@@ -34,7 +33,6 @@ func (self *Uptime) Get() error {
 	return nil
 }
 
-// Get returns FD usage data
 func (self *FDUsage) Get() error {
 	return readFile(Procd+"/sys/fs/file-nr", func(line string) bool {
 		fields := strings.Fields(line)
@@ -47,7 +45,6 @@ func (self *FDUsage) Get() error {
 	})
 }
 
-// Get returns hugepages data
 func (self *HugeTLBPages) Get() error {
 	table, err := parseMeminfo()
 	if err != nil {
@@ -72,7 +69,6 @@ func (self *HugeTLBPages) Get() error {
 	return nil
 }
 
-// Get returns process FD usage
 func (self *ProcFDUsage) Get(pid int) error {
 	err := readFile(procFileName(pid, "limits"), func(line string) bool {
 		if strings.HasPrefix(line, "Max open files") {
@@ -111,7 +107,6 @@ func parseCpuStat(self *Cpu, line string) error {
 	return nil
 }
 
-// Get returns memory data
 func (self *Mem) Get() error {
 
 	table, err := parseMeminfo()
@@ -122,13 +117,13 @@ func (self *Mem) Get() error {
 	self.Total, _ = table["MemTotal"]
 	self.Free, _ = table["MemFree"]
 	buffers, _ := table["Buffers"]
-	self.Cached, _ = table["Cached"]
+	cached, _ := table["Cached"]
 
 	if available, ok := table["MemAvailable"]; ok {
 		// MemAvailable is in /proc/meminfo (kernel 3.14+)
 		self.ActualFree = available
 	} else {
-		self.ActualFree = self.Free + buffers + self.Cached
+		self.ActualFree = self.Free + buffers + cached
 	}
 
 	self.Used = self.Total - self.Free

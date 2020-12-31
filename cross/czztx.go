@@ -148,19 +148,19 @@ type MortgageInfo struct {
 }
 
 type AddMortgage struct {
-	Address       string   `json:"address"`
-	StakingAmount *big.Int `json:"staking_amount"`
+	Address       czzutil.Address `json:"address"`
+	StakingAmount *big.Int        `json:"staking_amount"`
 }
 
 type UpdateBeaconCoinbaseAll struct {
-	Address         string   `json:"address"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+	Address         czzutil.Address `json:"address"`
+	CoinBaseAddress []string        `json:"coinbase_address"`
 }
 
 type ConvertTxInfo struct {
 	AssetType   uint8
 	ConvertType uint8
-	Address     string
+	Address     czzutil.Address
 	Height      uint64
 	ExtTxHash   string
 	Index       uint32
@@ -528,8 +528,7 @@ func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*Upda
 		return nil, errors.New(e)
 	}
 
-	info.Address = address.String()
-
+	info.Address = address
 	if bp != nil {
 		return bp, nil
 	}
@@ -876,9 +875,8 @@ type TmpAddressPair struct {
 	Address czzutil.Address
 }
 
-func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify, nextBlockHeight int64) ([]*ExChangeItem, error) {
+func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify) ([]*ExChangeItem, error) {
 
-	cis := make([]*ExChangeItem, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
 		tpi, err := ev.VerifyConvertTx(info, eState)
@@ -896,20 +894,10 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 			return nil, err
 		}
 
-		citem := &ExChangeItem{
-			ExtTxHash:   info.ExtTxHash,
-			Height:      big.NewInt(nextBlockHeight),
-			AssetType:   info.AssetType,
-			ConvertType: info.ConvertType,
-			Address:     addr,
-			Amount:      info.Amount,
-		}
-
-		if err := eState.Convert(citem); err != nil {
+		info.Address = addr
+		if err := eState.Convert(info); err != nil {
 			return nil, err
 		}
-
-		cis = append(cis, citem)
 	}
 
 	return cis, nil

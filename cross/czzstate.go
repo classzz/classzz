@@ -87,22 +87,21 @@ func (cm *CommitteeMember) EncodeRLP(w io.Writer) error {
 }
 
 type PledgeInfo struct {
-	ID              *big.Int         `json:"id"`
-	Address         string           `json:"address"`
-	PubKey          []byte           `json:"pub_key"`
-	ToAddress       []byte           `json:"toAddress"`
-	StakingAmount   *big.Int         `json:"staking_amount"`
-	CoinBaseAddress []string         `json:"coinbase_address"`
-	NoCostUtxo      []*wire.OutPoint `json:"no_cost_utxo"`
+	ID              *big.Int        `json:"id"`
+	Address         czzutil.Address `json:"address"`
+	PubKey          []byte          `json:"pub_key"`
+	ToAddress       []byte          `json:"toAddress"`
+	StakingAmount   *big.Int        `json:"staking_amount"`
+	CoinBaseAddress []string        `json:"coinbase_address"`
 }
 
 type extPledgeInfo struct {
-	ID              *big.Int `json:"id"`
-	Address         string   `json:"address"`
-	PubKey          []byte   `json:"pub_key"`
-	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   *big.Int `json:"staking_amount"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+	ID              *big.Int        `json:"id"`
+	Address         czzutil.Address `json:"address"`
+	PubKey          []byte          `json:"pub_key"`
+	ToAddress       []byte          `json:"toAddress"`
+	StakingAmount   *big.Int        `json:"staking_amount"`
+	CoinBaseAddress []string        `json:"coinbase_address"`
 }
 
 func (pi *PledgeInfo) DecodeRLP(s *rlp.Stream) error {
@@ -201,6 +200,7 @@ type CommitteeState struct {
 	PledgeInfos    []*PledgeInfo
 	CommitteeInfos []*CommitteeInfo
 	ConvertItems   map[uint8]ConvertItems
+	NoCostUtxos    map[string][]*wire.OutPoint
 }
 
 type StoreConvertItems struct {
@@ -280,9 +280,9 @@ func (cs *CommitteeState) GetPledgeInfoByID(id *big.Int) *PledgeInfo {
 	return nil
 }
 
-func (cs *CommitteeState) GetPledgeInfoByAddress(address string) *PledgeInfo {
+func (cs *CommitteeState) GetPledgeInfoByAddress(address czzutil.Address) *PledgeInfo {
 	for _, v := range cs.PledgeInfos {
-		if v.Address == address {
+		if v.Address.String() == address.String() {
 			return v
 		}
 	}
@@ -308,12 +308,12 @@ func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.
 	return nil
 }
 
-func (cs *CommitteeState) GetPledgeInfoAddressByID(id *big.Int) string {
-	lh := cs.GetPledgeInfoByID(id)
-	if lh == nil {
-		return ""
+func (cs *CommitteeState) GetPledgeInfoAddressByID(id *big.Int) czzutil.Address {
+	pi := cs.GetPledgeInfoByID(id)
+	if pi == nil {
+		return nil
 	}
-	return lh.Address
+	return pi.Address
 }
 
 func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
@@ -328,7 +328,7 @@ func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
+func (cs *CommitteeState) Mortgage(address czzutil.Address, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
 
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
@@ -356,8 +356,8 @@ func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amo
 	return nil
 }
 
-func (cs *CommitteeState) AddMortgage(addr string, amount *big.Int) error {
-	if info := cs.GetPledgeInfoByAddress(addr); info == nil {
+func (cs *CommitteeState) AddMortgage(address czzutil.Address, amount *big.Int) error {
+	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrRepeatRegister
 	} else {
 		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
@@ -365,7 +365,7 @@ func (cs *CommitteeState) AddMortgage(addr string, amount *big.Int) error {
 	return nil
 }
 
-func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) error {
+func (cs *CommitteeState) UpdateCoinbaseAll(address czzutil.Address, coinBases []string) error {
 	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrNoRegister
 	} else {
@@ -378,16 +378,16 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 }
 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (cs *CommitteeState) Convert(item *ExChangeItem) error {
+func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
 	convertItem := ConvertItem{
-		ExtTxHash:   item.ExtTxHash,
-		Address:     item.Address,
-		Amount:      item.Amount,
+		ExtTxHash:   info.ExtTxHash,
+		Address:     info.Address,
+		Amount:      info.Amount,
 		RedeemState: 0,
 	}
 
-	cs.ConvertItems[item.AssetType][item.AssetType] = convertItem
+	cs.ConvertItems[info.AssetType][info.AssetType] = convertItem
 	return nil
 }
 

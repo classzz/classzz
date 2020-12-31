@@ -1,6 +1,6 @@
 // Copyright (c) 2012 VMware, Inc.
 
-// +build aix darwin freebsd linux
+// +build darwin freebsd linux
 
 package gosigar
 
