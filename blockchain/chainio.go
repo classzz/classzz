@@ -7,7 +7,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/cross"
@@ -526,7 +525,6 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		cState = cross.NewCommitteeState()
 	}
 
-	reportWhiteList := make([]uint64, 0, 0)
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
@@ -571,40 +569,9 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 
 	}
 
-	//if eState != nil {
-	//	burnTimeout := eState.TourAllUserBurnInfo(uint64(pHeight + 1))
-	//	index := uint32(5)
-	//	for k, _ := range burnTimeout {
-	//		if exInfos := eState.GetBaExInfoByID(k); exInfos != nil {
-	//			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
-	//				Hash:  *block.Transactions()[0].Hash(),
-	//				Index: index,
-	//			}}
-	//			eState.SetBaExInfo(k, exInfos)
-	//		} else {
-	//			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", k)
-	//		}
-	//		index = index + 3
-	//	}
-	//	eState.UpdateStateToPunished(burnTimeout)
-	//
-	//	for _, v := range reportWhiteList {
-	//		if exInfos := eState.GetBaExInfoByID(v); exInfos != nil {
-	//			exInfos.EnItems = []*wire.OutPoint{&wire.OutPoint{
-	//				Hash:  *block.Transactions()[0].Hash(),
-	//				Index: index,
-	//			}}
-	//			eState.SetBaExInfo(v, exInfos)
-	//		} else {
-	//			return fmt.Errorf("beacon merge failed,exInfo not nil,id: %v", v)
-	//		}
-	//		index = index + 3
-	//	}
-
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
 		return err
 	}
-	//}
 	return nil
 }
 
@@ -664,25 +631,43 @@ func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czz
 		return err
 	}
 
-	if pledgeInfo := state.GetPledgeInfoByAddressTo(bai.ToAddress); pledgeInfo != nil {
-		pledgeInfo.NoCostUtxo = []*wire.OutPoint{&wire.OutPoint{
+	if _, ok := state.NoCostUtxos[bai.Address]; ok {
+		ncu := state.NoCostUtxos[bai.Address]
+		ncu = append(ncu, &wire.OutPoint{
+			Hash:  *tx.Hash(),
+			Index: 1,
+		})
+		state.NoCostUtxos[bai.Address] = ncu
+	} else {
+		state.NoCostUtxos[bai.Address] = []*wire.OutPoint{&wire.OutPoint{
 			Hash:  *tx.Hash(),
 			Index: 1,
 		}}
-	} else {
-		return errors.New(fmt.Sprintf("pledgeInfo merge failed,exInfo not nil, id: %v", pledgeInfo.ID))
 	}
 
 	return nil
 }
 
-func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage) error {
+func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx *czzutil.Tx) error {
 	var err error
 	if state != nil {
 		err = state.AddMortgage(abp.Address, abp.StakingAmount)
 	}
 	if err != nil {
 		return err
+	}
+	if _, ok := state.NoCostUtxos[abp.Address]; ok {
+		ncu := state.NoCostUtxos[abp.Address]
+		ncu = append(ncu, &wire.OutPoint{
+			Hash:  *tx.Hash(),
+			Index: 1,
+		})
+		state.NoCostUtxos[abp.Address] = ncu
+	} else {
+		state.NoCostUtxos[abp.Address] = []*wire.OutPoint{&wire.OutPoint{
+			Hash:  *tx.Hash(),
+			Index: 1,
+		}}
 	}
 	return nil
 }

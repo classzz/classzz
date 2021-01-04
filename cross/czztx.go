@@ -148,19 +148,19 @@ type MortgageInfo struct {
 }
 
 type AddMortgage struct {
-	Address       czzutil.Address `json:"address"`
-	StakingAmount *big.Int        `json:"staking_amount"`
+	Address       string   `json:"address"`
+	StakingAmount *big.Int `json:"staking_amount"`
 }
 
 type UpdateBeaconCoinbaseAll struct {
-	Address         czzutil.Address `json:"address"`
-	CoinBaseAddress []string        `json:"coinbase_address"`
+	Address         string   `json:"address"`
+	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 type ConvertTxInfo struct {
 	AssetType   uint8
 	ConvertType uint8
-	Address     czzutil.Address
+	Address     string
 	Height      uint64
 	ExtTxHash   string
 	Index       uint32
@@ -374,12 +374,12 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 	}
 
 	var es *PledgeInfo
-	txout := tx.TxOut[0]
-	info, err := MortgageFromScript(txout.PkScript)
+	txOut := tx.TxOut[0]
+	info, err := MortgageFromScript(txOut.PkScript)
 	if err != nil {
 		return nil, errors.New("the output tx.")
 	} else {
-		if txout.Value != 0 {
+		if txOut.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
 		}
 		es = &PledgeInfo{
@@ -389,6 +389,9 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 		}
 	}
 
+	if es != nil {
+		return es, nil
+	}
 	var pk []byte
 	if tx.TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
@@ -411,14 +414,11 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 	es.Address = address.String()
 	es.PubKey = pk
 
-	if es != nil {
-		return es, nil
-	}
 	return nil, NoBeaconRegistration
 }
 
-func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge, error) {
-	// make sure at least one txout in OUTPUT
+func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddMortgage, error) {
+	// make sure at least one txOut in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsAddMortgageTy(txout.PkScript) {
@@ -434,17 +434,17 @@ func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge,
 	}
 
 	// make sure at least one txout in OUTPUT
-	var bp *AddBeaconPledge
+	var am *AddMortgage
 
 	txout := tx.TxOut[0]
-	info, err := AddBeaconPledgeTxFromScript(txout.PkScript)
+	info, err := AddMortgageFromScript(txout.PkScript)
 	if err != nil {
 		return nil, errors.New("the output tx.")
 	} else {
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
 		}
-		bp = info
+		am = info
 	}
 
 	var pk []byte
@@ -468,11 +468,11 @@ func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddBeaconPledge,
 		return nil, errors.New(e)
 	}
 
-	info.StakingAmount = big.NewInt(tx.TxOut[1].Value)
-	info.Address = address.String()
+	am.StakingAmount = big.NewInt(tx.TxOut[1].Value)
+	am.Address = address.String()
 
-	if bp != nil {
-		return bp, nil
+	if am != nil {
+		return am, nil
 	}
 	return nil, NoAddBeaconPledge
 }
@@ -528,7 +528,7 @@ func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*Upda
 		return nil, errors.New(e)
 	}
 
-	info.Address = address
+	info.Address = address.String()
 	if bp != nil {
 		return bp, nil
 	}
@@ -875,8 +875,9 @@ type TmpAddressPair struct {
 	Address czzutil.Address
 }
 
-func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify) ([]*ExChangeItem, error) {
+func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify) ([]*ConvertTxInfo, error) {
 
+	ctis := make([]*ConvertTxInfo, 0, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
 		tpi, err := ev.VerifyConvertTx(info, eState)
@@ -894,13 +895,14 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 			return nil, err
 		}
 
-		info.Address = addr
+		info.Address = addr.String()
 		if err := eState.Convert(info); err != nil {
 			return nil, err
 		}
+		ctis = append(ctis, info)
 	}
 
-	return cis, nil
+	return ctis, nil
 }
 
 //////////////////////////////////////////////////////////////////////////////

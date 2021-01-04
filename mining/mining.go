@@ -537,7 +537,7 @@ func NewBlkTmplGenerator(policy *Policy, params *chaincfg.Params,
 //  |  transactions (while block size   |   |
 //  |  <= policy.BlockMinSize)          |   |
 //   -----------------------------------  --
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, *cross.CommitteeState, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*BlockTemplate, *cross.EntangleState, error) {
 	// Extend the most recently known best block.
 	best := g.chain.BestSnapshot()
 	nextBlockHeight := best.Height + 1
@@ -590,8 +590,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	// avoided.
 	blockTxns := make([]*czzutil.Tx, 0, len(sourceTxns))
 	blockUtxos := blockchain.NewUtxoViewpoint()
-	entangleItems := make([]*cross.EntangleItem, 0, 0)
-	exChangeItems := make([]*cross.ExChangeItem, 0, 0)
+	convertItems := make([]*cross.ConvertTxInfo, 0, 0)
 	// dependers is used to track transactions which depend on another
 	// transaction in the source pool.  This, in conjunction with the
 	// dependsOn map kept with each dependent transaction helps quickly
@@ -891,102 +890,73 @@ mempoolLoop:
 		////////////////////////////////////
 		if nextBlockHeight >= g.chainParams.ConverHeight {
 
+			// Mortgage
+			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
+				if err := cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+
+				if _, ok := cState.NoCostUtxos[info.Address]; ok {
+					ncu := cState.NoCostUtxos[info.Address]
+					ncu = append(ncu, &wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					})
+					cState.NoCostUtxos[info.Address] = ncu
+				} else {
+					cState.NoCostUtxos[info.Address] = []*wire.OutPoint{&wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					}}
+				}
+			}
+
+			// AddMortgage
+			if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), g.chainParams); bp != nil {
+				if err = cState.AddMortgage(bp.Address, bp.StakingAmount); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+				if _, ok := cState.NoCostUtxos[bp.Address]; ok {
+					ncu := cState.NoCostUtxos[bp.Address]
+					ncu = append(ncu, &wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					})
+					cState.NoCostUtxos[bp.Address] = ncu
+				} else {
+					cState.NoCostUtxos[bp.Address] = []*wire.OutPoint{&wire.OutPoint{
+						Hash:  *tx.Hash(),
+						Index: 1,
+					}}
+				}
+			}
+
+			// UpdateCoinbaseAll
+			if bp, _ := cross.IsUpdateBeaconCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
+				if err = cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+			}
+
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetExChangeVerify(), int64(nextBlockHeight))
+				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetExChangeVerify())
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toAddressFromEntangle: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				exChangeItems = append(exChangeItems, objs...)
-			}
-
-			beaconMerge, beaconID, txAmount := 0, uint64(0), big.NewInt(0)
-			// BeaconRegistrationTx
-			if info, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); info != nil {
-				if err := cState.RegisterBeaconAddress(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.Fee,
-					info.KeepBlock, info.AssetFlag, info.WhiteList, info.CoinBaseAddress); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				beaconMerge, beaconID, txAmount = 1, cState.GetBeaconIdByTo(info.ToAddress), new(big.Int).Set(info.StakingAmount)
-			}
-
-			// AddBeaconPledgeTx
-			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = cState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				beaconMerge, beaconID, txAmount = 2, eState.GetBeaconIdByTo(bp.ToAddress), new(big.Int).Set(bp.StakingAmount)
-			}
-
-			if beaconMerge > 0 && nextBlockHeight >= g.chainParams.ExChangeHeight+1 {
-
-				if beaconMerge == 1 {
-					if exInfos := eState.GetBaExInfoByID(beaconID); exInfos != nil {
-
-						ex := cross.NewExBeaconInfo()
-						ex.EnItems = []*wire.OutPoint{&wire.OutPoint{
-							Hash:  *tx.Hash(),
-							Index: 1,
-						}}
-
-						err := cState.SetBaExInfo(beaconID, ex)
-						if err != nil {
-							log.Tracef("Skipping tx %s due to error in "+
-								"GetBaExInfoByID SetBaExInfo: %v", tx.Hash(), err)
-							logSkippedDeps(tx, deps)
-							continue
-						}
-					} else {
-						err := fmt.Sprintf("beacon merge failed,exInfo not nil,id:%v", beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"GetBaExInfoByID : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-				} else {
-					exInfos := eState.GetBaExInfoByID(beaconID)
-					if exInfos == nil {
-						err := fmt.Sprintf("beacon merge(in GetExInfos) failed,tx:%s,id:%v", tx.Hash(), beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"GetBaExInfoByID : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					}
-					if view, err1 := g.chain.FetchUtxoForBeacon(exInfos.EnItems); err1 != nil {
-						err := fmt.Sprintf("beacon merge(in fetch) failed,tx:%s,id:%v", tx.Hash(), beaconID)
-						log.Tracef("Skipping tx %s due to error in "+
-							"FetchUtxoForBeacon : %v", tx.Hash(), err)
-						logSkippedDeps(tx, deps)
-						continue
-					} else {
-						if mergeItem, to := toMergeBeaconItems(view, beaconID, eState, g.chainParams); mergeItem == nil {
-							err := fmt.Sprintf("beacon merge failed,tx:%s,id:%v", tx.Hash(), beaconID)
-							log.Tracef("Skipping tx %s due to error in "+
-								"toMergeBeaconItems : %v", tx.Hash(), err)
-							logSkippedDeps(tx, deps)
-							continue
-						} else {
-							mergeItems[beaconID] = append(mergeItems[beaconID], mergeItem)
-							mergeItems[beaconID] = append(mergeItems[beaconID], &cross.BeaconMergeItem{
-								POut: wire.OutPoint{
-									Hash:  *tx.Hash(),
-									Index: 1,
-								},
-								ToAddress: to,
-								Amount:    txAmount,
-							})
-						}
-					}
-				}
+				convertItems = append(convertItems, objs...)
 			}
 
 		}
@@ -1058,37 +1028,6 @@ mempoolLoop:
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
 
-	//if g.chainParams.ExChangeHeight <= nextBlockHeight && eState != nil {
-	//	burnTimeout := eState.TourAllUserBurnInfo(uint64(nextBlockHeight))
-	//	for beaconID, bit := range burnTimeout {
-	//
-	//		toAddress := eState.GetBeaconToAddrByID(beaconID, g.chainParams)
-	//		exInfos := eState.GetBaExInfoByID(beaconID)
-	//
-	//		if toAddress == nil || exInfos == nil {
-	//			return nil, nil, errors.New("toAddress == nil || exInfos == nil")
-	//		}
-	//
-	//		var view *blockchain.UtxoViewpoint
-	//		if view, err = g.chain.FetchUtxoForBeacon(exInfos.EnItems); err != nil {
-	//			return nil, nil, err
-	//		}
-	//
-	//		AmountSum := big.NewInt(0)
-	//		for k, v := range bit {
-	//			fmt.Println("burnTimeout k:", k)
-	//			AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
-	//		}
-	//
-	//		if item, err := toRewardsByPunishedBurn(view, payToAddress, toAddress, AmountSum); err != nil {
-	//			return nil, nil, err
-	//		} else {
-	//			rewards = append(rewards, item)
-	//		}
-	//	}
-	//	eState.UpdateStateToPunished(burnTimeout)
-	//}
-
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ExChangeHeight > nextBlockHeight {
 		eItems := make([]*cross.EntangleItem, 0)
@@ -1100,7 +1039,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.ConverHeight <= nextBlockHeight {
-		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, exChangeItems, rewards, mergeItems)
+		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, nil, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1288,24 +1227,26 @@ func toPoolAddrItems(view *blockchain.UtxoViewpoint) *cross.PoolAddrItem {
 	}
 	return items
 }
-func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.EntangleState, params *chaincfg.Params) (*cross.BeaconMergeItem, czzutil.Address) {
-	if view == nil {
-		return nil, nil
-	}
-	to := state.GetBeaconToAddrByID(id, params)
-	if to == nil {
-		return nil, to
-	}
-	items := &cross.BeaconMergeItem{
-		ToAddress: to,
-	}
-	m := view.Entries()
-	for k, v := range m {
-		items.POut, items.Script, items.Amount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
-		break
-	}
-	return items, to
-}
+
+//func toMergeBeaconItems(view *blockchain.UtxoViewpoint, id uint64, state *cross.EntangleState, params *chaincfg.Params) (*cross.BeaconMergeItem, czzutil.Address) {
+//	if view == nil {
+//		return nil, nil
+//	}
+//	to := state.GetBeaconToAddrByID(id, params)
+//	if to == nil {
+//		return nil, to
+//	}
+//	items := &cross.BeaconMergeItem{
+//		ToAddress: to,
+//	}
+//
+//	m := view.Entries()
+//	for k, v := range m {
+//		items.POut, items.Script, items.Amount = k, v.PkScript(), new(big.Int).SetInt64(v.Amount())
+//		break
+//	}
+//	return items, to
+//}
 
 //func toRewardsByPunished(info *cross.BurnProofInfo, view *blockchain.UtxoViewpoint,
 //	rewardAddress, changeAddress czzutil.Address) (*cross.PunishedRewardItem, error) {

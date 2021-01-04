@@ -87,21 +87,21 @@ func (cm *CommitteeMember) EncodeRLP(w io.Writer) error {
 }
 
 type PledgeInfo struct {
-	ID              *big.Int        `json:"id"`
-	Address         czzutil.Address `json:"address"`
-	PubKey          []byte          `json:"pub_key"`
-	ToAddress       []byte          `json:"toAddress"`
-	StakingAmount   *big.Int        `json:"staking_amount"`
-	CoinBaseAddress []string        `json:"coinbase_address"`
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 type extPledgeInfo struct {
-	ID              *big.Int        `json:"id"`
-	Address         czzutil.Address `json:"address"`
-	PubKey          []byte          `json:"pub_key"`
-	ToAddress       []byte          `json:"toAddress"`
-	StakingAmount   *big.Int        `json:"staking_amount"`
-	CoinBaseAddress []string        `json:"coinbase_address"`
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 func (pi *PledgeInfo) DecodeRLP(s *rlp.Stream) error {
@@ -125,10 +125,10 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 }
 
 type ConvertItem struct {
-	ExtTxHash   string          `json:"ext_tx_hash"`
-	Address     czzutil.Address `json:"address"`
-	Amount      *big.Int        `json:"amount"`       // czz asset amount
-	RedeemState byte            `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+	ExtTxHash   string   `json:"ext_tx_hash"`
+	Address     string   `json:"address"`
+	Amount      *big.Int `json:"amount"`       // czz asset amount
+	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
 
 type ConvertItems map[uint8]ConvertItem
@@ -224,7 +224,28 @@ func (ci SortStoreConvertItems) Swap(i, j int) {
 	ci[j] = it
 }
 
-func (cs *CommitteeState) toSlice() SortStoreConvertItems {
+type StoreNoCostUtxos struct {
+	Type        string
+	NoCostUtxos []*wire.OutPoint
+}
+
+type SortStoreNoCostUtxos []*StoreNoCostUtxos
+
+func (ci SortStoreNoCostUtxos) Len() int {
+	return len(ci)
+}
+
+func (ci SortStoreNoCostUtxos) Less(i, j int) bool {
+	return ci[i].Type < ci[j].Type
+}
+
+func (ci SortStoreNoCostUtxos) Swap(i, j int) {
+	it := ci[i]
+	ci[i] = ci[j]
+	ci[j] = it
+}
+
+func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreNoCostUtxos) {
 	v1 := make([]*StoreConvertItems, 0, 0)
 	for k, v := range cs.ConvertItems {
 		v1 = append(v1, &StoreConvertItems{
@@ -233,22 +254,37 @@ func (cs *CommitteeState) toSlice() SortStoreConvertItems {
 		})
 	}
 
+	v2 := make([]*StoreNoCostUtxos, 0, 0)
+	for k, v := range cs.NoCostUtxos {
+		v2 = append(v2, &StoreNoCostUtxos{
+			Type:        k,
+			NoCostUtxos: v,
+		})
+	}
+
 	sort.Sort(SortStoreConvertItems(v1))
-	return SortStoreConvertItems(v1)
+	sort.Sort(SortStoreNoCostUtxos(v2))
+	return SortStoreConvertItems(v1), SortStoreNoCostUtxos(v2)
 }
 
-func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems) {
+func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreNoCostUtxos) {
 	convertItems := make(map[uint8]ConvertItems)
+	noCostUtxos := make(map[string][]*wire.OutPoint)
 	for _, v := range v1 {
 		convertItems[v.Type] = v.ConvertItems
 	}
+	for _, v := range v2 {
+		noCostUtxos[v.Type] = v.NoCostUtxos
+	}
 	cs.ConvertItems = convertItems
+	cs.NoCostUtxos = noCostUtxos
 }
 
 type extCommitteeState struct {
 	PledgeInfos    []*PledgeInfo
 	CommitteeInfos []*CommitteeInfo
 	ConvertItems   SortStoreConvertItems
+	NoCostUtxos    SortStoreNoCostUtxos
 }
 
 func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
@@ -257,16 +293,17 @@ func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	cs.PledgeInfos, cs.CommitteeInfos = ecs.PledgeInfos, ecs.CommitteeInfos
-	cs.fromSlice(ecs.ConvertItems)
+	cs.fromSlice(ecs.ConvertItems, ecs.NoCostUtxos)
 	return nil
 }
 
 func (cs *CommitteeState) EncodeRLP(w io.Writer) error {
-	s1 := cs.toSlice()
+	s1, s2 := cs.toSlice()
 	return rlp.Encode(w, extCommitteeState{
 		PledgeInfos:    cs.PledgeInfos,
 		CommitteeInfos: cs.CommitteeInfos,
 		ConvertItems:   s1,
+		NoCostUtxos:    s2,
 	})
 }
 
@@ -280,9 +317,9 @@ func (cs *CommitteeState) GetPledgeInfoByID(id *big.Int) *PledgeInfo {
 	return nil
 }
 
-func (cs *CommitteeState) GetPledgeInfoByAddress(address czzutil.Address) *PledgeInfo {
+func (cs *CommitteeState) GetPledgeInfoByAddress(address string) *PledgeInfo {
 	for _, v := range cs.PledgeInfos {
-		if v.Address.String() == address.String() {
+		if v.Address == address {
 			return v
 		}
 	}
@@ -298,20 +335,20 @@ func (cs *CommitteeState) GetPledgeInfoByAddressTo(to []byte) *PledgeInfo {
 	return nil
 }
 
-func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.Params) czzutil.Address {
+func (cs *CommitteeState) GetPledgeInfoToAddrByID(id *big.Int, params *chaincfg.Params) string {
 	if b := cs.GetPledgeInfoByID(id); b != nil {
 		addr, err := czzutil.NewLegacyAddressPubKeyHash(b.ToAddress, params)
 		if err == nil {
-			return addr
+			return addr.String()
 		}
 	}
-	return nil
+	return ""
 }
 
-func (cs *CommitteeState) GetPledgeInfoAddressByID(id *big.Int) czzutil.Address {
+func (cs *CommitteeState) GetPledgeInfoAddressByID(id *big.Int) string {
 	pi := cs.GetPledgeInfoByID(id)
 	if pi == nil {
-		return nil
+		return ""
 	}
 	return pi.Address
 }
@@ -328,7 +365,7 @@ func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (cs *CommitteeState) Mortgage(address czzutil.Address, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
+func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
 
 	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
 		return ErrLessThanMin
@@ -356,7 +393,7 @@ func (cs *CommitteeState) Mortgage(address czzutil.Address, to []byte, pubKey []
 	return nil
 }
 
-func (cs *CommitteeState) AddMortgage(address czzutil.Address, amount *big.Int) error {
+func (cs *CommitteeState) AddMortgage(address string, amount *big.Int) error {
 	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrRepeatRegister
 	} else {
@@ -365,7 +402,7 @@ func (cs *CommitteeState) AddMortgage(address czzutil.Address, amount *big.Int) 
 	return nil
 }
 
-func (cs *CommitteeState) UpdateCoinbaseAll(address czzutil.Address, coinBases []string) error {
+func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) error {
 	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrNoRegister
 	} else {
@@ -390,99 +427,6 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 	cs.ConvertItems[info.AssetType][info.AssetType] = convertItem
 	return nil
 }
-
-//func (cs *CommitteeState) getEntangledAmount(BeaconID uint64, assetType uint32) *big.Int {
-//	aa := big.NewInt(0)
-//	if userExChangeInfos, ok := es.EnUserExChangeInfos[BeaconID]; ok {
-//		for _, userEntitys := range userExChangeInfos {
-//			for _, vv := range userEntitys.ExChangeEntitys {
-//				if assetType == vv.AssetType {
-//					aa = aa.Add(aa, vv.EnOutsideAmount)
-//					break
-//				}
-//			}
-//		}
-//	}
-//	return aa
-//}
-//
-//func (cs *CommitteeState) GetEntangleAmountByAll(atype uint32) *big.Int {
-//	aa := big.NewInt(0)
-//	for _, infos := range es.EnUserExChangeInfos {
-//		for _, exChangeEntitys := range infos {
-//			for _, vv := range exChangeEntitys.ExChangeEntitys {
-//				if atype == vv.AssetType {
-//					aa = aa.Add(aa, vv.EnOutsideAmount)
-//					break
-//				}
-//			}
-//		}
-//	}
-//	return aa
-//}
-
-//func (cs *CommitteeState) getAllEntangleAmount(assetType uint32) *big.Int {
-//	all := big.NewInt(0)
-//	for _, val := range es.EnInfos {
-//		for _, v := range val.EnAssets {
-//			if v.AssetType == assetType {
-//				all = all.Add(all, v.Amount)
-//				break
-//			}
-//		}
-//	}
-//	return all
-//}
-
-//Minimum pledge amount = 1 million CZZ + (cumulative cross-chain buying CZZ - cumulative cross-chain selling CZZ) x exchange rate ratio
-//func (cs *CommitteeState) LimitStakingAmount() *big.Int {
-//
-//	l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
-//	if l.Sign() > 0 {
-//		l = new(big.Int).Sub(l, MinStakingAmountForBeaconAddress)
-//		if l.Sign() > 0 {
-//			return l
-//		}
-//	}
-//	return nil
-//}
-
-// FinishHandleUserBurn the BeaconAddress finish the burn item
-//func (cs *CommitteeState) FinishHandleUserBurn(info *BurnProofInfo, proof *BurnProofItem) error {
-//	light := es.getBeaconAddress(info.BeaconID)
-//	if light == nil {
-//		return ErrNoRegister
-//	}
-//	// beacon burned
-//	if light.Address == info.Address {
-//		ex := es.GetBaExInfoByID(info.BeaconID)
-//		if ex == nil {
-//			return errors.New(fmt.Sprintf("cann't found exInfos in the BeaconAddress id:%v", info.BeaconID))
-//		}
-//		ex.BItems.finishBurn(info.Height, info.Amount, proof)
-//	} else {
-//		userEntitys, ok := es.EnUserExChangeInfos[info.BeaconID]
-//		if !ok {
-//			fmt.Println("FinishHandleUserBurn:cann't found the BeaconAddress id:", info.BeaconID)
-//			return ErrNoRegister
-//		} else {
-//			for addr1, userEntity := range userEntitys {
-//				if info.Address == addr1 {
-//					userEntity.finishBurnState(info.Height, info.Amount, info.AssetType, proof)
-//
-//					reserve := es.GetEntangleAmountByAll(info.AssetType)
-//					sendAmount, err := calcEntangleAmount(reserve, info.Amount, info.AssetType)
-//					if err != nil {
-//						return err
-//					}
-//					light.reduceEntangleAmount(sendAmount)
-//					break
-//				}
-//			}
-//		}
-//	}
-//	return nil
-//}
 
 func (cs *CommitteeState) ToBytes() []byte {
 	// maybe rlp encode
