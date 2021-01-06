@@ -560,34 +560,17 @@ func PayToAddrScript(addr czzutil.Address) ([]byte, error) {
 	return nil, scriptError(ErrUnsupportedAddress, str)
 }
 
-// EntangleScript impl in
-func EntangleScript(data []byte) ([]byte, error) {
+// NullDataScript creates a provably-prunable script containing OP_RETURN
+// followed by the passed data.  An Error with the error code ErrTooMuchNullData
+// will be returned if the length of the passed data exceeds MaxDataCarrierSize.
+func NullDataScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN193).AddData(data).Script()
-}
 
-// ExChangeScript impl in
-func ExChangeScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddData(data).Script()
-}
-
-// ConvertScript impl in
-func ConvertScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN199).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddData(data).Script()
 }
 
 // BeaconRegistration impl in
@@ -610,54 +593,44 @@ func AddBeaconPledgeScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).Script()
 }
 
-// UpdateBeaconCoinbase impl in
-func UpdateBeaconCoinbaseScript(data []byte) ([]byte, error) {
+// ConvertScript impl in
+func MortgageScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_2).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_1).AddData(data).Script()
+}
+
+// ConvertScript impl in
+func AddMortgageScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_2).AddData(data).Script()
 }
 
 // UpdateBeaconCoinbase impl in
-func UpdateBeaconFreeQuotaScript(data []byte) ([]byte, error) {
+func UpdateCoinbaseAllScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_3).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_3).AddData(data).Script()
 }
 
-// UpdateBeaconCoinbase impl in
-func BurnScript(data []byte) ([]byte, error) {
+// ConvertScript impl in
+func ConvertScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
 			"allowed size %d", len(data), MaxDataCarrierSize)
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddData(data).Script()
-}
-
-// Add Burn Proof for robot or beacon, impl in
-func BurnProofScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_1).AddData(data).Script()
-}
-
-// Add white list Proof for robot, impl in
-func BurnReportWhiteListScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN196).AddOp(OP_2).AddData(data).Script()
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_4).AddData(data).Script()
 }
 
 // KeepedAmountScript impl in
@@ -668,19 +641,6 @@ func KeepedAmountScript(data []byte) ([]byte, error) {
 		return nil, scriptError(ErrTooMuchNullData, str)
 	}
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN194).AddData(data).Script()
-}
-
-// NullDataScript creates a provably-prunable script containing OP_RETURN
-// followed by the passed data.  An Error with the error code ErrTooMuchNullData
-// will be returned if the length of the passed data exceeds MaxDataCarrierSize.
-func NullDataScript(data []byte) ([]byte, error) {
-	if len(data) > MaxDataCarrierSize {
-		str := fmt.Sprintf("data size %d is larger than max "+
-			"allowed size %d", len(data), MaxDataCarrierSize)
-		return nil, scriptError(ErrTooMuchNullData, str)
-	}
-
-	return NewScriptBuilder().AddOp(OP_RETURN).AddData(data).Script()
 }
 
 // MultiSigScript returns a valid script for a multisignature redemption where

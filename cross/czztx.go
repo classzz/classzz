@@ -141,7 +141,7 @@ type BeaconMergeItem struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////
-type MortgageInfo struct {
+type Mortgage struct {
 	ToAddress       []byte   `json:"toAddress"`
 	StakingAmount   *big.Int `json:"staking_amount"`
 	CoinBaseAddress []string `json:"coinbase_address"`
@@ -152,14 +152,14 @@ type AddMortgage struct {
 	StakingAmount *big.Int `json:"staking_amount"`
 }
 
-type UpdateBeaconCoinbaseAll struct {
+type UpdateCoinbaseAll struct {
 	Address         string   `json:"address"`
 	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
 type ConvertTxInfo struct {
-	AssetType   uint8
-	ConvertType uint8
+	AssetType   uint32
+	ConvertType uint32
 	Address     string
 	Height      uint64
 	ExtTxHash   string
@@ -477,7 +477,7 @@ func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddMortgage, err
 	return nil, NoAddBeaconPledge
 }
 
-func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateBeaconCoinbaseAll, error) {
+func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoinbaseAll, error) {
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
@@ -494,7 +494,7 @@ func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*Upda
 	}
 
 	// make sure at least one txout in OUTPUT
-	var bp *UpdateBeaconCoinbaseAll
+	var bp *UpdateCoinbaseAll
 
 	txout := tx.TxOut[0]
 	info, err := UpdateBeaconCoinbaseAllTxFromScript(txout.PkScript)
@@ -602,12 +602,12 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 }
 
 //  Beacon
-func MortgageFromScript(script []byte) (*MortgageInfo, error) {
+func MortgageFromScript(script []byte) (*Mortgage, error) {
 	data, err := txscript.GetMortgageData(script)
 	if err != nil {
 		return nil, err
 	}
-	info := &MortgageInfo{}
+	info := &Mortgage{}
 	err = rlp.DecodeBytes(data, info)
 	if err != nil {
 		return nil, err
@@ -625,12 +625,12 @@ func AddMortgageFromScript(script []byte) (*AddMortgage, error) {
 	return info, err
 }
 
-func UpdateBeaconCoinbaseAllTxFromScript(script []byte) (*UpdateBeaconCoinbaseAll, error) {
+func UpdateBeaconCoinbaseAllTxFromScript(script []byte) (*UpdateCoinbaseAll, error) {
 	data, err := txscript.GetUpdateCoinbaseAllData(script)
 	if err != nil {
 		return nil, err
 	}
-	info := &UpdateBeaconCoinbaseAll{}
+	info := &UpdateCoinbaseAll{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }

@@ -60,39 +60,10 @@ type CreateRawTransactionCmd struct {
 	LockTime *int64
 }
 
-type ExChangeOut struct {
-	AssetType uint32
-	Address   string
-	Index     uint32
-	Height    uint64
-	Amount    *big.Int
-	ExtTxHash string
-	BeaconID  uint64
-}
-
-type ConvertOut struct {
-	AssetType   uint32
-	ConvertType uint32
-	Address     string
-	Height      uint64
-	ExtTxHash   string
-	Index       uint32
-	Amount      *big.Int
-	BeaconID    uint64
-}
-
 type WhiteUnit struct {
 	AssetType uint32 `json:"assettype"`
 	Pk        []byte `json:"pk"`
 }
-
-type BaseAmountUint struct {
-	AssetType uint32   `json:"assettype"`
-	Amount    *big.Int `json:"amount"`
-}
-
-type EnAssetItem BaseAmountUint
-type FreeQuotaItem BaseAmountUint
 
 type BeaconRegistrationOut struct {
 	ToAddress       []byte
@@ -111,74 +82,29 @@ type AddBeaconPledgeOut struct {
 }
 
 type MortgageOut struct {
-	ID              *big.Int `json:"id"`
-	Address         string   `json:"address"`
-	PubKey          []byte   `json:"pub_key"`
 	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   *big.Int `json:"staking_amount"`
+	StakingAmount   float64  `json:"staking_amount"`
 	CoinBaseAddress []string `json:"coinbase_address"`
 }
 
-type UpdateBeaconCoinbaseOut struct {
-	Address         string
+type AddMortgageOut struct {
+	ToAddress     []byte
+	StakingAmount float64
+}
+
+type UpdateCoinbaseAllOut struct {
 	CoinBaseAddress []string
 }
 
-type UpdateBeaconFreeQuotaOut struct {
-	Address   string
-	FreeQuota []uint64
-}
-
-type BurnTransactionOut struct {
-	AssetType uint32
-	BeaconID  uint64
-	Amount    float64
-	ToAddress string
-}
-
-type BurnProofOut struct {
-	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
-	Height    uint64   // the height include the tx of user burn's asset
-	Amount    *big.Int // the amount of burned asset (czz)
-	Address   string
-	AssetType uint32
-	TxHash    string // the tx hash of outside
-	OutIndex  uint64
-}
-
-type BurnReportWhiteListOut struct {
-	BeaconID  uint64 // the BeaconID for beaconAddress
-	AssetType uint32
-	Height    uint64 // the height of outside chain
-	TxHash    string
-	InIndex   uint64
-	OutIndex  uint64
-	Amount    *big.Int // the amount of outside chain
-}
-
-// ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
-type ExChangeTransactionCmd struct {
-	Inputs   []TransactionInput
-	ExChange ExChangeOut
-	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime *int64
-}
-
-// ExChangeTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
-type FastExChangeTransactionCmd struct {
-	Inputs          []TransactionInput
-	ExChange        ExChangeOut
-	BurnTransaction BurnTransactionOut
-	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime        *int64
-}
-
-// ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
-type ConvertTransactionCmd struct {
-	Inputs   []TransactionInput
-	Convert  []ConvertOut
-	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime *int64
+type ConvertOut struct {
+	AssetType   uint32
+	ConvertType uint32
+	Address     string
+	Height      uint64
+	ExtTxHash   string
+	Index       uint32
+	Amount      float64
+	BeaconID    uint64
 }
 
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
@@ -189,7 +115,7 @@ type BeaconRegistrationCmd struct {
 	LockTime           *int64
 }
 
-// AddBeaconPledge defines JSON-RPC command.
+// AddBeaconPledgeCmd defines JSON-RPC command.
 type AddBeaconPledgeCmd struct {
 	Inputs          []TransactionInput
 	AddBeaconPledge AddBeaconPledgeOut
@@ -197,12 +123,36 @@ type AddBeaconPledgeCmd struct {
 	LockTime        *int64
 }
 
-// CreatePledgeRegistrationCmd defines JSON-RPC command.
+// MortgageCmd defines JSON-RPC command.
 type MortgageCmd struct {
-	Inputs             []TransactionInput
-	BeaconRegistration BeaconRegistrationOut
-	Amounts            *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime           *int64
+	Inputs   []TransactionInput
+	Mortgage MortgageOut
+	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime *int64
+}
+
+// AddBeaconPledge defines JSON-RPC command.
+type AddMortgageCmd struct {
+	Inputs      []TransactionInput
+	AddMortgage AddMortgageOut
+	Amounts     *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime    *int64
+}
+
+// UpdateBeaconCoinbase defines JSON-RPC command.
+type UpdateCoinbaseAllCmd struct {
+	Inputs         []TransactionInput
+	UpdateCoinbase UpdateCoinbaseAllOut
+	Amounts        *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime       *int64
+}
+
+// ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+type ConvertCmd struct {
+	Inputs   []TransactionInput
+	Convert  []ConvertOut
+	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime *int64
 }
 
 // AddBeaconPledge defines JSON-RPC command.
@@ -210,55 +160,18 @@ type ConversionAddresseCmd struct {
 	ClasszzAddress string `json:"classzz_address"`
 }
 
-// UpdateBeaconCoinbase defines JSON-RPC command.
-type UpdateBeaconCoinbaseCmd struct {
-	Inputs               []TransactionInput
-	UpdateBeaconCoinbase UpdateBeaconCoinbaseOut
-	Amounts              *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime             *int64
-}
-
-// UpdateBeaconCoinbase defines JSON-RPC command.
-type UpdateBeaconFreeQuotaCmd struct {
-	Inputs                []TransactionInput
-	UpdateBeaconFreeQuota UpdateBeaconFreeQuotaOut
-	Amounts               *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime              *int64
-}
-
-// BurnTransaction defines JSON-RPC command.
-type BurnTransactionCmd struct {
-	Inputs          []TransactionInput
-	BurnTransaction BurnTransactionOut
-	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime        *int64
-}
-
-type BurnProofCmd struct {
-	Inputs    []TransactionInput
-	BurnProof BurnProofOut
-	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime  *int64
-}
-
-type BurnReportCmd struct {
-	Inputs    []TransactionInput
-	BurnProof BurnProofOut
-	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime  *int64
-}
-
-type BurnReportWhiteListCmd struct {
-	Inputs    []TransactionInput
-	BurnProof BurnReportWhiteListOut
-	Amounts   *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime  *int64
-}
-
 func (w *WhiteUnit) toAddress() string {
 	// pk to czz address
 	return ""
 }
+
+type BaseAmountUint struct {
+	AssetType uint32   `json:"assettype"`
+	Amount    *big.Int `json:"amount"`
+}
+
+type EnAssetItem BaseAmountUint
+type FreeQuotaItem BaseAmountUint
 
 type BeaconAddressInfo struct {
 	BeaconID        uint64           `json:"beacon_id"`
@@ -282,35 +195,6 @@ type AddBeaconPledge struct {
 	StakingAmount *big.Int `json:"staking_amount"`
 }
 
-type UpdateBeaconCoinbase struct {
-	Address         string   `json:"address"`
-	CoinBaseAddress []string `json:"coinbase_address"`
-}
-
-type UpdateBeaconFreeQuota struct {
-	Address   string   `json:"address"`
-	FreeQuota []uint64 `json:"free_quota"`
-}
-
-type BurnInfo struct {
-	AssetType uint32
-	Address   string
-	ToAddress string
-	BeaconID  uint64
-	Amount    *big.Int
-	Height    uint32
-}
-
-type BurnProofInfo struct {
-	BeaconID  uint64   // the BeaconID for beaconAddress of user burn's asset
-	Height    uint64   // the height include the tx of user burn's asset
-	Amount    *big.Int // the amount of burned asset (czz)
-	Address   string
-	AssetType uint32
-	TxHash    string // the tx hash of outside
-	OutIndex  uint64
-}
-
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
@@ -322,31 +206,6 @@ func NewCreateRawTransactionCmd(inputs []TransactionInput, amounts map[string]fl
 		Inputs:   inputs,
 		Amounts:  amounts,
 		LockTime: lockTime,
-	}
-}
-
-// NewCreateRawTransactionCmd returns a new instance which can be used to issue
-// a createrawtransaction JSON-RPC command.
-//
-// Amounts are in BTC.
-func NewExChangeTransactionCmd(inputs []TransactionInput, entangle ExChangeOut, amounts *map[string]float64,
-	lockTime *int64) *ExChangeTransactionCmd {
-	return &ExChangeTransactionCmd{
-		Inputs:   inputs,
-		ExChange: entangle,
-		Amounts:  amounts,
-		LockTime: lockTime,
-	}
-}
-
-func NewFastExChangeTransactionCmd(inputs []TransactionInput, entangle ExChangeOut, BurnTransaction BurnTransactionOut, amounts *map[string]float64,
-	lockTime *int64) *FastExChangeTransactionCmd {
-	return &FastExChangeTransactionCmd{
-		Inputs:          inputs,
-		ExChange:        entangle,
-		BurnTransaction: BurnTransaction,
-		Amounts:         amounts,
-		LockTime:        lockTime,
 	}
 }
 
@@ -378,27 +237,47 @@ func NewAddBeaconPledgeCmd(inputs []TransactionInput, addBeaconPledgeOut AddBeac
 	}
 }
 
+func NewMortgageCmd(inputs []TransactionInput, mortgageOut MortgageOut, amounts *map[string]float64,
+	lockTime *int64) *MortgageCmd {
+	return &MortgageCmd{
+		Inputs:   inputs,
+		Mortgage: mortgageOut,
+		Amounts:  amounts,
+		LockTime: lockTime,
+	}
+}
+
+func NewAddMortgageCmd(inputs []TransactionInput, addMortgageOut AddMortgageOut, amounts *map[string]float64,
+	lockTime *int64) *AddMortgageCmd {
+	return &AddMortgageCmd{
+		Inputs:      inputs,
+		AddMortgage: addMortgageOut,
+		Amounts:     amounts,
+		LockTime:    lockTime,
+	}
+}
+
 // NewCreateRawTransactionCmd returns a new instance which can be used to issue
 // a createrawtransaction JSON-RPC command.
 //
 // Amounts are in BTC.
-func NewUpdateBeaconCoinbaseCmd(inputs []TransactionInput, outs UpdateBeaconCoinbaseOut, amounts *map[string]float64,
-	lockTime *int64) *UpdateBeaconCoinbaseCmd {
-	return &UpdateBeaconCoinbaseCmd{
-		Inputs:               inputs,
-		UpdateBeaconCoinbase: outs,
-		Amounts:              amounts,
-		LockTime:             lockTime,
+func NewUpdateCoinbaseAllCmd(inputs []TransactionInput, updateCoinbaseAllOut UpdateCoinbaseAllOut, amounts *map[string]float64,
+	lockTime *int64) *UpdateCoinbaseAllCmd {
+	return &UpdateCoinbaseAllCmd{
+		Inputs:         inputs,
+		UpdateCoinbase: updateCoinbaseAllOut,
+		Amounts:        amounts,
+		LockTime:       lockTime,
 	}
 }
 
-func NewBurnTransactionCmd(inputs []TransactionInput, out BurnTransactionOut, amounts *map[string]float64,
-	lockTime *int64) *BurnTransactionCmd {
-	return &BurnTransactionCmd{
-		Inputs:          inputs,
-		BurnTransaction: out,
-		Amounts:         amounts,
-		LockTime:        lockTime,
+func NewConvertCmd(inputs []TransactionInput, convertOut []ConvertOut, amounts *map[string]float64,
+	lockTime *int64) *ConvertCmd {
+	return &ConvertCmd{
+		Inputs:   inputs,
+		Convert:  convertOut,
+		Amounts:  amounts,
+		LockTime: lockTime,
 	}
 }
 
@@ -1289,17 +1168,12 @@ func init() {
 
 	MustRegisterCmd("addnode", (*AddNodeCmd)(nil), flags)
 	MustRegisterCmd("createrawtransaction", (*CreateRawTransactionCmd)(nil), flags)
-	MustRegisterCmd("exchangetransaction", (*ExChangeTransactionCmd)(nil), flags)
-	MustRegisterCmd("fastexchangetransaction", (*FastExChangeTransactionCmd)(nil), flags)
-	MustRegisterCmd("converttransaction", (*ConvertTransactionCmd)(nil), flags)
 	MustRegisterCmd("beaconregistration", (*BeaconRegistrationCmd)(nil), flags)
 	MustRegisterCmd("addbeaconpledge", (*AddBeaconPledgeCmd)(nil), flags)
-	MustRegisterCmd("updatebeaconcoinbase", (*UpdateBeaconCoinbaseCmd)(nil), flags)
-	MustRegisterCmd("updatebeaconfreequota", (*UpdateBeaconFreeQuotaCmd)(nil), flags)
-	MustRegisterCmd("burntransaction", (*BurnTransactionCmd)(nil), flags)
-	MustRegisterCmd("burnprooft", (*BurnProofCmd)(nil), flags)
-	MustRegisterCmd("burnreport", (*BurnReportCmd)(nil), flags)
-	MustRegisterCmd("burnreportwhitelist", (*BurnReportWhiteListCmd)(nil), flags)
+	MustRegisterCmd("mortgage", (*MortgageCmd)(nil), flags)
+	MustRegisterCmd("addmortgage", (*AddMortgageCmd)(nil), flags)
+	MustRegisterCmd("updatecoinbaseall", (*UpdateCoinbaseAllCmd)(nil), flags)
+	MustRegisterCmd("convert", (*ConvertCmd)(nil), flags)
 	MustRegisterCmd("conversionaddress", (*ConversionAddresseCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)
