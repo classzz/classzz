@@ -110,6 +110,15 @@ type AddBeaconPledgeOut struct {
 	StakingAmount float64
 }
 
+type MortgageOut struct {
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	PubKey          []byte   `json:"pub_key"`
+	ToAddress       []byte   `json:"toAddress"`
+	StakingAmount   *big.Int `json:"staking_amount"`
+	CoinBaseAddress []string `json:"coinbase_address"`
+}
+
 type UpdateBeaconCoinbaseOut struct {
 	Address         string
 	CoinBaseAddress []string
@@ -186,6 +195,14 @@ type AddBeaconPledgeCmd struct {
 	AddBeaconPledge AddBeaconPledgeOut
 	Amounts         *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
 	LockTime        *int64
+}
+
+// CreatePledgeRegistrationCmd defines JSON-RPC command.
+type MortgageCmd struct {
+	Inputs             []TransactionInput
+	BeaconRegistration BeaconRegistrationOut
+	Amounts            *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime           *int64
 }
 
 // AddBeaconPledge defines JSON-RPC command.
@@ -880,13 +897,13 @@ func NewGetEntangleInfoCmd() *GetEntangleInfoCmd {
 
 // GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
 type GetStateInfoCmd struct {
-	BeaconID *uint64 `json:"beacon_id"`
+	ID *uint64 `json:"id"`
 }
 
 // NewGetStateInfoCmd returns a new instance which can be used to issue a getpeer
 // JSON-RPC command.
-func NewGetStateInfoCmd(BeaconID *uint64) *GetStateInfoCmd {
-	return &GetStateInfoCmd{BeaconID: BeaconID}
+func NewGetStateInfoCmd(ID *uint64) *GetStateInfoCmd {
+	return &GetStateInfoCmd{ID: ID}
 }
 
 // GetRateInfoCmd defines the getpeerinfo JSON-RPC command.

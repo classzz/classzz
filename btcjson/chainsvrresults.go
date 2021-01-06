@@ -479,16 +479,12 @@ type InfoChainResult struct {
 
 // InfoChainResult models the data returned by the chain server getinfo command.
 type StateInfoChainResult struct {
-	BeaconID        uint64       `json:"beacon_id"`
-	Address         string       `json:"address"`
-	ToAddress       string       `json:"toAddress_pk_hex"`
-	PubKey          []byte       `json:"pub_key"`
-	StakingAmount   *big.Int     `json:"staking_amount"` // in
-	AssetFlag       uint32       `json:"asset_flag"`
-	Fee             uint64       `json:"fee"`
-	KeepBlock       uint64       `json:"keep_block"` // the time as the block count for finally redeem time
-	WhiteList       []*WhiteUnit `json:"white_list"`
-	CoinBaseAddress []string     `json:"CoinBaseAddress"`
+	ID              *big.Int `json:"id"`
+	Address         string   `json:"address"`
+	ToAddress       string   `json:"toAddress_pk_hex"`
+	PubKey          []byte   `json:"pub_key"`
+	StakingAmount   *big.Int `json:"staking_amount"` // in
+	CoinBaseAddress []string `json:"CoinBaseAddress"`
 }
 
 type EntangleInfoChainResult struct {
