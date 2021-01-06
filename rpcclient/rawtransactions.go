@@ -344,29 +344,6 @@ func (c *Client) CreateRawTransactionAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
-// get the result of the RPC at some future time by invoking the Receive
-// function on the returned instance.
-//
-// See BeaconRegistrationAsync for the blocking version and more details.
-func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
-	beaconRegistrationOut btcjson.BeaconRegistrationOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewBeaconRegistrationCmd(inputs, beaconRegistrationOut, amounts, lockTime)
-	return c.sendCmd(cmd)
-}
-
-func (c *Client) ExChangeTransactionAsync(inputs []btcjson.TransactionInput,
-	exChange btcjson.ExChangeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewExChangeTransactionCmd(inputs, exChange, amounts, lockTime)
-	return c.sendCmd(cmd)
-}
-
-func (c *Client) FastExChangeTransactionAsync(inputs []btcjson.TransactionInput,
-	exChange btcjson.ExChangeOut, BurnTransaction btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewFastExChangeTransactionCmd(inputs, exChange, BurnTransaction, amounts, lockTime)
-	return c.sendCmd(cmd)
-}
-
 // CreateRawTransaction returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) CreateRawTransaction(inputs []btcjson.TransactionInput,
@@ -386,9 +363,9 @@ func (c *Client) BeaconRegistration(inputs []btcjson.TransactionInput,
 // function on the returned instance.
 //
 // See BeaconRegistrationAsync for the blocking version and more details.
-func (c *Client) AddBeaconPledgeAsync(inputs []btcjson.TransactionInput,
-	beaconRegistrationOut btcjson.AddBeaconPledgeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewAddBeaconPledgeCmd(inputs, beaconRegistrationOut, amounts, lockTime)
+func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
+	beaconRegistrationOut btcjson.BeaconRegistrationOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewBeaconRegistrationCmd(inputs, beaconRegistrationOut, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
@@ -397,6 +374,17 @@ func (c *Client) AddBeaconPledgeAsync(inputs []btcjson.TransactionInput,
 func (c *Client) AddBeaconPledge(inputs []btcjson.TransactionInput,
 	beaconRegistrationOut btcjson.AddBeaconPledgeOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.AddBeaconPledgeAsync(inputs, beaconRegistrationOut, amounts, lockTime).Receive()
+}
+
+// BeaconRegistrationAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See BeaconRegistrationAsync for the blocking version and more details.
+func (c *Client) AddBeaconPledgeAsync(inputs []btcjson.TransactionInput,
+	beaconRegistrationOut btcjson.AddBeaconPledgeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewAddBeaconPledgeCmd(inputs, beaconRegistrationOut, amounts, lockTime)
+	return c.sendCmd(cmd)
 }
 
 // BeaconRegistrationAsync returns an instance of a type that can be used to
