@@ -97,8 +97,8 @@ type UpdateCoinbaseAllOut struct {
 }
 
 type ConvertOut struct {
-	AssetType   uint32
-	ConvertType uint32
+	AssetType   uint8
+	ConvertType uint8
 	Address     string
 	Height      uint64
 	ExtTxHash   string

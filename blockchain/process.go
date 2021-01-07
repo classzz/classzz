@@ -193,34 +193,32 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, false, err
 	}
 
-	var eState3 *cross.EntangleState
+	var eState *cross.EntangleState
 	if b.chainParams.BeaconHeight <= prevHeight && b.chainParams.ExChangeHeight > prevHeight {
-		eState4 := b.GetEstateByHashAndHeight2(*prevHash, prevHeight)
-
+		cState := b.GetCstateByHashAndHeight(*prevHash, prevHeight)
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
-		for k, v := range eState4.EnInfos {
+		for _, v := range cState.PledgeInfos {
 			bai2 := &cross.BeaconAddressInfo{
-				BeaconID:        v.ExchangeID,
+				ExchangeID:      v.ID.Uint64(),
 				StakingAmount:   v.StakingAmount,
-				EntangleAmount:  v.EntangleAmount,
 				CoinBaseAddress: v.CoinBaseAddress,
 			}
-			bai2s[k] = bai2
+			bai2s[bai2.Address] = bai2
 		}
 
-		eState3 = &cross.EntangleState{
+		eState = &cross.EntangleState{
 			EnInfos: bai2s,
 		}
 
 	} else if b.chainParams.ExChangeHeight <= prevHeight {
-		eState3 = b.GetEstateByHashAndHeight(*prevHash, prevHeight)
+		eState = b.GetEstateByHashAndHeight(*prevHash, prevHeight)
 	}
 
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 	_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, b.chainParams)
 
 	// Perform preliminary sanity checks on the block and its transactions.
-	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, eState3, addrs[0])
+	err = checkBlockSanity(b.chainParams, &prevHeader, block, b.chainParams.PowLimit, b.timeSource, flags, eState, addrs[0])
 	if err != nil {
 		return false, false, err
 	}

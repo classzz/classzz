@@ -29,7 +29,8 @@ var (
 )
 
 var (
-	MinStakingAmountForBeaconAddress  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
+	MinStakingAmount                  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
+	MinAddStakingAmount               = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
@@ -554,7 +555,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 		}
 	}
 	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, MinStakingAmountForBeaconAddress)
+		result := big.NewInt(0).Div(StakingAmount, MinStakingAmount)
 		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
 		target = big.NewInt(0).Mul(target, result1)
 	}

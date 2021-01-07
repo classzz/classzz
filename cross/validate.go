@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/rpcclient"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
@@ -22,16 +21,10 @@ var (
 )
 
 type ExChangeVerify struct {
-	DogeCoinRPC []*rpcclient.Client
-	LtcCoinRPC  []*rpcclient.Client
-	BtcCoinRPC  []*rpcclient.Client
-	BchCoinRPC  []*rpcclient.Client
-	BsvCoinRPC  []*rpcclient.Client
-	UsdtCoinRPC []*rpcclient.Client
-	EthRPC      []*rpc.Client
-	TrxRPC      []string
-	Cache       *CacheCommitteeState
-	Params      *chaincfg.Params
+	EthRPC []*rpc.Client
+	TrxRPC []string
+	Cache  *CacheCommitteeState
+	Params *chaincfg.Params
 }
 
 func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
@@ -87,7 +80,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 		return nil, errors.New(e)
 	}
 
-	if br.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+	if br.StakingAmount.Cmp(MinStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -173,7 +166,7 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 		return nil, errors.New(e)
 	}
 
-	if bp.StakingAmount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+	if bp.StakingAmount.Cmp(MinStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -186,6 +179,145 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 	}
 
 	return bp, nil
+}
+
+func (ev *ExChangeVerify) VerifyMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*PledgeInfo, error) {
+
+	br, _ := IsMortgageTx(tx, ev.Params)
+	if br == nil {
+		return nil, NoMortgage
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("MortgageTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
+	if ok := cState.GetPledgeInfoByAddress(br.Address); ok != nil {
+		return nil, ErrRepeatRegister
+	}
+
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(br.ToAddress, ev.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != br.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	toAddress := big.NewInt(0).SetBytes(br.ToAddress).Uint64()
+	if toAddress < 10 || toAddress > 99 {
+		e := fmt.Sprintf("toAddress err")
+		return nil, errors.New(e)
+	}
+
+	if br.StakingAmount.Cmp(MinStakingAmount) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	if len(br.CoinBaseAddress) > MaxCoinBase {
+		e := fmt.Sprintf("whiteAddress.AssetType > MaxCoinBase err")
+		return nil, errors.New(e)
+	}
+
+	for _, coinBaseAddress := range br.CoinBaseAddress {
+		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
+			return nil, fmt.Errorf("DecodeCashAddress.AssetType err")
+		}
+	}
+
+	for _, v := range cState.PledgeInfos {
+		if bytes.Equal(v.ToAddress, br.ToAddress) {
+			return nil, fmt.Errorf("ToAddress err")
+		}
+	}
+
+	return br, nil
+}
+
+func (ev *ExChangeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*AddMortgage, error) {
+
+	am, _ := IsAddMortgageTx(tx, ev.Params)
+	if am == nil {
+		return nil, NoAddBeaconPledge
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
+	var pinfo *PledgeInfo
+	if pinfo = cState.GetPledgeInfoByAddress(am.Address); pinfo == nil {
+		return nil, ErrNoRegister
+	}
+
+	addr, err := czzutil.NewLegacyAddressPubKeyHash(pinfo.ToAddress, ev.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new script which pays to the provided address.
+	pkScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(tx.TxOut[1].PkScript, pkScript) {
+		e := fmt.Sprintf("tx.TxOut[1].PkScript err")
+		return nil, errors.New(e)
+	}
+
+	if tx.TxOut[1].Value != am.StakingAmount.Int64() {
+		e := fmt.Sprintf("tx.TxOut[1].Value err")
+		return nil, errors.New(e)
+	}
+
+	if am.StakingAmount.Cmp(MinAddStakingAmount) < 0 {
+		e := fmt.Sprintf("StakingAmount err")
+		return nil, errors.New(e)
+	}
+
+	return am, nil
+}
+
+func (ev *ExChangeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *CommitteeState) (*UpdateCoinbaseAll, error) {
+
+	uc, _ := IsUpdateCoinbaseAllTx(tx, ev.Params)
+	if uc == nil {
+		return nil, NoUpdateCoinbaseAll
+	}
+
+	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
+		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		return nil, errors.New(e)
+	}
+
+	if pinfo := cState.GetPledgeInfoByAddress(uc.Address); pinfo == nil {
+		return nil, ErrNoRegister
+	}
+
+	for _, coinBaseAddress := range uc.CoinBaseAddress {
+		if _, err := czzutil.DecodeAddress(coinBaseAddress, ev.Params); err != nil {
+			return nil, fmt.Errorf("DecodeCashAddress.AssetType err")
+		}
+	}
+
+	return uc, nil
 }
 
 func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *CommitteeState) (*TuplePubIndex, error) {
@@ -210,31 +342,6 @@ func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *Committee
 		return pair, nil
 	}
 }
-
-//func (ev *ExChangeVerify) VerifyFastExChangeTx(tx *wire.MsgTx, eState *EntangleState) error {
-//	/*
-//		1. check entangle tx struct
-//		2. check the repeat tx
-//		3. check the correct tx
-//		4. check the pool reserve enough reward
-//	*/
-//	einfo, _, _ := IsFastExChangeTx(tx, ev.Params)
-//	if einfo == nil {
-//		return errors.New("not entangle tx")
-//	}
-//
-//	if _, err := ev.verifyTx(einfo, eState); err != nil {
-//		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
-//		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
-//	}
-//
-//	if err := ev.VerifyBurn(tx, eState); err != nil {
-//		errStr := fmt.Sprintf("[txid:%s, height:%v]", einfo.ExtTxHash, einfo.Index)
-//		return errors.New("txid verify failed:" + errStr + " err:" + err.Error())
-//	}
-//
-//	return nil
-//}
 
 func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *CommitteeState) ([]byte, error) {
 	switch eInfo.AssetType {

@@ -387,35 +387,76 @@ func (c *Client) AddBeaconPledgeAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
+// BeaconRegistration returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) Mortgage(inputs []btcjson.TransactionInput,
+	out btcjson.MortgageOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.MortgageAsync(inputs, out, amounts, lockTime).Receive()
+}
+
 // BeaconRegistrationAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
 // See BeaconRegistrationAsync for the blocking version and more details.
-func (c *Client) UpdateBeaconCoinbaseAsync(inputs []btcjson.TransactionInput,
-	out btcjson.UpdateBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewUpdateBeaconCoinbaseCmd(inputs, out, amounts, lockTime)
+func (c *Client) MortgageAsync(inputs []btcjson.TransactionInput,
+	out btcjson.MortgageOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewMortgageCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
 // BeaconRegistration returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
-func (c *Client) UpdateBeaconCoinbase(inputs []btcjson.TransactionInput,
-	out btcjson.UpdateBeaconCoinbaseOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
-	return c.UpdateBeaconCoinbaseAsync(inputs, out, amounts, lockTime).Receive()
+func (c *Client) AddMortgage(inputs []btcjson.TransactionInput,
+	out btcjson.AddMortgageOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.AddMortgageAsync(inputs, out, amounts, lockTime).Receive()
 }
 
-func (c *Client) BurnTransactionAsync(inputs []btcjson.TransactionInput,
-	out btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
-	cmd := btcjson.NewBurnTransactionCmd(inputs, out, amounts, lockTime)
+// BeaconRegistrationAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See BeaconRegistrationAsync for the blocking version and more details.
+func (c *Client) AddMortgageAsync(inputs []btcjson.TransactionInput,
+	out btcjson.AddMortgageOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewAddMortgageCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
-// BurnTransaction returns a new transaction spending the provided inputs
+// BeaconRegistration returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
-func (c *Client) BurnTransaction(inputs []btcjson.TransactionInput,
-	out btcjson.BurnTransactionOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
-	return c.BurnTransactionAsync(inputs, out, amounts, lockTime).Receive()
+func (c *Client) UpdateCoinbaseAll(inputs []btcjson.TransactionInput,
+	out btcjson.UpdateCoinbaseAllOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.UpdateCoinbaseAllAsync(inputs, out, amounts, lockTime).Receive()
+}
+
+// BeaconRegistrationAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See BeaconRegistrationAsync for the blocking version and more details.
+func (c *Client) UpdateCoinbaseAllAsync(inputs []btcjson.TransactionInput,
+	out btcjson.UpdateCoinbaseAllOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewUpdateCoinbaseAllCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
+// BeaconRegistration returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) Convert(inputs []btcjson.TransactionInput,
+	out []btcjson.ConvertOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.ConvertAsync(inputs, out, amounts, lockTime).Receive()
+}
+
+// BeaconRegistrationAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See BeaconRegistrationAsync for the blocking version and more details.
+func (c *Client) ConvertAsync(inputs []btcjson.TransactionInput,
+	out []btcjson.ConvertOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewConvertCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
 }
 
 // FutureSendRawTransactionResult is a future promise to deliver the result

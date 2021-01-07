@@ -25,17 +25,12 @@ const (
 )
 
 var (
-	NoEntangle              = errors.New("no NoEntangle info in transcation")
-	NoExChange              = errors.New("no NoExChange info in transcation")
-	NoConvert               = errors.New("no NoConvert info in transcation")
-	NoFastExChange          = errors.New("no NoFastExChange info in transcation")
-	NoBeaconRegistration    = errors.New("no BeaconRegistration info in transcation")
-	NoBurnTx                = errors.New("no BurnTx info in transcation")
-	NoBurnProofTx           = errors.New("no BurnProofTx info in transcation")
-	NoBurnReportWhiteListTx = errors.New("no WhiteListProofTx info in transcation")
-	NoAddBeaconPledge       = errors.New("no AddBeaconPledge info in transcation")
-	NoUpdateBeaconCoinbase  = errors.New("no UpdateBeaconCoinbase info in transcation")
-	NoUpdateBeaconFreeQuota = errors.New("no UpdateBeaconFreeQuota info in transcation")
+	NoBeaconRegistration = errors.New("no BeaconRegistration info in transcation")
+	NoAddBeaconPledge    = errors.New("no AddBeaconPledge info in transcation")
+	NoMortgage           = errors.New("no NoMortgage info in transcation")
+	NoAddMortgage        = errors.New("no NoAddMortgage info in transcation")
+	NoUpdateCoinbaseAll  = errors.New("no NoUpdateCoinbaseAll info in transcation")
+	NoConvert            = errors.New("no NoConvert info in transcation")
 
 	baseUnit    = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1   = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
@@ -158,8 +153,8 @@ type UpdateCoinbaseAll struct {
 }
 
 type ConvertTxInfo struct {
-	AssetType   uint32
-	ConvertType uint32
+	AssetType   uint8
+	ConvertType uint8
 	Address     string
 	Height      uint64
 	ExtTxHash   string
@@ -477,15 +472,15 @@ func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddMortgage, err
 	return nil, NoAddBeaconPledge
 }
 
-func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoinbaseAll, error) {
+func IsUpdateCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoinbaseAll, error) {
 	// make sure at least one txout in OUTPUT
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsUpdateCoinbaseAllTy(txout.PkScript) {
-			return nil, NoUpdateBeaconCoinbase
+			return nil, NoUpdateCoinbaseAll
 		}
 	} else {
-		return nil, NoUpdateBeaconCoinbase
+		return nil, NoUpdateCoinbaseAll
 	}
 
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
@@ -532,7 +527,7 @@ func IsUpdateBeaconCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*Upda
 	if bp != nil {
 		return bp, nil
 	}
-	return nil, NoUpdateBeaconCoinbase
+	return nil, NoUpdateCoinbaseAll
 }
 
 func IsConvertTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {

@@ -367,7 +367,7 @@ func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
 // keep staking enough amount asset
 func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
 
-	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+	if amount.Cmp(MinStakingAmount) < 0 {
 		return ErrLessThanMin
 	}
 
@@ -580,7 +580,7 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 		!ValidAssetType(assetType) {
 		return ErrInvalidParam
 	}
-	if amount.Cmp(MinStakingAmountForBeaconAddress) < 0 {
+	if amount.Cmp(MinStakingAmount) < 0 {
 		return ErrLessThanMin
 	}
 	if _, ok := es.EnInfos[addr]; ok {
@@ -890,7 +890,7 @@ func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
 	if lh != nil {
 		l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
 		if l.Sign() > 0 {
-			l = new(big.Int).Sub(l, MinStakingAmountForBeaconAddress)
+			l = new(big.Int).Sub(l, MinStakingAmount)
 			if l.Sign() > 0 {
 				return l
 			}

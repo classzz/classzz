@@ -938,7 +938,7 @@ mempoolLoop:
 			}
 
 			// UpdateCoinbaseAll
-			if bp, _ := cross.IsUpdateBeaconCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if bp, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
 				if err = cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
