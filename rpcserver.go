@@ -3559,7 +3559,7 @@ func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 
 	targetN := blockchain.CompactToBig(blockTemplate.Block.Header.Bits)
 	if blockTemplate.Height > s.cfg.ChainParams.BeaconHeight {
-		rsState := s.cfg.Chain.GetExChangeVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
+		rsState := s.cfg.Chain.GetCommitteeVerify().Cache.LoadEntangleState(blockTemplate.Height-1, blockTemplate.Block.Header.PrevBlock)
 		script := blockTemplate.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
@@ -5006,7 +5006,7 @@ func handleSubmitWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) 
 	result := consensus.CZZhashFull(BlockHash[:], c.Nonce)
 	targetN := blockchain.CompactToBig(template.Block.Header.Bits)
 	if template.Height > s.cfg.ChainParams.BeaconHeight {
-		rsState := s.cfg.Chain.GetExChangeVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
+		rsState := s.cfg.Chain.GetCommitteeVerify().Cache.LoadEntangleState(template.Height-1, template.Block.Header.PrevBlock)
 		script := template.Block.Transactions[0].TxOut[0].PkScript
 		_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 		targetN = cross.ComputeDiff(s.cfg.ChainParams, targetN, addrs[0], rsState)
@@ -5096,7 +5096,7 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
-			state := s.cfg.Chain.GetExChangeVerify().Cache.LoadEntangleState(block.Height()-1, block.MsgBlock().Header.PrevBlock)
+			state := s.cfg.Chain.GetCommitteeVerify().Cache.LoadEntangleState(block.Height()-1, block.MsgBlock().Header.PrevBlock)
 			script := block.MsgBlock().Transactions[0].TxOut[0].PkScript
 			_, addrs, _, _ := txscript.ExtractPkScriptAddrs(script, s.cfg.ChainParams)
 			err := blockchain.CheckBlockSanity(s.cfg.ChainParams, &prevHeader, block, s.cfg.ChainParams.PowLimit, s.cfg.TimeSource, magneticAnomalyActive, state, addrs[0])

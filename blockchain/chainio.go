@@ -546,7 +546,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// AddMortgage
-		ubc, _ := cross.IsUpdateBeaconCoinbaseAllTx(tx.MsgTx(), NetParams)
+		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), NetParams)
 		if bp != nil {
 			if cState != nil {
 				if err := cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress); err != nil {
@@ -1787,24 +1787,24 @@ func blockIndexKey(blockHash *chainhash.Hash, blockHeight uint32) []byte {
 func (b *BlockChain) CurrentCstate() *cross.CommitteeState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	eState := b.exChangeVerify.Cache.LoadCommitteeState(height, hash)
+	eState := b.committeeVerify.Cache.LoadCommitteeState(height, hash)
 	return eState
 }
 
 func (b *BlockChain) CurrentEstate() *cross.EntangleState {
 	hash := b.bestChain.tip().hash
 	height := b.bestChain.tip().height
-	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.committeeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 
 func (b *BlockChain) GetCstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.CommitteeState {
-	eState := b.exChangeVerify.Cache.LoadCommitteeState(height, hash)
+	eState := b.committeeVerify.Cache.LoadCommitteeState(height, hash)
 	return eState
 }
 
 func (b *BlockChain) GetEstateByHashAndHeight(hash chainhash.Hash, height int32) *cross.EntangleState {
-	eState := b.exChangeVerify.Cache.LoadEntangleState(height, hash)
+	eState := b.committeeVerify.Cache.LoadEntangleState(height, hash)
 	return eState
 }
 

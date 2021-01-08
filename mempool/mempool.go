@@ -66,9 +66,9 @@ type Config struct {
 	// transaction output information.
 	FetchUtxoView func(*czzutil.Tx) (*blockchain.UtxoViewpoint, error)
 
-	FetchExtUtxoView func(info cross.ExtTxInfo) bool
+	FetchExtUtxoView func(info *cross.ConvertTxInfo) bool
 
-	ExChangeVerify *cross.ExChangeVerify
+	CommitteeVerify *cross.CommitteeVerify
 	// BestHeight defines the function to use to access the block height of
 	// the current best chain.
 	BestHeight func() int32
@@ -84,6 +84,8 @@ type Config struct {
 	CalcSequenceLock func(*czzutil.Tx, *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error)
 
 	CurrentEstate func() *cross.EntangleState
+
+	CurrentCstate func() *cross.CommitteeState
 	// IsDeploymentActive returns true if the target deploymentID is
 	// active, and false otherwise. The mempool uses this function to gauge
 	// if transactions using new to be soft-forked rules should be allowed
@@ -490,16 +492,17 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 
 		delete(mp.pool, *txHash)
 
-		einfo, _ := cross.IsExChangeTx(tx.MsgTx())
-		if einfo == nil {
-			einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
-		}
-
+		einfo, _ := cross.IsConvertTx(tx.MsgTx())
+		//if einfo == nil {
+		//	einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
+		//}
 		if einfo != nil {
-			AssetType := byte(einfo.AssetType)
-			ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
-			key := append(ExtTxHash, AssetType)
-			delete(mp.exchangePool, string(key))
+			for _, v := range einfo {
+				AssetType := v.AssetType
+				ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
+				key := append(ExtTxHash, AssetType)
+				delete(mp.exchangePool, string(key))
+			}
 		}
 
 		atomic.StoreInt64(&mp.lastUpdated, time.Now().Unix())
@@ -561,16 +564,14 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 
 	mp.pool[*tx.Hash()] = txD
 
-	einfo, _ := cross.IsExChangeTx(tx.MsgTx())
-	if einfo == nil {
-		einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
-	}
-
+	einfo, _ := cross.IsConvertTx(tx.MsgTx())
 	if einfo != nil {
-		AssetType := byte(einfo.AssetType)
-		ExtTxHash, _ := hex.DecodeString(einfo.ExtTxHash)
-		key := append(ExtTxHash, AssetType)
-		mp.exchangePool[string(key)] = txD
+		for _, v := range einfo {
+			AssetType := v.AssetType
+			ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
+			key := append(ExtTxHash, AssetType)
+			mp.exchangePool[string(key)] = txD
+		}
 	}
 
 	for _, txIn := range tx.MsgTx().TxIn {
@@ -822,8 +823,16 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	if err = mp.validateBeaconTransaction(tx, nextBlockHeight); err != nil {
-		return nil, nil, errors.New("validateBeaconTransaction err: " + err.Error())
+	if mp.cfg.ChainParams.BeaconHeight < nextBlockHeight && mp.cfg.ChainParams.ExChangeHeight > nextBlockHeight {
+		if err = mp.validateStateTx(tx, nextBlockHeight); err != nil {
+			return nil, nil, errors.New("validateBeaconTransaction err: " + err.Error())
+		}
+	}
+
+	if mp.cfg.ChainParams.BeaconHeight < nextBlockHeight && mp.cfg.ChainParams.ExChangeHeight > nextBlockHeight {
+		if err := mp.validateStateCrossTx(tx, nextBlockHeight); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// Don't allow the transaction if it exists in the main chain and is not
@@ -1008,7 +1017,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 	return nil, txD, nil
 }
 
-func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int32) error {
+func (mp *TxPool) validateStateTx(tx *czzutil.Tx, nextBlockHeight int32) error {
 
 	eState := mp.cfg.CurrentEstate()
 
@@ -1021,7 +1030,7 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	if bai != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err BeaconRegistration tx  BeaconHeight < nextBlockHeight ")
 	} else if bai != nil {
-		if err := mp.cfg.ExChangeVerify.VerifyBeaconRegistrationTx(bai, eState); err != nil {
+		if _, err := mp.cfg.CommitteeVerify.VerifyBeaconRegistrationTx(tx.MsgTx(), eState); err != nil {
 			return err
 		}
 	}
@@ -1035,23 +1044,43 @@ func (mp *TxPool) validateBeaconTransaction(tx *czzutil.Tx, nextBlockHeight int3
 	if abp != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
 		return errors.New("err AddBeaconPledge tx  BeaconHeight < nextBlockHeight ")
 	} else if abp != nil {
-		if _, err := mp.cfg.ExChangeVerify.VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {
+		if _, err := mp.cfg.CommitteeVerify.VerifyAddBeaconPledgeTx(tx.MsgTx(), eState); err != nil {
 			return err
 		}
 	}
 
-	// IsConvertTx
-	cinfo, err := cross.IsConvertTx(tx.MsgTx())
-	if err != nil && err != cross.NoConvert {
+	return nil
+}
+
+func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
+
+	cState := mp.cfg.CurrentCstate()
+	// Mortgage
+	if _, err := mp.cfg.CommitteeVerify.VerifyMortgageTx(tx.MsgTx(), cState); err != nil {
 		return err
 	}
 
-	if cinfo != nil && mp.cfg.ChainParams.BeaconHeight > nextBlockHeight {
-		return errors.New("err ConvertTx tx  BeaconHeight < nextBlockHeight ")
-	} else if cinfo != nil {
+	// Mortgage
+	if _, err := mp.cfg.CommitteeVerify.VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
+		return err
+	}
+
+	// Mortgage
+	if _, err := mp.cfg.CommitteeVerify.VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
+		return err
+	}
+
+	// IsConvertTx
+	if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 		for _, v := range cinfo {
-			if _, err := mp.cfg.ExChangeVerify.VerifyConvertTx(v, eState); err != nil {
+			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v, cState); err != nil {
 				return err
+			} else {
+				if err = cState.Convert(v); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					continue
+				}
 			}
 		}
 	}

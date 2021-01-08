@@ -231,7 +231,7 @@ type BlockChain struct {
 	fastSyncDone chan struct{}
 
 	//
-	exChangeVerify *cross.ExChangeVerify
+	committeeVerify *cross.CommitteeVerify
 }
 
 // HaveBlock returns whether or not the chain instance has the block represented
@@ -2473,16 +2473,11 @@ func New(config *Config) (*BlockChain, error) {
 
 	params := config.ChainParams
 
-	exChangeVerify := &cross.ExChangeVerify{
-		DogeCoinRPC: dogeclients,
-		LtcCoinRPC:  ltcclients,
-		BtcCoinRPC:  btcclients,
-		BchCoinRPC:  bchclients,
-		BsvCoinRPC:  bsvclients,
-		EthRPC:      ethclients,
-		TrxRPC:      trxclients,
-		Cache:       cacheEntangleInfo,
-		Params:      params,
+	committeeVerify := &cross.CommitteeVerify{
+		EthRPC: ethclients,
+		TrxRPC: trxclients,
+		Cache:  cacheEntangleInfo,
+		Params: params,
 	}
 
 	targetTimespan := int64(params.TargetTimespan / time.Second)
@@ -2509,7 +2504,7 @@ func New(config *Config) (*BlockChain, error) {
 		pruneDepth:          config.PruneDepth,
 		fastSyncDataDir:     config.FastSyncDataDir,
 		fastSyncDone:        make(chan struct{}),
-		exChangeVerify:      exChangeVerify,
+		committeeVerify:     committeeVerify,
 	}
 
 	NetParams = params
@@ -2615,6 +2610,6 @@ func (b *BlockChain) FlushCachedState(mode FlushMode) error {
 	return b.utxoCache.Flush(mode, b.stateSnapshot)
 }
 
-func (b *BlockChain) GetExChangeVerify() *cross.ExChangeVerify {
-	return b.exChangeVerify
+func (b *BlockChain) GetCommitteeVerify() *cross.CommitteeVerify {
+	return b.committeeVerify
 }

@@ -20,14 +20,14 @@ var (
 	ethPoolAddr      = "0xB6475DAF416efAB1D70c893a53D7799be015Ed03"
 )
 
-type ExChangeVerify struct {
+type CommitteeVerify struct {
 	EthRPC []*rpc.Client
 	TrxRPC []string
 	Cache  *CacheCommitteeState
 	Params *chaincfg.Params
 }
 
-func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
+func (ev *CommitteeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
 
 	br, _ := IsBeaconRegistrationTx(tx, ev.Params)
 	if br == nil {
@@ -123,7 +123,7 @@ func (ev *ExChangeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *Ent
 	return br, nil
 }
 
-func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
+func (ev *CommitteeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *EntangleState) (*AddBeaconPledge, error) {
 
 	bp, _ := IsAddBeaconPledgeTx(tx, ev.Params)
 	if bp == nil {
@@ -181,7 +181,7 @@ func (ev *ExChangeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entang
 	return bp, nil
 }
 
-func (ev *ExChangeVerify) VerifyMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*PledgeInfo, error) {
+func (ev *CommitteeVerify) VerifyMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*PledgeInfo, error) {
 
 	br, _ := IsMortgageTx(tx, ev.Params)
 	if br == nil {
@@ -249,7 +249,7 @@ func (ev *ExChangeVerify) VerifyMortgageTx(tx *wire.MsgTx, cState *CommitteeStat
 	return br, nil
 }
 
-func (ev *ExChangeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*AddMortgage, error) {
+func (ev *CommitteeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *CommitteeState) (*AddMortgage, error) {
 
 	am, _ := IsAddMortgageTx(tx, ev.Params)
 	if am == nil {
@@ -295,7 +295,7 @@ func (ev *ExChangeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *CommitteeS
 	return am, nil
 }
 
-func (ev *ExChangeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *CommitteeState) (*UpdateCoinbaseAll, error) {
+func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *CommitteeState) (*UpdateCoinbaseAll, error) {
 
 	uc, _ := IsUpdateCoinbaseAllTx(tx, ev.Params)
 	if uc == nil {
@@ -320,7 +320,7 @@ func (ev *ExChangeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Comm
 	return uc, nil
 }
 
-func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *CommitteeState) (*TuplePubIndex, error) {
+func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *CommitteeState) (*TuplePubIndex, error) {
 
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
@@ -343,7 +343,7 @@ func (ev *ExChangeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *Committee
 	}
 }
 
-func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *CommitteeState) ([]byte, error) {
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertEthTx(eInfo, eState)
@@ -353,7 +353,7 @@ func (ev *ExChangeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *Committe
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
 
-func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
@@ -423,6 +423,6 @@ func (ev *ExChangeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *Commi
 	return pk, nil
 }
 
-func (ev *ExChangeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
 	return nil, nil
 }

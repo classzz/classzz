@@ -870,7 +870,7 @@ type TmpAddressPair struct {
 	Address czzutil.Address
 }
 
-func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *ExChangeVerify) ([]*ConvertTxInfo, error) {
+func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
 
 	ctis := make([]*ConvertTxInfo, 0, 0)
 	for _, info := range cinfo {

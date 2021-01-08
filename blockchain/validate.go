@@ -452,7 +452,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), b.chainParams)
 		if br != nil {
 
-			_, err := b.GetExChangeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
+			_, err := b.GetCommitteeVerify().VerifyBeaconRegistrationTx(tx.MsgTx(), eState)
 			if err != nil {
 				return err
 			}
@@ -465,7 +465,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 		// AddBeaconPledge
 		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), b.chainParams)
 		if bp != nil {
-			_, err := b.GetExChangeVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
+			_, err := b.GetCommitteeVerify().VerifyAddBeaconPledgeTx(tx.MsgTx(), eState)
 			if err != nil {
 				return err
 			}
@@ -492,7 +492,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
-		if pinfo, err := b.GetExChangeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil {
 			return err
 		} else {
 			if err := cState.Mortgage(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress); err != nil {
@@ -517,7 +517,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// Mortgage
-		if pinfo, err := b.GetExChangeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
 			return err
 		} else {
 			if err = cState.AddMortgage(pinfo.Address, pinfo.StakingAmount); err != nil {
@@ -541,7 +541,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// Mortgage
-		if pinfo, err := b.GetExChangeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
 			return err
 		} else {
 			if err = cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
@@ -554,7 +554,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 			for _, v := range cinfo {
-				if _, err := b.GetExChangeVerify().VerifyConvertTx(v, cState); err != nil {
+				if _, err := b.GetCommitteeVerify().VerifyConvertTx(v, cState); err != nil {
 					return err
 				} else {
 					if err = cState.Convert(v); err != nil {
@@ -566,48 +566,6 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 		}
 	}
-
-	// check the coinbase Tx
-	//if prevHeight+1 >= b.chainParams.ExChangeHeight {
-	//
-	//	burnTimeout := eState.TourAllUserBurnInfo(uint64(prevHeight + 1))
-	//	for beaconID, bit := range burnTimeout {
-	//
-	//		toAddress := eState.GetBeaconToAddrByID(beaconID, b.chainParams)
-	//
-	//		AmountSum := big.NewInt(0)
-	//		for k, v := range bit {
-	//			fmt.Println("burnTimeout k:", k)
-	//			AmountSum = big.NewInt(0).Add(AmountSum, v.AmountSum)
-	//		}
-	//
-	//		_, addrs, _, err := txscript.ExtractPkScriptAddrs(
-	//			coinBaseTx.MsgTx().TxOut[0].PkScript, b.chainParams)
-	//		fmt.Println("err", err)
-	//
-	//		from := addrs[0]
-	//		res := &cross.PunishedRewardItem{
-	//			Addr1:  from,
-	//			Addr2:  cross.ZeroAddrsss,
-	//			Addr3:  toAddress,
-	//			Amount: new(big.Int).Set(AmountSum),
-	//		}
-	//
-	//		if all, outPoint, err := b.getPoolAmount(beaconID, eState); err != nil {
-	//			return err
-	//		} else {
-	//			res.OriginAmount, res.POut = all, *outPoint
-	//			if err := b.checkCoinBaseInCrossProof(res, coinBaseTx, &in, &out); err != nil {
-	//				return err
-	//			}
-	//		}
-	//	}
-	//
-	//	if err := b.checkCoinBaseForMergeUxto(coinBaseTx, in, out, prevHeight+1); err != nil {
-	//		return err
-	//	}
-	//
-	//}
 
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {
 		return errors.New("CIDRoot not in the block")
@@ -1805,8 +1763,8 @@ func getPoolAmountFromPreBlock(block *czzutil.Block, summay *KeepedInfoSummay) e
 	return err
 }
 
-//func handleSummayEntangle(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
-//	info *cross.ExChangeTxInfo, fork bool) {
+//func handleSummay(summay *KeepedInfoSummay, keepedInfo *cross.KeepedAmount,
+//	info *cross.ConvertTxInfo, fork bool) {
 //
 //	item := &cross.ExChangeItem{
 //		AssetType: info.AssetType,
@@ -1829,10 +1787,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			Items: make([]cross.KeepedItem, 0),
 		},
 	}
-	keepInfo, err := getKeepedAmountFormPreBlock(preblock)
-	if err != nil {
-		return nil, err
-	}
+	//keepInfo, err := getKeepedAmountFormPreBlock(preblock)
+	//if err != nil {
+	//	return nil, err
+	//}
 	if err := getPoolAmountFromPreBlock(preblock, summay); err != nil {
 		return nil, err
 	}
@@ -1854,10 +1812,10 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		} else {
 			// summay all txout
-			einfos, _ := cross.IsConvertTx(tx.MsgTx())
-			if einfos != nil {
-				handleSummayEntangle(summay, keepInfo, einfos, fork)
-			}
+			//einfos, _ := cross.IsConvertTx(tx.MsgTx())
+			//if einfos != nil {
+			//	handleSummayEntangle(summay, keepInfo, einfos, fork)
+			//}
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value
 			}

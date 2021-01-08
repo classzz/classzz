@@ -3224,8 +3224,8 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		},
 		ChainParams:      chainParams,
 		FetchUtxoView:    s.chain.FetchUtxoView,
-		FetchExtUtxoView: s.chain.GetExChangeVerify().Cache.FetchExtUtxoView,
-		ExChangeVerify:   s.chain.GetExChangeVerify(),
+		FetchExtUtxoView: s.chain.GetCommitteeVerify().Cache.FetchExtUtxoView,
+		CommitteeVerify:  s.chain.GetCommitteeVerify(),
 		BestHeight:       func() int32 { return s.chain.BestSnapshot().Height },
 		MedianTimePast:   func() time.Time { return s.chain.BestSnapshot().MedianTime },
 		CalcSequenceLock: func(tx *czzutil.Tx, view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {

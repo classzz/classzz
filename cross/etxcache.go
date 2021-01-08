@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	BucketKey         = []byte("entangle-tx")
+	BucketKey         = []byte("extutxo-tx")
 	EntangleStateKey  = []byte("entanglestate")
 	CommitteeStateKey = []byte("committeestate")
 )

@@ -949,7 +949,7 @@ mempoolLoop:
 
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetExChangeVerify())
+				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetCommitteeVerify())
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toAddressFromEntangle: %v", tx.Hash(), err)
