@@ -112,11 +112,11 @@ func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 		return false
 	}
 
-	if height >= NetParams.ExChangeHeight {
+	if height >= NetParams.ConverHeight {
 		if len(msgTx.TxIn) < 3 {
 			return false
 		}
-	} else if height >= NetParams.EntangleHeight && height < NetParams.ExChangeHeight {
+	} else if height >= NetParams.EntangleHeight && height < NetParams.ConverHeight {
 		if len(msgTx.TxIn) != 3 {
 			return false
 		}
@@ -486,15 +486,12 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	cState := b.GetCstateByHashAndHeight(hash, prevHeight)
-	//once, proofError := 0, errors.New("only one proof in block")
-	//_, in, out := []*czzutil.Tx{}, cross.NewResCoinBasePos(), cross.NewResCoinBasePos()
-	//coinBaseTx, _ := block.Tx(0)
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
-		if pinfo, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoMortgage {
 			return err
-		} else {
+		} else if pinfo != nil {
 			if err := cState.Mortgage(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
@@ -517,9 +514,9 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// Mortgage
-		if pinfo, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
 			return err
-		} else {
+		} else if pinfo != nil {
 			if err = cState.AddMortgage(pinfo.Address, pinfo.StakingAmount); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -541,9 +538,9 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// Mortgage
-		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
+		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
 			return err
-		} else {
+		} else if pinfo != nil {
 			if err = cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -552,7 +549,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// IsConvertTx
-		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 			for _, v := range cinfo {
 				if _, err := b.GetCommitteeVerify().VerifyConvertTx(v, cState); err != nil {
 					return err
@@ -1019,7 +1016,7 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 
 	//eState := b.CurrentEstate()
 	var eState3 *cross.EntangleState
-	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ExChangeHeight > tip.height {
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ConverHeight > tip.height {
 		eState4 := b.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
@@ -1684,7 +1681,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	prevHeader, _ := b.HeaderByHash(&block.MsgBlock().Header.PrevBlock)
 
 	var eState3 *cross.EntangleState
-	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ExChangeHeight > tip.height {
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ConverHeight > tip.height {
 		eState4 := b.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
@@ -1702,7 +1699,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 			EnInfos: bai2s,
 		}
 
-	} else if b.chainParams.ExChangeHeight <= tip.height {
+	} else if b.chainParams.ConverHeight <= tip.height {
 		eState3 = b.CurrentEstate()
 	}
 	//eState := b.CurrentEstate()

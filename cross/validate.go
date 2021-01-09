@@ -253,7 +253,7 @@ func (ev *CommitteeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *Committee
 
 	am, _ := IsAddMortgageTx(tx, ev.Params)
 	if am == nil {
-		return nil, NoAddBeaconPledge
+		return nil, NoAddMortgage
 	}
 
 	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {

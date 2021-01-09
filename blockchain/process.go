@@ -194,7 +194,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 	}
 
 	var eState *cross.EntangleState
-	if b.chainParams.BeaconHeight <= prevHeight && b.chainParams.ExChangeHeight > prevHeight {
+	if b.chainParams.BeaconHeight <= prevHeight && b.chainParams.ConverHeight > prevHeight {
 		cState := b.GetCstateByHashAndHeight(*prevHash, prevHeight)
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for _, v := range cState.PledgeInfos {
@@ -210,7 +210,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 			EnInfos: bai2s,
 		}
 
-	} else if b.chainParams.ExChangeHeight <= prevHeight {
+	} else if b.chainParams.ConverHeight <= prevHeight {
 		eState = b.GetEstateByHashAndHeight(*prevHash, prevHeight)
 	}
 
@@ -230,14 +230,14 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		return false, true, nil
 	}
 
-	if b.chainParams.BeaconHeight < blockHeight && b.chainParams.ExChangeHeight > blockHeight {
+	if b.chainParams.BeaconHeight < blockHeight && b.chainParams.ConverHeight > blockHeight {
 		if err := b.CheckBeacon(block, prevHeight); err != nil {
 			return false, false, err
 		}
 	}
 
 	// cross Verify
-	if b.chainParams.ExChangeHeight < blockHeight {
+	if b.chainParams.ConverHeight <= blockHeight {
 		if err := b.CheckBlockCrossTx(block, prevHeight); err != nil {
 			return false, false, err
 		}
