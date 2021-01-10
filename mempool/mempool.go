@@ -1056,22 +1056,22 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 
 	cState := mp.cfg.CurrentCstate()
 	// Mortgage
-	if _, err := mp.cfg.CommitteeVerify.VerifyMortgageTx(tx.MsgTx(), cState); err != nil {
+	if _, err := mp.cfg.CommitteeVerify.VerifyMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoMortgage {
 		return err
 	}
 
 	// Mortgage
-	if _, err := mp.cfg.CommitteeVerify.VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
+	if _, err := mp.cfg.CommitteeVerify.VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
 		return err
 	}
 
 	// Mortgage
-	if _, err := mp.cfg.CommitteeVerify.VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
+	if _, err := mp.cfg.CommitteeVerify.VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
 		return err
 	}
 
 	// IsConvertTx
-	if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+	if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 		for _, v := range cinfo {
 			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v, cState); err != nil {
 				return err

@@ -29,8 +29,8 @@ var (
 )
 
 var (
-	MinStakingAmount                  = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
-	MinAddStakingAmount               = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
+	MinStakingAmount                  = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
+	MinAddStakingAmount               = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days

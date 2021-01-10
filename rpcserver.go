@@ -1000,7 +1000,7 @@ func handleMortgage(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		mtx.AddTxIn(txIn)
 	}
 
-	pi := &cross.PledgeInfo{
+	pi := &cross.Mortgage{
 		ToAddress:       c.Mortgage.ToAddress,
 		CoinBaseAddress: c.Mortgage.CoinBaseAddress,
 	}
@@ -1161,13 +1161,12 @@ func handleAddMortgage(s *rpcServer, cmd interface{}, closeChan <-chan struct{})
 		return nil, internalRPCError(err.Error(), context)
 	}
 
-	abp := &btcjson.AddBeaconPledge{
-		ToAddress:     c.AddMortgage.ToAddress,
+	abp := &cross.AddMortgage{
 		StakingAmount: big.NewInt(int64(satoshi)),
 	}
 
 	BeaconByte, err := rlp.EncodeToBytes(abp)
-	scriptInfo, err := txscript.AddBeaconPledgeScript(BeaconByte)
+	scriptInfo, err := txscript.AddMortgageScript(BeaconByte)
 	if err != nil {
 		return nil, err
 	}

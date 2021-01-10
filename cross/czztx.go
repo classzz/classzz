@@ -137,14 +137,14 @@ type BeaconMergeItem struct {
 
 ////////////////////////////////////////////////////////////////////////////
 type Mortgage struct {
-	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   *big.Int `json:"staking_amount"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+	ToAddress       []byte
+	StakingAmount   *big.Int
+	CoinBaseAddress []string
 }
 
 type AddMortgage struct {
-	Address       string   `json:"address"`
-	StakingAmount *big.Int `json:"staking_amount"`
+	Address       string
+	StakingAmount *big.Int
 }
 
 type UpdateCoinbaseAll struct {
@@ -358,10 +358,10 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsMortgageTy(txout.PkScript) {
-			return nil, NoBeaconRegistration
+			return nil, NoMortgage
 		}
 	} else {
-		return nil, NoBeaconRegistration
+		return nil, NoMortgage
 	}
 
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
@@ -384,9 +384,6 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 		}
 	}
 
-	if es != nil {
-		return es, nil
-	}
 	var pk []byte
 	if tx.TxIn[0].Witness == nil {
 		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
@@ -409,7 +406,7 @@ func IsMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*PledgeInfo, error) 
 	es.Address = address.String()
 	es.PubKey = pk
 
-	return nil, NoBeaconRegistration
+	return es, nil
 }
 
 func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddMortgage, error) {
@@ -417,10 +414,10 @@ func IsAddMortgageTx(tx *wire.MsgTx, params *chaincfg.Params) (*AddMortgage, err
 	if len(tx.TxOut) > 0 {
 		txout := tx.TxOut[0]
 		if !txscript.IsAddMortgageTy(txout.PkScript) {
-			return nil, NoAddBeaconPledge
+			return nil, NoAddMortgage
 		}
 	} else {
-		return nil, NoAddBeaconPledge
+		return nil, NoAddMortgage
 	}
 
 	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {

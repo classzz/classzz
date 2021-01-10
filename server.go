@@ -3232,6 +3232,7 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 			return s.chain.CalcSequenceLock(tx, view, true)
 		},
 		CurrentEstate:      func() *cross.EntangleState { return s.chain.CurrentEstate() },
+		CurrentCstate:      func() *cross.CommitteeState { return s.chain.CurrentCstate() },
 		IsDeploymentActive: s.chain.IsDeploymentActive,
 		SigCache:           s.sigCache,
 		HashCache:          s.hashCache,

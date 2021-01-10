@@ -82,9 +82,9 @@ type AddBeaconPledgeOut struct {
 }
 
 type MortgageOut struct {
-	ToAddress       []byte   `json:"toAddress"`
-	StakingAmount   float64  `json:"staking_amount"`
-	CoinBaseAddress []string `json:"coinbase_address"`
+	ToAddress       []byte
+	StakingAmount   float64
+	CoinBaseAddress []string
 }
 
 type AddMortgageOut struct {

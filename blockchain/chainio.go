@@ -538,16 +538,14 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		// AddMortgage
 		bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), NetParams)
 		if bp != nil {
-			if cState != nil {
-				if err := cState.AddMortgage(bp.Address, bp.StakingAmount); err != nil {
-					return err
-				}
+			if err := AddMortgageTxStore(cState, bp, tx); err != nil {
+				return err
 			}
 		}
 
 		// AddMortgage
 		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), NetParams)
-		if bp != nil {
+		if ubc != nil {
 			if cState != nil {
 				if err := cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress); err != nil {
 					return err
@@ -566,7 +564,6 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 				}
 			}
 		}
-
 	}
 
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
@@ -672,7 +669,6 @@ func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx 
 	return nil
 }
 
-//load
 func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.CommitteeState {
 
 	cs := cross.NewCommitteeState()
@@ -694,7 +690,6 @@ func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) 
 	return nil
 }
 
-//load
 func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
 
 	es := cross.NewEntangleState()
