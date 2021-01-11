@@ -551,7 +551,6 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 					return err
 				}
 			}
-			return nil
 		}
 
 		// IsConvertTx
@@ -715,6 +714,7 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 }
 
 func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, eState *cross.CommitteeState) error {
+	log.Info("dbPutCommitteeState", "height", block.Height(), "hash", block.Hash())
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.CommitteeStateKey)
 	if entangleBucket == nil {

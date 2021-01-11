@@ -480,13 +480,13 @@ func IsUpdateCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoin
 		return nil, NoUpdateCoinbaseAll
 	}
 
-	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+	if len(tx.TxOut) > 2 || len(tx.TxOut) < 1 || len(tx.TxIn) > 1 {
 		e := fmt.Sprintf("not BeaconRegistration tx TxOut >3 or TxIn >1")
 		return nil, errors.New(e)
 	}
 
 	// make sure at least one txout in OUTPUT
-	var bp *UpdateCoinbaseAll
+	var uca *UpdateCoinbaseAll
 
 	txout := tx.TxOut[0]
 	info, err := UpdateBeaconCoinbaseAllTxFromScript(txout.PkScript)
@@ -496,7 +496,7 @@ func IsUpdateCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoin
 		if txout.Value != 0 {
 			return nil, errors.New("the output value must be 0 in tx.")
 		}
-		bp = info
+		uca = info
 	}
 
 	var pk []byte
@@ -520,9 +520,9 @@ func IsUpdateCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoin
 		return nil, errors.New(e)
 	}
 
-	info.Address = address.String()
-	if bp != nil {
-		return bp, nil
+	uca.Address = address.String()
+	if uca != nil {
+		return uca, nil
 	}
 	return nil, NoUpdateCoinbaseAll
 }

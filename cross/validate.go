@@ -302,11 +302,6 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 		return nil, NoUpdateCoinbaseAll
 	}
 
-	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
-		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
-		return nil, errors.New(e)
-	}
-
 	if pinfo := cState.GetPledgeInfoByAddress(uc.Address); pinfo == nil {
 		return nil, ErrNoRegister
 	}
