@@ -41,7 +41,6 @@ func (c *CacheCommitteeState) FetchExtUtxoView(info *ConvertTxInfo) bool {
 }
 
 func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Hash) *CommitteeState {
-	log.Println("LoadCommitteeState", "height", height, "hash", hash)
 	cs := NewCommitteeState()
 
 	buf := new(bytes.Buffer)

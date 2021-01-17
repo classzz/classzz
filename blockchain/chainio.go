@@ -669,7 +669,6 @@ func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx 
 }
 
 func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.CommitteeState {
-
 	cs := cross.NewCommitteeState()
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
@@ -690,7 +689,6 @@ func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) 
 }
 
 func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.EntangleState {
-
 	es := cross.NewEntangleState()
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, height)
@@ -714,7 +712,6 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 }
 
 func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, eState *cross.CommitteeState) error {
-	log.Info("dbPutCommitteeState", "height", block.Height(), "hash", block.Hash())
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.CommitteeStateKey)
 	if entangleBucket == nil {

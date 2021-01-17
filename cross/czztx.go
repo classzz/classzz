@@ -65,16 +65,6 @@ type ExChangeItem struct {
 	Amount      *big.Int        `json:"amount"` // czz asset amount
 }
 
-//func (ii *ExChangeItem) Clone() *ExChangeItem {
-//	item := &ExChangeItem{
-//		AssetType: ii.AssetType,
-//		Value:     new(big.Int).Set(ii.Value),
-//		Addr:      ii.Addr,
-//		BeaconID:  ii.BeaconID,
-//	}
-//	return item
-//}
-
 // entangle tx Sequence infomation
 type EtsInfo struct {
 	FeePerKB int64
