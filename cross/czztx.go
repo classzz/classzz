@@ -519,7 +519,6 @@ func IsUpdateCoinbaseAllTx(tx *wire.MsgTx, params *chaincfg.Params) (*UpdateCoin
 
 func IsConvertTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {
 	// make sure at least one txout in OUTPUT
-
 	cons := make(map[uint32]*ConvertTxInfo)
 	for i, txout := range tx.TxOut {
 		if !txscript.IsConvertTy(txout.PkScript) {
