@@ -2,6 +2,9 @@ package cross
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -11,13 +14,16 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	"io/ioutil"
 	"math/big"
 	"math/rand"
+	"net/http"
 )
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
 	ethPoolAddr      = "0xB6475DAF416efAB1D70c893a53D7799be015Ed03"
+	trxMaturity      = uint64(0)
 )
 
 type CommitteeVerify struct {
@@ -419,69 +425,90 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *Comm
 }
 
 func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
-	client := ev.EthRPC[rand.Intn(len(ev.TrxRPC))]
+	// Notice the notification parameter is nil since notifications are
+	// not supported in HTTP POST mode.
+	client := ev.TrxRPC[rand.Intn(len(ev.TrxRPC))]
 
-	var receipt *types.Receipt
-	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-		return nil, err
-	}
+	data := make(map[string]interface{})
+	data["value"] = eInfo.ExtTxHash
+	data["visible"] = true
+	bytesData, _ := json.Marshal(data)
 
-	if receipt.Status != 1 {
-		return nil, fmt.Errorf("eth Status err")
-	}
-
-	var txjson *rpcTransaction
 	// Get the current block count.
-	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
+	bytes.NewReader(bytesData)
+	resp, err := http.Post("https://"+client+"/wallet/gettransactionbyid", "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		return nil, fmt.Errorf("trxTx ContractRet err")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("trxTx ContractRet err")
+	}
+
+	trxTx := &TrxTx{}
+	err = json.Unmarshal(body, trxTx)
+	if err != nil {
+		return nil, fmt.Errorf("trxTx ContractRet err")
+	}
+
+	if err := json.Unmarshal(body, trxTx); err != nil {
 		return nil, err
 	}
 
-	ethtx := txjson.tx
-	Vb, R, S := ethtx.RawSignatureValues()
-
-	var V byte
-	if isProtectedV(Vb) {
-		chainID := deriveChainId(Vb).Uint64()
-		V = byte(Vb.Uint64() - 35 - 2*chainID)
-	} else {
-		V = byte(Vb.Uint64() - 27)
+	if nil == trxTx.Ret || len(trxTx.Ret) < 1 || trxTx.Ret[0].ContractRet != "SUCCESS" {
+		return nil, fmt.Errorf("trxTx ContractRet err")
 	}
 
-	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("eth ValidateSignatureValues err")
-	}
-	// encode the signature in uncompressed format
-	r, s := R.Bytes(), S.Bytes()
+	hash_1, _ := hex.DecodeString(trxTx.RawDataHex)
+	hash := sha256.Sum256(hash_1)
+	fmt.Println(len(trxTx.Signature[0]))
+	r, _ := hex.DecodeString(trxTx.Signature[0][:65])
+	s, _ := hex.DecodeString(trxTx.Signature[0][65:130])
+
 	sig := make([]byte, crypto.SignatureLength)
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
-	sig[64] = V
+	sig[64] = 0
 
-	a := types.NewEIP155Signer(big.NewInt(1))
+	pk, err := crypto.Ecrecover(hash[:], sig)
 
-	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	//if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
+	//	e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
+	//	return nil, errors.New(e)
+	//}
+
+	data = make(map[string]interface{})
+	data["num"] = 1
+	bytesData, _ = json.Marshal(data)
+
+	// Get the current block count.
+	bytes.NewReader(bytesData)
+	resp, err = http.Post("https://"+client+"/wallet/getblockbylatestnum", "application/json", bytes.NewReader(bytesData))
 	if err != nil {
-		return nil, fmt.Errorf("Ecrecover err")
+		panic(err)
 	}
 
-	// height
-	if receipt.BlockNumber.Uint64() != eInfo.Height {
-		return nil, fmt.Errorf("ETh BlockNumber > Height")
+	body, err = ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		panic(err)
 	}
 
-	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	trxBlock := &TrxBlock{}
+	err = json.Unmarshal(body, trxTx)
+	if err != nil {
+		panic(err)
 	}
 
-	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("ETh receipt.Logs ")
+	if trxBlock.block[0].BlockHeader.RawData.Number-eInfo.Height > trxMaturity {
+		return pk, nil
+	} else {
+		e := fmt.Sprintf("trx Maturity err")
+		return nil, errors.New(e)
 	}
 
-	txLog := receipt.Logs[0]
-	// amount
-	if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
-	}
+	return nil, nil
 
 }

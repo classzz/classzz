@@ -10,7 +10,6 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/classzz/classzz/cross"
-	"github.com/classzz/classzz/rpcclient"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math"
 	"sync"
@@ -2229,36 +2228,6 @@ type Config struct {
 	// the UTXO set in fast sync mode.
 	Proxy string
 
-	// doge
-	DogeCoinRPC     []string
-	DogeCoinRPCUser string
-	DogeCoinRPCPass string
-
-	// ltc
-	LtcCoinRPC     []string
-	LtcCoinRPCUser string
-	LtcCoinRPCPass string
-
-	// btc
-	BtcCoinRPC     []string
-	BtcCoinRPCUser string
-	BtcCoinRPCPass string
-
-	// bch
-	BchCoinRPC     []string
-	BchCoinRPCUser string
-	BchCoinRPCPass string
-
-	// bsv
-	BsvCoinRPC     []string
-	BsvCoinRPCUser string
-	BsvCoinRPCPass string
-
-	// usdt
-	UsdtCoinRPC     []string
-	UsdtCoinRPCUser string
-	UsdtCoinRPCPass string
-
 	// Eth
 	EthRPC []string
 
@@ -2300,125 +2269,125 @@ func New(config *Config) (*BlockChain, error) {
 		}
 	}
 
-	var dogeclients []*rpcclient.Client
-	for _, dogerpc := range config.DogeCoinRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		connCfg := &rpcclient.ConnConfig{
-			Host:         dogerpc,
-			Endpoint:     "ws",
-			User:         config.DogeCoinRPCUser,
-			Pass:         config.DogeCoinRPCPass,
-			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-			DisableTLS:   true, // Bitcoin core does not provide TLS by default
-		}
-		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Warn(err)
-		}
-		// Notice the notification parameter is nil since notifications are
-		// not supported in HTTP POST mode.
-		client, err := rpcclient.New(connCfg, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		dogeclients = append(dogeclients, client)
-	}
-
-	var ltcclients []*rpcclient.Client
-	for _, ltcrpc := range config.LtcCoinRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		connCfg := &rpcclient.ConnConfig{
-			Host:         ltcrpc,
-			Endpoint:     "ws",
-			User:         config.LtcCoinRPCUser,
-			Pass:         config.LtcCoinRPCPass,
-			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-			DisableTLS:   true, // Bitcoin core does not provide TLS by default
-		}
-		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Warn(err)
-		}
-		// Notice the notification parameter is nil since notifications are
-		// not supported in HTTP POST mode.
-		client, err := rpcclient.New(connCfg, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		ltcclients = append(ltcclients, client)
-	}
-
-	var btcclients []*rpcclient.Client
-	for _, btcrpc := range config.BtcCoinRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		connCfg := &rpcclient.ConnConfig{
-			Host:         btcrpc,
-			Endpoint:     "ws",
-			User:         config.BtcCoinRPCUser,
-			Pass:         config.BtcCoinRPCPass,
-			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-			DisableTLS:   true, // Bitcoin core does not provide TLS by default
-		}
-		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Warn(err)
-		}
-		// Notice the notification parameter is nil since notifications are
-		// not supported in HTTP POST mode.
-		client, err := rpcclient.New(connCfg, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		btcclients = append(btcclients, client)
-	}
-
-	var bchclients []*rpcclient.Client
-	for _, bchrpc := range config.BchCoinRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		connCfg := &rpcclient.ConnConfig{
-			Host:         bchrpc,
-			Endpoint:     "ws",
-			User:         config.BchCoinRPCUser,
-			Pass:         config.BchCoinRPCPass,
-			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-			DisableTLS:   true, // Bitcoin core does not provide TLS by default
-		}
-		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Warn(err)
-		}
-		// Notice the notification parameter is nil since notifications are
-		// not supported in HTTP POST mode.
-		client, err := rpcclient.New(connCfg, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		bchclients = append(bchclients, client)
-	}
-
-	var bsvclients []*rpcclient.Client
-	for _, bsvrpc := range config.BsvCoinRPC {
-		// Connect to local bitcoin core RPC server using HTTP POST mode.
-		connCfg := &rpcclient.ConnConfig{
-			Host:         bsvrpc,
-			Endpoint:     "ws",
-			User:         config.BsvCoinRPCUser,
-			Pass:         config.BsvCoinRPCPass,
-			HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
-			DisableTLS:   true, // Bitcoin core does not provide TLS by default
-		}
-		if err := rpcclient.HttpClientTest(connCfg); err != nil {
-			log.Warn(err)
-		}
-		// Notice the notification parameter is nil since notifications are
-		// not supported in HTTP POST mode.
-		client, err := rpcclient.New(connCfg, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		bsvclients = append(bsvclients, client)
-	}
+	//var dogeclients []*rpcclient.Client
+	//for _, dogerpc := range config.DogeCoinRPC {
+	//	// Connect to local bitcoin core RPC server using HTTP POST mode.
+	//	connCfg := &rpcclient.ConnConfig{
+	//		Host:         dogerpc,
+	//		Endpoint:     "ws",
+	//		User:         config.DogeCoinRPCUser,
+	//		Pass:         config.DogeCoinRPCPass,
+	//		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+	//		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	//	}
+	//	if err := rpcclient.HttpClientTest(connCfg); err != nil {
+	//		log.Warn(err)
+	//	}
+	//	// Notice the notification parameter is nil since notifications are
+	//	// not supported in HTTP POST mode.
+	//	client, err := rpcclient.New(connCfg, nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	dogeclients = append(dogeclients, client)
+	//}
+	//
+	//var ltcclients []*rpcclient.Client
+	//for _, ltcrpc := range config.LtcCoinRPC {
+	//	// Connect to local bitcoin core RPC server using HTTP POST mode.
+	//	connCfg := &rpcclient.ConnConfig{
+	//		Host:         ltcrpc,
+	//		Endpoint:     "ws",
+	//		User:         config.LtcCoinRPCUser,
+	//		Pass:         config.LtcCoinRPCPass,
+	//		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+	//		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	//	}
+	//	if err := rpcclient.HttpClientTest(connCfg); err != nil {
+	//		log.Warn(err)
+	//	}
+	//	// Notice the notification parameter is nil since notifications are
+	//	// not supported in HTTP POST mode.
+	//	client, err := rpcclient.New(connCfg, nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	ltcclients = append(ltcclients, client)
+	//}
+	//
+	//var btcclients []*rpcclient.Client
+	//for _, btcrpc := range config.BtcCoinRPC {
+	//	// Connect to local bitcoin core RPC server using HTTP POST mode.
+	//	connCfg := &rpcclient.ConnConfig{
+	//		Host:         btcrpc,
+	//		Endpoint:     "ws",
+	//		User:         config.BtcCoinRPCUser,
+	//		Pass:         config.BtcCoinRPCPass,
+	//		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+	//		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	//	}
+	//	if err := rpcclient.HttpClientTest(connCfg); err != nil {
+	//		log.Warn(err)
+	//	}
+	//	// Notice the notification parameter is nil since notifications are
+	//	// not supported in HTTP POST mode.
+	//	client, err := rpcclient.New(connCfg, nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	btcclients = append(btcclients, client)
+	//}
+	//
+	//var bchclients []*rpcclient.Client
+	//for _, bchrpc := range config.BchCoinRPC {
+	//	// Connect to local bitcoin core RPC server using HTTP POST mode.
+	//	connCfg := &rpcclient.ConnConfig{
+	//		Host:         bchrpc,
+	//		Endpoint:     "ws",
+	//		User:         config.BchCoinRPCUser,
+	//		Pass:         config.BchCoinRPCPass,
+	//		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+	//		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	//	}
+	//	if err := rpcclient.HttpClientTest(connCfg); err != nil {
+	//		log.Warn(err)
+	//	}
+	//	// Notice the notification parameter is nil since notifications are
+	//	// not supported in HTTP POST mode.
+	//	client, err := rpcclient.New(connCfg, nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	bchclients = append(bchclients, client)
+	//}
+	//
+	//var bsvclients []*rpcclient.Client
+	//for _, bsvrpc := range config.BsvCoinRPC {
+	//	// Connect to local bitcoin core RPC server using HTTP POST mode.
+	//	connCfg := &rpcclient.ConnConfig{
+	//		Host:         bsvrpc,
+	//		Endpoint:     "ws",
+	//		User:         config.BsvCoinRPCUser,
+	//		Pass:         config.BsvCoinRPCPass,
+	//		HTTPPostMode: true, // Bitcoin core only supports HTTP POST mode
+	//		DisableTLS:   true, // Bitcoin core does not provide TLS by default
+	//	}
+	//	if err := rpcclient.HttpClientTest(connCfg); err != nil {
+	//		log.Warn(err)
+	//	}
+	//	// Notice the notification parameter is nil since notifications are
+	//	// not supported in HTTP POST mode.
+	//	client, err := rpcclient.New(connCfg, nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	bsvclients = append(bsvclients, client)
+	//}
 
 	//var usdtclients []*rpcclient.Client
 	//for _, usdtrpc := range config.UsdtCoinRPC {
