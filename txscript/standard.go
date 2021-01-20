@@ -254,6 +254,14 @@ func isConvertTy(pops []parsedOpcode) bool {
 		pops[2].opcode.value == OP_4
 }
 
+func isCastingTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN198 &&
+		pops[2].opcode.value == OP_5
+}
+
 // scriptType returns the type of the script being inspected from the known
 // standard types.
 func typeOfScript(pops []parsedOpcode) ScriptClass {
@@ -343,6 +351,14 @@ func IsConvertTy(script []byte) bool {
 		return false
 	}
 	return isConvertTy(pops)
+}
+
+func IsCastingTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isCastingTy(pops)
 }
 
 // expectedInputs returns the number of arguments required by a script.
@@ -633,6 +649,16 @@ func ConvertScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_4).AddData(data).Script()
 }
 
+// CastingScript impl in
+func CastingScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_5).AddData(data).Script()
+}
+
 // KeepedAmountScript impl in
 func KeepedAmountScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
@@ -749,6 +775,17 @@ func GetConvertInfoData(script []byte) ([]byte, error) {
 	}
 	if !isConvertTy(pops) {
 		return nil, errors.New("not Convert type")
+	}
+	return pops[3].data, nil
+}
+
+func GetCastingInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isCastingTy(pops) {
+		return nil, errors.New("not Casting type")
 	}
 	return pops[3].data, nil
 }

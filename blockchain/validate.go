@@ -497,20 +497,10 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-
-			if _, ok := cState.NoCostUtxos[pinfo.Address]; ok {
-				ncu := cState.NoCostUtxos[pinfo.Address]
-				ncu = append(ncu, &wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				})
-				cState.NoCostUtxos[pinfo.Address] = ncu
-			} else {
-				cState.NoCostUtxos[pinfo.Address] = []*wire.OutPoint{&wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				}}
-			}
+			cState.PutNoCostUtxos(pinfo.Address, &wire.OutPoint{
+				Hash:  *tx.Hash(),
+				Index: 1,
+			})
 		}
 
 		// Mortgage
@@ -519,22 +509,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		} else if pinfo != nil {
 			if err = cState.AddMortgage(pinfo.Address, pinfo.StakingAmount); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
-					"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					"AddMortgage AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-			if _, ok := cState.NoCostUtxos[pinfo.Address]; ok {
-				ncu := cState.NoCostUtxos[pinfo.Address]
-				ncu = append(ncu, &wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				})
-				cState.NoCostUtxos[pinfo.Address] = ncu
-			} else {
-				cState.NoCostUtxos[pinfo.Address] = []*wire.OutPoint{&wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				}}
-			}
+			cState.PutNoCostUtxos(pinfo.Address, &wire.OutPoint{
+				Hash:  *tx.Hash(),
+				Index: 1,
+			})
 		}
 
 		// Mortgage
@@ -543,7 +524,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		} else if pinfo != nil {
 			if err = cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
-					"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					"VerifyUpdateCoinbaseAllTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
 		}
@@ -556,12 +537,37 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				} else {
 					if err = cState.Convert(v); err != nil {
 						log.Tracef("Skipping tx %s due to error in "+
-							"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+							"VerifyConvertTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 						continue
 					}
 				}
 			}
 		}
+
+		// Mortgage
+		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
+			return err
+		} else if cinfo != nil {
+			if err = cState.Casting(cinfo); err != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+				continue
+			}
+
+			addr, err := czzutil.NewLegacyAddressPubKeyHash(cinfo.PubKey, b.chainParams)
+			if err != nil || addr == nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+				continue
+			}
+
+			cState.PutNoCostUtxos(addr.String(), &wire.OutPoint{
+				Hash:  *tx.Hash(),
+				Index: 1,
+			})
+
+		}
+
 	}
 
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {

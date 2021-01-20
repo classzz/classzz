@@ -19,9 +19,10 @@ const (
 	// Entangle Transcation type
 	ExpandedTxEntangle_Doge uint8 = iota
 	ExpandedTxEntangle_Ltc
+	ExpandedTxConvert_Czz
 	ExpandedTxConvert_ECzz
 	ExpandedTxConvert_TCzz
-	ExpandedTxConvert_Czz
+	ExpandedTxConvert_HCzz
 )
 
 var (
@@ -31,6 +32,7 @@ var (
 	NoAddMortgage        = errors.New("no NoAddMortgage info in transcation")
 	NoUpdateCoinbaseAll  = errors.New("no NoUpdateCoinbaseAll info in transcation")
 	NoConvert            = errors.New("no NoConvert info in transcation")
+	NoCasting            = errors.New("no NoCasting info in transcation")
 
 	baseUnit    = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1   = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
@@ -54,15 +56,6 @@ func (ii *EntangleItem) Clone() *EntangleItem {
 		Addr:      ii.Addr,
 	}
 	return item
-}
-
-type ExChangeItem struct {
-	ExtTxHash   string          `json:"ext_tx_hash"`
-	Height      *big.Int        `json:"height"`
-	AssetType   uint8           `json:"asset_type"`
-	ConvertType uint8           `json:"convert_type"`
-	Address     czzutil.Address `json:"address"`
-	Amount      *big.Int        `json:"amount"` // czz asset amount
 }
 
 // entangle tx Sequence infomation
@@ -145,10 +138,16 @@ type UpdateCoinbaseAll struct {
 type ConvertTxInfo struct {
 	AssetType   uint8
 	ConvertType uint8
-	Address     string
+	PubKey      []byte
 	Height      uint64
 	ExtTxHash   string
 	Index       uint32
+	Amount      *big.Int
+}
+
+type CastingTxInfo struct {
+	ConvertType uint8
+	PubKey      []byte
 	Amount      *big.Int
 }
 
@@ -539,6 +538,54 @@ func IsConvertTx(tx *wire.MsgTx) (map[uint32]*ConvertTxInfo, error) {
 	return cons, nil
 }
 
+func IsCastingTx(tx *wire.MsgTx) (*CastingTxInfo, error) {
+	// make sure at least one txout in OUTPUT
+	if len(tx.TxOut) > 0 {
+		txout := tx.TxOut[0]
+		if !txscript.IsCastingTy(txout.PkScript) {
+			return nil, NoCasting
+		}
+	} else {
+		return nil, NoCasting
+	}
+
+	if len(tx.TxOut) > 3 || len(tx.TxOut) < 2 || len(tx.TxIn) > 1 {
+		return nil, fmt.Errorf("not CastingTx tx TxOut >3 or TxIn >1")
+	}
+
+	var es *CastingTxInfo
+	txOut := tx.TxOut[0]
+	info, err := CastingTxFromScript(txOut.PkScript)
+	if err != nil {
+		return nil, errors.New("the output tx.")
+	} else {
+		if txOut.Value != 0 {
+			return nil, errors.New("the output value must be 0 in tx.")
+		}
+		es = &CastingTxInfo{
+			Amount:      info.Amount,
+			ConvertType: info.ConvertType,
+			PubKey:      info.PubKey,
+		}
+	}
+
+	var pk []byte
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			return nil, fmt.Errorf("ComputePk err %s", err)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			return nil, fmt.Errorf("ComputeWitnessPk err %s", err)
+		}
+	}
+
+	es.PubKey = pk
+	return es, nil
+}
+
 func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	if pks, err := txscript.ParsePkScript(PkScript); err != nil {
 		return false, err
@@ -626,6 +673,16 @@ func ConvertTxFromScript(script []byte) (*ConvertTxInfo, error) {
 	return info, err
 }
 
+func CastingTxFromScript(script []byte) (*CastingTxInfo, error) {
+	data, err := txscript.GetCastingInfoData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &CastingTxInfo{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
 /////////////////////////////////////////////////////////////////////////////
 func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	h := uint64(0)
@@ -637,7 +694,7 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
-func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ExChangeItem, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
+func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -866,17 +923,17 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 			return nil, err
 		}
 
-		pub, err := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
-		if err != nil {
-			return nil, err
-		}
+		//pub, err := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//addr, err := MakeAddress(*pub, ev.Params)
+		//if err != nil {
+		//	return nil, err
+		//}
 
-		addr, err := MakeAddress(*pub, ev.Params)
-		if err != nil {
-			return nil, err
-		}
-
-		info.Address = addr.String()
+		info.PubKey = tpi.Pub
 		if err := eState.Convert(info); err != nil {
 			return nil, err
 		}

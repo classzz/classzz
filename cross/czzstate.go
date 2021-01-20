@@ -126,7 +126,7 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 
 type ConvertItem struct {
 	ExtTxHash   string   `json:"ext_tx_hash"`
-	Address     string   `json:"address"`
+	PubKey      []byte   `json:"pub_key"`
 	Amount      *big.Int `json:"amount"`       // czz asset amount
 	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
 }
@@ -419,13 +419,38 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
 	convertItem := ConvertItem{
 		ExtTxHash:   info.ExtTxHash,
-		Address:     info.Address,
+		PubKey:      info.PubKey,
 		Amount:      info.Amount,
 		RedeemState: 0,
 	}
 
-	cs.ConvertItems[info.AssetType][info.AssetType] = convertItem
+	cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
 	return nil
+}
+
+// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
+func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
+
+	convertItem := ConvertItem{
+		PubKey:      info.PubKey,
+		Amount:      info.Amount,
+		RedeemState: 0,
+	}
+
+	cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = convertItem
+	return nil
+}
+
+func (cs *CommitteeState) PutNoCostUtxos(address string, point *wire.OutPoint) {
+
+	if _, ok := cs.NoCostUtxos[address]; ok {
+		ncu := cs.NoCostUtxos[address]
+		ncu = append(ncu, point)
+		cs.NoCostUtxos[address] = ncu
+	} else {
+		cs.NoCostUtxos[address] = []*wire.OutPoint{point}
+	}
+
 }
 
 func (cs *CommitteeState) ToBytes() []byte {

@@ -543,7 +543,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 			}
 		}
 
-		// AddMortgage
+		// IsUpdateCoinbaseAllTx
 		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), NetParams)
 		if ubc != nil {
 			if cState != nil {
@@ -560,6 +560,16 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 					if err := cState.Convert(info); err != nil {
 						return err
 					}
+				}
+			}
+		}
+
+		// IsCastingTx
+		ct, _ := cross.IsCastingTx(tx.MsgTx())
+		if ct != nil {
+			if cState != nil {
+				if err := cState.Casting(ct); err != nil {
+					return err
 				}
 			}
 		}

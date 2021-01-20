@@ -894,19 +894,10 @@ mempoolLoop:
 					continue
 				}
 
-				if _, ok := cState.NoCostUtxos[info.Address]; ok {
-					ncu := cState.NoCostUtxos[info.Address]
-					ncu = append(ncu, &wire.OutPoint{
-						Hash:  *tx.Hash(),
-						Index: 1,
-					})
-					cState.NoCostUtxos[info.Address] = ncu
-				} else {
-					cState.NoCostUtxos[info.Address] = []*wire.OutPoint{&wire.OutPoint{
-						Hash:  *tx.Hash(),
-						Index: 1,
-					}}
-				}
+				cState.PutNoCostUtxos(info.Address, &wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				})
 			}
 
 			// AddMortgage
@@ -917,19 +908,10 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				if _, ok := cState.NoCostUtxos[bp.Address]; ok {
-					ncu := cState.NoCostUtxos[bp.Address]
-					ncu = append(ncu, &wire.OutPoint{
-						Hash:  *tx.Hash(),
-						Index: 1,
-					})
-					cState.NoCostUtxos[bp.Address] = ncu
-				} else {
-					cState.NoCostUtxos[bp.Address] = []*wire.OutPoint{&wire.OutPoint{
-						Hash:  *tx.Hash(),
-						Index: 1,
-					}}
-				}
+				cState.PutNoCostUtxos(bp.Address, &wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				})
 			}
 
 			// UpdateCoinbaseAll
@@ -954,6 +936,15 @@ mempoolLoop:
 				convertItems = append(convertItems, objs...)
 			}
 
+			// IsCastingTx
+			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
+				if err = cState.Casting(cinfo); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+			}
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,

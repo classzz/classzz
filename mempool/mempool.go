@@ -1060,12 +1060,12 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 		return err
 	}
 
-	// Mortgage
+	// AddMortgage
 	if _, err := mp.cfg.CommitteeVerify.VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
 		return err
 	}
 
-	// Mortgage
+	// UpdateCoinbaseAll
 	if _, err := mp.cfg.CommitteeVerify.VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
 		return err
 	}
@@ -1083,6 +1083,11 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 				}
 			}
 		}
+	}
+
+	// Casting
+	if _, err := mp.cfg.CommitteeVerify.VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
+		return err
 	}
 
 	return nil
