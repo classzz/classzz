@@ -200,7 +200,7 @@ type CommitteeState struct {
 	PledgeInfos    []*PledgeInfo
 	CommitteeInfos []*CommitteeInfo
 	ConvertItems   map[uint8]ConvertItems
-	NoCostUtxos    map[string][]*wire.OutPoint
+	NoCostUtxos    map[string]*PoolAddrItem
 }
 
 type StoreConvertItems struct {
@@ -226,7 +226,7 @@ func (ci SortStoreConvertItems) Swap(i, j int) {
 
 type StoreNoCostUtxos struct {
 	Type        string
-	NoCostUtxos []*wire.OutPoint
+	NoCostUtxos *PoolAddrItem
 }
 
 type SortStoreNoCostUtxos []*StoreNoCostUtxos
@@ -269,7 +269,7 @@ func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreNoCostUtxos
 
 func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreNoCostUtxos) {
 	convertItems := make(map[uint8]ConvertItems)
-	noCostUtxos := make(map[string][]*wire.OutPoint)
+	noCostUtxos := make(map[string]*PoolAddrItem)
 	for _, v := range v1 {
 		convertItems[v.Type] = v.ConvertItems
 	}
@@ -441,14 +441,25 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 	return nil
 }
 
-func (cs *CommitteeState) PutNoCostUtxos(address string, point *wire.OutPoint) {
+func (cs *CommitteeState) PutNoCostUtxos(address string, POut wire.OutPoint, Script []byte, Amount int64) {
 
 	if _, ok := cs.NoCostUtxos[address]; ok {
 		ncu := cs.NoCostUtxos[address]
-		ncu = append(ncu, point)
+		ncu.POut = append(ncu.POut, POut)
+		ncu.Script = append(ncu.Script, Script)
+		ncu.Amount = append(ncu.Amount, big.NewInt(Amount))
 		cs.NoCostUtxos[address] = ncu
 	} else {
-		cs.NoCostUtxos[address] = []*wire.OutPoint{point}
+
+		items := &PoolAddrItem{
+			POut:   make([]wire.OutPoint, 0),
+			Script: make([][]byte, 0),
+			Amount: make([]*big.Int, 0),
+		}
+		items.POut = append(items.POut, POut)
+		items.Script = append(items.Script, Script)
+		items.Amount = append(items.Amount, big.NewInt(Amount))
+		cs.NoCostUtxos[address] = items
 	}
 
 }

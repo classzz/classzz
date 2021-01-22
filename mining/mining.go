@@ -894,10 +894,13 @@ mempoolLoop:
 					continue
 				}
 
-				cState.PutNoCostUtxos(info.Address, &wire.OutPoint{
+				cState.PutNoCostUtxos(info.Address, wire.OutPoint{
 					Hash:  *tx.Hash(),
 					Index: 1,
-				})
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
 			}
 
 			// AddMortgage
@@ -908,10 +911,13 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				cState.PutNoCostUtxos(bp.Address, &wire.OutPoint{
+				cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
 					Hash:  *tx.Hash(),
 					Index: 1,
-				})
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
 			}
 
 			// UpdateCoinbaseAll
@@ -1025,7 +1031,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.ConverHeight <= nextBlockHeight {
-		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, nil, rewards, mergeItems)
+		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, convertItems, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
 		}

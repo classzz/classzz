@@ -497,10 +497,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-			cState.PutNoCostUtxos(pinfo.Address, &wire.OutPoint{
+			cState.PutNoCostUtxos(pinfo.Address, wire.OutPoint{
 				Hash:  *tx.Hash(),
 				Index: 1,
-			})
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
 		}
 
 		// Mortgage
@@ -512,10 +515,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"AddMortgage AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-			cState.PutNoCostUtxos(pinfo.Address, &wire.OutPoint{
+			cState.PutNoCostUtxos(pinfo.Address, wire.OutPoint{
 				Hash:  *tx.Hash(),
 				Index: 1,
-			})
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
 		}
 
 		// Mortgage
@@ -561,10 +567,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				continue
 			}
 
-			cState.PutNoCostUtxos(addr.String(), &wire.OutPoint{
+			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
 				Hash:  *tx.Hash(),
 				Index: 1,
-			})
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
 
 		}
 

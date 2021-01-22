@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -694,7 +695,7 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
-func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
+func MakeMergerCoinbaseTx(tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -744,6 +745,39 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ConvertTx
 	updateTxOutValue(tx.TxOut[2], reserve2)
 	allEntangle := int64(0)
 
+	// 计算池子的地址
+	poolC := make(map[string]*big.Int)
+
+	for _, v := range items {
+		if v.ConvertType == ExpandedTxConvert_Czz {
+			pkScript, _ := txscript.PayToPubKeyHashScript(v.PubKey)
+			tx.AddTxOut(&wire.TxOut{
+				Value:    v.Amount.Int64(),
+				PkScript: pkScript,
+			})
+			continue
+		}
+
+		pool1 := CoinPools[v.AssetType]
+		pool2 := CoinPools[v.ConvertType]
+		poolC[hex.EncodeToString(pool1)] = big.NewInt(0)
+		poolC[hex.EncodeToString(pool2)] = big.NewInt(0)
+	}
+
+	for _, v := range items {
+		if v.ConvertType == ExpandedTxConvert_Czz {
+			continue
+		}
+		pool1 := CoinPools[v.AssetType]
+		pool2 := CoinPools[v.ConvertType]
+		poolC[hex.EncodeToString(pool1)] = big.NewInt(0).Sub(poolC[hex.EncodeToString(pool1)], v.Amount)
+		poolC[hex.EncodeToString(pool2)] = big.NewInt(0).Add(poolC[hex.EncodeToString(pool2)], v.Amount)
+	}
+
+	for k, v := range poolC {
+
+	}
+
 	for i := range items {
 		pkScript, err := txscript.PayToAddrScript(items[i].Address)
 		if err != nil {
@@ -756,6 +790,7 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, pool *PoolAddrItem, items []*ConvertTx
 		allEntangle += out.Value
 		tx.AddTxOut(out)
 	}
+
 	tx.TxOut[1].Value = reserve1 - allEntangle
 	if tx.TxOut[1].Value < 0 {
 		return errors.New("pool1 amount < 0")
