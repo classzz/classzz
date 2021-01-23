@@ -188,32 +188,12 @@ type config struct {
 	GrpcAuthToken           string        `long:"grpcauthtoken" description:"An authentication token for the gRPC API to authenticate clients"`
 	DBCacheSize             uint64        `long:"dbcachesize" description:"The maximum size in MiB of the database cache"`
 	DBFlushInterval         uint32        `long:"dbflushinterval" description:"The number of seconds between database flushes"`
-	DogeCoinRPC             []string      `long:"dogecoinrpc" description:""`
-	DogeCoinRPCUser         string        `long:"dogecoinrpcuser" description:""`
-	DogeCoinRPCPass         string        `long:"dogecoinrpcpass" description:""`
-	LtcCoinRPC              []string      `long:"ltccoinrpc" description:""`
-	LtcCoinRPCUser          string        `long:"ltccoinrpcuser" description:""`
-	LtcCoinRPCPass          string        `long:"ltccoinrpcpass" description:""`
-
-	BtcCoinRPC     []string `long:"btccoinrpc" description:""`
-	BtcCoinRPCUser string   `long:"btccoinrpcuser" description:""`
-	BtcCoinRPCPass string   `long:"btccoinrpcpass" description:""`
-
-	BchCoinRPC     []string `long:"bchcoinrpc" description:""`
-	BchCoinRPCUser string   `long:"bchcoinrpcuser" description:""`
-	BchCoinRPCPass string   `long:"bchcoinrpcpass" description:""`
-
-	BsvCoinRPC     []string `long:"bsvcoinrpc" description:""`
-	BsvCoinRPCUser string   `long:"bsvcoinrpcuser" description:""`
-	BsvCoinRPCPass string   `long:"bsvcoinrpcpass" description:""`
-
-	UsdtCoinRPC     []string `long:"usdtcoinrpc" description:""`
-	UsdtCoinRPCUser string   `long:"usdtcoinrpcuser" description:""`
-	UsdtCoinRPCPass string   `long:"usdtcoinrpcpass" description:""`
 
 	EthRPC []string `long:"ethrpc" description:""`
 
 	TrxRPC []string `long:"trxrpc" description:""`
+
+	HecoRPC []string `long:"hecorpc" description:""`
 
 	lookup         func(string) ([]net.IP, error)
 	oniondial      func(string, string, time.Duration) (net.Conn, error)

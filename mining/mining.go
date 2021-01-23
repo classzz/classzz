@@ -1031,7 +1031,7 @@ mempoolLoop:
 
 	// make entangle tx if it exist
 	if g.chainParams.ConverHeight <= nextBlockHeight {
-		err = cross.MakeMergerCoinbaseTx(coinbaseTx.MsgTx(), poolItem, convertItems, rewards, mergeItems)
+		err = cross.MakeMergerCoinbaseTx(g.chainParams, coinbaseTx.MsgTx(), cState, poolItem, convertItems, rewards, mergeItems)
 		if err != nil {
 			return nil, nil, err
 		}

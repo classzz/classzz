@@ -3146,28 +3146,6 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		FastSync:           cfg.FastSync,
 		FastSyncDataDir:    cfg.DataDir,
 		Proxy:              cfg.Proxy,
-		DogeCoinRPC:        cfg.DogeCoinRPC,
-		DogeCoinRPCUser:    cfg.DogeCoinRPCUser,
-		DogeCoinRPCPass:    cfg.DogeCoinRPCPass,
-		LtcCoinRPC:         cfg.LtcCoinRPC,
-		LtcCoinRPCUser:     cfg.LtcCoinRPCUser,
-		LtcCoinRPCPass:     cfg.LtcCoinRPCPass,
-
-		BtcCoinRPC:     cfg.BtcCoinRPC,
-		BtcCoinRPCUser: cfg.BtcCoinRPCUser,
-		BtcCoinRPCPass: cfg.BtcCoinRPCPass,
-
-		BchCoinRPC:     cfg.BchCoinRPC,
-		BchCoinRPCUser: cfg.BchCoinRPCUser,
-		BchCoinRPCPass: cfg.BchCoinRPCPass,
-
-		BsvCoinRPC:     cfg.BsvCoinRPC,
-		BsvCoinRPCUser: cfg.BsvCoinRPCUser,
-		BsvCoinRPCPass: cfg.BsvCoinRPCPass,
-
-		UsdtCoinRPC:     cfg.UsdtCoinRPC,
-		UsdtCoinRPCUser: cfg.UsdtCoinRPCUser,
-		UsdtCoinRPCPass: cfg.UsdtCoinRPCPass,
 
 		EthRPC: cfg.EthRPC,
 		TrxRPC: cfg.TrxRPC,

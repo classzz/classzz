@@ -1264,6 +1264,7 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	}
 	return false, nil
 }
+
 func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
 	if txHeight <= chainParams.EntangleHeight {
 		return nil

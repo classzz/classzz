@@ -636,20 +636,13 @@ func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czz
 	if err != nil {
 		return err
 	}
-
-	if _, ok := state.NoCostUtxos[bai.Address]; ok {
-		ncu := state.NoCostUtxos[bai.Address]
-		ncu = append(ncu, &wire.OutPoint{
-			Hash:  *tx.Hash(),
-			Index: 1,
-		})
-		state.NoCostUtxos[bai.Address] = ncu
-	} else {
-		state.NoCostUtxos[bai.Address] = []*wire.OutPoint{&wire.OutPoint{
-			Hash:  *tx.Hash(),
-			Index: 1,
-		}}
-	}
+	state.PutNoCostUtxos(bai.Address, wire.OutPoint{
+		Hash:  *tx.Hash(),
+		Index: 1,
+	},
+		tx.MsgTx().TxOut[1].PkScript,
+		tx.MsgTx().TxOut[1].Value,
+	)
 
 	return nil
 }
@@ -662,19 +655,14 @@ func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx 
 	if err != nil {
 		return err
 	}
-	if _, ok := state.NoCostUtxos[abp.Address]; ok {
-		ncu := state.NoCostUtxos[abp.Address]
-		ncu = append(ncu, &wire.OutPoint{
-			Hash:  *tx.Hash(),
-			Index: 1,
-		})
-		state.NoCostUtxos[abp.Address] = ncu
-	} else {
-		state.NoCostUtxos[abp.Address] = []*wire.OutPoint{&wire.OutPoint{
-			Hash:  *tx.Hash(),
-			Index: 1,
-		}}
-	}
+	state.PutNoCostUtxos(abp.Address, wire.OutPoint{
+		Hash:  *tx.Hash(),
+		Index: 1,
+	},
+		tx.MsgTx().TxOut[1].PkScript,
+		tx.MsgTx().TxOut[1].Value,
+	)
+
 	return nil
 }
 

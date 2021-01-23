@@ -2,7 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -695,7 +694,7 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
-func MakeMergerCoinbaseTx(tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
+func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
 		return nil
@@ -714,40 +713,38 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddr
 	// merge pool tx
 	tx.TxIn[1], tx.TxIn[2] = poolIn1, poolIn2
 
-	// reward the proof ,txin>3
-	for _, v := range rewards {
-		tx.AddTxIn(&wire.TxIn{
-			PreviousOutPoint: v.POut,
-			SignatureScript:  v.Script,
-			Sequence:         wire.MaxTxInSequenceNum,
-		})
-		pkScript1, err1 := txscript.PayToAddrScript(v.Addr1) // reward to robot
-		pkScript2, err2 := txscript.PayToAddrScript(v.Addr2) // punished to zero address
-		pkScript3, err3 := txscript.PayToAddrScript(v.Addr3) // change address
-		if err1 != nil || err2 != nil || err3 != nil {
-			return errors.New("PayToAddrScript failed, in reward the proof")
-		}
-		tx.AddTxOut(&wire.TxOut{
-			Value:    new(big.Int).Set(v.Amount).Int64(),
-			PkScript: pkScript1,
-		})
-		tx.AddTxOut(&wire.TxOut{
-			Value:    new(big.Int).Set(v.Amount).Int64(),
-			PkScript: pkScript2,
-		})
-		tx.AddTxOut(&wire.TxOut{
-			Value:    new(big.Int).Sub(v.OriginAmount, new(big.Int).Mul(big.NewInt(2), v.Amount)).Int64(),
-			PkScript: pkScript3,
-		})
-	}
+	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()+tx.TxOut[2].Value
+	tx.TxOut[1].Value = reserve1
+	tx.TxOut[2].Value = reserve2
 
-	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()
-	updateTxOutValue(tx.TxOut[2], reserve2)
-	allEntangle := int64(0)
+	//// reward the proof ,txin>3
+	//for _, v := range rewards {
+	//	tx.AddTxIn(&wire.TxIn{
+	//		PreviousOutPoint: v.POut,
+	//		SignatureScript:  v.Script,
+	//		Sequence:         wire.MaxTxInSequenceNum,
+	//	})
+	//	pkScript1, err1 := txscript.PayToAddrScript(v.Addr1) // reward to robot
+	//	pkScript2, err2 := txscript.PayToAddrScript(v.Addr2) // punished to zero address
+	//	pkScript3, err3 := txscript.PayToAddrScript(v.Addr3) // change address
+	//	if err1 != nil || err2 != nil || err3 != nil {
+	//		return errors.New("PayToAddrScript failed, in reward the proof")
+	//	}
+	//	tx.AddTxOut(&wire.TxOut{
+	//		Value:    new(big.Int).Set(v.Amount).Int64(),
+	//		PkScript: pkScript1,
+	//	})
+	//	tx.AddTxOut(&wire.TxOut{
+	//		Value:    new(big.Int).Set(v.Amount).Int64(),
+	//		PkScript: pkScript2,
+	//	})
+	//	tx.AddTxOut(&wire.TxOut{
+	//		Value:    new(big.Int).Sub(v.OriginAmount, new(big.Int).Mul(big.NewInt(2), v.Amount)).Int64(),
+	//		PkScript: pkScript3,
+	//	})
+	//}
 
-	// 计算池子的地址
-	poolC := make(map[string]*big.Int)
-
+	poolC := make(map[uint8]*big.Int)
 	for _, v := range items {
 		if v.ConvertType == ExpandedTxConvert_Czz {
 			pkScript, _ := txscript.PayToPubKeyHashScript(v.PubKey)
@@ -758,64 +755,43 @@ func MakeMergerCoinbaseTx(tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddr
 			continue
 		}
 
-		pool1 := CoinPools[v.AssetType]
-		pool2 := CoinPools[v.ConvertType]
-		poolC[hex.EncodeToString(pool1)] = big.NewInt(0)
-		poolC[hex.EncodeToString(pool2)] = big.NewInt(0)
+		poolC[v.AssetType] = big.NewInt(0)
+		poolC[v.ConvertType] = big.NewInt(0)
 	}
 
 	for _, v := range items {
 		if v.ConvertType == ExpandedTxConvert_Czz {
 			continue
 		}
-		pool1 := CoinPools[v.AssetType]
-		pool2 := CoinPools[v.ConvertType]
-		poolC[hex.EncodeToString(pool1)] = big.NewInt(0).Sub(poolC[hex.EncodeToString(pool1)], v.Amount)
-		poolC[hex.EncodeToString(pool2)] = big.NewInt(0).Add(poolC[hex.EncodeToString(pool2)], v.Amount)
+		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], v.Amount)
+		poolC[v.ConvertType] = big.NewInt(0).Add(poolC[v.ConvertType], v.Amount)
 	}
 
 	for k, v := range poolC {
 
-	}
-
-	for i := range items {
-		pkScript, err := txscript.PayToAddrScript(items[i].Address)
-		if err != nil {
-			return errors.New("Make Meger tx failed,err: " + err.Error())
-		}
-		out := &wire.TxOut{
-			Value:    items[i].Amount.Int64(),
-			PkScript: pkScript,
-		}
-		allEntangle += out.Value
-		tx.AddTxOut(out)
-	}
-
-	tx.TxOut[1].Value = reserve1 - allEntangle
-	if tx.TxOut[1].Value < 0 {
-		return errors.New("pool1 amount < 0")
-	}
-
-	// merge beacon utxo
-	var to czzutil.Address
-	for _, Items := range mergeItem {
-		allAmount := big.NewInt(0)
-		for _, v := range Items {
-			to = v.ToAddress
-			tx.AddTxIn(&wire.TxIn{
-				PreviousOutPoint: v.POut,
-				SignatureScript:  v.Script,
+		pool1 := CoinPools[k]
+		add, _ := czzutil.NewAddressScriptHash(pool1, params)
+		utxos := cState.NoCostUtxos[add.String()]
+		amount := big.NewInt(0)
+		for k1, _ := range utxos.POut {
+			poolIn := &wire.TxIn{
+				PreviousOutPoint: utxos.POut[k1],
+				SignatureScript:  utxos.Script[k1],
 				Sequence:         wire.MaxTxInSequenceNum,
-			})
-			allAmount = new(big.Int).Add(allAmount, v.Amount)
+			}
+			tx.TxIn = append(tx.TxIn, poolIn)
+			amount = big.NewInt(0).Add(amount, utxos.Amount[k1])
 		}
-		pkScript1, err1 := txscript.PayToAddrScript(to) // change address
-		if err1 != nil {
-			return errors.New("PayToAddrScript failed, in merge beacon utxo")
+		if big.NewInt(0).Cmp(v) < 0 {
+			amount = big.NewInt(0).Sub(amount, v)
+		} else {
+			amount = big.NewInt(0).Add(amount, v)
 		}
+
+		pkScript, _ := txscript.PayToPubKeyHashScript(add.ScriptAddress())
 		tx.AddTxOut(&wire.TxOut{
-			Value:    new(big.Int).Set(allAmount).Int64(),
-			PkScript: pkScript1,
+			Value:    amount.Int64(),
+			PkScript: pkScript,
 		})
 	}
 	return nil
