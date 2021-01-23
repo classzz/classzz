@@ -32,10 +32,11 @@ var (
 )
 
 type CommitteeVerify struct {
-	EthRPC []*rpc.Client
-	TrxRPC []string
-	Cache  *CacheCommitteeState
-	Params *chaincfg.Params
+	EthRPC  []*rpc.Client
+	TrxRPC  []string
+	HecoRPC []*rpc.Client
+	Cache   *CacheCommitteeState
+	Params  *chaincfg.Params
 }
 
 func (ev *CommitteeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *EntangleState) (*BeaconAddressInfo, error) {
@@ -355,6 +356,8 @@ func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *Committ
 		return ev.verifyConvertEthTx(eInfo, eState)
 	case ExpandedTxConvert_TCzz:
 		return ev.verifyConvertTrxTx(eInfo, eState)
+	case ExpandedTxConvert_HCzz:
+		return ev.verifyConvertHecoTx(eInfo, eState)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
@@ -516,6 +519,76 @@ func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *Comm
 
 	return nil, nil
 
+}
+
+func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+
+	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
+
+	var receipt *types.Receipt
+	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
+		return nil, err
+	}
+
+	if receipt.Status != 1 {
+		return nil, fmt.Errorf("heco Status err")
+	}
+
+	var txjson *rpcTransaction
+	// Get the current block count.
+	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
+		return nil, err
+	}
+
+	ethtx := txjson.tx
+	Vb, R, S := ethtx.RawSignatureValues()
+
+	var V byte
+	if isProtectedV(Vb) {
+		chainID := deriveChainId(Vb).Uint64()
+		V = byte(Vb.Uint64() - 35 - 2*chainID)
+	} else {
+		V = byte(Vb.Uint64() - 27)
+	}
+
+	if !crypto.ValidateSignatureValues(V, R, S, false) {
+		return nil, fmt.Errorf("eth ValidateSignatureValues err")
+	}
+	// encode the signature in uncompressed format
+	r, s := R.Bytes(), S.Bytes()
+	sig := make([]byte, crypto.SignatureLength)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = V
+
+	a := types.NewEIP155Signer(big.NewInt(1))
+
+	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	if err != nil {
+		return nil, fmt.Errorf("Ecrecover err")
+	}
+
+	// height
+	if receipt.BlockNumber.Uint64() != eInfo.Height {
+		return nil, fmt.Errorf("ETh BlockNumber > Height")
+	}
+
+	// toaddress
+	if txjson.tx.To().String() != ethPoolAddr {
+		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	}
+
+	if len(receipt.Logs) < 1 {
+		return nil, fmt.Errorf("ETh receipt.Logs ")
+	}
+
+	txLog := receipt.Logs[0]
+	// amount
+	if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
+	}
+
+	return pk, nil
 }
 
 func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeState) (*CastingTxInfo, error) {

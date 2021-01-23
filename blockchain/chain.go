@@ -2233,6 +2233,9 @@ type Config struct {
 
 	// Trx
 	TrxRPC []string
+
+	// Heco
+	HecoRPC []string
 }
 
 // New returns a BlockChain instance using the provided configuration details.
@@ -2286,9 +2289,29 @@ func New(config *Config) (*BlockChain, error) {
 			log.Warn(fmt.Printf("rpc :[failed][url:%s][err:%v]", ethrpc, err))
 			break
 		}
-		// 获取交易
 		log.Warnf("rpc test:[successed][url:%s][block:%d]", ethrpc, number)
 		ethclients = append(ethclients, client)
+	}
+
+	var hecoclients []*rpc.Client
+	for _, hecorpc := range config.HecoRPC {
+		// Connect to local bitcoin core RPC server using HTTP POST mode.
+
+		if hecorpc[:4] != "http" {
+			hecorpc = "http://" + hecorpc
+		}
+		client, err := rpc.Dial(hecorpc)
+		if err != nil {
+			log.Warn(fmt.Printf("rpc:[failed][url:%s][err:%v]", hecorpc, err))
+		}
+
+		var number hexutil.Uint64
+		if err := client.Call(&number, "eth_blockNumber"); err != nil {
+			log.Warn(fmt.Printf("rpc :[failed][url:%s][err:%v]", hecorpc, err))
+			break
+		}
+		log.Warnf("rpc test:[successed][url:%s][block:%d]", hecorpc, number)
+		hecoclients = append(hecoclients, client)
 	}
 
 	var trxclients = config.TrxRPC
@@ -2300,10 +2323,11 @@ func New(config *Config) (*BlockChain, error) {
 	params := config.ChainParams
 
 	committeeVerify := &cross.CommitteeVerify{
-		EthRPC: ethclients,
-		TrxRPC: trxclients,
-		Cache:  cacheEntangleInfo,
-		Params: params,
+		EthRPC:  ethclients,
+		TrxRPC:  trxclients,
+		HecoRPC: hecoclients,
+		Cache:   cacheEntangleInfo,
+		Params:  params,
 	}
 
 	targetTimespan := int64(params.TargetTimespan / time.Second)

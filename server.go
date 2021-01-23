@@ -3147,8 +3147,9 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		FastSyncDataDir:    cfg.DataDir,
 		Proxy:              cfg.Proxy,
 
-		EthRPC: cfg.EthRPC,
-		TrxRPC: cfg.TrxRPC,
+		EthRPC:  cfg.EthRPC,
+		TrxRPC:  cfg.TrxRPC,
+		HecoRPC: cfg.HecoRPC,
 	})
 	if err != nil {
 		return nil, err
