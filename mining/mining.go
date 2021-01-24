@@ -754,7 +754,6 @@ mempoolLoop:
 	blockSigOps := coinbaseSigOps
 	totalFees := int64(0)
 	maxSigOps := blockchain.MaxBlockSigOps(blockSize)
-	//exItems := make([]*cross.ExChangeItem, 0)
 
 	// Choose which transactions make it into the block.
 	for priorityQueue.Len() > 0 {
@@ -950,6 +949,22 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
+
+				pool := cross.CoinPools[cinfo.ConvertType]
+				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
+				if err != nil || addr == nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					continue
+				}
+
+				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
 			}
 		}
 

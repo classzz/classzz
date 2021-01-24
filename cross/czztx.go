@@ -17,9 +17,7 @@ import (
 
 const (
 	// Entangle Transcation type
-	ExpandedTxEntangle_Doge uint8 = iota
-	ExpandedTxEntangle_Ltc
-	ExpandedTxConvert_Czz
+	ExpandedTxConvert_Czz uint8 = iota
 	ExpandedTxConvert_ECzz
 	ExpandedTxConvert_TCzz
 	ExpandedTxConvert_HCzz
@@ -34,13 +32,15 @@ var (
 	NoConvert            = errors.New("no NoConvert info in transcation")
 	NoCasting            = errors.New("no NoCasting info in transcation")
 
+	ExpandedTxEntangle_Doge = uint8(0xF0)
+	ExpandedTxEntangle_Ltc  = uint8(0xF1)
+
 	baseUnit    = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
 	baseUnit1   = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
 	dogeUnit    = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1   = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 	MinPunished = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
 	ZeroAddrsss = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	//ZeroAddrsss, _ = czzutil.NewLegacyAddressPubKeyHash([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, &chaincfg.TestNetParams)
 )
 
 type EntangleItem struct {
@@ -770,17 +770,19 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 	for k, v := range poolC {
 
 		pool1 := CoinPools[k]
-		add, _ := czzutil.NewAddressScriptHash(pool1, params)
+		add, _ := czzutil.NewAddressPubKeyHash(pool1, params)
 		utxos := cState.NoCostUtxos[add.String()]
 		amount := big.NewInt(0)
-		for k1, _ := range utxos.POut {
-			poolIn := &wire.TxIn{
-				PreviousOutPoint: utxos.POut[k1],
-				SignatureScript:  utxos.Script[k1],
-				Sequence:         wire.MaxTxInSequenceNum,
+		if utxos != nil {
+			for k1, _ := range utxos.POut {
+				poolIn := &wire.TxIn{
+					PreviousOutPoint: utxos.POut[k1],
+					SignatureScript:  utxos.Script[k1],
+					Sequence:         wire.MaxTxInSequenceNum,
+				}
+				tx.TxIn = append(tx.TxIn, poolIn)
+				amount = big.NewInt(0).Add(amount, utxos.Amount[k1])
 			}
-			tx.TxIn = append(tx.TxIn, poolIn)
-			amount = big.NewInt(0).Add(amount, utxos.Amount[k1])
 		}
 		if big.NewInt(0).Cmp(v) < 0 {
 			amount = big.NewInt(0).Sub(amount, v)

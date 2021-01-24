@@ -424,7 +424,13 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 		RedeemState: 0,
 	}
 
-	cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
+	if _, ok := cs.ConvertItems[info.AssetType]; !ok {
+		item := ConvertItems{}
+		item[info.ConvertType] = convertItem
+		cs.ConvertItems[info.AssetType] = item
+	} else {
+		cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
+	}
 	return nil
 }
 
@@ -437,7 +443,13 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 		RedeemState: 0,
 	}
 
-	cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = convertItem
+	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
+		item := ConvertItems{}
+		item[info.ConvertType] = convertItem
+		cs.ConvertItems[ExpandedTxConvert_Czz] = item
+	} else {
+		cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = convertItem
+	}
 	return nil
 }
 
@@ -484,6 +496,7 @@ func NewCommitteeState() *CommitteeState {
 		PledgeInfos:    make([]*PledgeInfo, 0, 0),
 		CommitteeInfos: make([]*CommitteeInfo, 0, 0),
 		ConvertItems:   make(map[uint8]ConvertItems),
+		NoCostUtxos:    make(map[string]*PoolAddrItem),
 	}
 }
 
@@ -724,71 +737,6 @@ func (es *EntangleState) UnregisterBeaconAddress(addr string) error {
 	}
 	return nil
 }
-
-// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-//func (es *EntangleState) AddEntangleItem(addr string, aType uint32, lightID uint64,
-//	height, amount *big.Int) (*big.Int, error) {
-//	if es.AddressInWhiteList(addr, true) {
-//		return nil, ErrAddressInWhiteList
-//	}
-//	lh := es.getBeaconAddress(lightID)
-//	if lh == nil {
-//		return nil, ErrNoRegister
-//	}
-//	if !isValidAsset(aType, lh.AssetFlag) {
-//		return nil, ErrNoUserAsset
-//	}
-//	sendAmount := big.NewInt(0)
-//	var err error
-//	lhEntitys, ok := es.EnEntitys[lightID]
-//	if !ok {
-//		lhEntitys = UserEntangleInfos(make(map[string]EntangleEntitys))
-//	}
-//	if lhEntitys != nil {
-//		userEntitys, ok1 := lhEntitys[addr]
-//		if !ok1 {
-//			userEntitys = EntangleEntitys(make([]*EntangleEntity, 0, 0))
-//		}
-//		found := false
-//		var userEntity *EntangleEntity
-//		for _, v := range userEntitys {
-//			if aType == v.AssetType {
-//				found = true
-//				v.EnOutsideAmount = new(big.Int).Add(v.EnOutsideAmount, amount)
-//				userEntity = v
-//				break
-//			}
-//		}
-//		if !found {
-//			userEntity = &EntangleEntity{
-//				ExchangeID:      lightID,
-//				Address:         addr,
-//				AssetType:       aType,
-//				Height:          new(big.Int).Set(height),
-//				OldHeight:       new(big.Int).Set(height), // init same the Height
-//				EnOutsideAmount: new(big.Int).Set(amount),
-//				BurnAmount:      newBurnInfos(),
-//				MaxRedeem:       big.NewInt(0),
-//				OriginAmount:    big.NewInt(0),
-//			}
-//			userEntitys = append(userEntitys, userEntity)
-//		}
-//
-//		// calc the send amount
-//		reserve := es.getEntangledAmount(lightID, aType)
-//		sendAmount, err = calcEntangleAmount(reserve, amount, aType)
-//		if err != nil {
-//			return nil, err
-//		}
-//		userEntity.increaseOriginAmount(sendAmount)
-//		userEntity.updateFreeQuotaOfHeight(height, amount)
-//		lh.addEnAsset(aType, amount)
-//		lh.recordEntangleAmount(sendAmount)
-//		lhEntitys[addr] = userEntitys
-//		es.EnEntitys[lightID] = lhEntitys
-//	}
-//	return sendAmount, nil
-//}
 
 // BurnAsset user burn the czz asset to exchange the outside asset,the caller keep the burn was true.
 // verify the txid,keep equal amount czz

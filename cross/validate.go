@@ -22,7 +22,7 @@ import (
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
-	ethPoolAddr      = "0xB6475DAF416efAB1D70c893a53D7799be015Ed03"
+	ethPoolAddr      = "0x1fA2FcD19ae095cc82AdBd0906BD3E4b68Be5832"
 	trxMaturity      = uint64(0)
 	CoinPools        = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
@@ -423,10 +423,15 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *Comm
 		return nil, fmt.Errorf("ETh receipt.Logs ")
 	}
 
-	txLog := receipt.Logs[0]
-	// amount
-	if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
+	txLog := receipt.Logs[1]
+	amount := txLog.Data[:32]
+	ntype := txLog.Data[32:]
+	if big.NewInt(0).SetBytes(amount).Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
+	}
+
+	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+		return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
 	}
 
 	return pk, nil
@@ -593,59 +598,36 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo, cState *Com
 
 func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeState) (*CastingTxInfo, error) {
 
-	//var txjson *rpcTransaction
-	//// Get the current block count.
-	//if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
-	//	return nil, err
-	//}
-	//
-	//ethtx := txjson.tx
-	//Vb, R, S := ethtx.RawSignatureValues()
-	//
-	//var V byte
-	//if isProtectedV(Vb) {
-	//	chainID := deriveChainId(Vb).Uint64()
-	//	V = byte(Vb.Uint64() - 35 - 2*chainID)
-	//} else {
-	//	V = byte(Vb.Uint64() - 27)
-	//}
-	//
-	//if !crypto.ValidateSignatureValues(V, R, S, false) {
-	//	return nil, fmt.Errorf("eth ValidateSignatureValues err")
-	//}
-	//// encode the signature in uncompressed format
-	//r, s := R.Bytes(), S.Bytes()
-	//sig := make([]byte, crypto.SignatureLength)
-	//copy(sig[32-len(r):32], r)
-	//copy(sig[64-len(s):64], s)
-	//sig[64] = V
-	//
-	//a := types.NewEIP155Signer(big.NewInt(1))
-	//
-	//pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
-	//if err != nil {
-	//	return nil, fmt.Errorf("Ecrecover err")
-	//}
-	//
-	//// height
-	//if receipt.BlockNumber.Uint64() != eInfo.Height {
-	//	return nil, fmt.Errorf("ETh BlockNumber > Height")
-	//}
-	//
-	//// toaddress
-	//if txjson.tx.To().String() != ethPoolAddr {
-	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	//}
-	//
-	//if len(receipt.Logs) < 1 {
-	//	return nil, fmt.Errorf("ETh receipt.Logs ")
-	//}
-	//
-	//txLog := receipt.Logs[0]
-	//// amount
-	//if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
-	//	return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
-	//}
+	ct, _ := IsCastingTx(tx)
+	if ct == nil {
+		return nil, NoCasting
+	}
 
-	return nil, nil
+	if _, ok := CoinPools[ct.ConvertType]; !ok {
+		return nil, fmt.Errorf("Casting not find ConvertType err %v ", ct.ConvertType)
+	}
+	pool := CoinPools[ct.ConvertType]
+	PkScript, _ := txscript.PayToPubKeyHashScript(pool)
+	if !bytes.Equal(PkScript, tx.TxOut[1].PkScript) {
+		return nil, fmt.Errorf("Casting PkScript err %s ", tx.TxOut[1].PkScript)
+	}
+
+	var pk []byte
+	var err error
+	if tx.TxIn[0].Witness == nil {
+		pk, err = txscript.ComputePk(tx.TxIn[0].SignatureScript)
+		if err != nil {
+			e := fmt.Sprintf("Casting ComputePk err %s", err)
+			return nil, errors.New(e)
+		}
+	} else {
+		pk, err = txscript.ComputeWitnessPk(tx.TxIn[0].Witness)
+		if err != nil {
+			e := fmt.Sprintf("Casting ComputeWitnessPk err %s", err)
+			return nil, errors.New(e)
+		}
+	}
+
+	ct.PubKey = pk
+	return ct, nil
 }

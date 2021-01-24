@@ -571,6 +571,20 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 				if err := cState.Casting(ct); err != nil {
 					return err
 				}
+				pool := cross.CoinPools[ct.ConvertType]
+				addr, err := czzutil.NewAddressPubKeyHash(pool, NetParams)
+				if err != nil || addr == nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					continue
+				}
+				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
 			}
 		}
 	}

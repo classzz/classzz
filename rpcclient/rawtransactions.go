@@ -369,93 +369,111 @@ func (c *Client) BeaconRegistrationAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistration returns a new transaction spending the provided inputs
+// AddBeaconPledge returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) AddBeaconPledge(inputs []btcjson.TransactionInput,
 	beaconRegistrationOut btcjson.AddBeaconPledgeOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.AddBeaconPledgeAsync(inputs, beaconRegistrationOut, amounts, lockTime).Receive()
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
+// AddBeaconPledgeAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
-// See BeaconRegistrationAsync for the blocking version and more details.
+// See AddBeaconPledgeAsync for the blocking version and more details.
 func (c *Client) AddBeaconPledgeAsync(inputs []btcjson.TransactionInput,
 	beaconRegistrationOut btcjson.AddBeaconPledgeOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewAddBeaconPledgeCmd(inputs, beaconRegistrationOut, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistration returns a new transaction spending the provided inputs
+// Mortgage returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) Mortgage(inputs []btcjson.TransactionInput,
 	out btcjson.MortgageOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.MortgageAsync(inputs, out, amounts, lockTime).Receive()
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
+// MortgageAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
-// See BeaconRegistrationAsync for the blocking version and more details.
+// See MortgageAsync for the blocking version and more details.
 func (c *Client) MortgageAsync(inputs []btcjson.TransactionInput,
 	out btcjson.MortgageOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewMortgageCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistration returns a new transaction spending the provided inputs
+// AddMortgage returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) AddMortgage(inputs []btcjson.TransactionInput,
 	out btcjson.AddMortgageOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.AddMortgageAsync(inputs, out, amounts, lockTime).Receive()
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
+// AddMortgageAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
-// See BeaconRegistrationAsync for the blocking version and more details.
+// See AddMortgageAsync for the blocking version and more details.
 func (c *Client) AddMortgageAsync(inputs []btcjson.TransactionInput,
 	out btcjson.AddMortgageOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewAddMortgageCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistration returns a new transaction spending the provided inputs
+// UpdateCoinbaseAll returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) UpdateCoinbaseAll(inputs []btcjson.TransactionInput,
 	out btcjson.UpdateCoinbaseAllOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.UpdateCoinbaseAllAsync(inputs, out, amounts, lockTime).Receive()
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
+// UpdateCoinbaseAllAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
-// See BeaconRegistrationAsync for the blocking version and more details.
+// See UpdateCoinbaseAllAsync for the blocking version and more details.
 func (c *Client) UpdateCoinbaseAllAsync(inputs []btcjson.TransactionInput,
 	out btcjson.UpdateCoinbaseAllOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewUpdateCoinbaseAllCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 
-// BeaconRegistration returns a new transaction spending the provided inputs
+// Convert returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) Convert(inputs []btcjson.TransactionInput,
 	out []btcjson.ConvertOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
 	return c.ConvertAsync(inputs, out, amounts, lockTime).Receive()
 }
 
-// BeaconRegistrationAsync returns an instance of a type that can be used to
+// ConvertAsync returns an instance of a type that can be used to
 // get the result of the RPC at some future time by invoking the Receive
 // function on the returned instance.
 //
-// See BeaconRegistrationAsync for the blocking version and more details.
+// See ConvertAsync for the blocking version and more details.
 func (c *Client) ConvertAsync(inputs []btcjson.TransactionInput,
 	out []btcjson.ConvertOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
 	cmd := btcjson.NewConvertCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
+// Casting returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) Casting(inputs []btcjson.TransactionInput,
+	out btcjson.CastingOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.CastingAsync(inputs, out, amounts, lockTime).Receive()
+}
+
+// CastingAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See CastingAsync for the blocking version and more details.
+func (c *Client) CastingAsync(inputs []btcjson.TransactionInput,
+	out btcjson.CastingOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewCastingCmd(inputs, out, amounts, lockTime)
 	return c.sendCmd(cmd)
 }
 

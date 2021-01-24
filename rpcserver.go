@@ -1567,7 +1567,7 @@ func handleCasting(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 	if toAddress = cross.CoinPools[c.Casting.ConvertType]; toAddress == nil {
 		return nil, &btcjson.RPCError{
 			Code:    btcjson.ErrRPCInvalidParameter,
-			Message: "Locktime out of range",
+			Message: "ConvertType not find",
 		}
 	}
 
