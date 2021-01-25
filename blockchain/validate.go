@@ -366,21 +366,6 @@ func CheckTransactionSanity(tx *czzutil.Tx, magneticAnomalyActive bool, scriptFl
 	return nil
 }
 
-//func (b *BlockChain) getPoolAmount(lid uint64, eState *cross.EntangleState) (*big.Int, *wire.OutPoint, error) {
-//	exInfos := eState.GetBaExInfoByID(lid)
-//	if exInfos == nil {
-//		return nil, nil, cross.ErrNoRegister
-//	}
-//	if view, err := b.FetchUtxoForBeacon(exInfos.EnItems); err != nil || view == nil {
-//		return nil, nil, err
-//	} else {
-//		for o, v := range view.Entries() {
-//			return new(big.Int).SetInt64(v.Amount()), &o, nil
-//		}
-//		return nil, nil, errors.New(fmt.Sprintf("can't find view,from lid: %v", lid))
-//	}
-//}
-
 func (b *BlockChain) makeBeaconMergeItem(outs []*wire.OutPoint, to czzutil.Address) (*cross.BeaconMergeItem, error) {
 	view, err := b.FetchUtxoForBeacon(outs)
 	if err != nil {
@@ -396,50 +381,6 @@ func (b *BlockChain) makeBeaconMergeItem(outs []*wire.OutPoint, to czzutil.Addre
 	}
 	return item, nil
 }
-
-// make sure only one proof tx in a block
-//func (b *BlockChain) checkCoinBaseInCrossProof(infos *cross.PunishedRewardItem, coinTx *czzutil.Tx, in, out *cross.ResCoinBasePos) error {
-//	if len(coinTx.MsgTx().TxIn) <= 3 {
-//		return errors.New("wrong coinbase tx for proof of robot")
-//	}
-//	bOut, bIn := false, false
-//	// find from address
-//	for i, v := range coinTx.MsgTx().TxIn {
-//		if i >= 3 && v.PreviousOutPoint == infos.POut {
-//			amount, err := b.GetTxInAmount(v)
-//			if err != nil {
-//				return err
-//			}
-//			bIn = true
-//			in.Put(i, big.NewInt(amount))
-//			break
-//		}
-//	}
-//	if !bIn {
-//		return errors.New("not match txin in coinbase tx")
-//	}
-//	for i, v := range coinTx.MsgTx().TxOut {
-//		if i >= 3 {
-//			if v.Value == infos.Amount.Int64() && infos.EqualPkScript(v.PkScript, 0) {
-//				if len(coinTx.MsgTx().TxOut) > i+1 && coinTx.MsgTx().TxOut[i+1].Value == infos.Amount.Int64() &&
-//					infos.EqualPkScript(coinTx.MsgTx().TxOut[i+1].PkScript, 1) {
-//					if len(coinTx.MsgTx().TxOut) > i+2 && coinTx.MsgTx().TxOut[i+2].Value == infos.Change().Int64() &&
-//						infos.EqualPkScript(coinTx.MsgTx().TxOut[i+2].PkScript, 2) {
-//						bOut = true
-//						out.Put(i, big.NewInt(v.Value))
-//						out.Put(i+1, big.NewInt(coinTx.MsgTx().TxOut[i+1].Value))
-//						out.Put(i+2, big.NewInt(coinTx.MsgTx().TxOut[i+2].Value))
-//						break
-//					}
-//				}
-//			}
-//		}
-//	}
-//	if !bOut {
-//		return errors.New("checkCoinBaseInCrossProof not match txOut in coinbase tx")
-//	}
-//	return nil
-//}
 
 func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 
@@ -593,6 +534,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 	}
 
+	cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState)
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {
 		return errors.New("CIDRoot not in the block")
 	}

@@ -694,6 +694,28 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
+func MakeCoinbaseTxUtxo(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState) error {
+	for k, v := range tx.TxOut {
+		_, pub, _ := txscript.ExtractPkScriptPub(v.PkScript)
+		if big.NewInt(0).SetBytes(pub).Int64() > int64(100) && big.NewInt(0).SetBytes(pub).Int64() < int64(200) {
+
+			addr, err := czzutil.NewAddressPubKeyHash(pub, params)
+			if err != nil || addr == nil {
+				return fmt.Errorf("MakeCoinbaseTxUtxo err %s addr %s", err, addr)
+			}
+
+			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+				Hash:  tx.TxHash(),
+				Index: uint32(k),
+			},
+				v.PkScript,
+				v.Value,
+			)
+		}
+	}
+	return nil
+}
+
 func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState, pool *PoolAddrItem, items []*ConvertTxInfo, rewards []*PunishedRewardItem, mergeItem map[uint64][]*BeaconMergeItem) error {
 
 	if pool == nil || len(pool.POut) == 0 {
@@ -716,33 +738,6 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 	reserve1, reserve2 := pool.Amount[0].Int64()+tx.TxOut[1].Value, pool.Amount[1].Int64()+tx.TxOut[2].Value
 	tx.TxOut[1].Value = reserve1
 	tx.TxOut[2].Value = reserve2
-
-	//// reward the proof ,txin>3
-	//for _, v := range rewards {
-	//	tx.AddTxIn(&wire.TxIn{
-	//		PreviousOutPoint: v.POut,
-	//		SignatureScript:  v.Script,
-	//		Sequence:         wire.MaxTxInSequenceNum,
-	//	})
-	//	pkScript1, err1 := txscript.PayToAddrScript(v.Addr1) // reward to robot
-	//	pkScript2, err2 := txscript.PayToAddrScript(v.Addr2) // punished to zero address
-	//	pkScript3, err3 := txscript.PayToAddrScript(v.Addr3) // change address
-	//	if err1 != nil || err2 != nil || err3 != nil {
-	//		return errors.New("PayToAddrScript failed, in reward the proof")
-	//	}
-	//	tx.AddTxOut(&wire.TxOut{
-	//		Value:    new(big.Int).Set(v.Amount).Int64(),
-	//		PkScript: pkScript1,
-	//	})
-	//	tx.AddTxOut(&wire.TxOut{
-	//		Value:    new(big.Int).Set(v.Amount).Int64(),
-	//		PkScript: pkScript2,
-	//	})
-	//	tx.AddTxOut(&wire.TxOut{
-	//		Value:    new(big.Int).Sub(v.OriginAmount, new(big.Int).Mul(big.NewInt(2), v.Amount)).Int64(),
-	//		PkScript: pkScript3,
-	//	})
-	//}
 
 	poolC := make(map[uint8]*big.Int)
 	for _, v := range items {

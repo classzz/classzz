@@ -371,6 +371,10 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *Comm
 		return nil, err
 	}
 
+	if receipt == nil {
+		return nil, fmt.Errorf("eth ExtTxHash not find")
+	}
+
 	if receipt.Status != 1 {
 		return nil, fmt.Errorf("eth Status err")
 	}

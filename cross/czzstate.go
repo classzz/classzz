@@ -417,11 +417,15 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
+	redeemState := uint8(0)
+	if info.ConvertType == ExpandedTxConvert_Czz {
+		redeemState = uint8(1)
+	}
 	convertItem := ConvertItem{
 		ExtTxHash:   info.ExtTxHash,
 		PubKey:      info.PubKey,
 		Amount:      info.Amount,
-		RedeemState: 0,
+		RedeemState: redeemState,
 	}
 
 	if _, ok := cs.ConvertItems[info.AssetType]; !ok {

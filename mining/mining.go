@@ -1050,6 +1050,7 @@ mempoolLoop:
 		if err != nil {
 			return nil, nil, err
 		}
+		cross.MakeCoinbaseTxUtxo(g.chainParams, coinbaseTx.MsgTx(), cState)
 	}
 
 	CIDRoot := chainhash.Hash{}

@@ -589,6 +589,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
+	cross.MakeCoinbaseTxUtxo(NetParams, block.Transactions()[0].MsgTx(), cState)
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
 		return err
 	}
