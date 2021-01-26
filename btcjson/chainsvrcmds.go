@@ -112,6 +112,16 @@ type CastingOut struct {
 	Amount      float64
 }
 
+type ConvertConfirmOut struct {
+	AssetType   uint8
+	ConvertType uint8
+	Address     string
+	Height      uint64
+	ExtTxHash   string
+	Index       uint32
+	Amount      float64
+}
+
 // CreatePledgeRegistrationCmd defines JSON-RPC command.
 type BeaconRegistrationCmd struct {
 	Inputs             []TransactionInput
@@ -162,6 +172,14 @@ type ConvertCmd struct {
 
 // ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
 type CastingCmd struct {
+	Inputs   []TransactionInput
+	Casting  CastingOut
+	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime *int64
+}
+
+// ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
+type ConvertConfirmCmd struct {
 	Inputs   []TransactionInput
 	Casting  CastingOut
 	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`

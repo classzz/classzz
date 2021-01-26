@@ -125,6 +125,7 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 }
 
 type ConvertItem struct {
+	ID          *big.Int `json:"id"`
 	ExtTxHash   string   `json:"ext_tx_hash"`
 	PubKey      []byte   `json:"pub_key"`
 	Amount      *big.Int `json:"amount"`       // czz asset amount
@@ -197,10 +198,11 @@ func (ci *ConvertItems) EncodeRLP(w io.Writer) error {
 }
 
 type CommitteeState struct {
-	PledgeInfos    []*PledgeInfo
-	CommitteeInfos []*CommitteeInfo
-	ConvertItems   map[uint8]ConvertItems
-	NoCostUtxos    map[string]*PoolAddrItem
+	PledgeInfos         []*PledgeInfo
+	CommitteeInfos      []*CommitteeInfo
+	ConvertItems        map[uint8]ConvertItems
+	ConvertConfirmItems map[uint8]ConvertItems
+	NoCostUtxos         map[string]*PoolAddrItem
 }
 
 type StoreConvertItems struct {
