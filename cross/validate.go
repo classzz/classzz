@@ -600,6 +600,120 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo, cState *Com
 	return pk, nil
 }
 
+func (ev *CommitteeVerify) VerifyConvertConfirmTx(info *ConvertConfirmTxInfo, cState *CommitteeState) (*TuplePubIndex, error) {
+
+	if ev.Cache != nil {
+		if ok := ev.Cache.FetchExtUtxoView(info); ok {
+			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
+			return nil, errors.New("txid has already entangle: " + err)
+		}
+	}
+
+	if pub, err := ev.verifyConvertConfirmTx(info, cState); err != nil {
+		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
+		return nil, errors.New("txid verify failed:" + errStr + " err: " + err.Error())
+	} else {
+		pair := &TuplePubIndex{
+			AssetType:   info.AssetType,
+			ConvertType: info.ConvertType,
+			Index:       0,
+			Pub:         pub,
+		}
+		return pair, nil
+	}
+}
+
+func (ev *CommitteeVerify) verifyConvertConfirmTx(eInfo *ConvertConfirmTxInfo, eState *CommitteeState) ([]byte, error) {
+	switch eInfo.AssetType {
+	case ExpandedTxConvert_ECzz:
+		return ev.verifyConvertConfirmEthTx(eInfo, eState)
+		//case ExpandedTxConvert_TCzz:
+		//	return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
+		//case ExpandedTxConvert_HCzz:
+		//	return ev.verifyConvertConfirmsHecoTx(eInfo, eState)
+	}
+	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
+}
+
+func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) ([]byte, error) {
+
+	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+
+	var receipt *types.Receipt
+	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
+		return nil, err
+	}
+
+	if receipt == nil {
+		return nil, fmt.Errorf("eth ExtTxHash not find")
+	}
+
+	if receipt.Status != 1 {
+		return nil, fmt.Errorf("eth Status err")
+	}
+
+	var txjson *rpcTransaction
+	// Get the current block count.
+	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
+		return nil, err
+	}
+
+	ethtx := txjson.tx
+	Vb, R, S := ethtx.RawSignatureValues()
+
+	var V byte
+	if isProtectedV(Vb) {
+		chainID := deriveChainId(Vb).Uint64()
+		V = byte(Vb.Uint64() - 35 - 2*chainID)
+	} else {
+		V = byte(Vb.Uint64() - 27)
+	}
+
+	if !crypto.ValidateSignatureValues(V, R, S, false) {
+		return nil, fmt.Errorf("eth ValidateSignatureValues err")
+	}
+	// encode the signature in uncompressed format
+	r, s := R.Bytes(), S.Bytes()
+	sig := make([]byte, crypto.SignatureLength)
+	copy(sig[32-len(r):32], r)
+	copy(sig[64-len(s):64], s)
+	sig[64] = V
+
+	a := types.NewEIP155Signer(big.NewInt(1))
+
+	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	if err != nil {
+		return nil, fmt.Errorf("Ecrecover err")
+	}
+
+	// height
+	if receipt.BlockNumber.Uint64() != eInfo.Height {
+		return nil, fmt.Errorf("ETh BlockNumber > Height")
+	}
+
+	// toaddress
+	if txjson.tx.To().String() != ethPoolAddr {
+		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	}
+
+	if len(receipt.Logs) < 1 {
+		return nil, fmt.Errorf("ETh receipt.Logs")
+	}
+
+	txLog := receipt.Logs[1]
+	amount := txLog.Data[:32]
+	ntype := txLog.Data[32:]
+	if big.NewInt(0).SetBytes(amount).Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
+	}
+
+	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+		return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	}
+
+	return pk, nil
+}
+
 func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeState) (*CastingTxInfo, error) {
 
 	ct, _ := IsCastingTx(tx)

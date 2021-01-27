@@ -151,6 +151,22 @@ type CastingTxInfo struct {
 	Amount      *big.Int
 }
 
+type ConvertConfirmTxInfo struct {
+	ID          *big.Int
+	AssetType   uint8
+	ConvertType uint8
+	PubKey      []byte
+	Height      uint64
+	ExtTxHash   string
+	Index       uint32
+	Amount      *big.Int
+}
+
+type UtxoViewInfo interface {
+	GetAssetType() uint8
+	GetExtTxHash() string
+}
+
 func (es *ConvertTxInfo) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)
@@ -158,6 +174,22 @@ func (es *ConvertTxInfo) ToBytes() []byte {
 		log.Fatal("Failed to RLP encode BurnTxInfo: ", "err", err)
 	}
 	return data
+}
+
+func (es *ConvertTxInfo) GetAssetType() uint8 {
+	return es.AssetType
+}
+
+func (es *ConvertTxInfo) GetExtTxHash() string {
+	return es.ExtTxHash
+}
+
+func (es *ConvertConfirmTxInfo) GetAssetType() uint8 {
+	return es.AssetType
+}
+
+func (es *ConvertConfirmTxInfo) GetExtTxHash() string {
+	return es.ExtTxHash
 }
 
 type KeepedItem struct {
@@ -586,6 +618,28 @@ func IsCastingTx(tx *wire.MsgTx) (*CastingTxInfo, error) {
 	return es, nil
 }
 
+func IsConvertConfirmTx(tx *wire.MsgTx) (map[uint32]*ConvertConfirmTxInfo, error) {
+	// make sure at least one txout in OUTPUT
+	cons := make(map[uint32]*ConvertConfirmTxInfo)
+	for i, txout := range tx.TxOut {
+		if !txscript.IsConvertConfirmTy(txout.PkScript) {
+			continue
+		}
+		info, err := ConvertConfirmTxFromScript(tx.TxOut[0].PkScript)
+		if err != nil {
+			e := fmt.Sprintf("ConverTxFromScript err %s", err)
+			return nil, errors.New(e)
+		}
+		cons[uint32(i)] = info
+	}
+
+	if len(cons) == 0 {
+		return nil, NoConvert
+	}
+
+	return cons, nil
+}
+
 func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	if pks, err := txscript.ParsePkScript(PkScript); err != nil {
 		return false, err
@@ -679,6 +733,16 @@ func CastingTxFromScript(script []byte) (*CastingTxInfo, error) {
 		return nil, err
 	}
 	info := &CastingTxInfo{}
+	err = rlp.DecodeBytes(data, info)
+	return info, err
+}
+
+func ConvertConfirmTxFromScript(script []byte) (*ConvertConfirmTxInfo, error) {
+	data, err := txscript.GetConvertConfirmInfoData(script)
+	if err != nil {
+		return nil, err
+	}
+	info := &ConvertConfirmTxInfo{}
 	err = rlp.DecodeBytes(data, info)
 	return info, err
 }
@@ -931,18 +995,28 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 			return nil, err
 		}
 
-		//pub, err := RecoverPublicFromBytes(tpi.Pub, tpi.AssetType)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//addr, err := MakeAddress(*pub, ev.Params)
-		//if err != nil {
-		//	return nil, err
-		//}
-
 		info.PubKey = tpi.Pub
 		if err := eState.Convert(info); err != nil {
+			return nil, err
+		}
+		ctis = append(ctis, info)
+	}
+
+	return ctis, nil
+}
+
+func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxInfo, ev *CommitteeVerify) ([]*ConvertConfirmTxInfo, error) {
+
+	ctis := make([]*ConvertConfirmTxInfo, 0, 0)
+	for _, info := range cinfo {
+		// verify the entangle tx
+		tpi, err := ev.VerifyConvertConfirmTx(info, eState)
+		if err != nil {
+			return nil, err
+		}
+
+		info.PubKey = tpi.Pub
+		if err := eState.ConvertConfirm(info); err != nil {
 			return nil, err
 		}
 		ctis = append(ctis, info)

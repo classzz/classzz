@@ -125,11 +125,10 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 }
 
 type ConvertItem struct {
-	ID          *big.Int `json:"id"`
-	ExtTxHash   string   `json:"ext_tx_hash"`
-	PubKey      []byte   `json:"pub_key"`
-	Amount      *big.Int `json:"amount"`       // czz asset amount
-	RedeemState byte     `json:"redeem_state"` // 0--init, 1 -- redeem done by BeaconAddress payed,2--punishing,3-- punished
+	ID        *big.Int `json:"id"`
+	ExtTxHash string   `json:"ext_tx_hash"`
+	PubKey    []byte   `json:"pub_key"`
+	Amount    *big.Int `json:"amount"` // czz asset amount
 }
 
 type ConvertItems map[uint8]ConvertItem
@@ -200,6 +199,7 @@ func (ci *ConvertItems) EncodeRLP(w io.Writer) error {
 type CommitteeState struct {
 	PledgeInfos         []*PledgeInfo
 	CommitteeInfos      []*CommitteeInfo
+	MaxItemID           *big.Int
 	ConvertItems        map[uint8]ConvertItems
 	ConvertConfirmItems map[uint8]ConvertItems
 	NoCostUtxos         map[string]*PoolAddrItem
@@ -226,6 +226,27 @@ func (ci SortStoreConvertItems) Swap(i, j int) {
 	ci[j] = it
 }
 
+type StoreConvertConfirmItems struct {
+	Type                uint8
+	ConvertConfirmItems ConvertItems
+}
+
+type SortStoreConvertConfirmItems []*StoreConvertConfirmItems
+
+func (ci SortStoreConvertConfirmItems) Len() int {
+	return len(ci)
+}
+
+func (ci SortStoreConvertConfirmItems) Less(i, j int) bool {
+	return ci[i].Type < ci[j].Type
+}
+
+func (ci SortStoreConvertConfirmItems) Swap(i, j int) {
+	it := ci[i]
+	ci[i] = ci[j]
+	ci[j] = it
+}
+
 type StoreNoCostUtxos struct {
 	Type        string
 	NoCostUtxos *PoolAddrItem
@@ -247,7 +268,7 @@ func (ci SortStoreNoCostUtxos) Swap(i, j int) {
 	ci[j] = it
 }
 
-func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreNoCostUtxos) {
+func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreConvertConfirmItems, SortStoreNoCostUtxos) {
 	v1 := make([]*StoreConvertItems, 0, 0)
 	for k, v := range cs.ConvertItems {
 		v1 = append(v1, &StoreConvertItems{
@@ -256,37 +277,53 @@ func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreNoCostUtxos
 		})
 	}
 
-	v2 := make([]*StoreNoCostUtxos, 0, 0)
+	v2 := make([]*StoreConvertConfirmItems, 0, 0)
+	for k, v := range cs.ConvertConfirmItems {
+		v2 = append(v2, &StoreConvertConfirmItems{
+			Type:                k,
+			ConvertConfirmItems: v,
+		})
+	}
+
+	v3 := make([]*StoreNoCostUtxos, 0, 0)
 	for k, v := range cs.NoCostUtxos {
-		v2 = append(v2, &StoreNoCostUtxos{
+		v3 = append(v3, &StoreNoCostUtxos{
 			Type:        k,
 			NoCostUtxos: v,
 		})
 	}
 
 	sort.Sort(SortStoreConvertItems(v1))
-	sort.Sort(SortStoreNoCostUtxos(v2))
-	return SortStoreConvertItems(v1), SortStoreNoCostUtxos(v2)
+	sort.Sort(SortStoreConvertConfirmItems(v2))
+	sort.Sort(SortStoreNoCostUtxos(v3))
+	return SortStoreConvertItems(v1), SortStoreConvertConfirmItems(v2), SortStoreNoCostUtxos(v3)
 }
 
-func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreNoCostUtxos) {
+func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreConvertConfirmItems, v3 SortStoreNoCostUtxos) {
 	convertItems := make(map[uint8]ConvertItems)
+	convertConfirmItems := make(map[uint8]ConvertItems)
 	noCostUtxos := make(map[string]*PoolAddrItem)
 	for _, v := range v1 {
 		convertItems[v.Type] = v.ConvertItems
 	}
 	for _, v := range v2 {
+		convertConfirmItems[v.Type] = v.ConvertConfirmItems
+	}
+	for _, v := range v3 {
 		noCostUtxos[v.Type] = v.NoCostUtxos
 	}
 	cs.ConvertItems = convertItems
+	cs.ConvertConfirmItems = convertConfirmItems
 	cs.NoCostUtxos = noCostUtxos
 }
 
 type extCommitteeState struct {
-	PledgeInfos    []*PledgeInfo
-	CommitteeInfos []*CommitteeInfo
-	ConvertItems   SortStoreConvertItems
-	NoCostUtxos    SortStoreNoCostUtxos
+	PledgeInfos         []*PledgeInfo
+	CommitteeInfos      []*CommitteeInfo
+	MaxItemID           *big.Int
+	ConvertItems        SortStoreConvertItems
+	ConvertConfirmItems SortStoreConvertConfirmItems
+	NoCostUtxos         SortStoreNoCostUtxos
 }
 
 func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
@@ -294,18 +331,20 @@ func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&ecs); err != nil {
 		return err
 	}
-	cs.PledgeInfos, cs.CommitteeInfos = ecs.PledgeInfos, ecs.CommitteeInfos
-	cs.fromSlice(ecs.ConvertItems, ecs.NoCostUtxos)
+	cs.PledgeInfos, cs.CommitteeInfos, cs.MaxItemID = ecs.PledgeInfos, ecs.CommitteeInfos, ecs.MaxItemID
+	cs.fromSlice(ecs.ConvertItems, ecs.ConvertConfirmItems, ecs.NoCostUtxos)
 	return nil
 }
 
 func (cs *CommitteeState) EncodeRLP(w io.Writer) error {
-	s1, s2 := cs.toSlice()
+	s1, s2, s3 := cs.toSlice()
 	return rlp.Encode(w, extCommitteeState{
-		PledgeInfos:    cs.PledgeInfos,
-		CommitteeInfos: cs.CommitteeInfos,
-		ConvertItems:   s1,
-		NoCostUtxos:    s2,
+		PledgeInfos:         cs.PledgeInfos,
+		CommitteeInfos:      cs.CommitteeInfos,
+		MaxItemID:           cs.MaxItemID,
+		ConvertItems:        s1,
+		ConvertConfirmItems: s2,
+		NoCostUtxos:         s3,
 	})
 }
 
@@ -419,24 +458,32 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
-	redeemState := uint8(0)
-	if info.ConvertType == ExpandedTxConvert_Czz {
-		redeemState = uint8(1)
-	}
 	convertItem := ConvertItem{
-		ExtTxHash:   info.ExtTxHash,
-		PubKey:      info.PubKey,
-		Amount:      info.Amount,
-		RedeemState: redeemState,
+		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		ExtTxHash: info.ExtTxHash,
+		PubKey:    info.PubKey,
+		Amount:    info.Amount,
+	}
+	cs.MaxItemID = convertItem.ID
+
+	if info.ConvertType == ExpandedTxConvert_Czz {
+		if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
+			item := ConvertItems{}
+			item[info.ConvertType] = convertItem
+			cs.ConvertConfirmItems[info.AssetType] = item
+		} else {
+			cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = convertItem
+		}
+	} else {
+		if _, ok := cs.ConvertItems[info.AssetType]; !ok {
+			item := ConvertItems{}
+			item[info.ConvertType] = convertItem
+			cs.ConvertItems[info.AssetType] = item
+		} else {
+			cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
+		}
 	}
 
-	if _, ok := cs.ConvertItems[info.AssetType]; !ok {
-		item := ConvertItems{}
-		item[info.ConvertType] = convertItem
-		cs.ConvertItems[info.AssetType] = item
-	} else {
-		cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
-	}
 	return nil
 }
 
@@ -444,10 +491,11 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 
 	convertItem := ConvertItem{
-		PubKey:      info.PubKey,
-		Amount:      info.Amount,
-		RedeemState: 0,
+		ID:     big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		PubKey: info.PubKey,
+		Amount: info.Amount,
 	}
+	cs.MaxItemID = convertItem.ID
 
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
 		item := ConvertItems{}
@@ -456,6 +504,38 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 	} else {
 		cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = convertItem
 	}
+	return nil
+}
+
+// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
+func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
+
+	convertItem := ConvertItem{
+		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		ExtTxHash: info.ExtTxHash,
+		PubKey:    info.PubKey,
+		Amount:    info.Amount,
+	}
+	cs.MaxItemID = convertItem.ID
+
+	if info.ConvertType == ExpandedTxConvert_Czz {
+		if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
+			item := ConvertItems{}
+			item[info.ConvertType] = convertItem
+			cs.ConvertConfirmItems[info.AssetType] = item
+		} else {
+			cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = convertItem
+		}
+	} else {
+		if _, ok := cs.ConvertItems[info.AssetType]; !ok {
+			item := ConvertItems{}
+			item[info.ConvertType] = convertItem
+			cs.ConvertItems[info.AssetType] = item
+		} else {
+			cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
+		}
+	}
+
 	return nil
 }
 
@@ -499,10 +579,12 @@ func (cs *CommitteeState) Hash() chainhash.Hash {
 
 func NewCommitteeState() *CommitteeState {
 	return &CommitteeState{
-		PledgeInfos:    make([]*PledgeInfo, 0, 0),
-		CommitteeInfos: make([]*CommitteeInfo, 0, 0),
-		ConvertItems:   make(map[uint8]ConvertItems),
-		NoCostUtxos:    make(map[string]*PoolAddrItem),
+		PledgeInfos:         make([]*PledgeInfo, 0, 0),
+		CommitteeInfos:      make([]*CommitteeInfo, 0, 0),
+		MaxItemID:           big.NewInt(0),
+		ConvertItems:        make(map[uint8]ConvertItems),
+		ConvertConfirmItems: make(map[uint8]ConvertItems),
+		NoCostUtxos:         make(map[string]*PoolAddrItem),
 	}
 }
 

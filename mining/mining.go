@@ -966,6 +966,17 @@ mempoolLoop:
 					tx.MsgTx().TxOut[1].Value,
 				)
 			}
+
+			// IsConvertConfirmTx
+			if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
+				_, err := cross.ConvertConfirms(cState, cinfo, g.chain.GetCommitteeVerify())
+				if err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"toAddressFromEntangle: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+			}
 		}
 
 		err = blockchain.ValidateTransactionScripts(tx, blockUtxos,

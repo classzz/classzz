@@ -20,11 +20,11 @@ type CacheCommitteeState struct {
 	DB database.DB
 }
 
-func (c *CacheCommitteeState) FetchExtUtxoView(info *ConvertTxInfo) bool {
+func (c *CacheCommitteeState) FetchExtUtxoView(info UtxoViewInfo) bool {
 
 	txExist := false
-	AssetType := info.AssetType
-	ExTxHash := []byte(info.ExtTxHash)
+	AssetType := info.GetAssetType()
+	ExTxHash := []byte(info.GetExtTxHash())
 	key := append(ExTxHash, AssetType)
 	c.DB.View(func(tx database.Tx) error {
 		committeeBucket := tx.Metadata().Bucket(CommitteeStateKey)

@@ -99,7 +99,6 @@ type UpdateCoinbaseAllOut struct {
 type ConvertOut struct {
 	AssetType   uint8
 	ConvertType uint8
-	Address     string
 	Height      uint64
 	ExtTxHash   string
 	Index       uint32
@@ -108,14 +107,13 @@ type ConvertOut struct {
 
 type CastingOut struct {
 	ConvertType uint8
-	Address     string
 	Amount      float64
 }
 
 type ConvertConfirmOut struct {
+	ID          int64
 	AssetType   uint8
 	ConvertType uint8
-	Address     string
 	Height      uint64
 	ExtTxHash   string
 	Index       uint32
@@ -180,10 +178,10 @@ type CastingCmd struct {
 
 // ConvertTransaction defines the CreateRawExChangeTransactionCmd JSON-RPC command.
 type ConvertConfirmCmd struct {
-	Inputs   []TransactionInput
-	Casting  CastingOut
-	Amounts  *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
-	LockTime *int64
+	Inputs         []TransactionInput
+	ConvertConfirm []ConvertConfirmOut
+	Amounts        *map[string]float64 `jsonrpcusage:"{\"address\":amount,...}"`
+	LockTime       *int64
 }
 
 // AddBeaconPledge defines JSON-RPC command.

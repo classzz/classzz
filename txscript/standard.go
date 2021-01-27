@@ -235,7 +235,6 @@ func isAddMortgageTy(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN198 &&
 		pops[2].opcode.value == OP_2
-
 }
 
 func isUpdateCoinbaseAllTy(pops []parsedOpcode) bool {
@@ -260,6 +259,14 @@ func isCastingTy(pops []parsedOpcode) bool {
 		pops[0].opcode.value == OP_RETURN &&
 		pops[1].opcode.value == OP_UNKNOWN198 &&
 		pops[2].opcode.value == OP_5
+}
+
+func isConvertConfirmTy(pops []parsedOpcode) bool {
+	// simple judge
+	return len(pops) >= 2 &&
+		pops[0].opcode.value == OP_RETURN &&
+		pops[1].opcode.value == OP_UNKNOWN198 &&
+		pops[2].opcode.value == OP_6
 }
 
 // scriptType returns the type of the script being inspected from the known
@@ -359,6 +366,13 @@ func IsCastingTy(script []byte) bool {
 		return false
 	}
 	return isCastingTy(pops)
+}
+func IsConvertConfirmTy(script []byte) bool {
+	pops, err := parseScript(script)
+	if err != nil {
+		return false
+	}
+	return isConvertConfirmTy(pops)
 }
 
 // expectedInputs returns the number of arguments required by a script.
@@ -659,6 +673,16 @@ func CastingScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_5).AddData(data).Script()
 }
 
+// ConvertScript impl in
+func ConvertConfirmScript(data []byte) ([]byte, error) {
+	if len(data) > MaxDataCarrierSize {
+		str := fmt.Sprintf("data size %d is larger than max "+
+			"allowed size %d", len(data), MaxDataCarrierSize)
+		return nil, scriptError(ErrTooMuchNullData, str)
+	}
+	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_6).AddData(data).Script()
+}
+
 // KeepedAmountScript impl in
 func KeepedAmountScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
@@ -689,17 +713,6 @@ func MultiSigScript(pubkeys []*czzutil.AddressPubKey, nrequired int) ([]byte, er
 	builder.AddOp(OP_CHECKMULTISIG)
 
 	return builder.Script()
-}
-
-func GetEntangleInfoData(script []byte) ([]byte, error) {
-	pops, err := parseScript(script)
-	if err != nil {
-		return nil, err
-	}
-	if !isEntangleTy(pops) {
-		return nil, errors.New("not Entangle info type")
-	}
-	return pops[2].data, nil
 }
 
 func GetKeepedAmountData(script []byte) ([]byte, error) {
@@ -786,6 +799,17 @@ func GetCastingInfoData(script []byte) ([]byte, error) {
 	}
 	if !isCastingTy(pops) {
 		return nil, errors.New("not Casting type")
+	}
+	return pops[3].data, nil
+}
+
+func GetConvertConfirmInfoData(script []byte) ([]byte, error) {
+	pops, err := parseScript(script)
+	if err != nil {
+		return nil, err
+	}
+	if !isConvertConfirmTy(pops) {
+		return nil, errors.New("not Convert type")
 	}
 	return pops[3].data, nil
 }

@@ -147,7 +147,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"updatecoinbaseall":     handleUpdateCoinbaseAll,
 	"convert":               handleConvert,
 	"casting":               handleCasting,
-	"convertconfirm":        handleCasting,
+	"convertconfirm":        handleConvertConfirm,
 	"conversionaddress":     handleConversionAddress,
 	"debuglevel":            handleDebugLevel,
 	"decoderawtransaction":  handleDecodeRawTransaction,
@@ -1536,7 +1536,7 @@ func handleConvert(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 }
 
 func handleConvertConfirm(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	c := cmd.(*btcjson.CastingCmd)
+	c := cmd.(*btcjson.ConvertConfirmCmd)
 
 	// Validate the locktime, if given.
 	if c.LockTime != nil &&
@@ -1564,45 +1564,32 @@ func handleConvertConfirm(s *rpcServer, cmd interface{}, closeChan <-chan struct
 		mtx.AddTxIn(txIn)
 	}
 
-	var toAddress []byte
-	if toAddress = cross.CoinPools[c.Casting.ConvertType]; toAddress == nil {
-		return nil, &btcjson.RPCError{
-			Code:    btcjson.ErrRPCInvalidParameter,
-			Message: "ConvertType not find",
+	for _, convert := range c.ConvertConfirm {
+		// Convert the amount to satoshi.
+		satoshi, err := czzutil.NewAmount(convert.Amount)
+		if err != nil {
+			context := "Failed to convert amount"
+			return nil, internalRPCError(err.Error(), context)
 		}
+		ct := &cross.ConvertConfirmTxInfo{
+			ID:          big.NewInt(convert.ID),
+			AssetType:   convert.AssetType,
+			ConvertType: convert.ConvertType,
+			Height:      convert.Height,
+			ExtTxHash:   convert.ExtTxHash,
+			Index:       convert.Index,
+			Amount:      big.NewInt(int64(satoshi)),
+		}
+		ctByte, err := rlp.EncodeToBytes(ct)
+		scriptInfo, err := txscript.ConvertConfirmScript(ctByte)
+		if err != nil {
+			return nil, err
+		}
+		mtx.AddTxOut(&wire.TxOut{
+			Value:    0,
+			PkScript: scriptInfo,
+		})
 	}
-
-	// Convert the amount to satoshi.
-	satoshi, err := czzutil.NewAmount(c.Casting.Amount)
-	if err != nil {
-		context := "Failed to convert amount"
-		return nil, internalRPCError(err.Error(), context)
-	}
-
-	ct := &cross.CastingTxInfo{
-		ConvertType: c.Casting.ConvertType,
-		Amount:      big.NewInt(int64(satoshi)),
-	}
-
-	ctByte, err := rlp.EncodeToBytes(ct)
-	scriptInfo, err := txscript.CastingScript(ctByte)
-	if err != nil {
-		return nil, err
-	}
-	mtx.AddTxOut(&wire.TxOut{
-		Value:    0,
-		PkScript: scriptInfo,
-	})
-
-	pkScript, err := txscript.PayToPubKeyHashScript(toAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	mtx.AddTxOut(&wire.TxOut{
-		Value:    int64(satoshi),
-		PkScript: pkScript,
-	})
 
 	params := s.cfg.ChainParams
 	// The change
