@@ -843,12 +843,8 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 				amount = big.NewInt(0).Add(amount, utxos.Amount[k1])
 			}
 		}
-		if big.NewInt(0).Cmp(v) < 0 {
-			amount = big.NewInt(0).Sub(amount, v)
-		} else {
-			amount = big.NewInt(0).Add(amount, v)
-		}
 
+		amount = big.NewInt(0).Add(amount, v)
 		pkScript, _ := txscript.PayToPubKeyHashScript(add.ScriptAddress())
 		tx.AddTxOut(&wire.TxOut{
 			Value:    amount.Int64(),
@@ -1010,12 +1006,11 @@ func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxI
 	ctis := make([]*ConvertConfirmTxInfo, 0, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
-		tpi, err := ev.VerifyConvertConfirmTx(info, eState)
+		err := ev.VerifyConvertConfirmTx(info, eState)
 		if err != nil {
 			return nil, err
 		}
 
-		info.PubKey = tpi.Pub
 		if err := eState.ConvertConfirm(info); err != nil {
 			return nil, err
 		}

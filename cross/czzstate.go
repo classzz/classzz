@@ -131,11 +131,11 @@ type ConvertItem struct {
 	Amount    *big.Int `json:"amount"` // czz asset amount
 }
 
-type ConvertItems map[uint8]ConvertItem
+type ConvertItems map[uint8][]*ConvertItem
 
 type StoreConvertItem struct {
 	Type        uint8
-	ConvertItem ConvertItem
+	ConvertItem []*ConvertItem
 }
 
 type SortStoreConvertItem []*StoreConvertItem
@@ -167,7 +167,7 @@ func (ci *ConvertItems) toSlice() SortStoreConvertItem {
 }
 
 func (ci *ConvertItems) fromSlice(vv SortStoreConvertItem) {
-	convertItems := make(map[uint8]ConvertItem)
+	convertItems := make(map[uint8][]*ConvertItem)
 	for _, v := range vv {
 		convertItems[v.Type] = v.ConvertItem
 	}
@@ -458,7 +458,7 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
-	convertItem := ConvertItem{
+	convertItem := &ConvertItem{
 		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
 		ExtTxHash: info.ExtTxHash,
 		PubKey:    info.PubKey,
@@ -469,18 +469,26 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 	if info.ConvertType == ExpandedTxConvert_Czz {
 		if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
 			item := ConvertItems{}
-			item[info.ConvertType] = convertItem
+			items := make([]*ConvertItem, 0, 0)
+			items = append(items, convertItem)
+			item[info.ConvertType] = items
 			cs.ConvertConfirmItems[info.AssetType] = item
 		} else {
-			cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = convertItem
+			items := cs.ConvertConfirmItems[info.AssetType][info.ConvertType]
+			items = append(items, convertItem)
+			cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = items
 		}
 	} else {
 		if _, ok := cs.ConvertItems[info.AssetType]; !ok {
 			item := ConvertItems{}
-			item[info.ConvertType] = convertItem
+			items := make([]*ConvertItem, 0, 0)
+			items = append(items, convertItem)
+			item[info.ConvertType] = items
 			cs.ConvertItems[info.AssetType] = item
 		} else {
-			cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
+			items := cs.ConvertItems[info.AssetType][info.ConvertType]
+			items = append(items, convertItem)
+			cs.ConvertItems[info.AssetType][info.ConvertType] = items
 		}
 	}
 
@@ -490,7 +498,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 
-	convertItem := ConvertItem{
+	convertItem := &ConvertItem{
 		ID:     big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
 		PubKey: info.PubKey,
 		Amount: info.Amount,
@@ -499,10 +507,14 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
 		item := ConvertItems{}
-		item[info.ConvertType] = convertItem
+		items := make([]*ConvertItem, 0, 0)
+		items = append(items, convertItem)
+		item[info.ConvertType] = items
 		cs.ConvertItems[ExpandedTxConvert_Czz] = item
 	} else {
-		cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = convertItem
+		items := cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType]
+		items = append(items, convertItem)
+		cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = items
 	}
 	return nil
 }
@@ -510,30 +522,40 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 // AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 
-	convertItem := ConvertItem{
-		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+	var hinfo *ConvertItem
+	var index int
+	items := cs.ConvertItems[info.AssetType][info.ConvertType]
+	for i, v := range items {
+		if v.ID.Cmp(info.ID) == 0 {
+			hinfo = v
+			index = i
+		}
+	}
+
+	if hinfo == nil {
+		return fmt.Errorf("")
+	}
+
+	items = append(items[:index], items[index+1:]...)
+	cs.ConvertItems[info.AssetType][info.ConvertType] = items
+
+	convertItem := &ConvertItem{
+		ID:        info.ID,
 		ExtTxHash: info.ExtTxHash,
 		PubKey:    info.PubKey,
 		Amount:    info.Amount,
 	}
-	cs.MaxItemID = convertItem.ID
 
-	if info.ConvertType == ExpandedTxConvert_Czz {
-		if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
-			item := ConvertItems{}
-			item[info.ConvertType] = convertItem
-			cs.ConvertConfirmItems[info.AssetType] = item
-		} else {
-			cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = convertItem
-		}
+	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
+		item := ConvertItems{}
+		items := make([]*ConvertItem, 0, 0)
+		items = append(items, convertItem)
+		item[info.ConvertType] = items
+		cs.ConvertConfirmItems[info.AssetType] = item
 	} else {
-		if _, ok := cs.ConvertItems[info.AssetType]; !ok {
-			item := ConvertItems{}
-			item[info.ConvertType] = convertItem
-			cs.ConvertItems[info.AssetType] = item
-		} else {
-			cs.ConvertItems[info.AssetType][info.ConvertType] = convertItem
-		}
+		items := cs.ConvertConfirmItems[info.AssetType][info.ConvertType]
+		items = append(items, convertItem)
+		cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = items
 	}
 
 	return nil
@@ -548,7 +570,6 @@ func (cs *CommitteeState) PutNoCostUtxos(address string, POut wire.OutPoint, Scr
 		ncu.Amount = append(ncu.Amount, big.NewInt(Amount))
 		cs.NoCostUtxos[address] = ncu
 	} else {
-
 		items := &PoolAddrItem{
 			POut:   make([]wire.OutPoint, 0),
 			Script: make([][]byte, 0),

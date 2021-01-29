@@ -587,6 +587,17 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 				)
 			}
 		}
+
+		// IsConvertConfirmTx
+		if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
+			for _, info := range cinfo {
+				if cState != nil {
+					if err := cState.ConvertConfirm(info); err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 
 	cross.MakeCoinbaseTxUtxo(NetParams, block.Transactions()[0].MsgTx(), cState)

@@ -1442,6 +1442,7 @@ func handleConvert(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 		ct := &cross.ConvertTxInfo{
 			AssetType:   convert.AssetType,
 			ConvertType: convert.ConvertType,
+			PubKey:      convert.PubKey,
 			Height:      convert.Height,
 			ExtTxHash:   convert.ExtTxHash,
 			Index:       convert.Index,
