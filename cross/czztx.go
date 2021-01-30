@@ -986,7 +986,7 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 	ctis := make([]*ConvertTxInfo, 0, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
-		tpi, err := ev.VerifyConvertTx(info, eState)
+		tpi, err := ev.VerifyConvertTx(info)
 		if err != nil {
 			return nil, err
 		}

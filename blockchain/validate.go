@@ -107,24 +107,24 @@ func isNullOutpoint(outpoint *wire.OutPoint) bool {
 // transaction as opposed to a higher level util transaction.
 func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 	// A coin base must only have one transaction input.
-	height, err := ExtractCoinbaseHeight(czzutil.NewTx(msgTx))
-	if err != nil {
-		return false
-	}
+	//height, err := ExtractCoinbaseHeight(czzutil.NewTx(msgTx))
+	//if err != nil {
+	//	return false
+	//}
 
-	if height >= NetParams.ConverHeight {
-		if len(msgTx.TxIn) < 3 {
-			return false
-		}
-	} else if height >= NetParams.EntangleHeight && height < NetParams.ConverHeight {
-		if len(msgTx.TxIn) != 3 {
-			return false
-		}
-	} else {
-		if len(msgTx.TxIn) != 1 {
-			return false
-		}
-	}
+	//if height >= NetParams.ConverHeight {
+	//	if len(msgTx.TxIn) < 3 {
+	//		return false
+	//	}
+	//} else if height >= NetParams.EntangleHeight && height < NetParams.ConverHeight {
+	//	if len(msgTx.TxIn) != 3 {
+	//		return false
+	//	}
+	//} else {
+	//	if len(msgTx.TxIn) != 1 {
+	//		return false
+	//	}
+	//}
 
 	// The previous output of a coin base must have a max value index and
 	// a zero hash.
@@ -494,7 +494,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		// IsConvertTx
 		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 			for _, v := range cinfo {
-				if tpi, err := b.GetCommitteeVerify().VerifyConvertTx(v, cState); err != nil {
+				if tpi, err := b.GetCommitteeVerify().VerifyConvertTx(v); err != nil {
 					return err
 				} else {
 					v.PubKey = tpi.Pub

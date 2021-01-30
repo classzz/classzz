@@ -1230,15 +1230,15 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	err := b.db.Update(func(dbTx database.Tx) error {
 
-		if NetParams.ConverHeight <= block.Height() {
-			err := dbStateTx(dbTx, block)
+		if b.chainParams.ConverHeight <= block.Height() {
+			err := dbStateTx(b, dbTx, block)
 			if err != nil {
 				return err
 			}
 		}
 
-		if NetParams.BeaconHeight <= block.Height() && NetParams.ConverHeight > block.Height() {
-			err := dbBeaconTx(dbTx, block)
+		if b.chainParams.BeaconHeight <= block.Height() && b.chainParams.ConverHeight > block.Height() {
+			err := dbBeaconTx(b.chainParams, dbTx, block)
 			if err != nil {
 				return err
 			}
@@ -2357,7 +2357,7 @@ func New(config *Config) (*BlockChain, error) {
 		committeeVerify:     committeeVerify,
 	}
 
-	NetParams = params
+	//NetParams = params
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.

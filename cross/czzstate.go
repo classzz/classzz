@@ -540,10 +540,10 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 	cs.ConvertItems[info.AssetType][info.ConvertType] = items
 
 	convertItem := &ConvertItem{
-		ID:        info.ID,
-		ExtTxHash: info.ExtTxHash,
-		PubKey:    info.PubKey,
-		Amount:    info.Amount,
+		ID:        hinfo.ID,
+		ExtTxHash: hinfo.ExtTxHash,
+		PubKey:    hinfo.PubKey,
+		Amount:    hinfo.Amount,
 	}
 
 	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {

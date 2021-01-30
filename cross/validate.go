@@ -327,7 +327,7 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 	return uc, nil
 }
 
-func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *CommitteeState) (*TuplePubIndex, error) {
+func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo) (*TuplePubIndex, error) {
 
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
@@ -336,7 +336,7 @@ func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *Committe
 		}
 	}
 
-	if pub, err := ev.verifyConvertTx(info, cState); err != nil {
+	if pub, err := ev.verifyConvertTx(info); err != nil {
 		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
 		return nil, errors.New("txid verify failed:" + errStr + " err: " + err.Error())
 	} else {
@@ -350,19 +350,19 @@ func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo, cState *Committe
 	}
 }
 
-func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo, eState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo) ([]byte, error) {
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
-		return ev.verifyConvertEthTx(eInfo, eState)
+		return ev.verifyConvertEthTx(eInfo)
 	case ExpandedTxConvert_TCzz:
-		return ev.verifyConvertTrxTx(eInfo, eState)
+		return ev.verifyConvertTrxTx(eInfo)
 	case ExpandedTxConvert_HCzz:
-		return ev.verifyConvertHecoTx(eInfo, eState)
+		return ev.verifyConvertHecoTx(eInfo)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, error) {
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
@@ -436,7 +436,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo, cState *Comm
 	return pk, nil
 }
 
-func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo) ([]byte, error) {
 	// Notice the notification parameter is nil since notifications are
 	// not supported in HTTP POST mode.
 	client := ev.TrxRPC[rand.Intn(len(ev.TrxRPC))]
@@ -525,7 +525,7 @@ func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo, cState *Comm
 
 }
 
-func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo, cState *CommitteeState) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, error) {
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
@@ -612,11 +612,11 @@ func (ev *CommitteeVerify) VerifyConvertConfirmTx(info *ConvertConfirmTxInfo, cS
 }
 
 func (ev *CommitteeVerify) verifyConvertConfirmTx(eInfo *ConvertConfirmTxInfo, eState *CommitteeState) error {
-	switch eInfo.AssetType {
+	switch eInfo.ConvertType {
 	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertConfirmEthTx(eInfo, eState)
 	//case ExpandedTxConvert_TCzz:
-	//	return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
+	//return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
 	case ExpandedTxConvert_HCzz:
 		return ev.verifyConvertConfirmHecoTx(eInfo, eState)
 	}
@@ -715,7 +715,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 
 func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
 
-	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
+	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
@@ -765,9 +765,9 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	}
 
 	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
+	//if txjson.tx.To().String() != ethPoolAddr {
+	//	return fmt.Errorf("ETh To != %s", ethPoolAddr)
+	//}
 
 	if len(receipt.Logs) < 1 {
 		return fmt.Errorf("ETh receipt.Logs")
@@ -786,19 +786,30 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	}
 
 	txLog := receipt.Logs[1]
+	topic := txLog.Topics[0].String()
+	address := txLog.Topics[1].String()
 	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:]
+	mid := txLog.Data[32:]
+	if topic == "0x9101ffdf7f446a8cd01ffe1fa15674f7fae32d7e5c8df3b3a5f0612b724f3a80" {
+
+	}
+
+	if address == "0x9101ffdf7f446a8cd01ffe1fa15674f7fae32d7e5c8df3b3a5f0612b724f3a80" {
+
+	}
+
 	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) != 0 {
 		return fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
-	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
 	}
 
-	if bytes.Equal(pk, hinfo.PubKey) {
-		return fmt.Errorf("ETh pk %d not %d", pk, hinfo.PubKey)
-	}
+	fmt.Println(pk)
+	//if bytes.Equal(pk, hinfo.PubKey) {
+	//	return fmt.Errorf("ETh pk %d not %d", pk, hinfo.PubKey)
+	//}
 
 	return nil
 }

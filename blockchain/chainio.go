@@ -91,7 +91,7 @@ var (
 	// fields for storage in the database.
 	byteOrder = binary.LittleEndian
 
-	NetParams *chaincfg.Params
+	//NetParams *chaincfg.Params
 )
 
 // errNotInMainChain signifies that a block hash or height that is not in the
@@ -516,19 +516,19 @@ func dbRemoveSpendJournalEntry(dbTx database.Tx, blockHash *chainhash.Hash) erro
 	return spendBucket.Delete(blockHash[:])
 }
 
-func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
+func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	cState := dbFetchCommitteeState(dbTx, pHeight, pHash)
-	if block.Height() == NetParams.ConverHeight {
+	if block.Height() == b.chainParams.ConverHeight {
 		cState = cross.NewCommitteeState()
 	}
 
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
-		br, _ := cross.IsMortgageTx(tx.MsgTx(), NetParams)
+		br, _ := cross.IsMortgageTx(tx.MsgTx(), b.chainParams)
 		if br != nil {
 			if err := MortgageTxStore(cState, br, tx); err != nil {
 				return err
@@ -536,7 +536,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// AddMortgage
-		bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), NetParams)
+		bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), b.chainParams)
 		if bp != nil {
 			if err := AddMortgageTxStore(cState, bp, tx); err != nil {
 				return err
@@ -544,7 +544,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// IsUpdateCoinbaseAllTx
-		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), NetParams)
+		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), b.chainParams)
 		if ubc != nil {
 			if cState != nil {
 				if err := cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress); err != nil {
@@ -556,6 +556,8 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 			for _, info := range cinfo {
+				tup, _ := b.committeeVerify.VerifyConvertTx(info)
+				info.PubKey = tup.Pub
 				if cState != nil {
 					if err := cState.Convert(info); err != nil {
 						return err
@@ -572,7 +574,7 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 					return err
 				}
 				pool := cross.CoinPools[ct.ConvertType]
-				addr, err := czzutil.NewAddressPubKeyHash(pool, NetParams)
+				addr, err := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 				if err != nil || addr == nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -600,27 +602,27 @@ func dbStateTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
-	cross.MakeCoinbaseTxUtxo(NetParams, block.Transactions()[0].MsgTx(), cState)
+	cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState)
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
 		return err
 	}
 	return nil
 }
 
-func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
+func dbBeaconTx(params *chaincfg.Params, dbTx database.Tx, block *czzutil.Block) error {
 
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	eState := dbFetchEntangleState(dbTx, pHeight, pHash)
 
-	if block.Height() == NetParams.BeaconHeight {
+	if block.Height() == params.BeaconHeight {
 		eState = cross.NewEntangleState()
 	}
 
 	for _, tx := range block.Transactions() {
 		var err error
 		// BeaconRegistration
-		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), NetParams)
+		br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), params)
 		if br != nil {
 			if eState != nil {
 				err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress)
@@ -631,7 +633,7 @@ func dbBeaconTx(dbTx database.Tx, block *czzutil.Block) error {
 		}
 
 		// AddBeaconPledge
-		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), NetParams)
+		bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), params)
 		if bp != nil {
 			if eState != nil {
 				err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount)

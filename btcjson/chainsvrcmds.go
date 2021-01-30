@@ -321,6 +321,16 @@ func NewCastingCmd(inputs []TransactionInput, casting CastingOut, amounts *map[s
 	}
 }
 
+func NewConvertConfirmCmd(inputs []TransactionInput, convertOut []ConvertConfirmOut, amounts *map[string]float64,
+	lockTime *int64) *ConvertConfirmCmd {
+	return &ConvertConfirmCmd{
+		Inputs:         inputs,
+		ConvertConfirm: convertOut,
+		Amounts:        amounts,
+		LockTime:       lockTime,
+	}
+}
+
 // DecodeRawTransactionCmd defines the decoderawtransaction JSON-RPC command.
 type DecodeRawTransactionCmd struct {
 	HexTx string
@@ -1215,6 +1225,7 @@ func init() {
 	MustRegisterCmd("updatecoinbaseall", (*UpdateCoinbaseAllCmd)(nil), flags)
 	MustRegisterCmd("convert", (*ConvertCmd)(nil), flags)
 	MustRegisterCmd("casting", (*CastingCmd)(nil), flags)
+	MustRegisterCmd("convertconfirm", (*ConvertConfirmCmd)(nil), flags)
 	MustRegisterCmd("conversionaddress", (*ConversionAddresseCmd)(nil), flags)
 	MustRegisterCmd("decoderawtransaction", (*DecodeRawTransactionCmd)(nil), flags)
 	MustRegisterCmd("decodescript", (*DecodeScriptCmd)(nil), flags)

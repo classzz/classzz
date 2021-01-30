@@ -477,6 +477,24 @@ func (c *Client) CastingAsync(inputs []btcjson.TransactionInput,
 	return c.sendCmd(cmd)
 }
 
+// Casting returns a new transaction spending the provided inputs
+// and sending to the provided addresses.
+func (c *Client) ConvertConfirm(inputs []btcjson.TransactionInput,
+	out btcjson.CastingOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.CastingAsync(inputs, out, amounts, lockTime).Receive()
+}
+
+// CastingAsync returns an instance of a type that can be used to
+// get the result of the RPC at some future time by invoking the Receive
+// function on the returned instance.
+//
+// See CastingAsync for the blocking version and more details.
+func (c *Client) ConvertConfirmAsync(inputs []btcjson.TransactionInput,
+	out []btcjson.ConvertConfirmOut, amounts *map[string]float64, lockTime *int64) FutureCreateRawTransactionResult {
+	cmd := btcjson.NewConvertConfirmCmd(inputs, out, amounts, lockTime)
+	return c.sendCmd(cmd)
+}
+
 // FutureSendRawTransactionResult is a future promise to deliver the result
 // of a SendRawTransactionAsync RPC invocation (or an applicable error).
 type FutureSendRawTransactionResult chan *response

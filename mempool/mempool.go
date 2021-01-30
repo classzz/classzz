@@ -1073,7 +1073,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	// IsConvertTx
 	if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 		for _, v := range cinfo {
-			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v, cState); err != nil {
+			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v); err != nil {
 				return err
 			} else {
 				if err = cState.Convert(v); err != nil {
@@ -1090,6 +1090,20 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 		return err
 	}
 
+	// IsConvertTx
+	if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
+		for _, v := range cinfo {
+			if err := mp.cfg.CommitteeVerify.VerifyConvertConfirmTx(v, cState); err != nil {
+				return err
+			} else {
+				if err = cState.ConvertConfirm(v); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					continue
+				}
+			}
+		}
+	}
 	return nil
 }
 
