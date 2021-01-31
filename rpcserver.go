@@ -173,7 +173,6 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getheaders":            handleGetHeaders,
 	"getinfo":               handleGetInfo,
 	"getstateinfo":          handleGetStateInfo,
-	"getentangleinfo":       handleGetEntangleInfo,
 	"getwork":               handleGetWork,
 	"getworktemplate":       handleGetWorkTemplate,
 	"getmempoolinfo":        handleGetMempoolInfo,
@@ -3557,92 +3556,77 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 	return pList, nil
 }
 
-//func handleGetRateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//
-//	c := cmd.(*btcjson.GetRateInfoCmd)
-//
-//	estate := s.cfg.Chain.CurrentEstate()
-//	rate := make(map[string]float64)
-//	if s.cfg.Chain.BestSnapshot().Height < s.cfg.ChainParams.BeaconHeight {
-//		return rate, nil
-//	}
-//
-//	reserve := estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Doge)
-//	sendAmount, err := cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Doge)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rate["DOGE"] = float64(sendAmount.Uint64())
-//
-//	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Ltc)
-//	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Ltc)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rate["LTC"] = float64(sendAmount.Uint64())
-//
-//	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Btc)
-//	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Btc)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rate["BTC"] = float64(sendAmount.Uint64())
-//
-//	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Bch)
-//	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Bch)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rate["BCH"] = float64(sendAmount.Uint64())
-//
-//	reserve = estate.GetEntangleAmountByAll(cross.ExpandedTxEntangle_Bsv)
-//	sendAmount, err = cross.CalcEntangleAmount(reserve, big.NewInt(1), cross.ExpandedTxEntangle_Bsv)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rate["BSV"] = float64(sendAmount.Uint64())
-//	rate["CZZ"] = 1.0
-//
-//	Num1 := 1.0
-//	Num2 := 1.0
-//
-//	if c.Token1 == nil || c.Token2 == nil || (rate[*c.Token1] == 0.0 && rate[*c.Token2] == 0.0) {
-//		return nil, fmt.Errorf("err")
-//	}
-//
-//	if rate[*c.Token1] != 0.0 {
-//		Num1 = rate[*c.Token1]
-//	}
-//
-//	if rate[*c.Token2] != 0.0 {
-//		Num2 = rate[*c.Token2]
-//	}
-//
-//	return Num1 / Num2, nil
-//}
-
 // handleAddressExchangeInfo implements the getinfo command. We only return the fields
 // that are not related to wallet functionality.
-//func handleGetAddressExchangeInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	c := cmd.(*btcjson.GetAddressExchangeInfoCmd)
-//
-//	estate := s.cfg.Chain.CurrentEstate()
-//	us := estate.EnUserExChangeInfos[c.BeaconID]
-//	if us == nil {
-//		return nil, errors.New("EnUserExChangeInfos is nil")
-//	}
-//
-//	addrInfo := us[c.Address]
-//	if addrInfo == nil {
-//		return nil, errors.New("EnUserExChangeInfos address is nil")
-//	}
-//
-//	result := make(map[string]interface{})
-//	result["LastHeight"] = addrInfo.OldHeight
-//	result["MaxRedeem"] = addrInfo.MaxRedeem
-//
-//	return result, nil
-//}
+func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetConvertItemsCmd)
+	result := make([]interface{}, 0, 0)
+
+	estate := s.cfg.Chain.CurrentCstate()
+	if c.AssetType == nil && c.ConvertType == nil {
+		for k, v := range estate.ConvertItems {
+			for k1, v1 := range v {
+				for _, v3 := range v1 {
+					result2 := make(map[string]interface{})
+					result2["ID"] = v3.ID
+					result2["Amount"] = v3.Amount
+					result2["PubKey"] = v3.PubKey
+					result2["ExtTxHash"] = v3.ExtTxHash
+					result2["AssetType"] = k
+					result2["ConvertType"] = k1
+					result = append(result, result2)
+				}
+			}
+		}
+	}
+
+	if c.AssetType != nil && c.ConvertType == nil {
+		v := estate.ConvertItems[*c.AssetType]
+		for k1, v1 := range v {
+			for _, v3 := range v1 {
+				result2 := make(map[string]interface{})
+				result2["ID"] = v3.ID
+				result2["Amount"] = v3.Amount
+				result2["PubKey"] = v3.PubKey
+				result2["ExtTxHash"] = v3.ExtTxHash
+				result2["AssetType"] = c.AssetType
+				result2["ConvertType"] = k1
+				result = append(result, result2)
+			}
+		}
+	}
+
+	if c.AssetType == nil && c.ConvertType != nil {
+		for k, v := range estate.ConvertItems {
+			v1 := v[*c.ConvertType]
+			for _, v3 := range v1 {
+				result2 := make(map[string]interface{})
+				result2["ID"] = v3.ID
+				result2["Amount"] = v3.Amount
+				result2["PubKey"] = v3.PubKey
+				result2["ExtTxHash"] = v3.ExtTxHash
+				result2["AssetType"] = k
+				result2["ConvertType"] = c.ConvertType
+				result = append(result, result2)
+			}
+		}
+	}
+
+	v := estate.ConvertItems[*c.AssetType]
+	v1 := v[*c.ConvertType]
+	for _, v3 := range v1 {
+		result2 := make(map[string]interface{})
+		result2["ID"] = v3.ID
+		result2["Amount"] = v3.Amount
+		result2["PubKey"] = v3.PubKey
+		result2["ExtTxHash"] = v3.ExtTxHash
+		result2["AssetType"] = c.AssetType
+		result2["ConvertType"] = c.ConvertType
+		result = append(result, result2)
+	}
+
+	return result, nil
+}
 
 // handleAddressExchangeInfo implements the getinfo command. We only return the fields
 // that are not related to wallet functionality.
@@ -3784,43 +3768,6 @@ func handleConversionAddress(s *rpcServer, cmd interface{}, closeChan <-chan str
 	addrs["USDT"] = addr6.String()
 
 	return addrs, nil
-}
-
-// handleGetInfo implements the getinfo command. We only return the fields
-// that are not related to wallet functionality.
-//func handleGetBurnTxInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-//	c := cmd.(*btcjson.GetBurnTxInfoCmd)
-//	btis := s.cfg.Chain.GetExChangeVerify().Cache.LoadBurnTxInfoAll(c.BeaconID)
-//	return btis, nil
-//}
-
-func handleGetEntangleInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
-	best := s.cfg.Chain.BestSnapshot()
-	block, err := s.cfg.Chain.BlockByHash(&best.Hash)
-	if err != nil {
-		return nil, err
-	}
-	txs := block.Transactions()
-	if len(txs) <= 0 {
-		return nil, errors.New("Transactions is nil")
-	}
-	txPkScript := txs[0].MsgTx().TxOut[3].PkScript
-
-	keepedAmount, err := cross.KeepedAmountFromScript(txPkScript)
-
-	infos := make([]*btcjson.EntangleInfoChainResult, 0)
-	for _, item := range keepedAmount.Items {
-		info := &btcjson.EntangleInfoChainResult{}
-		switch item.AssetType {
-		case cross.ExpandedTxEntangle_Doge:
-			info.ExTxType = "doge"
-		case cross.ExpandedTxEntangle_Ltc:
-			info.ExTxType = "ltc"
-		}
-		info.Amount = item.Amount.Int64()
-		infos = append(infos, info)
-	}
-	return infos, nil
 }
 
 func handleGetWork(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {

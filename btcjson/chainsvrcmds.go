@@ -402,103 +402,103 @@ func NewGetBlockCmd(hash string, verbosity *uint32) *GetBlockCmd {
 	}
 }
 
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetBurnTxInfoCmd struct {
-	BeaconID uint64
-}
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetBurnTxInfoCmd struct {
+//	BeaconID uint64
+//}
+//
+//// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+//// JSON-RPC command.
+////
+//// The parameters which are pointers indicate they are optional.  Passing nil
+//// for optional parameters will use the default value.
+//func NewGetBurnTxInfoCmd(BeaconID uint64) *GetBurnTxInfoCmd {
+//	return &GetBurnTxInfoCmd{
+//		BeaconID: BeaconID,
+//	}
+//}
+
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetAddressExchangeInfoCmd struct {
+//	BeaconID uint64
+//	Address  string
+//}
 
 // NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
 // JSON-RPC command.
 //
 // The parameters which are pointers indicate they are optional.  Passing nil
 // for optional parameters will use the default value.
-func NewGetBurnTxInfoCmd(BeaconID uint64) *GetBurnTxInfoCmd {
-	return &GetBurnTxInfoCmd{
-		BeaconID: BeaconID,
-	}
-}
-
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetAddressExchangeInfoCmd struct {
-	BeaconID uint64
-	Address  string
-}
-
-// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
-// JSON-RPC command.
+//func NewGetAddressExchangeInfoCmd(beaconID uint64, address string) *GetAddressExchangeInfoCmd {
+//	return &GetAddressExchangeInfoCmd{
+//		BeaconID: beaconID,
+//		Address:  address,
+//	}
+//}
 //
-// The parameters which are pointers indicate they are optional.  Passing nil
-// for optional parameters will use the default value.
-func NewGetAddressExchangeInfoCmd(beaconID uint64, address string) *GetAddressExchangeInfoCmd {
-	return &GetAddressExchangeInfoCmd{
-		BeaconID: beaconID,
-		Address:  address,
-	}
-}
-
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetBeaconExchangeAssetCmd struct {
-	Address string
-}
-
-// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
-// JSON-RPC command.
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetBeaconExchangeAssetCmd struct {
+//	Address string
+//}
 //
-// The parameters which are pointers indicate they are optional.  Passing nil
-// for optional parameters will use the default value.
-func NewGetBeaconExchangeAssetCmd(address string) *GetBeaconExchangeAssetCmd {
-	return &GetBeaconExchangeAssetCmd{
-		Address: address,
-	}
-}
-
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetBeaconFreeAssetCmd struct {
-	BeaconID uint64
-}
-
-// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
-// JSON-RPC command.
+//// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+//// JSON-RPC command.
+////
+//// The parameters which are pointers indicate they are optional.  Passing nil
+//// for optional parameters will use the default value.
+//func NewGetBeaconExchangeAssetCmd(address string) *GetBeaconExchangeAssetCmd {
+//	return &GetBeaconExchangeAssetCmd{
+//		Address: address,
+//	}
+//}
 //
-// The parameters which are pointers indicate they are optional.  Passing nil
-// for optional parameters will use the default value.
-func NewGetBeaconFreeAssetCmd(beaconID uint64) *GetBeaconFreeAssetCmd {
-	return &GetBeaconFreeAssetCmd{
-		BeaconID: beaconID,
-	}
-}
-
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetBeaconNoOverdueAssetCmd struct {
-	BeaconID uint64
-}
-
-// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
-// JSON-RPC command.
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetBeaconFreeAssetCmd struct {
+//	BeaconID uint64
+//}
 //
-// The parameters which are pointers indicate they are optional.  Passing nil
-// for optional parameters will use the default value.
-func NewGetBeaconNoOverdueAssetCmd(beaconID uint64) *GetBeaconNoOverdueAssetCmd {
-	return &GetBeaconNoOverdueAssetCmd{
-		BeaconID: beaconID,
-	}
-}
-
-// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
-type GetBeaconBurnInfoCmd struct {
-	BeaconID uint64
-}
-
-// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
-// JSON-RPC command.
+//// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+//// JSON-RPC command.
+////
+//// The parameters which are pointers indicate they are optional.  Passing nil
+//// for optional parameters will use the default value.
+//func NewGetBeaconFreeAssetCmd(beaconID uint64) *GetBeaconFreeAssetCmd {
+//	return &GetBeaconFreeAssetCmd{
+//		BeaconID: beaconID,
+//	}
+//}
 //
-// The parameters which are pointers indicate they are optional.  Passing nil
-// for optional parameters will use the default value.
-func NewGetBeaconBurnInfoCmd(beaconID uint64) *GetBeaconBurnInfoCmd {
-	return &GetBeaconBurnInfoCmd{
-		BeaconID: beaconID,
-	}
-}
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetBeaconNoOverdueAssetCmd struct {
+//	BeaconID uint64
+//}
+//
+//// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+//// JSON-RPC command.
+////
+//// The parameters which are pointers indicate they are optional.  Passing nil
+//// for optional parameters will use the default value.
+//func NewGetBeaconNoOverdueAssetCmd(beaconID uint64) *GetBeaconNoOverdueAssetCmd {
+//	return &GetBeaconNoOverdueAssetCmd{
+//		BeaconID: beaconID,
+//	}
+//}
+//
+//// GetBurnTxInfoCmd defines the GetBurnTxInfo JSON-RPC command.
+//type GetBeaconBurnInfoCmd struct {
+//	BeaconID uint64
+//}
+//
+//// NewGetBurnTxInfoCmd returns a new instance which can be used to issue a GetBurnTxInfo
+//// JSON-RPC command.
+////
+//// The parameters which are pointers indicate they are optional.  Passing nil
+//// for optional parameters will use the default value.
+//func NewGetBeaconBurnInfoCmd(beaconID uint64) *GetBeaconBurnInfoCmd {
+//	return &GetBeaconBurnInfoCmd{
+//		BeaconID: beaconID,
+//	}
+//}
 
 // GetBlockCmd defines the getblock JSON-RPC command.
 type GetDogecoinBlockCmd struct {
@@ -815,14 +815,14 @@ func NewGetPeerInfoCmd() *GetPeerInfoCmd {
 	return &GetPeerInfoCmd{}
 }
 
-// GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
-type GetEntangleInfoCmd struct{}
-
-// NewGetPeerInfoCmd returns a new instance which can be used to issue a getpeer
-// JSON-RPC command.
-func NewGetEntangleInfoCmd() *GetEntangleInfoCmd {
-	return &GetEntangleInfoCmd{}
-}
+//// GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
+//type GetEntangleInfoCmd struct{}
+//
+//// NewGetPeerInfoCmd returns a new instance which can be used to issue a getpeer
+//// JSON-RPC command.
+//func NewGetEntangleInfoCmd() *GetEntangleInfoCmd {
+//	return &GetEntangleInfoCmd{}
+//}
 
 // GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
 type GetStateInfoCmd struct {
@@ -836,15 +836,15 @@ func NewGetStateInfoCmd(ID *uint64) *GetStateInfoCmd {
 }
 
 // GetRateInfoCmd defines the getpeerinfo JSON-RPC command.
-type GetRateInfoCmd struct {
-	Token1 *string `json:"token_1"`
-	Token2 *string `json:"token_2"`
+type GetConvertItemsCmd struct {
+	AssetType   *uint8 `json:"asset_type"`
+	ConvertType *uint8 `json:"convert_type"`
 }
 
 // NewGetRateInfoCmd returns a new instance which can be used to issue a getpeer
 // JSON-RPC command.
-func NewGetRateInfoCmd(Token1 *string, Token2 *string) *GetRateInfoCmd {
-	return &GetRateInfoCmd{Token1: Token1, Token2: Token2}
+func NewGetConvertItemsCmd(assetType *uint8, convertType *uint8) *GetConvertItemsCmd {
+	return &GetConvertItemsCmd{AssetType: assetType, ConvertType: convertType}
 }
 
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
@@ -1247,14 +1247,7 @@ func init() {
 	MustRegisterCmd("gethashespersec", (*GetHashesPerSecCmd)(nil), flags)
 	MustRegisterCmd("getinfo", (*GetInfoCmd)(nil), flags)
 	MustRegisterCmd("getstateinfo", (*GetStateInfoCmd)(nil), flags)
-	MustRegisterCmd("getaddressexchangeinfo", (*GetAddressExchangeInfoCmd)(nil), flags)
-	MustRegisterCmd("getrateinfo", (*GetRateInfoCmd)(nil), flags)
-	MustRegisterCmd("getbeaconexchangeasset", (*GetBeaconExchangeAssetCmd)(nil), flags)
-	MustRegisterCmd("getbeaconfreeasset", (*GetBeaconFreeAssetCmd)(nil), flags)
-	MustRegisterCmd("getbeaconnooverdueasset", (*GetBeaconNoOverdueAssetCmd)(nil), flags)
-	MustRegisterCmd("getburntxinfo", (*GetBurnTxInfoCmd)(nil), flags)
-	MustRegisterCmd("getbeaconburninfo", (*GetBeaconBurnInfoCmd)(nil), flags)
-	MustRegisterCmd("getentangleinfo", (*GetEntangleInfoCmd)(nil), flags)
+	MustRegisterCmd("getconvertitems", (*GetConvertItemsCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)
 	MustRegisterCmd("getmempoolinfo", (*GetMempoolInfoCmd)(nil), flags)
 	MustRegisterCmd("getmininginfo", (*GetMiningInfoCmd)(nil), flags)

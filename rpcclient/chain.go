@@ -413,22 +413,6 @@ func (r FutureGetBurnTxInfoResult) Receive() ([]*BurnTxInfo, error) {
 	return btis, nil
 }
 
-// GetBlockHashAsync returns an instance of a type that can be used to get the
-// result of the RPC at some future time by invoking the Receive function on the
-// returned instance.
-//
-// See GetBlockHash for the blocking version and more details.
-func (c *Client) GetBurnTxInfoAsync(BeaconID uint64) FutureGetBurnTxInfoResult {
-	cmd := btcjson.NewGetBurnTxInfoCmd(BeaconID)
-	return c.sendCmd(cmd)
-}
-
-// GetBlockHash returns the hash of the block in the best block chain at the
-// given height.
-func (c *Client) GetBurnTxInfo(BeaconID uint64) ([]*BurnTxInfo, error) {
-	return c.GetBurnTxInfoAsync(BeaconID).Receive()
-}
-
 // FutureGetBlockHashResult is a future promise to deliver the result of a
 // GetBlockHashAsync RPC invocation (or an applicable error).
 type FutureGetStateInfoResult chan *response
@@ -466,6 +450,22 @@ func (c *Client) GetStateInfo(BeaconID *uint64) ([]*btcjson.StateInfoChainResult
 	return c.GetStateInfoAsync(BeaconID).Receive()
 }
 
+// GetBlockHashAsync returns an instance of a type that can be used to get the
+// result of the RPC at some future time by invoking the Receive function on the
+// returned instance.
+//
+// See GetBlockHash for the blocking version and more details.
+func (c *Client) GetConvertItemsAsync(AssetType *uint8, ConvertType *uint8) FutureGetStateInfoResult {
+	cmd := btcjson.NewGetConvertItemsCmd(AssetType, ConvertType)
+	return c.sendCmd(cmd)
+}
+
+// GetBlockHash returns the hash of the block in the best block chain at the
+// given height.
+func (c *Client) GetConvertItems(AssetType *uint8, ConvertType *uint8) ([]*btcjson.StateInfoChainResult, error) {
+	return c.GetConvertItemsAsync(AssetType, ConvertType).Receive()
+}
+
 // FutureGetBlockHashResult is a future promise to deliver the result of a
 // GetBlockHashAsync RPC invocation (or an applicable error).
 type FutureGetBeaconBurnInfoResult chan *response
@@ -485,22 +485,6 @@ func (r FutureGetBeaconBurnInfoResult) Receive() (map[string]map[string][]map[st
 		return nil, err
 	}
 	return btis, nil
-}
-
-// GetBlockHashAsync returns an instance of a type that can be used to get the
-// result of the RPC at some future time by invoking the Receive function on the
-// returned instance.
-//
-// See GetBlockHash for the blocking version and more details.
-func (c *Client) GetBeaconBurnInfoAsync(BeaconID uint64) FutureGetBeaconBurnInfoResult {
-	cmd := btcjson.NewGetBeaconBurnInfoCmd(BeaconID)
-	return c.sendCmd(cmd)
-}
-
-// GetBlockHash returns the hash of the block in the best block chain at the
-// given height.
-func (c *Client) GetBeaconBurnInfo(BeaconID uint64) (map[string]map[string][]map[string]interface{}, error) {
-	return c.GetBeaconBurnInfoAsync(BeaconID).Receive()
 }
 
 // FutureGetBlockHeaderResult is a future promise to deliver the result of a
