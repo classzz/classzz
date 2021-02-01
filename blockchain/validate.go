@@ -238,7 +238,7 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 		return baseSubsidy
 	}
 
-	halvings := uint(height / chainParams.SubsidyReductionInterval)
+	halvings := uint(height/chainParams.SubsidyReductionInterval) + 1
 
 	if halvings == 0 {
 		return baseSubsidy
