@@ -450,19 +450,40 @@ func (c *Client) GetStateInfo(BeaconID *uint64) ([]*btcjson.StateInfoChainResult
 	return c.GetStateInfoAsync(BeaconID).Receive()
 }
 
+// FutureGetBlockHashResult is a future promise to deliver the result of a
+// GetBlockHashAsync RPC invocation (or an applicable error).
+type FutureGetConvertItemsResult chan *response
+
+// Receive waits for the response promised by the future and returns the hash of
+// the block in the best block chain at the given height.
+func (r FutureGetConvertItemsResult) Receive() ([]*btcjson.ConvertItemsResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the result as a string-encoded sha.
+	var btis []*btcjson.ConvertItemsResult
+	err = json.Unmarshal(res, &btis)
+	if err != nil {
+		return nil, err
+	}
+	return btis, nil
+}
+
 // GetBlockHashAsync returns an instance of a type that can be used to get the
 // result of the RPC at some future time by invoking the Receive function on the
 // returned instance.
 //
 // See GetBlockHash for the blocking version and more details.
-func (c *Client) GetConvertItemsAsync(AssetType *uint8, ConvertType *uint8) FutureGetStateInfoResult {
+func (c *Client) GetConvertItemsAsync(AssetType *uint8, ConvertType *uint8) FutureGetConvertItemsResult {
 	cmd := btcjson.NewGetConvertItemsCmd(AssetType, ConvertType)
 	return c.sendCmd(cmd)
 }
 
 // GetBlockHash returns the hash of the block in the best block chain at the
 // given height.
-func (c *Client) GetConvertItems(AssetType *uint8, ConvertType *uint8) ([]*btcjson.StateInfoChainResult, error) {
+func (c *Client) GetConvertItems(AssetType *uint8, ConvertType *uint8) ([]*btcjson.ConvertItemsResult, error) {
 	return c.GetConvertItemsAsync(AssetType, ConvertType).Receive()
 }
 

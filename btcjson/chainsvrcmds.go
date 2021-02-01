@@ -815,15 +815,6 @@ func NewGetPeerInfoCmd() *GetPeerInfoCmd {
 	return &GetPeerInfoCmd{}
 }
 
-//// GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
-//type GetEntangleInfoCmd struct{}
-//
-//// NewGetPeerInfoCmd returns a new instance which can be used to issue a getpeer
-//// JSON-RPC command.
-//func NewGetEntangleInfoCmd() *GetEntangleInfoCmd {
-//	return &GetEntangleInfoCmd{}
-//}
-
 // GetPeerInfoCmd defines the getpeerinfo JSON-RPC command.
 type GetStateInfoCmd struct {
 	ID *uint64 `json:"id"`

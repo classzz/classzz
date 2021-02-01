@@ -3560,20 +3560,21 @@ func handleGetStateInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}
 // that are not related to wallet functionality.
 func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	c := cmd.(*btcjson.GetConvertItemsCmd)
-	result := make([]interface{}, 0, 0)
+	result := make([]*btcjson.ConvertItemsResult, 0, 0)
 
 	estate := s.cfg.Chain.CurrentCstate()
 	if c.AssetType == nil && c.ConvertType == nil {
 		for k, v := range estate.ConvertItems {
 			for k1, v1 := range v {
 				for _, v3 := range v1 {
-					result2 := make(map[string]interface{})
-					result2["ID"] = v3.ID
-					result2["Amount"] = v3.Amount
-					result2["PubKey"] = v3.PubKey
-					result2["ExtTxHash"] = v3.ExtTxHash
-					result2["AssetType"] = k
-					result2["ConvertType"] = k1
+					result2 := &btcjson.ConvertItemsResult{
+						MID:         v3.ID,
+						AssetType:   k,
+						ConvertType: k1,
+						PubKey:      v3.PubKey,
+						ExtTxHash:   v3.ExtTxHash,
+						Amount:      v3.Amount,
+					}
 					result = append(result, result2)
 				}
 			}
@@ -3584,13 +3585,14 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		v := estate.ConvertItems[*c.AssetType]
 		for k1, v1 := range v {
 			for _, v3 := range v1 {
-				result2 := make(map[string]interface{})
-				result2["ID"] = v3.ID
-				result2["Amount"] = v3.Amount
-				result2["PubKey"] = v3.PubKey
-				result2["ExtTxHash"] = v3.ExtTxHash
-				result2["AssetType"] = c.AssetType
-				result2["ConvertType"] = k1
+				result2 := &btcjson.ConvertItemsResult{
+					MID:         v3.ID,
+					AssetType:   *c.AssetType,
+					ConvertType: k1,
+					PubKey:      v3.PubKey,
+					ExtTxHash:   v3.ExtTxHash,
+					Amount:      v3.Amount,
+				}
 				result = append(result, result2)
 			}
 		}
@@ -3600,13 +3602,14 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		for k, v := range estate.ConvertItems {
 			v1 := v[*c.ConvertType]
 			for _, v3 := range v1 {
-				result2 := make(map[string]interface{})
-				result2["ID"] = v3.ID
-				result2["Amount"] = v3.Amount
-				result2["PubKey"] = v3.PubKey
-				result2["ExtTxHash"] = v3.ExtTxHash
-				result2["AssetType"] = k
-				result2["ConvertType"] = c.ConvertType
+				result2 := &btcjson.ConvertItemsResult{
+					MID:         v3.ID,
+					AssetType:   k,
+					ConvertType: *c.ConvertType,
+					PubKey:      v3.PubKey,
+					ExtTxHash:   v3.ExtTxHash,
+					Amount:      v3.Amount,
+				}
 				result = append(result, result2)
 			}
 		}
@@ -3615,13 +3618,14 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	v := estate.ConvertItems[*c.AssetType]
 	v1 := v[*c.ConvertType]
 	for _, v3 := range v1 {
-		result2 := make(map[string]interface{})
-		result2["ID"] = v3.ID
-		result2["Amount"] = v3.Amount
-		result2["PubKey"] = v3.PubKey
-		result2["ExtTxHash"] = v3.ExtTxHash
-		result2["AssetType"] = c.AssetType
-		result2["ConvertType"] = c.ConvertType
+		result2 := &btcjson.ConvertItemsResult{
+			MID:         v3.ID,
+			AssetType:   *c.AssetType,
+			ConvertType: *c.ConvertType,
+			PubKey:      v3.PubKey,
+			ExtTxHash:   v3.ExtTxHash,
+			Amount:      v3.Amount,
+		}
 		result = append(result, result2)
 	}
 
