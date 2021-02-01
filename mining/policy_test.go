@@ -6,6 +6,8 @@ package mining
 
 import (
 	"encoding/hex"
+	"fmt"
+	"github.com/classzz/classzz/chaincfg"
 	"testing"
 
 	"github.com/classzz/classzz/blockchain"
@@ -167,4 +169,8 @@ func TestCalcPriority(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func TestName(t *testing.T) {
+	fmt.Println(blockchain.CalcBlockSubsidy(1000001, &chaincfg.MainNetParams))
 }
