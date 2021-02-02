@@ -3580,6 +3580,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				}
 			}
 		}
+		return result, nil
 	}
 
 	if c.AssetType != nil && c.ConvertType == nil {
@@ -3597,6 +3598,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				result = append(result, result2)
 			}
 		}
+		return result, nil
 	}
 
 	if c.AssetType == nil && c.ConvertType != nil {
@@ -3614,6 +3616,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				result = append(result, result2)
 			}
 		}
+		return result, nil
 	}
 
 	v := estate.ConvertItems[*c.AssetType]
