@@ -173,6 +173,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getheaders":            handleGetHeaders,
 	"getinfo":               handleGetInfo,
 	"getstateinfo":          handleGetStateInfo,
+	"getconvertitems":       handleGetConvertItems,
 	"getwork":               handleGetWork,
 	"getworktemplate":       handleGetWorkTemplate,
 	"getmempoolinfo":        handleGetMempoolInfo,
