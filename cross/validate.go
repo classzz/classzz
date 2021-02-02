@@ -414,9 +414,9 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 	}
 
 	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
+	//if txjson.tx.To().String() != ethPoolAddr {
+	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	//}
 
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("ETh receipt.Logs ")
@@ -578,9 +578,9 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	}
 
 	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
+	//if txjson.tx.To().String() != ethPoolAddr {
+	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	//}
 
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("ETh receipt.Logs ")
@@ -675,9 +675,9 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	}
 
 	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
+	//if txjson.tx.To().String() != ethPoolAddr {
+	//	return fmt.Errorf("ETh To != %s", ethPoolAddr)
+	//}
 
 	if len(receipt.Logs) < 1 {
 		return fmt.Errorf("ETh receipt.Logs")
