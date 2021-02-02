@@ -837,6 +837,7 @@ var rpcResultTypes = map[string][]interface{}{
 	"getheaders":            {(*[]string)(nil)},
 	"getinfo":               {(*btcjson.InfoChainResult)(nil)},
 	"getstateinfo":          {(*map[string]btcjson.BeaconAddressInfo)(nil)},
+	"getconvertitems":       {(*[]*btcjson.ConvertItemsResult)(nil)},
 	"getmempoolinfo":        {(*btcjson.GetMempoolInfoResult)(nil)},
 	"getmininginfo":         {(*btcjson.GetMiningInfoResult)(nil)},
 	"getnettotals":          {(*btcjson.GetNetTotalsResult)(nil)},
