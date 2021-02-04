@@ -480,8 +480,8 @@ func (c *Client) CastingAsync(inputs []btcjson.TransactionInput,
 // Casting returns a new transaction spending the provided inputs
 // and sending to the provided addresses.
 func (c *Client) ConvertConfirm(inputs []btcjson.TransactionInput,
-	out btcjson.CastingOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
-	return c.CastingAsync(inputs, out, amounts, lockTime).Receive()
+	out []btcjson.ConvertConfirmOut, amounts *map[string]float64, lockTime *int64) (*wire.MsgTx, error) {
+	return c.ConvertConfirmAsync(inputs, out, amounts, lockTime).Receive()
 }
 
 // CastingAsync returns an instance of a type that can be used to
