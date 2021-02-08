@@ -127,6 +127,7 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 type ConvertItem struct {
 	ID        *big.Int `json:"id"`
 	ExtTxHash string   `json:"ext_tx_hash"`
+	ToToken   string   `json:"to_token"`
 	PubKey    []byte   `json:"pub_key"`
 	Amount    *big.Int `json:"amount"` // czz asset amount
 }
