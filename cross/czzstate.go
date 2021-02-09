@@ -464,6 +464,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 		ExtTxHash: info.ExtTxHash,
 		PubKey:    info.PubKey,
 		Amount:    info.Amount,
+		ToToken:   info.ToToken,
 	}
 	cs.MaxItemID = convertItem.ID
 

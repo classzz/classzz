@@ -104,6 +104,7 @@ type ConvertOut struct {
 	ExtTxHash   string
 	Index       uint32
 	Amount      float64
+	ToToken     string
 }
 
 type CastingOut struct {

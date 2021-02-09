@@ -143,6 +143,7 @@ type ConvertTxInfo struct {
 	ExtTxHash   string
 	Index       uint32
 	Amount      *big.Int
+	ToToken     string
 }
 
 type CastingTxInfo struct {

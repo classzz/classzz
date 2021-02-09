@@ -1447,6 +1447,7 @@ func handleConvert(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (in
 			ExtTxHash:   convert.ExtTxHash,
 			Index:       convert.Index,
 			Amount:      big.NewInt(int64(satoshi)),
+			ToToken:     convert.ToToken,
 		}
 		ctByte, err := rlp.EncodeToBytes(ct)
 		scriptInfo, err := txscript.ConvertScript(ctByte)
