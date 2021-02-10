@@ -499,7 +499,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					v.PubKey = tpi.Pub
 					if err = cState.Convert(v); err != nil {
 						log.Tracef("Skipping tx %s due to error in "+
-							"VerifyConvertTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+							"VerifyConve"+
+							"rtTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 						continue
 					}
 				}

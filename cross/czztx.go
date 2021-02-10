@@ -807,7 +807,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 	poolC := make(map[uint8]*big.Int)
 	for _, v := range items {
 		if v.ConvertType == ExpandedTxConvert_Czz {
-			pkScript, _ := txscript.PayToPubKeyHashScript(v.PubKey)
+			pkScript, _ := txscript.PayToPubKeyHashScript(czzutil.Hash160(v.PubKey))
 			tx.AddTxOut(&wire.TxOut{
 				Value:    v.Amount.Int64(),
 				PkScript: pkScript,

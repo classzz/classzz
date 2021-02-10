@@ -29,6 +29,7 @@ var (
 		ExpandedTxConvert_TCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
 		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103},
 	}
+	F10E18 = big.NewFloat(100000000000000000)
 )
 
 type CommitteeVerify struct {
@@ -421,11 +422,24 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("ETh receipt.Logs ")
 	}
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
+			txLog = log
+		}
+	}
+	if txLog == nil {
+		return nil, fmt.Errorf("txLog == nil ")
+	}
 
-	txLog := receipt.Logs[1]
 	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:]
-	if big.NewInt(0).SetBytes(amount).Cmp(eInfo.Amount) != 0 {
+	ntype := txLog.Data[32:64]
+	//toToken := txLog.Data[64:]
+	Amount := big.NewInt(0).SetBytes(amount)
+	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
+	Amount2 := FloatRound(Amount1, 8)
+	Amount3 := big.NewInt(int64(Amount2 * 100000000))
+	if Amount3.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/big"
 	"sort"
+	"strconv"
 )
 
 var (
@@ -585,4 +586,10 @@ func deriveChainId(v *big.Int) *big.Int {
 	}
 	v = new(big.Int).Sub(v, big.NewInt(35))
 	return v.Div(v, big.NewInt(2))
+}
+
+func FloatRound(f float64, n int) float64 {
+	format := "%." + strconv.Itoa(n) + "f"
+	res, _ := strconv.ParseFloat(fmt.Sprintf(format, f), 64)
+	return res
 }
