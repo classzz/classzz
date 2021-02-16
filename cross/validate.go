@@ -407,7 +407,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(1))
+	a := types.NewEIP155Signer(big.NewInt(8888))
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -437,10 +437,12 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
 	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
+	fmt.Println(Amount1)
 	Amount2 := FloatRound(Amount1, 8)
+	fmt.Println(Amount2)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
 	if Amount3.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
+		return nil, fmt.Errorf("ETh amount %d not %d", Amount3, eInfo.Amount)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
@@ -541,7 +543,7 @@ func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo) ([]byte, err
 
 func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, error) {
 
-	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
@@ -570,7 +572,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	}
 
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("eth ValidateSignatureValues err")
+		return nil, fmt.Errorf("Heco ValidateSignatureValues err")
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
@@ -579,7 +581,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(1))
+	a := types.NewEIP155Signer(big.NewInt(256))
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -587,9 +589,9 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	}
 
 	// height
-	if receipt.BlockNumber.Uint64() != eInfo.Height {
-		return nil, fmt.Errorf("ETh BlockNumber > Height")
-	}
+	//if receipt.BlockNumber.Uint64() != eInfo.Height {
+	//	return nil, fmt.Errorf("ETh BlockNumber > Height")
+	//}
 
 	// toaddress
 	//if txjson.tx.To().String() != ethPoolAddr {
@@ -597,13 +599,33 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	//}
 
 	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("ETh receipt.Logs ")
+		return nil, fmt.Errorf("Heco receipt.Logs ")
+	}
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
+			txLog = log
+		}
+	}
+	if txLog == nil {
+		return nil, fmt.Errorf("txLog == nil ")
 	}
 
-	txLog := receipt.Logs[0]
-	// amount
-	if big.NewInt(0).SetBytes(txLog.Data).Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(txLog.Data), eInfo.Amount)
+	amount := txLog.Data[:32]
+	ntype := txLog.Data[32:64]
+	//toToken := txLog.Data[64:]
+	Amount := big.NewInt(0).SetBytes(amount)
+	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
+	fmt.Println(Amount1)
+	Amount2 := FloatRound(Amount1, 8)
+	fmt.Println(Amount2)
+	Amount3 := big.NewInt(int64(Amount2 * 100000000))
+	if Amount3.Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("Heco amount %d not %d", Amount3, eInfo.Amount)
+	}
+
+	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+		return nil, fmt.Errorf("Heco ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
 	}
 
 	return pk, nil
@@ -681,7 +703,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(1))
+	a := types.NewEIP155Signer(big.NewInt(8888))
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
