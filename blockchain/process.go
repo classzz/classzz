@@ -195,6 +195,8 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 
 	var eState *cross.EntangleState
 	if b.chainParams.BeaconHeight <= prevHeight && b.chainParams.ConverHeight > prevHeight {
+		eState = b.GetEstateByHashAndHeight(*prevHash, prevHeight)
+	} else if b.chainParams.ConverHeight <= prevHeight {
 		cState := b.GetCstateByHashAndHeight(*prevHash, prevHeight)
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for _, v := range cState.PledgeInfos {
@@ -210,8 +212,6 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 			EnInfos: bai2s,
 		}
 
-	} else if b.chainParams.ConverHeight <= prevHeight {
-		eState = b.GetEstateByHashAndHeight(*prevHash, prevHeight)
 	}
 
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript

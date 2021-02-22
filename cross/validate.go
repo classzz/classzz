@@ -23,11 +23,12 @@ import (
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
 	ethPoolAddr      = "0xaD348f004cadD3cE93f567B20e578F33b7272306"
+	hecoPoolAddr     = "0xaD348f004cadD3cE93f567B20e578F33b7272306"
 	trxMaturity      = uint64(0)
 	CoinPools        = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
-		ExpandedTxConvert_TCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
-		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103},
+		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
+		ExpandedTxConvert_TCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103},
 	}
 	F10E18 = big.NewFloat(100000000000000000)
 )
@@ -429,7 +430,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 		}
 	}
 	if txLog == nil {
-		return nil, fmt.Errorf("txLog == nil ")
+		return nil, fmt.Errorf("eth txLog is nil ")
 	}
 
 	amount := txLog.Data[:32]
@@ -588,11 +589,6 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 		return nil, fmt.Errorf("Ecrecover err")
 	}
 
-	// height
-	//if receipt.BlockNumber.Uint64() != eInfo.Height {
-	//	return nil, fmt.Errorf("ETh BlockNumber > Height")
-	//}
-
 	// toaddress
 	//if txjson.tx.To().String() != ethPoolAddr {
 	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
@@ -651,10 +647,10 @@ func (ev *CommitteeVerify) verifyConvertConfirmTx(eInfo *ConvertConfirmTxInfo, e
 	switch eInfo.ConvertType {
 	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertConfirmEthTx(eInfo, eState)
-	//case ExpandedTxConvert_TCzz:
-	//return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
 	case ExpandedTxConvert_HCzz:
 		return ev.verifyConvertConfirmHecoTx(eInfo, eState)
+		//case ExpandedTxConvert_TCzz:
+		//return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
 	}
 	return fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
@@ -751,7 +747,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 
 func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
 
-	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {

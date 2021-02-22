@@ -19,8 +19,8 @@ const (
 	// Entangle Transcation type
 	ExpandedTxConvert_Czz uint8 = iota
 	ExpandedTxConvert_ECzz
-	ExpandedTxConvert_TCzz
 	ExpandedTxConvert_HCzz
+	ExpandedTxConvert_TCzz
 )
 
 var (

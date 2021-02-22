@@ -8,9 +8,9 @@ import (
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
 	"io"
+	"math"
 	"math/big"
 	"sort"
-	"strconv"
 )
 
 var (
@@ -588,8 +588,10 @@ func deriveChainId(v *big.Int) *big.Int {
 	return v.Div(v, big.NewInt(2))
 }
 
-func FloatRound(f float64, n int) float64 {
-	format := "%." + strconv.Itoa(n) + "f"
-	res, _ := strconv.ParseFloat(fmt.Sprintf(format, f), 64)
-	return res
+func FloatRound(f float64, n float64) float64 {
+	n1 := math.Pow(10, n)
+	f1 := f * n1
+	f2 := int64(f1)
+	f3 := float64(f2) / n1
+	return f3
 }
