@@ -1180,10 +1180,10 @@ func dbRemoveBlockIndex(dbTx database.Tx, hash *chainhash.Hash, height int32) er
 // dbPutBlockIndex uses an existing database transaction to update or add the
 // block index entries for the hash to height and height to hash mappings for
 // the provided values.
-func dbPutExtUtxo(dbTx database.Tx, hash string, AssetType uint8) error {
+func dbPutExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
 	// Serialize the height for use in the index entries.
-	ExTxHash := []byte(hash)
-	key := append(ExTxHash, AssetType)
+	ExTxHash := []byte(convert.ExtTxHash)
+	key := append(ExTxHash, convert.AssetType)
 
 	// Add the block hash to height mapping to the index.
 	meta := dbTx.Metadata()
@@ -1194,10 +1194,10 @@ func dbPutExtUtxo(dbTx database.Tx, hash string, AssetType uint8) error {
 // dbRemoveBlockIndex uses an existing database transaction remove block index
 // entries from the hash to height and height to hash mappings for the provided
 // values.
-func dbRemoveExtUtxo(dbTx database.Tx, hash string, AssetType uint8) error {
+func dbRemoveExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
 	// Remove the block hash to height mapping.
-	ExTxHash := []byte(hash)
-	key := append(ExTxHash, AssetType)
+	ExTxHash := []byte(convert.ExtTxHash)
+	key := append(ExTxHash, convert.AssetType)
 
 	// Add the block hash to height mapping to the index.
 	meta := dbTx.Metadata()

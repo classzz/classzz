@@ -440,6 +440,23 @@ func (mp *TxPool) IsOrphanInPool(hash *chainhash.Hash) bool {
 	return inPool
 }
 
+func (mp *TxPool) isTransactionInConvertPool(hash string) bool {
+	if _, exists := mp.convertPool[hash]; exists {
+		return true
+	}
+
+	return false
+}
+
+func (mp *TxPool) IsTransactionInConvertPool(hash string) bool {
+	// Protect concurrent access.
+	mp.mtx.RLock()
+	inPool := mp.isTransactionInConvertPool(hash)
+	mp.mtx.RUnlock()
+
+	return inPool
+}
+
 // haveTransaction returns whether or not the passed transaction already exists
 // in the main pool or in the orphan pool.
 //
@@ -1070,6 +1087,9 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	// IsConvertTx
 	if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 		for _, v := range cinfo {
+			if mp.IsTransactionInConvertPool(v.ExtTxHash) {
+				return fmt.Errorf("already have transaction ExtTxHash %s", v.ExtTxHash)
+			}
 			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v); err != nil {
 				return err
 			} else {

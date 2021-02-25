@@ -740,6 +740,21 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			return err
 		}
 
+		for _, tx := range block.Transactions() {
+			if !IsCoinBase(tx) {
+				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil {
+					return err
+				} else {
+					for _, v := range convs {
+						if err := dbPutExtUtxo(dbTx, v); err != nil {
+							return err
+						}
+					}
+				}
+
+			}
+		}
+
 		// Allow the index manager to call each of the currently active
 		// optional indexes with the block being connected so they can
 		// update themselves accordingly.
@@ -873,6 +888,21 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block *czzutil.Block, view
 		err = dbRemoveSpendJournalEntry(dbTx, block.Hash())
 		if err != nil {
 			return err
+		}
+
+		for _, tx := range block.Transactions() {
+			if !IsCoinBase(tx) {
+				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil {
+					return err
+				} else {
+					for _, v := range convs {
+						if err := dbRemoveExtUtxo(dbTx, v); err != nil {
+							return err
+						}
+					}
+				}
+
+			}
 		}
 
 		// Allow the index manager to call each of the currently active
