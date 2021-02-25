@@ -1243,7 +1243,6 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 				return err
 			}
 		}
-
 		return nil
 	})
 

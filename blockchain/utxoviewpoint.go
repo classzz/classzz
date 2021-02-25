@@ -204,6 +204,12 @@ func addTxOuts(view utxoView, tx *czzutil.Tx, blockHeight int32, overwrite bool)
 		if txscript.IsConvertTy(txOut.PkScript) {
 			continue
 		}
+		if txscript.IsConvertConfirmTy(txOut.PkScript) {
+			continue
+		}
+		if txscript.IsCastingTy(txOut.PkScript) {
+			continue
+		}
 
 		// Create a new entry from the output.
 		entry := &UtxoEntry{

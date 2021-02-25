@@ -143,6 +143,7 @@ type ConvertTxInfo struct {
 	ExtTxHash   string
 	Index       uint32
 	Amount      *big.Int
+	FeeAmount   *big.Int
 	ToToken     string
 }
 
@@ -823,8 +824,19 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 		if v.ConvertType == ExpandedTxConvert_Czz {
 			continue
 		}
-		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], v.Amount)
-		poolC[v.ConvertType] = big.NewInt(0).Add(poolC[v.ConvertType], v.Amount)
+		amount := big.NewInt(0).Sub(v.Amount, v.FeeAmount)
+		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], amount)
+		poolC[v.ConvertType] = big.NewInt(0).Add(poolC[v.ConvertType], amount)
+
+		CoinPool0 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		pkScript, err := txscript.PayToPubKeyHashScript(CoinPool0)
+		if err != nil {
+			return err
+		}
+		tx.AddTxOut(&wire.TxOut{
+			Value:    v.FeeAmount.Int64(),
+			PkScript: pkScript,
+		})
 	}
 
 	for k, v := range poolC {
@@ -993,6 +1005,7 @@ func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 		}
 
 		info.PubKey = tpi.Pub
+		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
 		if err := eState.Convert(info); err != nil {
 			return nil, err
 		}

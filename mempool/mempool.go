@@ -177,7 +177,7 @@ type TxPool struct {
 	mtx           sync.RWMutex
 	cfg           Config
 	pool          map[chainhash.Hash]*TxDesc
-	exchangePool  map[string]*TxDesc
+	convertPool   map[string]*TxDesc
 	orphans       map[chainhash.Hash]*orphanTx
 	orphansByPrev map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx
 	outpoints     map[wire.OutPoint]*czzutil.Tx
@@ -493,15 +493,12 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 		delete(mp.pool, *txHash)
 
 		einfo, _ := cross.IsConvertTx(tx.MsgTx())
-		//if einfo == nil {
-		//	einfo, _, _ = cross.IsFastExChangeTxToStorage(tx.MsgTx())
-		//}
 		if einfo != nil {
 			for _, v := range einfo {
 				AssetType := v.AssetType
 				ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
 				key := append(ExtTxHash, AssetType)
-				delete(mp.exchangePool, string(key))
+				delete(mp.convertPool, string(key))
 			}
 		}
 
@@ -570,7 +567,7 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 			AssetType := v.AssetType
 			ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
 			key := append(ExtTxHash, AssetType)
-			mp.exchangePool[string(key)] = txD
+			mp.convertPool[string(key)] = txD
 		}
 	}
 
@@ -1518,7 +1515,7 @@ func New(cfg *Config) *TxPool {
 	return &TxPool{
 		cfg:            *cfg,
 		pool:           make(map[chainhash.Hash]*TxDesc),
-		exchangePool:   make(map[string]*TxDesc),
+		convertPool:    make(map[string]*TxDesc),
 		orphans:        make(map[chainhash.Hash]*orphanTx),
 		orphansByPrev:  make(map[wire.OutPoint]map[chainhash.Hash]*czzutil.Tx),
 		nextExpireScan: time.Now().Add(orphanExpireScanInterval),

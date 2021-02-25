@@ -130,6 +130,7 @@ type ConvertItem struct {
 	ToToken   string   `json:"to_token"`
 	PubKey    []byte   `json:"pub_key"`
 	Amount    *big.Int `json:"amount"` // czz asset amount
+	FeeAmount *big.Int `json:"fee_amount"`
 }
 
 type ConvertItems map[uint8][]*ConvertItem
@@ -464,6 +465,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 		ExtTxHash: info.ExtTxHash,
 		PubKey:    info.PubKey,
 		Amount:    info.Amount,
+		FeeAmount: info.FeeAmount,
 		ToToken:   info.ToToken,
 	}
 	cs.MaxItemID = convertItem.ID
@@ -546,6 +548,7 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 		ExtTxHash: hinfo.ExtTxHash,
 		PubKey:    hinfo.PubKey,
 		Amount:    hinfo.Amount,
+		FeeAmount: hinfo.FeeAmount,
 	}
 
 	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {

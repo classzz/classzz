@@ -356,8 +356,8 @@ func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo) ([]byte, error)
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertEthTx(eInfo)
-	case ExpandedTxConvert_TCzz:
-		return ev.verifyConvertTrxTx(eInfo)
+	//case ExpandedTxConvert_TCzz:
+	//	return ev.verifyConvertTrxTx(eInfo)
 	case ExpandedTxConvert_HCzz:
 		return ev.verifyConvertHecoTx(eInfo)
 	}

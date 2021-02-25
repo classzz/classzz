@@ -304,14 +304,6 @@ func GetScriptClass(script []byte) ScriptClass {
 	return typeOfScript(pops)
 }
 
-func IsEntangleTy(script []byte) bool {
-	pops, err := parseScript(script)
-	if err != nil {
-		return false
-	}
-	return isEntangleTy(pops)
-}
-
 func IsBeaconRegistrationTy(script []byte) bool {
 	pops, err := parseScript(script)
 	if err != nil {
