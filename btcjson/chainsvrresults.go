@@ -495,6 +495,7 @@ type ConvertItemsResult struct {
 	PubKey      []byte   `json:"pub_key"`
 	ExtTxHash   string   `json:"ext_tx_hash"`
 	Amount      *big.Int `json:"amount"`
+	FeeAmount   *big.Int `json:"fee_amount"`
 	ToToken     string   `json:"to_token"`
 }
 

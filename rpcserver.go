@@ -3576,6 +3576,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 						PubKey:      v3.PubKey,
 						ExtTxHash:   v3.ExtTxHash,
 						Amount:      v3.Amount,
+						FeeAmount:   v3.FeeAmount,
 						ToToken:     v3.ToToken,
 					}
 					result = append(result, result2)
@@ -3596,6 +3597,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 					PubKey:      v3.PubKey,
 					ExtTxHash:   v3.ExtTxHash,
 					Amount:      v3.Amount,
+					FeeAmount:   v3.FeeAmount,
 					ToToken:     v3.ToToken,
 				}
 				result = append(result, result2)
@@ -3615,6 +3617,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 					PubKey:      v3.PubKey,
 					ExtTxHash:   v3.ExtTxHash,
 					Amount:      v3.Amount,
+					FeeAmount:   v3.FeeAmount,
 					ToToken:     v3.ToToken,
 				}
 				result = append(result, result2)
@@ -3633,6 +3636,7 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 			PubKey:      v3.PubKey,
 			ExtTxHash:   v3.ExtTxHash,
 			Amount:      v3.Amount,
+			FeeAmount:   v3.FeeAmount,
 			ToToken:     v3.ToToken,
 		}
 		result = append(result, result2)
