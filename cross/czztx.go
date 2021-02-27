@@ -20,7 +20,6 @@ const (
 	ExpandedTxConvert_Czz uint8 = iota
 	ExpandedTxConvert_ECzz
 	ExpandedTxConvert_HCzz
-	ExpandedTxConvert_TCzz
 )
 
 var (
@@ -30,6 +29,7 @@ var (
 	NoAddMortgage        = errors.New("no NoAddMortgage info in transcation")
 	NoUpdateCoinbaseAll  = errors.New("no NoUpdateCoinbaseAll info in transcation")
 	NoConvert            = errors.New("no NoConvert info in transcation")
+	NoConvertConfirm     = errors.New("no NoConvertConfirm info in transcation")
 	NoCasting            = errors.New("no NoCasting info in transcation")
 
 	ExpandedTxEntangle_Doge = uint8(0xF0)
@@ -636,7 +636,7 @@ func IsConvertConfirmTx(tx *wire.MsgTx) (map[uint32]*ConvertConfirmTxInfo, error
 	}
 
 	if len(cons) == 0 {
-		return nil, NoConvert
+		return nil, NoConvertConfirm
 	}
 
 	return cons, nil
@@ -994,19 +994,19 @@ type TmpAddressPair struct {
 	Address czzutil.Address
 }
 
-func ToAddressFromConverts(eState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
+func ToAddressFromConverts(cState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
 
 	ctis := make([]*ConvertTxInfo, 0, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
-		tpi, err := ev.VerifyConvertTx(info)
+		tpi, err := ev.VerifyConvertTx(cState, info)
 		if err != nil {
 			return nil, err
 		}
 
 		info.PubKey = tpi.Pub
 		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
-		if err := eState.Convert(info); err != nil {
+		if err := cState.Convert(info); err != nil {
 			return nil, err
 		}
 		ctis = append(ctis, info)

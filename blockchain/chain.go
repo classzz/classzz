@@ -742,7 +742,7 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 
 		for _, tx := range block.Transactions() {
 			if !IsCoinBase(tx) {
-				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil {
+				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil && err != cross.NoConvert {
 					return err
 				} else {
 					for _, v := range convs {
@@ -751,7 +751,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 						}
 					}
 				}
-
 			}
 		}
 

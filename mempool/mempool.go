@@ -9,12 +9,12 @@ import (
 	"container/list"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/cross"
 	"github.com/dchest/siphash"
 	"math"
+	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -440,20 +440,26 @@ func (mp *TxPool) IsOrphanInPool(hash *chainhash.Hash) bool {
 	return inPool
 }
 
-func (mp *TxPool) isTransactionInConvertPool(hash string) bool {
-	if _, exists := mp.convertPool[hash]; exists {
+func (mp *TxPool) isTransactionInConvertPool(AssetType uint8, ExtTxHash string) bool {
+	extTxHash := []byte(ExtTxHash)
+	key := append(extTxHash, AssetType)
+	if _, exists := mp.convertPool[string(key)]; exists {
 		return true
 	}
-
 	return false
 }
 
-func (mp *TxPool) IsTransactionInConvertPool(hash string) bool {
+func (mp *TxPool) IsTransactionInConvertPool(tx *wire.MsgTx) bool {
 	// Protect concurrent access.
-	mp.mtx.RLock()
-	inPool := mp.isTransactionInConvertPool(hash)
-	mp.mtx.RUnlock()
-
+	inPool := false
+	if cinfo, err := cross.IsConvertTx(tx); cinfo != nil && err != cross.NoConvert {
+		for _, v := range cinfo {
+			if inPool = mp.isTransactionInConvertPool(v.AssetType, v.ExtTxHash); inPool {
+				fmt.Printf("already have transaction ExtTxHash %s \r\n", v.ExtTxHash)
+				return true
+			}
+		}
+	}
 	return inPool
 }
 
@@ -513,8 +519,8 @@ func (mp *TxPool) removeTransaction(tx *czzutil.Tx, removeRedeemers bool) {
 		if einfo != nil {
 			for _, v := range einfo {
 				AssetType := v.AssetType
-				ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
-				key := append(ExtTxHash, AssetType)
+				extTxHash := []byte(v.ExtTxHash)
+				key := append(extTxHash, AssetType)
 				delete(mp.convertPool, string(key))
 			}
 		}
@@ -582,8 +588,8 @@ func (mp *TxPool) addTransaction(utxoView *blockchain.UtxoViewpoint, tx *czzutil
 	if einfo != nil {
 		for _, v := range einfo {
 			AssetType := v.AssetType
-			ExtTxHash, _ := hex.DecodeString(v.ExtTxHash)
-			key := append(ExtTxHash, AssetType)
+			extTxHash := []byte(v.ExtTxHash)
+			key := append(extTxHash, AssetType)
 			mp.convertPool[string(key)] = txD
 		}
 	}
@@ -750,7 +756,7 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 	// orphans flag is set.  This check is intended to be a quick check to
 	// weed out duplicates.
 	if mp.isTransactionInPool(txHash) || (rejectDupOrphans &&
-		mp.isOrphanInPool(txHash)) {
+		mp.isOrphanInPool(txHash)) || mp.IsTransactionInConvertPool(tx.MsgTx()) {
 
 		str := fmt.Sprintf("already have transaction %v", txHash)
 		return nil, nil, txRuleError(wire.RejectDuplicate, str)
@@ -1087,12 +1093,10 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	// IsConvertTx
 	if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 		for _, v := range cinfo {
-			if mp.IsTransactionInConvertPool(v.ExtTxHash) {
-				return fmt.Errorf("already have transaction ExtTxHash %s", v.ExtTxHash)
-			}
-			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(v); err != nil {
+			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(cState, v); err != nil {
 				return err
 			} else {
+				v.FeeAmount = big.NewInt(0).Div(v.Amount, big.NewInt(1000))
 				if err = cState.Convert(v); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -1108,7 +1112,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	}
 
 	// IsConvertTx
-	if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
+	if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvertConfirm {
 		for _, v := range cinfo {
 			if err := mp.cfg.CommitteeVerify.VerifyConvertConfirmTx(v, cState); err != nil {
 				return err

@@ -556,8 +556,9 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 			for _, info := range cinfo {
-				tup, _ := b.committeeVerify.VerifyConvertTx(info)
+				tup, _ := b.committeeVerify.VerifyConvertTx(cState, info)
 				info.PubKey = tup.Pub
+				info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
 				if cState != nil {
 					if err := cState.Convert(info); err != nil {
 						return err
@@ -1184,7 +1185,6 @@ func dbPutExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
 	// Serialize the height for use in the index entries.
 	ExTxHash := []byte(convert.ExtTxHash)
 	key := append(ExTxHash, convert.AssetType)
-
 	// Add the block hash to height mapping to the index.
 	meta := dbTx.Metadata()
 	extutxo := meta.Bucket(cross.BucketKey)
@@ -1198,11 +1198,9 @@ func dbRemoveExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
 	// Remove the block hash to height mapping.
 	ExTxHash := []byte(convert.ExtTxHash)
 	key := append(ExTxHash, convert.AssetType)
-
 	// Add the block hash to height mapping to the index.
 	meta := dbTx.Metadata()
 	extutxo := meta.Bucket(cross.BucketKey)
-
 	return extutxo.Delete(key)
 }
 

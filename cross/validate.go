@@ -28,7 +28,6 @@ var (
 	CoinPools        = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
 		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
-		ExpandedTxConvert_TCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103},
 	}
 	F10E18 = big.NewFloat(100000000000000000)
 )
@@ -329,16 +328,16 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 	return uc, nil
 }
 
-func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo) (*TuplePubIndex, error) {
+func (ev *CommitteeVerify) VerifyConvertTx(cState *CommitteeState, info *ConvertTxInfo) (*TuplePubIndex, error) {
 
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
 			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-			return nil, errors.New("txid has already entangle: " + err)
+			return nil, errors.New("txid has already convert: " + err)
 		}
 	}
 
-	if pub, err := ev.verifyConvertTx(info); err != nil {
+	if pub, err := ev.verifyConvertTx(cState, info); err != nil {
 		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
 		return nil, errors.New("txid verify failed:" + errStr + " err: " + err.Error())
 	} else {
@@ -352,19 +351,18 @@ func (ev *CommitteeVerify) VerifyConvertTx(info *ConvertTxInfo) (*TuplePubIndex,
 	}
 }
 
-func (ev *CommitteeVerify) verifyConvertTx(eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
+
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
-		return ev.verifyConvertEthTx(eInfo)
-	//case ExpandedTxConvert_TCzz:
-	//	return ev.verifyConvertTrxTx(eInfo)
+		return ev.verifyConvertEthTx(cState, eInfo)
 	case ExpandedTxConvert_HCzz:
 		return ev.verifyConvertHecoTx(eInfo)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
@@ -415,6 +413,9 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 		return nil, fmt.Errorf("Ecrecover err")
 	}
 
+	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+		return nil, fmt.Errorf("%d CoinPools not find ")
+	}
 	// toaddress
 	//if txjson.tx.To().String() != ethPoolAddr {
 	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
@@ -434,7 +435,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 	}
 
 	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:64]
+	//ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
 	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
@@ -446,9 +447,23 @@ func (ev *CommitteeVerify) verifyConvertEthTx(eInfo *ConvertTxInfo) ([]byte, err
 		return nil, fmt.Errorf("ETh amount %d not %d", Amount3, eInfo.Amount)
 	}
 
-	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	pool1 := CoinPools[eInfo.AssetType]
+	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
+	utxos := cState.NoCostUtxos[add.String()]
+	amount_pool := big.NewInt(0)
+	if utxos != nil {
+		for k1, _ := range utxos.POut {
+			amount_pool = big.NewInt(0).Add(amount_pool, utxos.Amount[k1])
+		}
 	}
+
+	if Amount3.Cmp(amount_pool) > 0 {
+		return nil, fmt.Errorf("tx amount %d Is greater than pool %d", Amount3, amount_pool)
+	}
+
+	//if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+	//	return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	//}
 
 	return pk, nil
 }
@@ -632,7 +647,7 @@ func (ev *CommitteeVerify) VerifyConvertConfirmTx(info *ConvertConfirmTxInfo, cS
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
 			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-			return errors.New("txid has already entangle: " + err)
+			return errors.New("txid has already convert: " + err)
 		}
 	}
 
@@ -649,8 +664,6 @@ func (ev *CommitteeVerify) verifyConvertConfirmTx(eInfo *ConvertConfirmTxInfo, e
 		return ev.verifyConvertConfirmEthTx(eInfo, eState)
 	case ExpandedTxConvert_HCzz:
 		return ev.verifyConvertConfirmHecoTx(eInfo, eState)
-		//case ExpandedTxConvert_TCzz:
-		//return ev.verifyConvertConfirmsTrxTx(eInfo, eState)
 	}
 	return fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }

@@ -27,11 +27,11 @@ func (c *CacheCommitteeState) FetchExtUtxoView(info UtxoViewInfo) bool {
 	ExTxHash := []byte(info.GetExtTxHash())
 	key := append(ExTxHash, AssetType)
 	c.DB.View(func(tx database.Tx) error {
-		committeeBucket := tx.Metadata().Bucket(CommitteeStateKey)
-		if committeeBucket == nil {
+		bucketKey := tx.Metadata().Bucket(BucketKey)
+		if bucketKey == nil {
 			return nil
 		}
-		value := committeeBucket.Get(key)
+		value := bucketKey.Get(key)
 		if value != nil {
 			txExist = true
 		}
