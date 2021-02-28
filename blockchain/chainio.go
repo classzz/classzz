@@ -522,7 +522,18 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 	pHash := block.MsgBlock().Header.PrevBlock
 	cState := dbFetchCommitteeState(dbTx, pHeight, pHash)
 	if block.Height() == b.chainParams.ConverHeight {
+		eState := dbFetchEntangleState(dbTx, pHeight, pHash)
 		cState = cross.NewCommitteeState()
+		for _, v := range eState.EnInfos {
+			pi := &cross.PledgeInfo{
+				ID:              big.NewInt(int64(v.ExchangeID)),
+				Address:         v.Address,
+				ToAddress:       v.ToAddress,
+				StakingAmount:   v.StakingAmount,
+				CoinBaseAddress: v.CoinBaseAddress,
+			}
+			cState.PledgeInfos = append(cState.PledgeInfos, pi)
+		}
 	}
 
 	for _, tx := range block.Transactions() {
@@ -603,7 +614,9 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
-	cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState)
+	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
+		return err
+	}
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
 		return err
 	}

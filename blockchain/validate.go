@@ -535,7 +535,10 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 	}
 
-	cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState)
+	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
+		return err
+	}
+
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {
 		return fmt.Errorf("CIDRoot %s not in the block %s", cState.Hash(), block.MsgBlock().Header.CIDRoot)
 	}

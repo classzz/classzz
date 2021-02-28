@@ -632,7 +632,18 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	}
 
 	if g.chainParams.ConverHeight == nextBlockHeight {
+		eState := g.chain.CurrentEstate()
 		cState = cross.NewCommitteeState()
+		for _, v := range eState.EnInfos {
+			pi := &cross.PledgeInfo{
+				ID:              big.NewInt(int64(v.ExchangeID)),
+				Address:         v.Address,
+				ToAddress:       v.ToAddress,
+				StakingAmount:   v.StakingAmount,
+				CoinBaseAddress: v.CoinBaseAddress,
+			}
+			cState.PledgeInfos = append(cState.PledgeInfos, pi)
+		}
 	}
 
 	fork := false
@@ -1049,19 +1060,19 @@ mempoolLoop:
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
 		eItems := make([]*cross.EntangleItem, 0)
-		err = cross.MakeMergerCoinbaseTx2(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork)
-		if err != nil {
+		if err = cross.MakeMergerCoinbaseTx2(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork); err != nil {
 			return nil, nil, err
 		}
 	}
 
 	// make entangle tx if it exist
 	if g.chainParams.ConverHeight <= nextBlockHeight {
-		err = cross.MakeMergerCoinbaseTx(g.chainParams, coinbaseTx.MsgTx(), cState, poolItem, convertItems, rewards, mergeItems)
-		if err != nil {
+		if err := cross.MakeMergerCoinbaseTx(g.chainParams, coinbaseTx.MsgTx(), cState, poolItem, convertItems, rewards, mergeItems); err != nil {
 			return nil, nil, err
 		}
-		cross.MakeCoinbaseTxUtxo(g.chainParams, coinbaseTx.MsgTx(), cState)
+		if err := cross.MakeCoinbaseTxUtxo(g.chainParams, coinbaseTx.MsgTx(), cState); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	CIDRoot := chainhash.Hash{}
