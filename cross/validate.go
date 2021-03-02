@@ -406,7 +406,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(8888))
+	a := types.NewEIP155Signer(big.NewInt(3))
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -712,7 +712,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(8888))
+	a := types.NewEIP155Signer(big.NewInt(3))
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
