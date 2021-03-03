@@ -2,9 +2,6 @@ package cross
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
@@ -14,10 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
-	"io/ioutil"
 	"math/big"
 	"math/rand"
-	"net/http"
 )
 
 var (
@@ -29,7 +24,9 @@ var (
 		ExpandedTxConvert_ECzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
 		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
 	}
-	F10E18 = big.NewFloat(100000000000000000)
+	F10E18      = big.NewFloat(100000000000000000)
+	EthChainID  = big.NewInt(3)
+	HecoChainID = big.NewInt(256)
 )
 
 type CommitteeVerify struct {
@@ -406,7 +403,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(3))
+	a := types.NewEIP155Signer(EthChainID)
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -468,95 +465,6 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	return pk, nil
 }
 
-func (ev *CommitteeVerify) verifyConvertTrxTx(eInfo *ConvertTxInfo) ([]byte, error) {
-	// Notice the notification parameter is nil since notifications are
-	// not supported in HTTP POST mode.
-	client := ev.TrxRPC[rand.Intn(len(ev.TrxRPC))]
-
-	data := make(map[string]interface{})
-	data["value"] = eInfo.ExtTxHash
-	data["visible"] = true
-	bytesData, _ := json.Marshal(data)
-
-	// Get the current block count.
-	bytes.NewReader(bytesData)
-	resp, err := http.Post("https://"+client+"/wallet/gettransactionbyid", "application/json", bytes.NewReader(bytesData))
-	if err != nil {
-		return nil, fmt.Errorf("trxTx ContractRet err")
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, fmt.Errorf("trxTx ContractRet err")
-	}
-
-	trxTx := &TrxTx{}
-	err = json.Unmarshal(body, trxTx)
-	if err != nil {
-		return nil, fmt.Errorf("trxTx ContractRet err")
-	}
-
-	if err := json.Unmarshal(body, trxTx); err != nil {
-		return nil, err
-	}
-
-	if nil == trxTx.Ret || len(trxTx.Ret) < 1 || trxTx.Ret[0].ContractRet != "SUCCESS" {
-		return nil, fmt.Errorf("trxTx ContractRet err")
-	}
-
-	hash_1, _ := hex.DecodeString(trxTx.RawDataHex)
-	hash := sha256.Sum256(hash_1)
-	fmt.Println(len(trxTx.Signature[0]))
-	r, _ := hex.DecodeString(trxTx.Signature[0][:65])
-	s, _ := hex.DecodeString(trxTx.Signature[0][65:130])
-
-	sig := make([]byte, crypto.SignatureLength)
-	copy(sig[32-len(r):32], r)
-	copy(sig[64-len(s):64], s)
-	sig[64] = 0
-
-	pk, err := crypto.Ecrecover(hash[:], sig)
-
-	//if ExChangeAmount.Cmp(ExChangeStakingAmount) > 0 {
-	//	e := fmt.Sprintf("usdt ExChangeAmount > ExChangeStakingAmount")
-	//	return nil, errors.New(e)
-	//}
-
-	data = make(map[string]interface{})
-	data["num"] = 1
-	bytesData, _ = json.Marshal(data)
-
-	// Get the current block count.
-	bytes.NewReader(bytesData)
-	resp, err = http.Post("https://"+client+"/wallet/getblockbylatestnum", "application/json", bytes.NewReader(bytesData))
-	if err != nil {
-		panic(err)
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		panic(err)
-	}
-
-	trxBlock := &TrxBlock{}
-	err = json.Unmarshal(body, trxTx)
-	if err != nil {
-		panic(err)
-	}
-
-	if trxBlock.block[0].BlockHeader.RawData.Number-eInfo.Height > trxMaturity {
-		return pk, nil
-	} else {
-		e := fmt.Sprintf("trx Maturity err")
-		return nil, errors.New(e)
-	}
-
-	return nil, nil
-
-}
-
 func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, error) {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
@@ -597,7 +505,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(256))
+	a := types.NewEIP155Signer(HecoChainID)
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -712,7 +620,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(3))
+	a := types.NewEIP155Signer(EthChainID)
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
@@ -768,11 +676,11 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	}
 
 	if receipt == nil {
-		return fmt.Errorf("eth ExtTxHash not find")
+		return fmt.Errorf("verifyConvertConfirmHecoTx ExtTxHash not find")
 	}
 
 	if receipt.Status != 1 {
-		return fmt.Errorf("eth Status err")
+		return fmt.Errorf("verifyConvertConfirmHecoTx Status err")
 	}
 
 	var txjson *rpcTransaction
@@ -793,7 +701,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	}
 
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return fmt.Errorf("eth ValidateSignatureValues err")
+		return fmt.Errorf("verifyConvertConfirmHecoTx ValidateSignatureValues err")
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
@@ -802,11 +710,11 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(big.NewInt(1))
+	a := types.NewEIP155Signer(HecoChainID)
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
-		return fmt.Errorf("Ecrecover err")
+		return fmt.Errorf("verifyConvertConfirmHecoTx Ecrecover err")
 	}
 
 	// toaddress
@@ -815,7 +723,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	//}
 
 	if len(receipt.Logs) < 1 {
-		return fmt.Errorf("ETh receipt.Logs")
+		return fmt.Errorf("verifyConvertConfirmHecoTx receipt.Logs")
 	}
 
 	var hinfo *ConvertItem
@@ -827,7 +735,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	}
 
 	if hinfo == nil {
-		return fmt.Errorf("hinfo is null")
+		return fmt.Errorf("verifyConvertConfirmHecoTx hinfo is null")
 	}
 
 	txLog := receipt.Logs[1]
