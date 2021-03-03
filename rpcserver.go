@@ -3570,14 +3570,15 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 			for k1, v1 := range v {
 				for _, v3 := range v1 {
 					result2 := &btcjson.ConvertItemsResult{
-						MID:         v3.ID,
-						AssetType:   k,
-						ConvertType: k1,
-						PubKey:      v3.PubKey,
-						ExtTxHash:   v3.ExtTxHash,
-						Amount:      v3.Amount,
-						FeeAmount:   v3.FeeAmount,
-						ToToken:     v3.ToToken,
+						MID:              v3.ID,
+						AssetType:        k,
+						ConvertType:      k1,
+						PubKey:           v3.PubKey,
+						ExtTxHash:        v3.ExtTxHash,
+						ConfirmExtTxHash: v3.ConfirmExtTxHash,
+						Amount:           v3.Amount,
+						FeeAmount:        v3.FeeAmount,
+						ToToken:          v3.ToToken,
 					}
 					result = append(result, result2)
 				}
@@ -3591,14 +3592,15 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		for k1, v1 := range v {
 			for _, v3 := range v1 {
 				result2 := &btcjson.ConvertItemsResult{
-					MID:         v3.ID,
-					AssetType:   *c.AssetType,
-					ConvertType: k1,
-					PubKey:      v3.PubKey,
-					ExtTxHash:   v3.ExtTxHash,
-					Amount:      v3.Amount,
-					FeeAmount:   v3.FeeAmount,
-					ToToken:     v3.ToToken,
+					MID:              v3.ID,
+					AssetType:        *c.AssetType,
+					ConvertType:      k1,
+					PubKey:           v3.PubKey,
+					ExtTxHash:        v3.ExtTxHash,
+					ConfirmExtTxHash: v3.ConfirmExtTxHash,
+					Amount:           v3.Amount,
+					FeeAmount:        v3.FeeAmount,
+					ToToken:          v3.ToToken,
 				}
 				result = append(result, result2)
 			}
@@ -3611,14 +3613,15 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 			v1 := v[*c.ConvertType]
 			for _, v3 := range v1 {
 				result2 := &btcjson.ConvertItemsResult{
-					MID:         v3.ID,
-					AssetType:   k,
-					ConvertType: *c.ConvertType,
-					PubKey:      v3.PubKey,
-					ExtTxHash:   v3.ExtTxHash,
-					Amount:      v3.Amount,
-					FeeAmount:   v3.FeeAmount,
-					ToToken:     v3.ToToken,
+					MID:              v3.ID,
+					AssetType:        k,
+					ConvertType:      *c.ConvertType,
+					PubKey:           v3.PubKey,
+					ExtTxHash:        v3.ExtTxHash,
+					ConfirmExtTxHash: v3.ConfirmExtTxHash,
+					Amount:           v3.Amount,
+					FeeAmount:        v3.FeeAmount,
+					ToToken:          v3.ToToken,
 				}
 				result = append(result, result2)
 			}
@@ -3630,14 +3633,15 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 	v1 := v[*c.ConvertType]
 	for _, v3 := range v1 {
 		result2 := &btcjson.ConvertItemsResult{
-			MID:         v3.ID,
-			AssetType:   *c.AssetType,
-			ConvertType: *c.ConvertType,
-			PubKey:      v3.PubKey,
-			ExtTxHash:   v3.ExtTxHash,
-			Amount:      v3.Amount,
-			FeeAmount:   v3.FeeAmount,
-			ToToken:     v3.ToToken,
+			MID:              v3.ID,
+			AssetType:        *c.AssetType,
+			ConvertType:      *c.ConvertType,
+			PubKey:           v3.PubKey,
+			ExtTxHash:        v3.ExtTxHash,
+			ConfirmExtTxHash: v3.ConfirmExtTxHash,
+			Amount:           v3.Amount,
+			FeeAmount:        v3.FeeAmount,
+			ToToken:          v3.ToToken,
 		}
 		result = append(result, result2)
 	}

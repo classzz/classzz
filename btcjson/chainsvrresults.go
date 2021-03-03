@@ -489,14 +489,15 @@ type StateInfoChainResult struct {
 
 // ConvertItemsResult models the data returned by the chain server getinfo command.
 type ConvertItemsResult struct {
-	MID         *big.Int `json:"mid"`
-	AssetType   uint8    `json:"asset_type"`
-	ConvertType uint8    `json:"convert_type"`
-	PubKey      []byte   `json:"pub_key"`
-	ExtTxHash   string   `json:"ext_tx_hash"`
-	Amount      *big.Int `json:"amount"`
-	FeeAmount   *big.Int `json:"fee_amount"`
-	ToToken     string   `json:"to_token"`
+	MID              *big.Int `json:"mid"`
+	AssetType        uint8    `json:"asset_type"`
+	ConvertType      uint8    `json:"convert_type"`
+	PubKey           []byte   `json:"pub_key"`
+	ExtTxHash        string   `json:"ext_tx_hash"`
+	ConfirmExtTxHash string   `json:"confirm_ext_tx_hash"`
+	Amount           *big.Int `json:"amount"`
+	FeeAmount        *big.Int `json:"fee_amount"`
+	ToToken          string   `json:"to_token"`
 }
 
 // TxRawResult models the data from the getrawtransaction command.

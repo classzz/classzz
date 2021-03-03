@@ -125,12 +125,13 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 }
 
 type ConvertItem struct {
-	ID        *big.Int `json:"id"`
-	ExtTxHash string   `json:"ext_tx_hash"`
-	ToToken   string   `json:"to_token"`
-	PubKey    []byte   `json:"pub_key"`
-	Amount    *big.Int `json:"amount"` // czz asset amount
-	FeeAmount *big.Int `json:"fee_amount"`
+	ID               *big.Int `json:"id"`
+	ExtTxHash        string   `json:"ext_tx_hash"`
+	ConfirmExtTxHash string   `json:"confirm_ext_tx_hash"`
+	ToToken          string   `json:"to_token"`
+	PubKey           []byte   `json:"pub_key"`
+	Amount           *big.Int `json:"amount"` // czz asset amount
+	FeeAmount        *big.Int `json:"fee_amount"`
 }
 
 type ConvertItems map[uint8][]*ConvertItem
@@ -544,11 +545,12 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 	cs.ConvertItems[info.AssetType][info.ConvertType] = items
 
 	convertItem := &ConvertItem{
-		ID:        hinfo.ID,
-		ExtTxHash: hinfo.ExtTxHash,
-		PubKey:    hinfo.PubKey,
-		Amount:    hinfo.Amount,
-		FeeAmount: hinfo.FeeAmount,
+		ID:               hinfo.ID,
+		ExtTxHash:        hinfo.ExtTxHash,
+		ConfirmExtTxHash: info.ExtTxHash,
+		PubKey:           hinfo.PubKey,
+		Amount:           hinfo.Amount,
+		FeeAmount:        hinfo.FeeAmount,
 	}
 
 	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
