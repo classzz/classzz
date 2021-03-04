@@ -363,6 +363,10 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
+	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+		return nil, fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+	}
+
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
 		return nil, err
@@ -410,9 +414,6 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 		return nil, fmt.Errorf("Ecrecover err")
 	}
 
-	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return nil, fmt.Errorf("%d CoinPools not find ")
-	}
 	// toaddress
 	//if txjson.tx.To().String() != ethPoolAddr {
 	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
@@ -580,6 +581,10 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
+	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+	}
+
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
 		return err
@@ -669,6 +674,10 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
+
+	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+	}
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
