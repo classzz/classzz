@@ -364,7 +364,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
 	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return nil, fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+		return nil, fmt.Errorf("verifyConvertEthTx %d CoinPools not find ", eInfo.ConvertType)
 	}
 
 	var receipt *types.Receipt
@@ -373,11 +373,11 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	}
 
 	if receipt == nil {
-		return nil, fmt.Errorf("eth ExtTxHash not find")
+		return nil, fmt.Errorf("verifyConvertEthTx ExtTxHash not find")
 	}
 
 	if receipt.Status != 1 {
-		return nil, fmt.Errorf("eth Status err")
+		return nil, fmt.Errorf("verifyConvertEthTx Status err")
 	}
 
 	var txjson *rpcTransaction
@@ -398,7 +398,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	}
 
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("eth ValidateSignatureValues err")
+		return nil, fmt.Errorf("verifyConvertEthTx ValidateSignatureValues err")
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
@@ -411,7 +411,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
-		return nil, fmt.Errorf("Ecrecover err")
+		return nil, fmt.Errorf("verifyConvertEthTx Ecrecover err")
 	}
 
 	// toaddress
@@ -422,6 +422,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("ETh receipt.Logs ")
 	}
+
 	var txLog *types.Log
 	for _, log := range receipt.Logs {
 		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
@@ -433,13 +434,11 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	}
 
 	amount := txLog.Data[:32]
-	//ntype := txLog.Data[32:64]
+	ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
 	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
-	fmt.Println(Amount1)
 	Amount2 := FloatRound(Amount1, 8)
-	fmt.Println(Amount2)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
 	if Amount3.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("ETh amount %d not %d", Amount3, eInfo.Amount)
@@ -459,9 +458,9 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 		return nil, fmt.Errorf("tx amount %d Is greater than pool %d", Amount3, amount_pool)
 	}
 
-	//if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-	//	return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
-	//}
+	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+		return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	}
 
 	return pk, nil
 }
