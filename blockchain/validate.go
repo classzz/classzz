@@ -533,6 +533,21 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			)
 		}
 
+		// IsConvertConfirmTx
+		if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvertConfirm {
+			for _, v := range cinfo {
+				if err := b.GetCommitteeVerify().VerifyConvertConfirmTx(cState, v); err != nil {
+					return err
+				} else {
+					if err = cState.ConvertConfirm(v); err != nil {
+						log.Tracef("Skipping tx %s due to error in "+
+							"VerifyConve"+
+							"rtTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+						continue
+					}
+				}
+			}
+		}
 	}
 
 	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {

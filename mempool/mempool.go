@@ -1111,10 +1111,10 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 		return err
 	}
 
-	// IsConvertTx
+	// IsConvertConfirmTx
 	if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvertConfirm {
 		for _, v := range cinfo {
-			if err := mp.cfg.CommitteeVerify.VerifyConvertConfirmTx(v, cState); err != nil {
+			if err := mp.cfg.CommitteeVerify.VerifyConvertConfirmTx(cState, v); err != nil {
 				return err
 			} else {
 				if err = cState.ConvertConfirm(v); err != nil {

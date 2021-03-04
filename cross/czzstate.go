@@ -551,6 +551,7 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 		PubKey:           hinfo.PubKey,
 		Amount:           hinfo.Amount,
 		FeeAmount:        hinfo.FeeAmount,
+		ToToken:          hinfo.ToToken,
 	}
 
 	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {

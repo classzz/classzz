@@ -1020,7 +1020,7 @@ func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxI
 	ctis := make([]*ConvertConfirmTxInfo, 0, 0)
 	for _, info := range cinfo {
 		// verify the entangle tx
-		err := ev.VerifyConvertConfirmTx(info, eState)
+		err := ev.VerifyConvertConfirmTx(eState, info)
 		if err != nil {
 			return nil, err
 		}

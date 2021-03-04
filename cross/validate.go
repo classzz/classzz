@@ -550,7 +550,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	return pk, nil
 }
 
-func (ev *CommitteeVerify) VerifyConvertConfirmTx(info *ConvertConfirmTxInfo, cState *CommitteeState) error {
+func (ev *CommitteeVerify) VerifyConvertConfirmTx(cState *CommitteeState, info *ConvertConfirmTxInfo) error {
 
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
@@ -673,7 +673,6 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
-
 	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
 		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
 	}
@@ -734,6 +733,25 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 		return fmt.Errorf("verifyConvertConfirmHecoTx receipt.Logs")
 	}
 
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9" {
+			txLog = log
+		}
+	}
+
+	if txLog == nil {
+		return fmt.Errorf("verifyConvertConfirmHecoTx txLog == nil ")
+	}
+
+	address := txLog.Topics[1].String()
+	mid := txLog.Data[32:64]
+	amount := txLog.Data[64:]
+
+	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
+	}
+
 	var hinfo *ConvertItem
 	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
 	for _, v := range items {
@@ -746,32 +764,24 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 		return fmt.Errorf("verifyConvertConfirmHecoTx hinfo is null")
 	}
 
-	txLog := receipt.Logs[1]
-	topic := txLog.Topics[0].String()
-	address := txLog.Topics[1].String()
-	amount := txLog.Data[:32]
-	mid := txLog.Data[32:]
-	if topic == "0x9101ffdf7f446a8cd01ffe1fa15674f7fae32d7e5c8df3b3a5f0612b724f3a80" {
+	toaddresspuk, err := crypto.DecompressPubkey(hinfo.PubKey)
+	if err != nil || toaddresspuk == nil {
+		toaddresspuk, err = crypto.UnmarshalPubkey(hinfo.PubKey)
+		if err != nil || toaddresspuk == nil {
+			return err
+		}
+	}
+
+	toaddress := crypto.PubkeyToAddress(*toaddresspuk)
+	if address == toaddress.String() {
 
 	}
 
-	if address == "0x9101ffdf7f446a8cd01ffe1fa15674f7fae32d7e5c8df3b3a5f0612b724f3a80" {
-
-	}
-
-	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) != 0 {
+	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
 		return fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
-	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
-		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
-	}
-
 	fmt.Println(pk)
-	//if bytes.Equal(pk, hinfo.PubKey) {
-	//	return fmt.Errorf("ETh pk %d not %d", pk, hinfo.PubKey)
-	//}
-
 	return nil
 }
 
