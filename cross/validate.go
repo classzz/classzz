@@ -420,7 +420,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	//}
 
 	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("ETh receipt.Logs ")
+		return nil, fmt.Errorf("verifyConvertEthTx receipt.Logs ")
 	}
 
 	var txLog *types.Log
@@ -430,7 +430,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 		}
 	}
 	if txLog == nil {
-		return nil, fmt.Errorf("eth txLog is nil ")
+		return nil, fmt.Errorf("verifyConvertEthTx txLog is nil ")
 	}
 
 	amount := txLog.Data[:32]
@@ -441,7 +441,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	Amount2 := FloatRound(Amount1, 8)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
 	if Amount3.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("ETh amount %d not %d", Amount3, eInfo.Amount)
+		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount3, eInfo.Amount)
 	}
 
 	pool1 := CoinPools[eInfo.AssetType]
@@ -455,11 +455,11 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	}
 
 	if Amount3.Cmp(amount_pool) > 0 {
-		return nil, fmt.Errorf("tx amount %d Is greater than pool %d", Amount3, amount_pool)
+		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount3, amount_pool)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return nil, fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+		return nil, fmt.Errorf("verifyConvertEthTx ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
 	}
 
 	return pk, nil
@@ -475,7 +475,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	}
 
 	if receipt.Status != 1 {
-		return nil, fmt.Errorf("heco Status err")
+		return nil, fmt.Errorf("verifyConvertHecoTx Status err")
 	}
 
 	var txjson *rpcTransaction
@@ -496,7 +496,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	}
 
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("Heco ValidateSignatureValues err")
+		return nil, fmt.Errorf("verifyConvertHecoTx ValidateSignatureValues err")
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
@@ -509,7 +509,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
-		return nil, fmt.Errorf("Ecrecover err")
+		return nil, fmt.Errorf("verifyConvertHecoTx Ecrecover err")
 	}
 
 	// toaddress
@@ -518,7 +518,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	//}
 
 	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("Heco receipt.Logs ")
+		return nil, fmt.Errorf("verifyConvertHecoTx receipt.Logs ")
 	}
 	var txLog *types.Log
 	for _, log := range receipt.Logs {
@@ -527,7 +527,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 		}
 	}
 	if txLog == nil {
-		return nil, fmt.Errorf("txLog == nil ")
+		return nil, fmt.Errorf("verifyConvertHecoTx txLog == nil ")
 	}
 
 	amount := txLog.Data[:32]
@@ -540,11 +540,11 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	fmt.Println(Amount2)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
 	if Amount3.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("Heco amount %d not %d", Amount3, eInfo.Amount)
+		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount3, eInfo.Amount)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return nil, fmt.Errorf("Heco ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+		return nil, fmt.Errorf("verifyConvertHecoTx ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
 	}
 
 	return pk, nil
@@ -555,13 +555,13 @@ func (ev *CommitteeVerify) VerifyConvertConfirmTx(info *ConvertConfirmTxInfo, cS
 	if ev.Cache != nil {
 		if ok := ev.Cache.FetchExtUtxoView(info); ok {
 			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-			return errors.New("txid has already convert: " + err)
+			return errors.New("verifyConvertHecoTx txid has already convert: " + err)
 		}
 	}
 
 	if err := ev.verifyConvertConfirmTx(info, cState); err != nil {
 		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-		return errors.New("txid verify failed:" + errStr + " err: " + err.Error())
+		return errors.New("verifyConvertHecoTx txid verify failed:" + errStr + " err: " + err.Error())
 	}
 	return nil
 }
