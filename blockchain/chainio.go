@@ -558,9 +558,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), b.chainParams)
 		if ubc != nil {
 			if cState != nil {
-				if err := cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress); err != nil {
-					return err
-				}
+				cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress)
 			}
 		}
 
@@ -582,16 +580,9 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		ct, _ := cross.IsCastingTx(tx.MsgTx())
 		if ct != nil {
 			if cState != nil {
-				if err := cState.Casting(ct); err != nil {
-					return err
-				}
+				cState.Casting(ct)
 				pool := cross.CoinPools[ct.ConvertType]
-				addr, err := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
-				if err != nil || addr == nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					continue
-				}
+				addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
 					Hash:  *tx.Hash(),
 					Index: 1,
@@ -606,9 +597,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
 			for _, info := range cinfo {
 				if cState != nil {
-					if err := cState.ConvertConfirm(info); err != nil {
-						return err
-					}
+					cState.ConvertConfirm(info)
 				}
 			}
 		}
@@ -671,13 +660,12 @@ func dbBeaconTx(params *chaincfg.Params, dbTx database.Tx, block *czzutil.Block)
 
 func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czzutil.Tx) error {
 
-	var err error
 	if state != nil {
-		err = state.Mortgage(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.CoinBaseAddress)
+		state.Mortgage(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.CoinBaseAddress)
+	} else {
+		return fmt.Errorf("MortgageTxStore state is nil")
 	}
-	if err != nil {
-		return err
-	}
+
 	state.PutNoCostUtxos(bai.Address, wire.OutPoint{
 		Hash:  *tx.Hash(),
 		Index: 1,
@@ -690,13 +678,13 @@ func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czz
 }
 
 func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx *czzutil.Tx) error {
-	var err error
+
 	if state != nil {
-		err = state.AddMortgage(abp.Address, abp.StakingAmount)
+		state.AddMortgage(abp.Address, abp.StakingAmount)
+	} else {
+		return fmt.Errorf("MortgageTxStore state is nil")
 	}
-	if err != nil {
-		return err
-	}
+
 	state.PutNoCostUtxos(abp.Address, wire.OutPoint{
 		Hash:  *tx.Hash(),
 		Index: 1,

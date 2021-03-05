@@ -766,6 +766,11 @@ mempoolLoop:
 	totalFees := int64(0)
 	maxSigOps := blockchain.MaxBlockSigOps(blockSize)
 
+	var MortgageTx *wire.MsgTx
+	CastingTx := make([]*wire.MsgTx, 0, 0)
+	ConvertTx := make([]*cross.ConvertTxTemp, 0, 0)
+	ConvertConfirmsTx := make([]*wire.MsgTx, 0, 0)
+
 	// Choose which transactions make it into the block.
 	for priorityQueue.Len() > 0 {
 		// Grab the highest priority (or highest fee per kilobyte
@@ -897,47 +902,62 @@ mempoolLoop:
 
 			// Mortgage
 			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
+				if MortgageTx != nil {
+					continue
+				}
 				if err := cState.MortgageVerify(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-
-				cState.PutNoCostUtxos(info.Address, wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
-				)
+				MortgageTx = tx.MsgTx()
 			}
 
 			// AddMortgage
 			if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), g.chainParams); bp != nil {
+				if MortgageTx != nil {
+					continue
+				}
 				if err = cState.AddMortgageVerify(bp.Address, bp.StakingAmount); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
-				)
+				MortgageTx = tx.MsgTx()
 			}
 
 			// UpdateCoinbaseAll
 			if bp, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
+				if MortgageTx != nil {
+					continue
+				}
 				if err = cState.UpdateCoinbaseAllVerify(bp.Address, bp.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
+				MortgageTx = tx.MsgTx()
+			}
+
+			// IsCastingTx
+			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
+				pool := cross.CoinPools[cinfo.ConvertType]
+				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
+				if err != nil || addr == nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"VerifyCastingTx NewAddressPubKeyHash err : %v", tx.Hash(), err)
+					continue
+				}
+				_, err = g.chain.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState)
+				if err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"VerifyCastingTx err : %v", tx.Hash(), err)
+					continue
+				}
+				CastingTx = append(CastingTx, tx.MsgTx())
 			}
 
 			// IsConvertTx
@@ -950,44 +970,23 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				convertItems = append(convertItems, objs...)
-			}
 
-			// IsCastingTx
-			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
-				if err = cState.Casting(cinfo); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
+				ctx := &cross.ConvertTxTemp{
+					Infos: objs,
+					Tx:    tx.MsgTx(),
 				}
-
-				pool := cross.CoinPools[cinfo.ConvertType]
-				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
-				if err != nil || addr == nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					continue
-				}
-
-				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
-				)
+				ConvertTx = append(ConvertTx, ctx)
 			}
 
 			// IsConvertConfirmTx
 			if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
-				_, err := cross.ConvertConfirms(cState, cinfo, g.chain.GetCommitteeVerify())
-				if err != nil {
+				if err := cross.ConvertConfirmsVerify(cState, cinfo); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toAddressFromEntangle: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
+				ConvertConfirmsTx = append(ConvertConfirmsTx, tx.MsgTx())
 			}
 		}
 
@@ -1058,107 +1057,69 @@ mempoolLoop:
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
 
-	for _, tx := range blockTxns {
-		if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+	////////////////////////////////////
+	if nextBlockHeight >= g.chainParams.ConverHeight {
 
-			// BeaconRegistrationTx
-			if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
-				if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
-					return nil, nil, err
-				}
-			}
-
-			// AddBeaconPledgeTx
-			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
-					return nil, nil, err
-				}
-			}
-		}
-
-		////////////////////////////////////
-		if nextBlockHeight >= g.chainParams.ConverHeight {
-
+		if MortgageTx != nil {
 			// Mortgage
-			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
+			if info, _ := cross.IsMortgageTx(MortgageTx, g.chainParams); info != nil {
 				cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress)
 				cState.PutNoCostUtxos(info.Address, wire.OutPoint{
-					Hash:  *tx.Hash(),
+					Hash:  MortgageTx.TxHash(),
 					Index: 1,
 				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
+					MortgageTx.TxOut[1].PkScript,
+					MortgageTx.TxOut[1].Value,
 				)
 			}
 
 			// AddMortgage
-			if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if bp, _ := cross.IsAddMortgageTx(MortgageTx, g.chainParams); bp != nil {
 				cState.AddMortgage(bp.Address, bp.StakingAmount)
 				cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
-					Hash:  *tx.Hash(),
+					Hash:  MortgageTx.TxHash(),
 					Index: 1,
 				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
+					MortgageTx.TxOut[1].PkScript,
+					MortgageTx.TxOut[1].Value,
 				)
 			}
 
 			// UpdateCoinbaseAll
-			if bp, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
+			if bp, _ := cross.IsUpdateCoinbaseAllTx(MortgageTx, g.chainParams); bp != nil {
 				cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress)
-			}
-
-			// IsConvertTx
-			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-				fmt.Println("txhash ", tx.Hash().String())
-				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetCommitteeVerify())
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-				convertItems = append(convertItems, objs...)
-			}
-
-			// IsCastingTx
-			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
-				if err = cState.Casting(cinfo); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
-
-				pool := cross.CoinPools[cinfo.ConvertType]
-				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
-				if err != nil || addr == nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					continue
-				}
-
-				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
-				)
-			}
-
-			// IsConvertConfirmTx
-			if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
-				_, err := cross.ConvertConfirms(cState, cinfo, g.chain.GetCommitteeVerify())
-				if err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
-					logSkippedDeps(tx, deps)
-					continue
-				}
 			}
 		}
 
+		for _, tx := range CastingTx {
+			if cinfo, _ := cross.IsCastingTx(tx); cinfo != nil {
+				cState.Casting(cinfo)
+				pool := cross.CoinPools[cinfo.ConvertType]
+				addr, _ := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
+				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+					Hash:  tx.TxHash(),
+					Index: 1,
+				},
+					tx.TxOut[1].PkScript,
+					tx.TxOut[1].Value,
+				)
+			}
+		}
+
+		for _, ctx := range ConvertTx {
+			// IsConvertTx
+			if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
+				fmt.Println("txhash ", ctx.Tx.TxHash().String())
+				convertItems = append(convertItems, ctx.Infos...)
+			}
+		}
+
+		for _, tx := range ConvertConfirmsTx {
+			// IsConvertConfirmTx
+			if cinfo, _ := cross.IsConvertConfirmTx(tx); cinfo != nil {
+				cross.ConvertConfirms(cState, cinfo)
+			}
+		}
 	}
 
 	// make entangle tx if it exist

@@ -432,7 +432,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		if pinfo, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoMortgage {
 			return err
 		} else if pinfo != nil {
-			if err := cState.Mortgage(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress); err != nil {
+			if err := cState.MortgageVerify(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 				continue
@@ -444,6 +444,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
+
+			cState.Mortgage(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress)
 			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
 				Hash:  *tx.Hash(),
 				Index: 1,
@@ -457,7 +459,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		if pinfo, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
 			return err
 		} else if pinfo != nil {
-			if err = cState.AddMortgage(pinfo.Address, pinfo.StakingAmount); err != nil {
+			if err = cState.AddMortgageVerify(pinfo.Address, pinfo.StakingAmount); err != nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"AddMortgage AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
@@ -465,6 +467,41 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 			pi := cState.GetPledgeInfoByAddress(pinfo.Address)
 			addr, err := czzutil.NewAddressPubKeyHash(pi.ToAddress, b.chainParams)
+			if err != nil || addr == nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+				continue
+			}
+
+			cState.AddMortgage(pinfo.Address, pinfo.StakingAmount)
+			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+				Hash:  *tx.Hash(),
+				Index: 1,
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
+		}
+
+		// UpdateCoinbaseAll
+		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
+			return err
+		} else if pinfo != nil {
+			if err = cState.UpdateCoinbaseAllVerify(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
+				log.Tracef("Skipping tx %s due to error in "+
+					"VerifyUpdateCoinbaseAllTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+				continue
+			}
+			cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress)
+		}
+
+		// Casting
+		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
+			return err
+		} else if cinfo != nil {
+			cState.Casting(cinfo)
+			pool := cross.CoinPools[cinfo.ConvertType]
+			addr, err := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 			if err != nil || addr == nil {
 				log.Tracef("Skipping tx %s due to error in "+
 					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -479,20 +516,8 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			)
 		}
 
-		// UpdateCoinbaseAll
-		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
-			return err
-		} else if pinfo != nil {
-			if err = cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
-				log.Tracef("Skipping tx %s due to error in "+
-					"VerifyUpdateCoinbaseAllTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-				continue
-			}
-		}
-
 		// IsConvertTx
 		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
-
 			for _, v := range cinfo {
 				if tpi, err := b.GetCommitteeVerify().VerifyConvertTx(cState, v); err != nil {
 					return err
@@ -511,38 +536,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 			}
 		}
 
-		// Casting
-		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
-			return err
-		} else if cinfo != nil {
-			if err = cState.Casting(cinfo); err != nil {
-				log.Tracef("Skipping tx %s due to error in "+
-					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-				continue
-			}
-			pool := cross.CoinPools[cinfo.ConvertType]
-			addr, err := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
-			if err != nil || addr == nil {
-				log.Tracef("Skipping tx %s due to error in "+
-					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-				continue
-			}
-			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-				Hash:  *tx.Hash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
-		}
-
 		// IsConvertConfirmTx
 		if cinfo, err := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvertConfirm {
 			for _, v := range cinfo {
 				if err := b.GetCommitteeVerify().VerifyConvertConfirmTx(cState, v); err != nil {
 					return err
 				} else {
-					if err = cState.ConvertConfirm(v); err != nil {
+					if err = cState.ConvertConfirmVerify(v); err != nil {
 						log.Tracef("Skipping tx %s due to error in "+
 							"VerifyConve"+
 							"rtTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
@@ -557,10 +557,6 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		return err
 	}
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {
-
-		//msg, _ := json.Marshal(cState)
-		//fmt.Println("EntangleState check = ", string(msg), block.Hash().String())
-
 		return fmt.Errorf("CIDRoot %s not in the block %s", cState.Hash(), block.MsgBlock().Header.CIDRoot)
 	}
 	return nil

@@ -590,7 +590,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 	return nil
 }
 
-func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
+func (cs *CommitteeState) Casting(info *CastingTxInfo) {
 
 	convertItem := &ConvertItem{
 		ID:     big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
@@ -610,7 +610,6 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 		items = append(items, convertItem)
 		cs.ConvertItems[ExpandedTxConvert_Czz][info.ConvertType] = items
 	}
-	return nil
 }
 
 func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {

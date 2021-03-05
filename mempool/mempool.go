@@ -1117,7 +1117,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 			if err := mp.cfg.CommitteeVerify.VerifyConvertConfirmTx(cState, v); err != nil {
 				return err
 			} else {
-				if err = cState.ConvertConfirm(v); err != nil {
+				if err = cState.ConvertConfirmVerify(v); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					continue

@@ -994,26 +994,9 @@ type TmpAddressPair struct {
 	Address czzutil.Address
 }
 
-func ToAddressFromConverts(cState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
-
-	ctis := make([]*ConvertTxInfo, 0, 0)
-	for _, info := range cinfo {
-		// verify the entangle tx
-		tpi, err := ev.VerifyConvertTx(cState, info)
-		if err != nil {
-			return nil, err
-		}
-
-		info.PubKey = tpi.Pub
-		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
-		fmt.Println("CommitteeState Convert ", info.ExtTxHash)
-		if err := cState.Convert(info); err != nil {
-			return nil, err
-		}
-		ctis = append(ctis, info)
-	}
-
-	return ctis, nil
+type ConvertTxTemp struct {
+	Infos []*ConvertTxInfo
+	Tx    *wire.MsgTx
 }
 
 func ToAddressFromConvertsVerify(cState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
@@ -1033,25 +1016,19 @@ func ToAddressFromConvertsVerify(cState *CommitteeState, cinfo map[uint32]*Conve
 	return ctis, nil
 }
 
-func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxInfo, ev *CommitteeVerify) ([]*ConvertConfirmTxInfo, error) {
-
-	ctis := make([]*ConvertConfirmTxInfo, 0, 0)
+func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxInfo) {
 	for _, info := range cinfo {
-		// verify the entangle tx
-		err := ev.VerifyConvertConfirmTx(eState, info)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := eState.ConvertConfirmVerify(info); err != nil {
-			return nil, err
-		}
-
 		eState.ConvertConfirm(info)
-		ctis = append(ctis, info)
 	}
+}
 
-	return ctis, nil
+func ConvertConfirmsVerify(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxInfo) error {
+	for _, info := range cinfo {
+		if err := eState.ConvertConfirmVerify(info); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //////////////////////////////////////////////////////////////////////////////
