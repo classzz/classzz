@@ -8,6 +8,7 @@ import (
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -580,7 +581,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
-	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+	if _, ok := CoinPools[eInfo.AssetType]; !ok {
 		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
 	}
 
@@ -617,6 +618,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
 		return fmt.Errorf("eth ValidateSignatureValues err")
 	}
+
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
 	sig := make([]byte, crypto.SignatureLength)
@@ -625,7 +627,6 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	sig[64] = V
 
 	a := types.NewEIP155Signer(EthChainID)
-
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {
 		return fmt.Errorf("Ecrecover err")
@@ -673,8 +674,8 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
-	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+	if _, ok := CoinPools[eInfo.AssetType]; !ok {
+		return fmt.Errorf("%d CoinPools not find ", eInfo.AssetType)
 	}
 
 	var receipt *types.Receipt
@@ -696,13 +697,14 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 		return err
 	}
 
-	ethtx := txjson.tx
-	Vb, R, S := ethtx.RawSignatureValues()
+	hecotx := txjson.tx
+	Vb, R, S := hecotx.RawSignatureValues()
 
 	var V byte
+	chainID := HecoChainID
 	if isProtectedV(Vb) {
-		chainID := deriveChainId(Vb).Uint64()
-		V = byte(Vb.Uint64() - 35 - 2*chainID)
+		chainID = deriveChainId(Vb)
+		V = byte(Vb.Uint64() - 35 - 2*chainID.Uint64())
 	} else {
 		V = byte(Vb.Uint64() - 27)
 	}
@@ -710,6 +712,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
 		return fmt.Errorf("verifyConvertConfirmHecoTx ValidateSignatureValues err")
 	}
+
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
 	sig := make([]byte, crypto.SignatureLength)
@@ -717,9 +720,8 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(HecoChainID)
-
-	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	EIP := types.NewEIP155Signer(chainID)
+	pk, err := crypto.Ecrecover(EIP.Hash(hecotx).Bytes(), sig)
 	if err != nil {
 		return fmt.Errorf("verifyConvertConfirmHecoTx Ecrecover err")
 	}
@@ -744,10 +746,9 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 		return fmt.Errorf("verifyConvertConfirmHecoTx txLog == nil ")
 	}
 
-	address := txLog.Topics[1].String()
+	address := txLog.Topics[1]
 	mid := txLog.Data[32:64]
 	amount := txLog.Data[64:]
-
 	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
 		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
 	}
@@ -772,13 +773,16 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInf
 		}
 	}
 
-	toaddress := crypto.PubkeyToAddress(*toaddresspuk)
-	if address == toaddress.String() {
+	toaddress := common.Address{0}
+	toaddress.SetBytes(address.Bytes())
+	toaddress2 := crypto.PubkeyToAddress(*toaddresspuk)
 
+	if toaddress.String() != toaddress2.String() {
+		return fmt.Errorf("verifyConvertConfirmHecoTx toaddress %d  toaddress2 %d", toaddress, toaddress2)
 	}
 
 	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
-		return fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
+		return fmt.Errorf("verifyConvertConfirmHecoTx amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
 	fmt.Println(pk)
