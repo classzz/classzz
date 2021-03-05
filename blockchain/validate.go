@@ -242,19 +242,8 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 		return baseSubsidy
 	}
 
-	halvings := uint(height/chainParams.SubsidyReductionInterval) + 1
-	if halvings == 0 {
-		return baseSubsidy
-	}
-
-	// Equivalent to: baseSubsidy / (height / chainParams.SubsidyReductionInterval)
-	subsidy := int64(baseSubsidy / halvings)
-	// The minimum subsidy lasts for 1
-	if subsidy == 0 {
-		subsidy = 1
-	}
-
-	return subsidy
+	// Equivalent to: baseSubsidy / 2^(height/subsidyHalvingInterval)
+	return baseSubsidy >> uint(height/chainParams.SubsidyReductionInterval)
 }
 
 // CheckTransactionSanity performs some preliminary checks on a transaction to
