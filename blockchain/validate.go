@@ -492,12 +492,15 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 		// IsConvertTx
 		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
+
 			for _, v := range cinfo {
 				if tpi, err := b.GetCommitteeVerify().VerifyConvertTx(cState, v); err != nil {
 					return err
 				} else {
 					v.PubKey = tpi.Pub
 					v.FeeAmount = big.NewInt(0).Div(v.Amount, big.NewInt(1000))
+					fmt.Println("txhash ", tx.Hash().String())
+					fmt.Println("CommitteeState Convert ", v.ExtTxHash)
 					if err = cState.Convert(v); err != nil {
 						log.Tracef("Skipping tx %s due to error in "+
 							"VerifyConve"+
@@ -553,8 +556,11 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
 		return err
 	}
-
 	if block.MsgBlock().Header.CIDRoot != cState.Hash() {
+
+		//msg, _ := json.Marshal(cState)
+		//fmt.Println("EntangleState check = ", string(msg), block.Hash().String())
+
 		return fmt.Errorf("CIDRoot %s not in the block %s", cState.Hash(), block.MsgBlock().Header.CIDRoot)
 	}
 	return nil

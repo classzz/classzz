@@ -391,9 +391,10 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	Vb, R, S := ethtx.RawSignatureValues()
 
 	var V byte
+	chainID := EthChainID
 	if isProtectedV(Vb) {
-		chainID := deriveChainId(Vb).Uint64()
-		V = byte(Vb.Uint64() - 35 - 2*chainID)
+		chainID = deriveChainId(Vb)
+		V = byte(Vb.Uint64() - 35 - 2*chainID.Uint64())
 	} else {
 		V = byte(Vb.Uint64() - 27)
 	}
@@ -408,7 +409,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 
-	a := types.NewEIP155Signer(EthChainID)
+	a := types.NewEIP155Signer(chainID)
 
 	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
 	if err != nil {

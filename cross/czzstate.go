@@ -134,54 +134,102 @@ type ConvertItem struct {
 	FeeAmount        *big.Int `json:"fee_amount"`
 }
 
-type ConvertItems map[uint8][]*ConvertItem
+type ConvertItemMap map[uint8]ConvertItemList
+type ConvertItemList []*ConvertItem
 
-type StoreConvertItem struct {
+type StoreConvertItemMap struct {
 	Type        uint8
-	ConvertItem []*ConvertItem
+	ConvertItem ConvertItemList
 }
 
-type SortStoreConvertItem []*StoreConvertItem
+type SortStoreConvertMapItem []*StoreConvertItemMap
 
-func (vs SortStoreConvertItem) Len() int {
+func (vs SortStoreConvertMapItem) Len() int {
 	return len(vs)
 }
 
-func (vs SortStoreConvertItem) Less(i, j int) bool {
+func (vs SortStoreConvertMapItem) Less(i, j int) bool {
 	return vs[i].Type < vs[j].Type
 }
 
-func (vs SortStoreConvertItem) Swap(i, j int) {
+func (vs SortStoreConvertMapItem) Swap(i, j int) {
 	it := vs[i]
 	vs[i] = vs[j]
 	vs[j] = it
 }
 
-func (ci *ConvertItems) toSlice() SortStoreConvertItem {
-	v1 := make([]*StoreConvertItem, 0, 0)
+func (ci *ConvertItemMap) toSlice() SortStoreConvertMapItem {
+	v1 := make([]*StoreConvertItemMap, 0, 0)
 	for k, v := range *ci {
-		v1 = append(v1, &StoreConvertItem{
+		v1 = append(v1, &StoreConvertItemMap{
 			Type:        k,
 			ConvertItem: v,
 		})
 	}
-	sort.Sort(SortStoreConvertItem(v1))
-	return SortStoreConvertItem(v1)
+	sort.Sort(SortStoreConvertMapItem(v1))
+	return SortStoreConvertMapItem(v1)
 }
 
-func (ci *ConvertItems) fromSlice(vv SortStoreConvertItem) {
-	convertItems := make(map[uint8][]*ConvertItem)
+func (cs *ConvertItemMap) fromSlice(vv SortStoreConvertMapItem) {
+	convertItems := make(map[uint8]ConvertItemList)
 	for _, v := range vv {
 		convertItems[v.Type] = v.ConvertItem
 	}
-	*ci = ConvertItems(convertItems)
+	*cs = ConvertItemMap(convertItems)
 }
 
-func (ci *ConvertItems) DecodeRLP(s *rlp.Stream) error {
-	type Store1 struct {
-		Value SortStoreConvertItem
+func (cs *ConvertItemMap) DecodeRLP(s *rlp.Stream) error {
+	type Store struct {
+		Value SortStoreConvertMapItem
 	}
-	var eb Store1
+	var eb Store
+	if err := s.Decode(&eb); err != nil {
+		return err
+	}
+	cs.fromSlice(eb.Value)
+	return nil
+}
+
+func (cs *ConvertItemMap) EncodeRLP(w io.Writer) error {
+	s1 := cs.toSlice()
+	type Store struct {
+		Value SortStoreConvertMapItem
+	}
+
+	return rlp.Encode(w, Store{s1})
+}
+
+type SortStoreConvertItemList []*ConvertItem
+
+func (vs SortStoreConvertItemList) Len() int {
+	return len(vs)
+}
+
+func (vs SortStoreConvertItemList) Less(i, j int) bool {
+	return vs[i].ID.Uint64() < vs[j].ID.Uint64()
+}
+
+func (vs SortStoreConvertItemList) Swap(i, j int) {
+	it := vs[i]
+	vs[i] = vs[j]
+	vs[j] = it
+}
+
+func (ci *ConvertItemList) toSlice() SortStoreConvertItemList {
+	v1 := *ci
+	sort.Sort(SortStoreConvertItemList(v1))
+	return SortStoreConvertItemList(v1)
+}
+
+func (ci *ConvertItemList) fromSlice(vv SortStoreConvertItemList) {
+	*ci = ConvertItemList(vv)
+}
+
+func (ci *ConvertItemList) DecodeRLP(s *rlp.Stream) error {
+	type Store struct {
+		Value SortStoreConvertItemList
+	}
+	var eb Store
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
@@ -189,28 +237,26 @@ func (ci *ConvertItems) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-func (ci *ConvertItems) EncodeRLP(w io.Writer) error {
-	type Store1 struct {
-		Value SortStoreConvertItem
+func (cs *ConvertItemList) EncodeRLP(w io.Writer) error {
+	s1 := cs.toSlice()
+	type Store struct {
+		Value SortStoreConvertItemList
 	}
-	s1 := ci.toSlice()
-	return rlp.Encode(w, &Store1{
-		Value: s1,
-	})
+	return rlp.Encode(w, Store{s1})
 }
 
 type CommitteeState struct {
 	PledgeInfos         []*PledgeInfo
 	CommitteeInfos      []*CommitteeInfo
 	MaxItemID           *big.Int
-	ConvertItems        map[uint8]ConvertItems
-	ConvertConfirmItems map[uint8]ConvertItems
+	ConvertItems        map[uint8]ConvertItemMap
+	ConvertConfirmItems map[uint8]ConvertItemMap
 	NoCostUtxos         map[string]*PoolAddrItem
 }
 
 type StoreConvertItems struct {
 	Type         uint8
-	ConvertItems ConvertItems
+	ConvertItems ConvertItemMap
 }
 
 type SortStoreConvertItems []*StoreConvertItems
@@ -231,7 +277,7 @@ func (ci SortStoreConvertItems) Swap(i, j int) {
 
 type StoreConvertConfirmItems struct {
 	Type                uint8
-	ConvertConfirmItems ConvertItems
+	ConvertConfirmItems ConvertItemMap
 }
 
 type SortStoreConvertConfirmItems []*StoreConvertConfirmItems
@@ -271,7 +317,40 @@ func (ci SortStoreNoCostUtxos) Swap(i, j int) {
 	ci[j] = it
 }
 
-func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreConvertConfirmItems, SortStoreNoCostUtxos) {
+type SortStorePledgeInfos []*PledgeInfo
+
+func (ci SortStorePledgeInfos) Len() int {
+	return len(ci)
+}
+
+func (ci SortStorePledgeInfos) Less(i, j int) bool {
+	return ci[i].ID.Uint64() < ci[j].ID.Uint64()
+}
+
+func (ci SortStorePledgeInfos) Swap(i, j int) {
+	it := ci[i]
+	ci[i] = ci[j]
+	ci[j] = it
+}
+
+type SortStoreCommitteeInfos []*CommitteeInfo
+
+func (ci SortStoreCommitteeInfos) Len() int {
+	return len(ci)
+}
+
+func (ci SortStoreCommitteeInfos) Less(i, j int) bool {
+	return ci[i].Id.Uint64() < ci[j].Id.Uint64()
+}
+
+func (ci SortStoreCommitteeInfos) Swap(i, j int) {
+	it := ci[i]
+	ci[i] = ci[j]
+	ci[j] = it
+}
+
+func (cs *CommitteeState) toSlice() (SortStorePledgeInfos, SortStoreCommitteeInfos, SortStoreConvertItems, SortStoreConvertConfirmItems, SortStoreNoCostUtxos) {
+
 	v1 := make([]*StoreConvertItems, 0, 0)
 	for k, v := range cs.ConvertItems {
 		v1 = append(v1, &StoreConvertItems{
@@ -296,15 +375,17 @@ func (cs *CommitteeState) toSlice() (SortStoreConvertItems, SortStoreConvertConf
 		})
 	}
 
+	sort.Sort(SortStorePledgeInfos(cs.PledgeInfos))
+	sort.Sort(SortStoreCommitteeInfos(cs.CommitteeInfos))
 	sort.Sort(SortStoreConvertItems(v1))
 	sort.Sort(SortStoreConvertConfirmItems(v2))
 	sort.Sort(SortStoreNoCostUtxos(v3))
-	return SortStoreConvertItems(v1), SortStoreConvertConfirmItems(v2), SortStoreNoCostUtxos(v3)
+	return SortStorePledgeInfos(cs.PledgeInfos), SortStoreCommitteeInfos(cs.CommitteeInfos), SortStoreConvertItems(v1), SortStoreConvertConfirmItems(v2), SortStoreNoCostUtxos(v3)
 }
 
 func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreConvertConfirmItems, v3 SortStoreNoCostUtxos) {
-	convertItems := make(map[uint8]ConvertItems)
-	convertConfirmItems := make(map[uint8]ConvertItems)
+	convertItems := make(map[uint8]ConvertItemMap)
+	convertConfirmItems := make(map[uint8]ConvertItemMap)
 	noCostUtxos := make(map[string]*PoolAddrItem)
 	for _, v := range v1 {
 		convertItems[v.Type] = v.ConvertItems
@@ -321,8 +402,8 @@ func (cs *CommitteeState) fromSlice(v1 SortStoreConvertItems, v2 SortStoreConver
 }
 
 type extCommitteeState struct {
-	PledgeInfos         []*PledgeInfo
-	CommitteeInfos      []*CommitteeInfo
+	PledgeInfos         SortStorePledgeInfos
+	CommitteeInfos      SortStoreCommitteeInfos
 	MaxItemID           *big.Int
 	ConvertItems        SortStoreConvertItems
 	ConvertConfirmItems SortStoreConvertConfirmItems
@@ -340,14 +421,14 @@ func (cs *CommitteeState) DecodeRLP(s *rlp.Stream) error {
 }
 
 func (cs *CommitteeState) EncodeRLP(w io.Writer) error {
-	s1, s2, s3 := cs.toSlice()
+	s1, s2, s3, s4, s5 := cs.toSlice()
 	return rlp.Encode(w, extCommitteeState{
-		PledgeInfos:         cs.PledgeInfos,
-		CommitteeInfos:      cs.CommitteeInfos,
+		PledgeInfos:         s1,
+		CommitteeInfos:      s2,
 		MaxItemID:           cs.MaxItemID,
-		ConvertItems:        s1,
-		ConvertConfirmItems: s2,
-		NoCostUtxos:         s3,
+		ConvertItems:        s3,
+		ConvertConfirmItems: s4,
+		NoCostUtxos:         s5,
 	})
 }
 
@@ -409,19 +490,7 @@ func (cs *CommitteeState) GetPledgeInfoMaxId() *big.Int {
 
 /////////////////////////////////////////////////////////////////
 // keep staking enough amount asset
-func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
-
-	if amount.Cmp(MinStakingAmount) < 0 {
-		return ErrLessThanMin
-	}
-
-	if info := cs.GetPledgeInfoByAddress(address); info != nil {
-		return ErrRepeatRegister
-	}
-
-	if info := cs.GetPledgeInfoByAddressTo(to); info != nil {
-		return ErrRepeatToAddress
-	}
+func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) {
 
 	maxId := cs.GetPledgeInfoMaxId()
 	info := &PledgeInfo{
@@ -434,31 +503,52 @@ func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amo
 	}
 
 	cs.PledgeInfos = append(cs.PledgeInfos, info)
-	return nil
 }
 
-func (cs *CommitteeState) AddMortgage(address string, amount *big.Int) error {
-	if info := cs.GetPledgeInfoByAddress(address); info == nil {
+func (cs *CommitteeState) MortgageVerify(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
+
+	if amount.Cmp(MinStakingAmount) < 0 {
+		return ErrLessThanMin
+	}
+
+	if info := cs.GetPledgeInfoByAddress(address); info != nil {
 		return ErrRepeatRegister
-	} else {
-		info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
+	}
+
+	if info := cs.GetPledgeInfoByAddressTo(to); info != nil {
+		return ErrRepeatToAddress
 	}
 	return nil
 }
 
-func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) error {
+func (cs *CommitteeState) AddMortgage(address string, amount *big.Int) {
+	info := cs.GetPledgeInfoByAddress(address)
+	info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
+}
+
+func (cs *CommitteeState) AddMortgageVerify(address string, amount *big.Int) error {
+	if info := cs.GetPledgeInfoByAddress(address); info == nil {
+		return ErrRepeatRegister
+	}
+	return nil
+}
+
+func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) {
+	info := cs.GetPledgeInfoByAddress(address)
+	info.CoinBaseAddress = coinBases
+}
+
+func (cs *CommitteeState) UpdateCoinbaseAllVerify(address string, coinBases []string) error {
 	if info := cs.GetPledgeInfoByAddress(address); info == nil {
 		return ErrNoRegister
 	} else {
 		if len(coinBases) >= MaxCoinBase {
 			return errors.New("more than max coinbase")
 		}
-		info.CoinBaseAddress = coinBases
 	}
 	return nil
 }
 
-// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
 	convertItem := &ConvertItem{
@@ -473,7 +563,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 
 	if info.ConvertType == ExpandedTxConvert_Czz {
 		if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
-			item := ConvertItems{}
+			item := make(map[uint8]ConvertItemList)
 			items := make([]*ConvertItem, 0, 0)
 			items = append(items, convertItem)
 			item[info.ConvertType] = items
@@ -485,7 +575,7 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 		}
 	} else {
 		if _, ok := cs.ConvertItems[info.AssetType]; !ok {
-			item := ConvertItems{}
+			item := make(map[uint8]ConvertItemList)
 			items := make([]*ConvertItem, 0, 0)
 			items = append(items, convertItem)
 			item[info.ConvertType] = items
@@ -500,7 +590,6 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 	return nil
 }
 
-// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
 func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 
 	convertItem := &ConvertItem{
@@ -511,8 +600,8 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 	cs.MaxItemID = convertItem.ID
 
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
-		item := ConvertItems{}
-		items := make([]*ConvertItem, 0, 0)
+		item := make(map[uint8]ConvertItemList)
+		items := make(ConvertItemList, 0, 0)
 		items = append(items, convertItem)
 		item[info.ConvertType] = items
 		cs.ConvertItems[ExpandedTxConvert_Czz] = item
@@ -524,8 +613,7 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) error {
 	return nil
 }
 
-// AddEntangleItem add item in the state, keep BeaconAddress have enough amount to entangle,
-func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
+func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 
 	var hinfo *ConvertItem
 	var index int
@@ -535,10 +623,6 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 			hinfo = v
 			index = i
 		}
-	}
-
-	if hinfo == nil {
-		return fmt.Errorf("")
 	}
 
 	items = append(items[:index], items[index+1:]...)
@@ -555,7 +639,7 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 	}
 
 	if _, ok := cs.ConvertConfirmItems[info.AssetType]; !ok {
-		item := ConvertItems{}
+		item := make(map[uint8]ConvertItemList)
 		items := make([]*ConvertItem, 0, 0)
 		items = append(items, convertItem)
 		item[info.ConvertType] = items
@@ -564,6 +648,22 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) error {
 		items := cs.ConvertConfirmItems[info.AssetType][info.ConvertType]
 		items = append(items, convertItem)
 		cs.ConvertConfirmItems[info.AssetType][info.ConvertType] = items
+	}
+
+}
+
+func (cs *CommitteeState) ConvertConfirmVerify(info *ConvertConfirmTxInfo) error {
+
+	var hinfo *ConvertItem
+	items := cs.ConvertItems[info.AssetType][info.ConvertType]
+	for _, v := range items {
+		if v.ID.Cmp(info.ID) == 0 {
+			hinfo = v
+		}
+	}
+
+	if hinfo == nil {
+		return fmt.Errorf("CommitteeState ConvertConfirmVerify err")
 	}
 
 	return nil
@@ -593,7 +693,7 @@ func (cs *CommitteeState) PutNoCostUtxos(address string, POut wire.OutPoint, Scr
 
 func (cs *CommitteeState) ToBytes() []byte {
 	// maybe rlp encode
-	//msg, err := json.Marshal(es)
+	//msg, err := json.Marshal(cs)
 	//fmt.Println("EntangleState = ", string(msg))
 	data, err := rlp.EncodeToBytes(cs)
 	if err != nil {
@@ -611,8 +711,8 @@ func NewCommitteeState() *CommitteeState {
 		PledgeInfos:         make([]*PledgeInfo, 0, 0),
 		CommitteeInfos:      make([]*CommitteeInfo, 0, 0),
 		MaxItemID:           big.NewInt(0),
-		ConvertItems:        make(map[uint8]ConvertItems),
-		ConvertConfirmItems: make(map[uint8]ConvertItems),
+		ConvertItems:        make(map[uint8]ConvertItemMap),
+		ConvertConfirmItems: make(map[uint8]ConvertItemMap),
 		NoCostUtxos:         make(map[string]*PoolAddrItem),
 	}
 }
@@ -739,22 +839,9 @@ func (es *EntangleState) getBeaconAddressFromTo(to []byte) *BeaconAddressInfo {
 }
 
 /////////////////////////////////////////////////////////////////
-// keep staking enough amount asset
+
 func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *big.Int,
 	fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
-		!ValidAssetType(assetType) {
-		return ErrInvalidParam
-	}
-	if amount.Cmp(MinStakingAmount) < 0 {
-		return ErrLessThanMin
-	}
-	if _, ok := es.EnInfos[addr]; ok {
-		return ErrRepeatRegister
-	}
-	if info := es.getBeaconAddressFromTo(to); info != nil {
-		return ErrRepeatToAddress
-	}
 	info := &BeaconAddressInfo{
 		ExchangeID:      es.CurExchangeID + 1,
 		Address:         addr,
@@ -772,6 +859,25 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 	es.EnInfos[addr] = info
 	return nil
 }
+
+func (es *EntangleState) RegisterBeaconAddressVerify(addr string, to []byte, amount *big.Int, fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
+	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+		!ValidAssetType(assetType) {
+		return ErrInvalidParam
+	}
+	if amount.Cmp(MinStakingAmount) < 0 {
+		return ErrLessThanMin
+	}
+	if _, ok := es.EnInfos[addr]; ok {
+		return ErrRepeatRegister
+	}
+	if info := es.getBeaconAddressFromTo(to); info != nil {
+		return ErrRepeatToAddress
+	}
+
+	return nil
+}
+
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		cnt := len(val.WhiteList)
@@ -804,6 +910,7 @@ func (es *EntangleState) AppendCoinbase(addr string, coinbases []string) error {
 		return ErrNoRegister
 	}
 }
+
 func (es *EntangleState) AppendAmountForBeaconAddress(addr string, amount *big.Int) error {
 	if info, ok := es.EnInfos[addr]; !ok {
 		return ErrRepeatRegister
@@ -812,6 +919,14 @@ func (es *EntangleState) AppendAmountForBeaconAddress(addr string, amount *big.I
 		return nil
 	}
 }
+
+func (es *EntangleState) AppendAmountForBeaconAddressVerify(addr string, amount *big.Int) error {
+	if _, ok := es.EnInfos[addr]; !ok {
+		return ErrRepeatRegister
+	}
+	return nil
+}
+
 func (es *EntangleState) UpdateCoinbase(addr, update, newAddr string) error {
 	if val, ok := es.EnInfos[addr]; ok {
 		for i, v := range val.CoinBaseAddress {

@@ -1006,9 +1006,27 @@ func ToAddressFromConverts(cState *CommitteeState, cinfo map[uint32]*ConvertTxIn
 
 		info.PubKey = tpi.Pub
 		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
+		fmt.Println("CommitteeState Convert ", info.ExtTxHash)
 		if err := cState.Convert(info); err != nil {
 			return nil, err
 		}
+		ctis = append(ctis, info)
+	}
+
+	return ctis, nil
+}
+
+func ToAddressFromConvertsVerify(cState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
+
+	ctis := make([]*ConvertTxInfo, 0, 0)
+	for _, info := range cinfo {
+		tpi, err := ev.VerifyConvertTx(cState, info)
+		if err != nil {
+			return nil, err
+		}
+
+		info.PubKey = tpi.Pub
+		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
 		ctis = append(ctis, info)
 	}
 
@@ -1025,9 +1043,11 @@ func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxI
 			return nil, err
 		}
 
-		if err := eState.ConvertConfirm(info); err != nil {
+		if err := eState.ConvertConfirmVerify(info); err != nil {
 			return nil, err
 		}
+
+		eState.ConvertConfirm(info)
 		ctis = append(ctis, info)
 	}
 

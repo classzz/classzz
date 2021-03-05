@@ -897,7 +897,7 @@ mempoolLoop:
 
 			// Mortgage
 			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
-				if err := cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress); err != nil {
+				if err := cState.MortgageVerify(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
@@ -915,7 +915,7 @@ mempoolLoop:
 
 			// AddMortgage
 			if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = cState.AddMortgage(bp.Address, bp.StakingAmount); err != nil {
+				if err = cState.AddMortgageVerify(bp.Address, bp.StakingAmount); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
@@ -932,7 +932,7 @@ mempoolLoop:
 
 			// UpdateCoinbaseAll
 			if bp, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
-				if err = cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress); err != nil {
+				if err = cState.UpdateCoinbaseAllVerify(bp.Address, bp.CoinBaseAddress); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
@@ -942,7 +942,8 @@ mempoolLoop:
 
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetCommitteeVerify())
+				fmt.Println("txhash ", tx.Hash().String())
+				objs, err := cross.ToAddressFromConvertsVerify(cState, cinfo, g.chain.GetCommitteeVerify())
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"toAddressFromEntangle: %v", tx.Hash(), err)
@@ -1057,6 +1058,109 @@ mempoolLoop:
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
 
+	for _, tx := range blockTxns {
+		if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+
+			// BeaconRegistrationTx
+			if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
+				if err = eState.RegisterBeaconAddress(br.Address, br.ToAddress, br.StakingAmount, br.Fee, br.KeepTime, br.AssetFlag, br.WhiteList, br.CoinBaseAddress); err != nil {
+					return nil, nil, err
+				}
+			}
+
+			// AddBeaconPledgeTx
+			if bp, _ := cross.IsAddBeaconPledgeTx(tx.MsgTx(), g.chainParams); bp != nil {
+				if err = eState.AppendAmountForBeaconAddress(bp.Address, bp.StakingAmount); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+
+		////////////////////////////////////
+		if nextBlockHeight >= g.chainParams.ConverHeight {
+
+			// Mortgage
+			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
+				cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress)
+				cState.PutNoCostUtxos(info.Address, wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
+			}
+
+			// AddMortgage
+			if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), g.chainParams); bp != nil {
+				cState.AddMortgage(bp.Address, bp.StakingAmount)
+				cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
+			}
+
+			// UpdateCoinbaseAll
+			if bp, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), g.chainParams); bp != nil {
+				cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress)
+			}
+
+			// IsConvertTx
+			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+				fmt.Println("txhash ", tx.Hash().String())
+				objs, err := cross.ToAddressFromConverts(cState, cinfo, g.chain.GetCommitteeVerify())
+				if err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"toAddressFromEntangle: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+				convertItems = append(convertItems, objs...)
+			}
+
+			// IsCastingTx
+			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
+				if err = cState.Casting(cinfo); err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+
+				pool := cross.CoinPools[cinfo.ConvertType]
+				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
+				if err != nil || addr == nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+					continue
+				}
+
+				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+					Hash:  *tx.Hash(),
+					Index: 1,
+				},
+					tx.MsgTx().TxOut[1].PkScript,
+					tx.MsgTx().TxOut[1].Value,
+				)
+			}
+
+			// IsConvertConfirmTx
+			if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
+				_, err := cross.ConvertConfirms(cState, cinfo, g.chain.GetCommitteeVerify())
+				if err != nil {
+					log.Tracef("Skipping tx %s due to error in "+
+						"toAddressFromEntangle: %v", tx.Hash(), err)
+					logSkippedDeps(tx, deps)
+					continue
+				}
+			}
+		}
+
+	}
+
 	// make entangle tx if it exist
 	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
 		eItems := make([]*cross.EntangleItem, 0)
@@ -1087,6 +1191,9 @@ mempoolLoop:
 		CIDRoot = cState.Hash()
 	}
 
+	//msg, err := json.Marshal(cState)
+	//fmt.Println("EntangleState mining = ", string(msg), best.Hash.String())
+
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
@@ -1106,6 +1213,9 @@ mempoolLoop:
 		}
 	}
 
+	for _, tx := range msgBlock.Transactions {
+		fmt.Println("block tx ", tx.TxHash().String())
+	}
 	// Finally, perform a full check on the created block against the chain
 	// consensus rules to ensure it properly connects to the current best
 	// chain with no issues.

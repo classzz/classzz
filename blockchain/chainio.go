@@ -751,7 +751,7 @@ func dbFetchEntangleState(dbTx database.Tx, height int32, hash chainhash.Hash) *
 	return nil
 }
 
-func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, eState *cross.CommitteeState) error {
+func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, cState *cross.CommitteeState) error {
 	var err error
 	entangleBucket := dbTx.Metadata().Bucket(cross.CommitteeStateKey)
 	if entangleBucket == nil {
@@ -762,7 +762,7 @@ func dbPutCommitteeState(dbTx database.Tx, block *czzutil.Block, eState *cross.C
 	buf := new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, block.Height())
 	buf.Write(block.Hash().CloneBytes())
-	err = entangleBucket.Put(buf.Bytes(), eState.ToBytes())
+	err = entangleBucket.Put(buf.Bytes(), cState.ToBytes())
 	return err
 }
 

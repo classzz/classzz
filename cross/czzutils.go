@@ -17,7 +17,6 @@ var (
 	ErrInvalidParam       = errors.New("Invalid Param")
 	ErrLessThanMin        = errors.New("less than min staking amount for beaconAddress")
 	ErrRepeatRegister     = errors.New("repeat register on this address")
-	ErrNotRepeatRegister  = errors.New("repeat not register on this address")
 	ErrRepeatToAddress    = errors.New("repeat to Address on this register")
 	ErrNoRegister         = errors.New("not found the beaconAddress")
 	ErrAddressInWhiteList = errors.New("the address in the whitelist")
