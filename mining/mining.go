@@ -768,6 +768,7 @@ mempoolLoop:
 
 	var MortgageTx *wire.MsgTx
 	CastingTx := make([]*wire.MsgTx, 0, 0)
+	ConvertTxMap := make(map[string]*cross.ConvertTxTemp)
 	ConvertTx := make([]*cross.ConvertTxTemp, 0, 0)
 	ConvertConfirmsTx := make([]*wire.MsgTx, 0, 0)
 
@@ -957,7 +958,6 @@ mempoolLoop:
 						"VerifyCastingTx err : %v", tx.Hash(), err)
 					continue
 				}
-				CastingTx = append(CastingTx, tx.MsgTx())
 			}
 
 			// IsConvertTx
@@ -975,7 +975,7 @@ mempoolLoop:
 					Infos: objs,
 					Tx:    tx.MsgTx(),
 				}
-				ConvertTx = append(ConvertTx, ctx)
+				ConvertTxMap[tx.Hash().String()] = ctx
 			}
 
 			// IsConvertConfirmTx
@@ -986,7 +986,6 @@ mempoolLoop:
 					logSkippedDeps(tx, deps)
 					continue
 				}
-				ConvertConfirmsTx = append(ConvertConfirmsTx, tx.MsgTx())
 			}
 		}
 
@@ -1057,9 +1056,27 @@ mempoolLoop:
 	// we need to sort transactions by txid to comply with the CTOR consensus rule.
 	sort.Sort(TxSorter(blockTxns))
 
-	////////////////////////////////////
-	if nextBlockHeight >= g.chainParams.ConverHeight {
+	for _, tx := range blockTxns {
+		if nextBlockHeight >= g.chainParams.ConverHeight {
 
+			// IsCastingTx
+			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
+				CastingTx = append(CastingTx, tx.MsgTx())
+			}
+
+			// IsConvertTx
+			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+				ConvertTx = append(ConvertTx, ConvertTxMap[tx.Hash().String()])
+			}
+
+			// IsConvertConfirmTx
+			if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
+				ConvertConfirmsTx = append(ConvertConfirmsTx, tx.MsgTx())
+			}
+		}
+	}
+
+	if nextBlockHeight >= g.chainParams.ConverHeight {
 		if MortgageTx != nil {
 			// Mortgage
 			if info, _ := cross.IsMortgageTx(MortgageTx, g.chainParams); info != nil {
