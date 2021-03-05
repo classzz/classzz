@@ -415,6 +415,12 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	cState := b.GetCstateByHashAndHeight(hash, prevHeight)
+
+	var MortgageTx *wire.MsgTx
+	CastingTx := make([]*wire.MsgTx, 0, 0)
+	ConvertTx := make([]*cross.ConvertTxTemp, 0, 0)
+	ConvertConfirmsTx := make([]*wire.MsgTx, 0, 0)
+
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
@@ -433,15 +439,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-
-			cState.Mortgage(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress)
-			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-				Hash:  *tx.Hash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
+			MortgageTx = tx.MsgTx()
 		}
 
 		// AddMortgage
@@ -461,15 +459,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-
-			cState.AddMortgage(pinfo.Address, pinfo.StakingAmount)
-			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-				Hash:  *tx.Hash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
+			MortgageTx = tx.MsgTx()
 		}
 
 		// UpdateCoinbaseAll
@@ -481,14 +471,13 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"VerifyUpdateCoinbaseAllTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-			cState.UpdateCoinbaseAll(pinfo.Address, pinfo.CoinBaseAddress)
+			MortgageTx = tx.MsgTx()
 		}
 
 		// Casting
 		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
 			return err
 		} else if cinfo != nil {
-			cState.Casting(cinfo)
 			pool := cross.CoinPools[cinfo.ConvertType]
 			addr, err := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 			if err != nil || addr == nil {
@@ -496,33 +485,20 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					"VerifyCastingTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
 				continue
 			}
-			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-				Hash:  *tx.Hash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
+			CastingTx = append(CastingTx, tx.MsgTx())
 		}
 
 		// IsConvertTx
 		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
-			for _, v := range cinfo {
-				if tpi, err := b.GetCommitteeVerify().VerifyConvertTx(cState, v); err != nil {
-					return err
-				} else {
-					v.PubKey = tpi.Pub
-					v.FeeAmount = big.NewInt(0).Div(v.Amount, big.NewInt(1000))
-					fmt.Println("txhash ", tx.Hash().String())
-					fmt.Println("CommitteeState Convert ", v.ExtTxHash)
-					if err = cState.Convert(v); err != nil {
-						log.Tracef("Skipping tx %s due to error in "+
-							"VerifyConve"+
-							"rtTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-						continue
-					}
-				}
+			objs, err := cross.ToAddressFromConvertsVerify(cState, cinfo, b.GetCommitteeVerify())
+			if err != nil {
+				return err
 			}
+			ctx := &cross.ConvertTxTemp{
+				Infos: objs,
+				Tx:    tx.MsgTx(),
+			}
+			ConvertTx = append(ConvertTx, ctx)
 		}
 
 		// IsConvertConfirmTx
@@ -539,6 +515,69 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 					}
 				}
 			}
+			ConvertConfirmsTx = append(ConvertConfirmsTx, tx.MsgTx())
+		}
+	}
+
+	if MortgageTx != nil {
+		// Mortgage
+		if info, _ := cross.IsMortgageTx(MortgageTx, b.chainParams); info != nil {
+			cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress)
+			cState.PutNoCostUtxos(info.Address, wire.OutPoint{
+				Hash:  MortgageTx.TxHash(),
+				Index: 1,
+			},
+				MortgageTx.TxOut[1].PkScript,
+				MortgageTx.TxOut[1].Value,
+			)
+		}
+
+		// AddMortgage
+		if bp, _ := cross.IsAddMortgageTx(MortgageTx, b.chainParams); bp != nil {
+			cState.AddMortgage(bp.Address, bp.StakingAmount)
+			cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
+				Hash:  MortgageTx.TxHash(),
+				Index: 1,
+			},
+				MortgageTx.TxOut[1].PkScript,
+				MortgageTx.TxOut[1].Value,
+			)
+		}
+
+		// UpdateCoinbaseAll
+		if bp, _ := cross.IsUpdateCoinbaseAllTx(MortgageTx, b.chainParams); bp != nil {
+			cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress)
+		}
+	}
+
+	for _, tx := range CastingTx {
+		if cinfo, _ := cross.IsCastingTx(tx); cinfo != nil {
+			cState.Casting(cinfo)
+			pool := cross.CoinPools[cinfo.ConvertType]
+			addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
+			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+				Hash:  tx.TxHash(),
+				Index: 1,
+			},
+				tx.TxOut[1].PkScript,
+				tx.TxOut[1].Value,
+			)
+		}
+	}
+
+	for _, ctx := range ConvertTx {
+		if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
+			for _, info := range ctx.Infos {
+				fmt.Println("txhash ", ctx.Tx.TxHash().String())
+				fmt.Println("CommitteeState Convert ", info.ExtTxHash)
+				cState.Convert(info)
+			}
+		}
+	}
+
+	for _, tx := range ConvertConfirmsTx {
+		if cinfo, _ := cross.IsConvertConfirmTx(tx); cinfo != nil {
+			cross.ConvertConfirms(cState, cinfo)
 		}
 	}
 

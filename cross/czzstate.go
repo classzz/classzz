@@ -549,7 +549,7 @@ func (cs *CommitteeState) UpdateCoinbaseAllVerify(address string, coinBases []st
 	return nil
 }
 
-func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
+func (cs *CommitteeState) Convert(info *ConvertTxInfo) {
 
 	convertItem := &ConvertItem{
 		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
@@ -586,8 +586,6 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) error {
 			cs.ConvertItems[info.AssetType][info.ConvertType] = items
 		}
 	}
-
-	return nil
 }
 
 func (cs *CommitteeState) Casting(info *CastingTxInfo) {
