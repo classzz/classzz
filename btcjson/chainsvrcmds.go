@@ -205,19 +205,18 @@ type EnAssetItem BaseAmountUint
 type FreeQuotaItem BaseAmountUint
 
 type BeaconAddressInfo struct {
-	BeaconID        uint64           `json:"beacon_id"`
+	ExchangeID      uint64           `json:"exchange_id"`
 	Address         string           `json:"address"`
-	PubKey          []byte           `json:"pub_key"`
 	ToAddress       []byte           `json:"toAddress"`
 	StakingAmount   *big.Int         `json:"staking_amount"`  // in
 	EntangleAmount  *big.Int         `json:"entangle_amount"` // out,express by czz,all amount of user's entangle
 	EnAssets        []*EnAssetItem   `json:"en_assets"`       // out,the extrinsic asset
 	Frees           []*FreeQuotaItem `json:"frees"`           // extrinsic asset
-	AssetFlag       uint32           `json:"assetflag"`
+	AssetFlag       uint32           `json:"asset_flag"`
 	Fee             uint64           `json:"fee"`
-	KeepTime        uint64           `json:"keeptime"` // the time as the block count for finally redeem time
-	WhiteList       []*WhiteUnit     `json:"whitelist"`
-	CoinBaseAddress []string         `json:"coinbase_address"`
+	KeepTime        uint64           `json:"keep_time"` // the time as the block count for finally redeem time
+	WhiteList       []*WhiteUnit     `json:"white_list"`
+	CoinBaseAddress []string         `json:"CoinBaseAddress"`
 }
 
 type AddBeaconPledge struct {

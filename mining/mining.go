@@ -1172,9 +1172,6 @@ mempoolLoop:
 		CIDRoot = cState.Hash()
 	}
 
-	//msg, err := json.Marshal(cState)
-	//fmt.Println("EntangleState mining = ", string(msg), best.Hash.String())
-
 	blockTxns = append([]*czzutil.Tx{coinbaseTx}, blockTxns...)
 
 	// Create a new block ready to be solved.
@@ -1194,9 +1191,6 @@ mempoolLoop:
 		}
 	}
 
-	for _, tx := range msgBlock.Transactions {
-		fmt.Println("block tx ", tx.TxHash().String())
-	}
 	// Finally, perform a full check on the created block against the chain
 	// consensus rules to ensure it properly connects to the current best
 	// chain with no issues.

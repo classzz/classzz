@@ -539,10 +539,6 @@ func ValidPK(pk []byte) bool {
 	return true
 }
 
-func isValidAsset(atype, assetAll uint32) bool {
-	return atype&assetAll != 0
-}
-
 func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Address, eState *EntangleState) *big.Int {
 	found_t := 0
 	StakingAmount := big.NewInt(0)

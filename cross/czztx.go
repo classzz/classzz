@@ -1002,7 +1002,6 @@ func ToAddressFromConvertsVerify(cState *CommitteeState, cinfo map[uint32]*Conve
 		if err != nil {
 			return nil, err
 		}
-
 		info.PubKey = tpi.Pub
 		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
 		ctis = append(ctis, info)
