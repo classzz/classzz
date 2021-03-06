@@ -65,8 +65,6 @@ type Config struct {
 	// transaction output information.
 	FetchUtxoView func(*czzutil.Tx) (*blockchain.UtxoViewpoint, error)
 
-	FetchExtUtxoView func(info cross.UtxoViewInfo) bool
-
 	CommitteeVerify *cross.CommitteeVerify
 	// BestHeight defines the function to use to access the block height of
 	// the current best chain.
@@ -1110,9 +1108,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 				return err
 			} else {
 				if err = cState.ConvertConfirmVerify(v); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					continue
+					return err
 				}
 			}
 		}

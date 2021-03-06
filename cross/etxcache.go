@@ -20,26 +20,6 @@ type CacheCommitteeState struct {
 	DB database.DB
 }
 
-func (c *CacheCommitteeState) FetchExtUtxoView(info UtxoViewInfo) bool {
-
-	txExist := false
-	AssetType := info.GetAssetType()
-	ExTxHash := []byte(info.GetExtTxHash())
-	key := append(ExTxHash, AssetType)
-	c.DB.View(func(tx database.Tx) error {
-		bucketKey := tx.Metadata().Bucket(BucketKey)
-		if bucketKey == nil {
-			return nil
-		}
-		value := bucketKey.Get(key)
-		if value != nil {
-			txExist = true
-		}
-		return nil
-	})
-	return txExist
-}
-
 func (c *CacheCommitteeState) LoadCommitteeState(height int32, hash chainhash.Hash) *CommitteeState {
 	cs := NewCommitteeState()
 

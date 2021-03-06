@@ -536,91 +536,123 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
+	var MortgageTx *wire.MsgTx
+	CastingTx := make([]*wire.MsgTx, 0, 0)
+	ConvertTx := make([]*cross.ConvertTxTemp, 0, 0)
+	ConvertConfirmsTx := make([]*wire.MsgTx, 0, 0)
+
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
-		br, _ := cross.IsMortgageTx(tx.MsgTx(), b.chainParams)
-		if br != nil {
-			if err := MortgageTxStore(cState, br, tx); err != nil {
-				return err
-			}
-			cState.PutNoCostUtxos(br.Address, wire.OutPoint{
-				Hash:  tx.MsgTx().TxHash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
+		if br, _ := cross.IsMortgageTx(tx.MsgTx(), b.chainParams); br != nil && MortgageTx == nil {
+			MortgageTx = tx.MsgTx()
 		}
 
 		// AddMortgage
-		bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), b.chainParams)
-		if bp != nil {
-			if err := AddMortgageTxStore(cState, bp, tx); err != nil {
-				return err
-			}
-			cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
-				Hash:  tx.MsgTx().TxHash(),
-				Index: 1,
-			},
-				tx.MsgTx().TxOut[1].PkScript,
-				tx.MsgTx().TxOut[1].Value,
-			)
+		if bp, _ := cross.IsAddMortgageTx(tx.MsgTx(), b.chainParams); bp != nil && MortgageTx == nil {
+			MortgageTx = tx.MsgTx()
 		}
 
 		// IsUpdateCoinbaseAllTx
-		ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), b.chainParams)
-		if ubc != nil {
-			if cState != nil {
-				cState.UpdateCoinbaseAll(ubc.Address, ubc.CoinBaseAddress)
-			}
+		if ubc, _ := cross.IsUpdateCoinbaseAllTx(tx.MsgTx(), b.chainParams); ubc != nil && MortgageTx == nil {
+			MortgageTx = tx.MsgTx()
+		}
+
+		// IsCastingTx
+		if ct, _ := cross.IsCastingTx(tx.MsgTx()); ct != nil {
+			CastingTx = append(CastingTx, tx.MsgTx())
 		}
 
 		// IsConvertTx
 		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
-			for _, info := range cinfo {
-				tup, _ := b.committeeVerify.VerifyConvertTx(cState, info)
-				info.PubKey = tup.Pub
-				info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
-				if cState != nil {
-					cState.Convert(info)
-				}
+			convert := b.ConvertTx[tx.Hash().String()]
+			ctx := &cross.ConvertTxTemp{
+				Infos: convert.Infos,
+				Tx:    tx.MsgTx(),
 			}
-		}
-
-		// IsCastingTx
-		ct, _ := cross.IsCastingTx(tx.MsgTx())
-		if ct != nil {
-			if cState != nil {
-				cState.Casting(ct)
-				pool := cross.CoinPools[ct.ConvertType]
-				addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
-				cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
-					Hash:  *tx.Hash(),
-					Index: 1,
-				},
-					tx.MsgTx().TxOut[1].PkScript,
-					tx.MsgTx().TxOut[1].Value,
-				)
-			}
+			ConvertTx = append(ConvertTx, ctx)
 		}
 
 		// IsConvertConfirmTx
 		if cinfo, _ := cross.IsConvertConfirmTx(tx.MsgTx()); cinfo != nil {
-			for _, info := range cinfo {
-				if cState != nil {
-					cState.ConvertConfirm(info)
-				}
+			ConvertConfirmsTx = append(ConvertConfirmsTx, tx.MsgTx())
+		}
+	}
+
+	if MortgageTx != nil {
+		// Mortgage
+		if info, _ := cross.IsMortgageTx(MortgageTx, b.chainParams); info != nil {
+			cState.Mortgage(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress)
+			cState.PutNoCostUtxos(info.Address, wire.OutPoint{
+				Hash:  MortgageTx.TxHash(),
+				Index: 1,
+			},
+				MortgageTx.TxOut[1].PkScript,
+				MortgageTx.TxOut[1].Value,
+			)
+		}
+
+		// AddMortgage
+		if bp, _ := cross.IsAddMortgageTx(MortgageTx, b.chainParams); bp != nil {
+			cState.AddMortgage(bp.Address, bp.StakingAmount)
+			cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
+				Hash:  MortgageTx.TxHash(),
+				Index: 1,
+			},
+				MortgageTx.TxOut[1].PkScript,
+				MortgageTx.TxOut[1].Value,
+			)
+		}
+
+		// UpdateCoinbaseAll
+		if bp, _ := cross.IsUpdateCoinbaseAllTx(MortgageTx, b.chainParams); bp != nil {
+			cState.UpdateCoinbaseAll(bp.Address, bp.CoinBaseAddress)
+		}
+	}
+
+	for _, tx := range CastingTx {
+		if cinfo, _ := cross.IsCastingTx(tx); cinfo != nil {
+			cState.Casting(cinfo)
+			pool := cross.CoinPools[cinfo.ConvertType]
+			addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
+			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+				Hash:  tx.TxHash(),
+				Index: 1,
+			},
+				tx.TxOut[1].PkScript,
+				tx.TxOut[1].Value,
+			)
+		}
+	}
+
+	for _, ctx := range ConvertTx {
+		if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
+			for _, info := range ctx.Infos {
+				fmt.Println("txhash ", ctx.Tx.TxHash().String())
+				fmt.Println("CommitteeState Convert ", info.ExtTxHash)
+				cState.Convert(info)
 			}
+		}
+	}
+
+	for _, tx := range ConvertConfirmsTx {
+		if cinfo, _ := cross.IsConvertConfirmTx(tx); cinfo != nil {
+			cross.ConvertConfirms(cState, cinfo)
 		}
 	}
 
 	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
 		return err
 	}
+
 	if err := dbPutCommitteeState(dbTx, block, cState); err != nil {
 		return err
 	}
+
+	if err := dbRemoveConvert(b, block); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -670,43 +702,64 @@ func dbBeaconTx(params *chaincfg.Params, dbTx database.Tx, block *czzutil.Block)
 	return nil
 }
 
-func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czzutil.Tx) error {
+func dbRemoveConvert(bc *BlockChain, block *czzutil.Block) error {
 
-	if state != nil {
-		state.Mortgage(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.CoinBaseAddress)
-	} else {
-		return fmt.Errorf("MortgageTxStore state is nil")
+	if block.Height() < 64 {
+		return nil
 	}
 
-	state.PutNoCostUtxos(bai.Address, wire.OutPoint{
-		Hash:  *tx.Hash(),
-		Index: 1,
-	},
-		tx.MsgTx().TxOut[1].PkScript,
-		tx.MsgTx().TxOut[1].Value,
-	)
+	pheight := block.Height() - 64
+	pblock, err := bc.BlockByHeight(pheight)
+	if err != nil {
+		return err
+	}
 
+	for _, tx := range pblock.Transactions() {
+		if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
+			delete(bc.ConvertTx, tx.MsgTx().TxHash().String())
+		}
+	}
 	return nil
 }
 
-func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx *czzutil.Tx) error {
-
-	if state != nil {
-		state.AddMortgage(abp.Address, abp.StakingAmount)
-	} else {
-		return fmt.Errorf("MortgageTxStore state is nil")
-	}
-
-	state.PutNoCostUtxos(abp.Address, wire.OutPoint{
-		Hash:  *tx.Hash(),
-		Index: 1,
-	},
-		tx.MsgTx().TxOut[1].PkScript,
-		tx.MsgTx().TxOut[1].Value,
-	)
-
-	return nil
-}
+//
+//func MortgageTxStore(state *cross.CommitteeState, bai *cross.PledgeInfo, tx *czzutil.Tx) error {
+//
+//	if state != nil {
+//		state.Mortgage(bai.Address, bai.ToAddress, bai.PubKey, bai.StakingAmount, bai.CoinBaseAddress)
+//	} else {
+//		return fmt.Errorf("MortgageTxStore state is nil")
+//	}
+//
+//	state.PutNoCostUtxos(bai.Address, wire.OutPoint{
+//		Hash:  *tx.Hash(),
+//		Index: 1,
+//	},
+//		tx.MsgTx().TxOut[1].PkScript,
+//		tx.MsgTx().TxOut[1].Value,
+//	)
+//
+//	return nil
+//}
+//
+//func AddMortgageTxStore(state *cross.CommitteeState, abp *cross.AddMortgage, tx *czzutil.Tx) error {
+//
+//	if state != nil {
+//		state.AddMortgage(abp.Address, abp.StakingAmount)
+//	} else {
+//		return fmt.Errorf("MortgageTxStore state is nil")
+//	}
+//
+//	state.PutNoCostUtxos(abp.Address, wire.OutPoint{
+//		Hash:  *tx.Hash(),
+//		Index: 1,
+//	},
+//		tx.MsgTx().TxOut[1].PkScript,
+//		tx.MsgTx().TxOut[1].Value,
+//	)
+//
+//	return nil
+//}
 
 func dbFetchCommitteeState(dbTx database.Tx, height int32, hash chainhash.Hash) *cross.CommitteeState {
 	cs := cross.NewCommitteeState()
@@ -1189,32 +1242,6 @@ func dbRemoveBlockIndex(dbTx database.Tx, hash *chainhash.Hash, height int32) er
 	byteOrder.PutUint32(serializedHeight[:], uint32(height))
 	heightIndex := meta.Bucket(heightIndexBucketName)
 	return heightIndex.Delete(serializedHeight[:])
-}
-
-// dbPutBlockIndex uses an existing database transaction to update or add the
-// block index entries for the hash to height and height to hash mappings for
-// the provided values.
-func dbPutExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
-	// Serialize the height for use in the index entries.
-	ExTxHash := []byte(convert.ExtTxHash)
-	key := append(ExTxHash, convert.AssetType)
-	// Add the block hash to height mapping to the index.
-	meta := dbTx.Metadata()
-	extutxo := meta.Bucket(cross.BucketKey)
-	return extutxo.Put(key, []byte{1})
-}
-
-// dbRemoveBlockIndex uses an existing database transaction remove block index
-// entries from the hash to height and height to hash mappings for the provided
-// values.
-func dbRemoveExtUtxo(dbTx database.Tx, convert *cross.ConvertTxInfo) error {
-	// Remove the block hash to height mapping.
-	ExTxHash := []byte(convert.ExtTxHash)
-	key := append(ExTxHash, convert.AssetType)
-	// Add the block hash to height mapping to the index.
-	meta := dbTx.Metadata()
-	extutxo := meta.Bucket(cross.BucketKey)
-	return extutxo.Delete(key)
 }
 
 // dbFetchHeightByHash uses an existing database transaction to retrieve the

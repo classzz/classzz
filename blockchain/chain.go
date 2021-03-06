@@ -231,6 +231,8 @@ type BlockChain struct {
 
 	//
 	committeeVerify *cross.CommitteeVerify
+
+	ConvertTx map[string]*cross.ConvertTxTemp
 }
 
 // HaveBlock returns whether or not the chain instance has the block represented
@@ -740,20 +742,6 @@ func (b *BlockChain) connectBlock(node *blockNode, block *czzutil.Block,
 			return err
 		}
 
-		for _, tx := range block.Transactions() {
-			if !IsCoinBase(tx) {
-				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil && err != cross.NoConvert {
-					return err
-				} else {
-					for _, v := range convs {
-						if err := dbPutExtUtxo(dbTx, v); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-
 		// Allow the index manager to call each of the currently active
 		// optional indexes with the block being connected so they can
 		// update themselves accordingly.
@@ -887,21 +875,6 @@ func (b *BlockChain) disconnectBlock(node *blockNode, block *czzutil.Block, view
 		err = dbRemoveSpendJournalEntry(dbTx, block.Hash())
 		if err != nil {
 			return err
-		}
-
-		for _, tx := range block.Transactions() {
-			if !IsCoinBase(tx) {
-				if convs, err := cross.IsConvertTx(tx.MsgTx()); err != nil {
-					return err
-				} else {
-					for _, v := range convs {
-						if err := dbRemoveExtUtxo(dbTx, v); err != nil {
-							return err
-						}
-					}
-				}
-
-			}
 		}
 
 		// Allow the index manager to call each of the currently active
@@ -2383,6 +2356,7 @@ func New(config *Config) (*BlockChain, error) {
 		fastSyncDataDir:     config.FastSyncDataDir,
 		fastSyncDone:        make(chan struct{}),
 		committeeVerify:     committeeVerify,
+		ConvertTx:           make(map[string]*cross.ConvertTxTemp),
 	}
 
 	//NetParams = params

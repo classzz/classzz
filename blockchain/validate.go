@@ -499,6 +499,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 				Tx:    tx.MsgTx(),
 			}
 			ConvertTx = append(ConvertTx, ctx)
+			b.ConvertTx[tx.MsgTx().TxHash().String()] = ctx
 		}
 
 		// IsConvertConfirmTx

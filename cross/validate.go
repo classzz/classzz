@@ -327,17 +327,8 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 }
 
 func (ev *CommitteeVerify) VerifyConvertTx(cState *CommitteeState, info *ConvertTxInfo) (*TuplePubIndex, error) {
-
-	if ev.Cache != nil {
-		if ok := ev.Cache.FetchExtUtxoView(info); ok {
-			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-			return nil, errors.New("txid has already convert: " + err)
-		}
-	}
-
 	if pub, err := ev.verifyConvertTx(cState, info); err != nil {
-		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-		return nil, errors.New("txid verify failed:" + errStr + " err: " + err.Error())
+		return nil, fmt.Errorf("txid verify failed ExtTxHash [txid:%s] : %s ", info.ExtTxHash, err)
 	} else {
 		pair := &TuplePubIndex{
 			AssetType:   info.AssetType,
@@ -355,7 +346,7 @@ func (ev *CommitteeVerify) verifyConvertTx(cState *CommitteeState, eInfo *Conver
 	case ExpandedTxConvert_ECzz:
 		return ev.verifyConvertEthTx(cState, eInfo)
 	case ExpandedTxConvert_HCzz:
-		return ev.verifyConvertHecoTx(eInfo)
+		return ev.verifyConvertHecoTx(cState, eInfo)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
 }
@@ -366,6 +357,10 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 
 	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
 		return nil, fmt.Errorf("verifyConvertEthTx %d CoinPools not find ", eInfo.ConvertType)
+	}
+
+	if ok := cState.ConvertExistExtTx(eInfo); ok {
+		return nil, fmt.Errorf("txid has already convert: [txid:%s]", eInfo.ExtTxHash)
 	}
 
 	var receipt *types.Receipt
@@ -467,9 +462,17 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	return pk, nil
 }
 
-func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
+
+	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
+		return nil, fmt.Errorf("verifyConvertEthTx %d CoinPools not find ", eInfo.ConvertType)
+	}
+
+	if ok := cState.ConvertExistExtTx(eInfo); ok {
+		return nil, fmt.Errorf("txid has already convert: [txid:%s]", eInfo.ExtTxHash)
+	}
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
@@ -537,9 +540,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
 	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
-	fmt.Println(Amount1)
 	Amount2 := FloatRound(Amount1, 8)
-	fmt.Println(Amount2)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
 	if Amount3.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount3, eInfo.Amount)
@@ -553,37 +554,25 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(eInfo *ConvertTxInfo) ([]byte, er
 }
 
 func (ev *CommitteeVerify) VerifyConvertConfirmTx(cState *CommitteeState, info *ConvertConfirmTxInfo) error {
-
-	if ev.Cache != nil {
-		if ok := ev.Cache.FetchExtUtxoView(info); ok {
-			err := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-			return errors.New("verifyConvertHecoTx txid has already convert: " + err)
-		}
-	}
-
-	if err := ev.verifyConvertConfirmTx(info, cState); err != nil {
-		errStr := fmt.Sprintf("[txid:%s]", info.ExtTxHash)
-		return errors.New("verifyConvertHecoTx txid verify failed:" + errStr + " err: " + err.Error())
-	}
-	return nil
-}
-
-func (ev *CommitteeVerify) verifyConvertConfirmTx(eInfo *ConvertConfirmTxInfo, eState *CommitteeState) error {
-	switch eInfo.ConvertType {
+	switch info.ConvertType {
 	case ExpandedTxConvert_ECzz:
-		return ev.verifyConvertConfirmEthTx(eInfo, eState)
+		return ev.verifyConvertConfirmEthTx(cState, info)
 	case ExpandedTxConvert_HCzz:
-		return ev.verifyConvertConfirmHecoTx(eInfo, eState)
+		return ev.verifyConvertConfirmHecoTx(cState, info)
 	}
-	return fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
+	return fmt.Errorf("verifyConvertTx AssetType is %v", info.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
+func (ev *CommitteeVerify) verifyConvertConfirmEthTx(cState *CommitteeState, eInfo *ConvertConfirmTxInfo) error {
 
 	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 
 	if _, ok := CoinPools[eInfo.AssetType]; !ok {
 		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+	}
+
+	if ok := cState.ConvertConfirmExistExtTx(eInfo); ok {
+		return fmt.Errorf("txid has already convertConfirm: [txid:%s]", eInfo.ExtTxHash)
 	}
 
 	var receipt *types.Receipt
@@ -672,11 +661,15 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(eInfo *ConvertConfirmTxInfo
 	return nil
 }
 
-func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(eInfo *ConvertConfirmTxInfo, cState *CommitteeState) error {
+func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eInfo *ConvertConfirmTxInfo) error {
 
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 	if _, ok := CoinPools[eInfo.AssetType]; !ok {
 		return fmt.Errorf("%d CoinPools not find ", eInfo.AssetType)
+	}
+
+	if ok := cState.ConvertConfirmExistExtTx(eInfo); ok {
+		return fmt.Errorf("txid has already convertConfirm: [txid:%s]", eInfo.ExtTxHash)
 	}
 
 	var receipt *types.Receipt

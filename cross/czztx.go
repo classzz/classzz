@@ -164,11 +164,6 @@ type ConvertConfirmTxInfo struct {
 	Amount      *big.Int
 }
 
-type UtxoViewInfo interface {
-	GetAssetType() uint8
-	GetExtTxHash() string
-}
-
 func (es *ConvertTxInfo) ToBytes() []byte {
 	// maybe rlp encode
 	data, err := rlp.EncodeToBytes(es)

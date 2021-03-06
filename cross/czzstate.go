@@ -688,6 +688,46 @@ func (cs *CommitteeState) PutNoCostUtxos(address string, POut wire.OutPoint, Scr
 
 }
 
+func (cs *CommitteeState) ConvertExistExtTx(info *ConvertTxInfo) bool {
+
+	items := cs.ConvertItems[info.AssetType]
+	if items == nil {
+		return false
+	}
+	items1 := items[info.ConvertType]
+	if items1 == nil {
+		return false
+	}
+
+	for _, v := range items1 {
+		if v.ExtTxHash == info.ExtTxHash {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (cs *CommitteeState) ConvertConfirmExistExtTx(info *ConvertConfirmTxInfo) bool {
+
+	items := cs.ConvertConfirmItems[info.AssetType]
+	if items == nil {
+		return false
+	}
+	items1 := items[info.ConvertType]
+	if items1 == nil {
+		return false
+	}
+
+	for _, v := range items1 {
+		if v.ConfirmExtTxHash == info.ExtTxHash {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (cs *CommitteeState) ToBytes() []byte {
 	// maybe rlp encode
 	//msg, err := json.Marshal(cs)
