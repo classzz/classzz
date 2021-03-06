@@ -14,7 +14,6 @@ import (
 	"github.com/classzz/classzz/cross"
 	"github.com/dchest/siphash"
 	"math"
-	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -1095,13 +1094,6 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 		for _, v := range cinfo {
 			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(cState, v); err != nil {
 				return err
-			} else {
-				v.FeeAmount = big.NewInt(0).Div(v.Amount, big.NewInt(1000))
-				if err = cState.Convert(v); err != nil {
-					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
-					continue
-				}
 			}
 		}
 	}

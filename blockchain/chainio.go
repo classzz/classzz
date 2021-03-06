@@ -544,6 +544,13 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 			if err := MortgageTxStore(cState, br, tx); err != nil {
 				return err
 			}
+			cState.PutNoCostUtxos(br.Address, wire.OutPoint{
+				Hash:  tx.MsgTx().TxHash(),
+				Index: 1,
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
 		}
 
 		// AddMortgage
@@ -552,6 +559,13 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 			if err := AddMortgageTxStore(cState, bp, tx); err != nil {
 				return err
 			}
+			cState.PutNoCostUtxos(bp.Address, wire.OutPoint{
+				Hash:  tx.MsgTx().TxHash(),
+				Index: 1,
+			},
+				tx.MsgTx().TxOut[1].PkScript,
+				tx.MsgTx().TxOut[1].Value,
+			)
 		}
 
 		// IsUpdateCoinbaseAllTx
@@ -569,9 +583,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 				info.PubKey = tup.Pub
 				info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
 				if cState != nil {
-					if err := cState.Convert(info); err != nil {
-						return err
-					}
+					cState.Convert(info)
 				}
 			}
 		}
