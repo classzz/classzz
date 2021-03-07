@@ -602,11 +602,9 @@ func checkProofOfWork(params *chaincfg.Params, header *wire.BlockHeader, powLimi
 	}
 
 	if !flags.HasFlag(BFNoPoWCheck) {
-		//fmt.Println("targetN1", hex.EncodeToString(targetN.Bytes()))
 		if state != nil {
 			targetN = cross.ComputeDiff(params, targetN, addr, state)
 		}
-		//fmt.Println("targetN2", hex.EncodeToString(targetN.Bytes()))
 		target := targetN
 		// The block hash must be less than the claimed target unless the flag
 		// to avoid proof of work checks is set.
@@ -750,11 +748,10 @@ func checkBlockHeaderSanity(params *chaincfg.Params, prevHeader *wire.BlockHeade
 	}
 
 	//fmt.Println(header.Timestamp, time.Now().Add(allowedFutureBlockTime), time.Now())
-	//if header.Timestamp.Unix() > (time.Now().Unix() + int64(allowedFutureBlockTime)) {
-	//
-	//	str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
-	//	return ruleError(ErrInvalidTime, str)
-	//}
+	if header.Timestamp.Unix() > (time.Now().Unix() + int64(allowedFutureBlockTime)) {
+		str := fmt.Sprintf("block timestamp of %v > time.Now()", header.Timestamp)
+		return ruleError(ErrInvalidTime, str)
+	}
 
 	if int64(params.Deployments[chaincfg.DeploymentSEQ].StartTime) < header.Timestamp.Unix() && prevHeader != nil && prevHeader.Timestamp.After(header.Timestamp) {
 		str := fmt.Sprintf("prevheader timestamp %v > header %v", prevHeader.Timestamp, header.Timestamp)
@@ -952,7 +949,6 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 	var eState3 *cross.EntangleState
 	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ConverHeight > tip.height {
 		eState4 := b.CurrentEstate()
-
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for k, v := range eState4.EnInfos {
 			bai2 := &cross.BeaconAddressInfo{
@@ -1173,7 +1169,8 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	return false, nil
 }
 
-func checkBlockSubsidy(block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64, chainParams *chaincfg.Params) error {
+// TODO: Determine the amount of output
+func checkBlockSubsidy(chainParams *chaincfg.Params, block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64) error {
 	if txHeight <= chainParams.EntangleHeight {
 		return nil
 	}
@@ -1467,9 +1464,9 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		// }
 	}
 
-	//if err := checkTxSequence(block, view, b.chainParams); err != nil {
-	//	return err
-	//}
+	if err := checkTxSequence(block, view, b.chainParams); err != nil {
+		return err
+	}
 
 	// we can use Outputs-then-inputs validation to validate the utxos.
 	err = connectTransactions(view, block, stxos, false)
@@ -1503,8 +1500,8 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 				preblock, node.height, err.Error())
 			return ruleError(ErrPrevBlockNotBest, str)
 		} else {
-			if err := checkBlockSubsidy(block, preblock, node.height, view,
-				amountSubsidy, b.chainParams); err != nil {
+			if err := checkBlockSubsidy(b.chainParams, block, preblock, node.height, view,
+				amountSubsidy); err != nil {
 				return err
 			}
 		}

@@ -252,11 +252,11 @@ func CheckTxSequence(block *czzutil.Block) error {
 	return nil
 }
 func verifyBlock(block *czzutil.Block) error {
-	chainParams := chaincfg.MainNetParams
+	//chainParams := chaincfg.MainNetParams
 
-	if err := blockchain.CheckBlockSanity(block, chainParams.PowLimit, nil, true); err != nil {
-		return err
-	}
+	//if err := blockchain.CheckBlockSanity(block, chainParams.PowLimit, nil, true,nil,nil); err != nil {
+	//	return err
+	//}
 	if err := CheckBlockEntangle(block); err != nil {
 		return err
 	}
@@ -274,4 +274,3 @@ func TestCZZ1(t *testing.T) {
 	}
 
 }
-

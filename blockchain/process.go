@@ -211,7 +211,6 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 		eState = &cross.EntangleState{
 			EnInfos: bai2s,
 		}
-
 	}
 
 	script := block.MsgBlock().Transactions[0].TxOut[0].PkScript

@@ -297,6 +297,14 @@ var MainNetParams = Params{
 		{Height: 866000, Hash: newHashFromStr("cc16622ecce3b0f057fd9cdebc4154c1b64f1b2590f55593b5130457f5f5694b")},
 		{Height: 886000, Hash: newHashFromStr("3e2315b566baf2a6f99d5e9969b133bb8be59ba054653956ea8cffcc0b7d1c5b")},
 		{Height: 906000, Hash: newHashFromStr("f3ea95e3a27af331fbd177ae949827ea0e6e86c7ccdf06efbfc2e8fa4a9acf06")},
+		{Height: 926000, Hash: newHashFromStr("a649fb9e2286d9be11636d482ac45c90f2dd852507cb021f4a5f9f94dacbde37")},
+		{Height: 946000, Hash: newHashFromStr("c211bc8d3abbf50afaeaf69079dd05bba65f32d259cf7074a0c0469724ea400a")},
+		{Height: 966000, Hash: newHashFromStr("f01e1d6959069c5b2957a835244e6e41190a65e9178bc7cea4ca464e0ba81594")},
+		{Height: 986000, Hash: newHashFromStr("4f8fc5383d2377737ecb35ddb0edc6b0086e4a9d5fab874fc16e069aa3588eb9")},
+		{Height: 1006000, Hash: newHashFromStr("a9068a3b7ef30e474449f304723d2b4d0737b778c8c7ef028ba898450ce2b58c")},
+		{Height: 1026000, Hash: newHashFromStr("9ba6788069a69c642058aa70a59b216b40b7dc0713a24ff34a68912403849110")},
+		{Height: 1046000, Hash: newHashFromStr("8cac05b7495c9efef5c49562260bdc36a25b48702a21fba18f68e7404be33b53")},
+		{Height: 1066000, Hash: newHashFromStr("914e9f34f2e187b54940419e74c60142ec69c703a8b3052e71bc3c1d6c63e9fd")},
 	},
 
 	// Consensus rule change deployments.
