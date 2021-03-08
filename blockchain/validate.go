@@ -567,7 +567,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 	}
 
-	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
+	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState, len(ConvertTx) != 0); err != nil {
 		return err
 	}
 
@@ -1169,7 +1169,6 @@ func checkMergeTxInCoinbase(tx *czzutil.Tx, txHeight int32, utxoView *UtxoViewpo
 	return false, nil
 }
 
-// TODO: Determine the amount of output
 func checkBlockSubsidy(chainParams *chaincfg.Params, block, preBlock *czzutil.Block, txHeight int32, utxoView *UtxoViewpoint, amountSubsidy int64) error {
 	if txHeight <= chainParams.EntangleHeight {
 		return nil
@@ -1201,10 +1200,10 @@ func checkBlockSubsidy(chainParams *chaincfg.Params, block, preBlock *czzutil.Bl
 		return errors.New(fmt.Sprintf("BlockSubsidy:the pool2 address's reward was wrong[%v,expected:%v] height:%d ",
 			summay.pool2Amount, originIncome2+summay.lastpool2Amount, txHeight))
 	}
-	//if summay.TotalOut > summay.TotalIn {
-	//	return errors.New(fmt.Sprintf("BlockSubsidy:wrong,the totalOut > totalIn,[totalOut:%v,totalIn:%v] height:%d",
-	//		summay.TotalOut, summay.TotalIn, txHeight))
-	//}
+	if summay.TotalOut > summay.TotalIn {
+		return errors.New(fmt.Sprintf("BlockSubsidy:wrong,the totalOut > totalIn,[totalOut:%v,totalIn:%v] height:%d",
+			summay.TotalOut, summay.TotalIn, txHeight))
+	}
 	return nil
 }
 
@@ -1464,9 +1463,9 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *czzutil.Block, vi
 		// }
 	}
 
-	if err := checkTxSequence(block, view, b.chainParams); err != nil {
-		return err
-	}
+	//if err := checkTxSequence(block, view, b.chainParams); err != nil {
+	//	return err
+	//}
 
 	// we can use Outputs-then-inputs validation to validate the utxos.
 	err = connectTransactions(view, block, stxos, false)
@@ -1696,7 +1695,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 	if err := getPoolAmountFromPreBlock(preblock, summay); err != nil {
 		return nil, err
 	}
-	totalIn = summay.lastpool1Amount + summay.lastpool2Amount + pool1Amount + pool2Amount + subsidy
+	totalIn = pool1Amount + pool2Amount + subsidy
 	txs := block.Transactions()
 	for txIndex, tx := range txs {
 		if txIndex == 0 {
@@ -1712,6 +1711,18 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 				}
 				totalOut = totalOut + txout.Value
 			}
+
+			for i, txIn := range tx.MsgTx().TxIn[1:] {
+				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
+				if utxo == nil {
+					str := fmt.Sprintf("output %v referenced from "+
+						"transaction %s:%d does not valid", txIn.PreviousOutPoint,
+						tx.Hash(), i)
+					return nil, ruleError(ErrMissingTxOut, str)
+				}
+				totalIn = totalIn + utxo.amount
+			}
+
 		} else {
 			// summay all txout
 			//einfos, _ := cross.IsConvertTx(tx.MsgTx())
@@ -1721,7 +1732,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			for _, txout := range tx.MsgTx().TxOut {
 				totalOut = totalOut + txout.Value
 			}
-			// summay all txin
+
 			for i, txIn := range tx.MsgTx().TxIn {
 				utxo := utxoView.LookupEntry(txIn.PreviousOutPoint)
 				if utxo == nil {
@@ -1734,6 +1745,7 @@ func summayOfTxsAndCheck(preblock, block *czzutil.Block, utxoView *UtxoViewpoint
 			}
 		}
 	}
+
 	// check entangle amount
 	//if amount1 != summay.EntangleAmount {
 	//	return nil, errors.New(fmt.Sprintf("not match the entangle amount.[%v,%v]", amount1, summay.EntangleAmount))

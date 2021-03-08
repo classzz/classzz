@@ -1155,7 +1155,7 @@ mempoolLoop:
 		if err := cross.MakeMergerCoinbaseTx(g.chainParams, coinbaseTx.MsgTx(), cState, poolItem, convertItems, rewards, mergeItems); err != nil {
 			return nil, nil, err
 		}
-		if err := cross.MakeCoinbaseTxUtxo(g.chainParams, coinbaseTx.MsgTx(), cState); err != nil {
+		if err := cross.MakeCoinbaseTxUtxo(g.chainParams, coinbaseTx.MsgTx(), cState, len(ConvertTx) != 0); err != nil {
 			return nil, nil, err
 		}
 	}

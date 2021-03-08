@@ -656,7 +656,6 @@ func IsSendToZeroAddress(PkScript []byte) (bool, error) {
 	return true, nil
 }
 
-//  Beacon
 func BeaconRegistrationTxFromScript(script []byte) (*BeaconAddressInfo, error) {
 	data, err := txscript.GetBeaconRegistrationData(script)
 	if err != nil {
@@ -680,7 +679,6 @@ func AddBeaconPledgeTxFromScript(script []byte) (*AddBeaconPledge, error) {
 	return info, err
 }
 
-//  Beacon
 func MortgageFromScript(script []byte) (*Mortgage, error) {
 	data, err := txscript.GetMortgageData(script)
 	if err != nil {
@@ -744,7 +742,6 @@ func ConvertConfirmTxFromScript(script []byte) (*ConvertConfirmTxInfo, error) {
 	return info, err
 }
 
-/////////////////////////////////////////////////////////////////////////////
 func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	h := uint64(0)
 	for _, v := range items {
@@ -755,7 +752,18 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 	return h
 }
 
-func MakeCoinbaseTxUtxo(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState) error {
+func MakeCoinbaseTxUtxo(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState, clean bool) error {
+	if clean {
+		for _, v := range CoinPools {
+			add, _ := czzutil.NewAddressPubKeyHash(v, params)
+			cState.NoCostUtxos[add.String()] = &PoolAddrItem{
+				POut:   make([]wire.OutPoint, 0),
+				Script: make([][]byte, 0),
+				Amount: make([]*big.Int, 0),
+			}
+		}
+	}
+
 	for k, v := range tx.TxOut {
 		_, pub, _ := txscript.ExtractPkScriptPub(v.PkScript)
 		if big.NewInt(0).SetBytes(pub).Int64() > int64(100) && big.NewInt(0).SetBytes(pub).Int64() < int64(200) {
@@ -820,7 +828,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 			continue
 		}
 		amount := big.NewInt(0).Sub(v.Amount, v.FeeAmount)
-		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], amount)
+		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], v.Amount)
 		poolC[v.ConvertType] = big.NewInt(0).Add(poolC[v.ConvertType], amount)
 
 		CoinPool0 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}

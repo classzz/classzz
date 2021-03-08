@@ -641,7 +641,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 		}
 	}
 
-	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState); err != nil {
+	if err := cross.MakeCoinbaseTxUtxo(b.chainParams, block.Transactions()[0].MsgTx(), cState, len(ConvertTx) != 0); err != nil {
 		return err
 	}
 
