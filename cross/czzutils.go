@@ -584,10 +584,10 @@ func deriveChainId(v *big.Int) *big.Int {
 	return v.Div(v, big.NewInt(2))
 }
 
-func FloatRound(f float64, n float64) float64 {
+func FloatFloor(f float64, n float64) float64 {
 	n1 := math.Pow(10, n)
 	f1 := f * n1
-	f2 := int64(f1)
-	f3 := float64(f2) / n1
+	f2 := math.Floor(f1)
+	f3 := f2 / n1
 	return f3
 }
