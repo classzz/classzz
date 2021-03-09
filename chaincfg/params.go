@@ -442,7 +442,7 @@ var TestNetParams = Params{
 
 	CoinbaseMaturity:         14,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
-	SubsidyReductionInterval: 10,
+	SubsidyReductionInterval: 100,
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 
