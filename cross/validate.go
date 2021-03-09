@@ -737,11 +737,11 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eI
 	}
 
 	address := txLog.Topics[1]
-	mid := txLog.Data[32:64]
+	//mid := txLog.Data[32:64]
 	amount := txLog.Data[64:]
-	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
-		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
-	}
+	//if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+	//	return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
+	//}
 
 	var hinfo *ConvertItem
 	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
