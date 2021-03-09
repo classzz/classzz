@@ -439,6 +439,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	Amount2 := FloatRound(Amount1, 8)
 	fmt.Println("Amount2", Amount2)
 	Amount3 := big.NewInt(int64(Amount2 * 100000000))
+	fmt.Println("Amount3", Amount3)
 	if Amount3.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount3, eInfo.Amount)
 	}
