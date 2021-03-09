@@ -434,14 +434,9 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
-	fmt.Println("Amount", Amount)
-	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
-	Amount2 := FloatFloor(Amount1, 8)
-	fmt.Println("Amount2", Amount2*1000000000000000000)
-	Amount3 := big.NewInt(int64(Amount2 * 100000000))
-	fmt.Println("Amount3", Amount3)
-	if Amount3.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount3, eInfo.Amount)
+	Amount1 := big.NewInt(0).Div(Amount, big.NewInt(1000000000))
+	if Amount1.Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount1, eInfo.Amount)
 	}
 
 	pool1 := CoinPools[eInfo.AssetType]
@@ -454,8 +449,8 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 		}
 	}
 
-	if Amount3.Cmp(amount_pool) > 0 {
-		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount3, amount_pool)
+	if Amount1.Cmp(amount_pool) > 0 {
+		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount1, amount_pool)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
@@ -542,11 +537,9 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 	ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
-	Amount1, _ := big.NewFloat(0.0).Quo(new(big.Float).SetInt64(Amount.Int64()), F10E18).Float64()
-	Amount2 := FloatFloor(Amount1, 8)
-	Amount3 := big.NewInt(int64(Amount2 * 100000000))
-	if Amount3.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount3, eInfo.Amount)
+	Amount1 := big.NewInt(0).Div(Amount, big.NewInt(1000000000))
+	if Amount1.Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount1, eInfo.Amount)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
