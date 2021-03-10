@@ -18,14 +18,12 @@ import (
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
-	ethPoolAddr      = "0xaD348f004cadD3cE93f567B20e578F33b7272306"
-	hecoPoolAddr     = "0xaD348f004cadD3cE93f567B20e578F33b7272306"
-	trxMaturity      = uint64(0)
+	ethPoolAddr      = "0x6C1c092Fb8634e0f1cEC754016f6AcF70461dba8"
+	hecoPoolAddr     = "0x7c035aEfcfFaA98d1EdeC9C77B96f1923fC8EfDD"
 	CoinPools        = map[uint8][]byte{
-		ExpandedTxConvert_ECzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
-		ExpandedTxConvert_HCzz: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
+		ExpandedTxConvert_ECzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
+		ExpandedTxConvert_HCzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
 	}
-	F10E18      = big.NewFloat(100000000000000000)
 	EthChainID  = big.NewInt(3)
 	HecoChainID = big.NewInt(256)
 )
@@ -268,7 +266,7 @@ func (ev *CommitteeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *Committee
 	}
 
 	if len(tx.TxIn) > 1 || len(tx.TxOut) > 3 || len(tx.TxOut) < 2 {
-		e := fmt.Sprintf("BeaconRegistrationTx in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
+		e := fmt.Sprintf("AddMortgage in or out err  in : %v , out : %v", len(tx.TxIn), len(tx.TxOut))
 		return nil, errors.New(e)
 	}
 
@@ -412,9 +410,9 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	}
 
 	// toaddress
-	//if txjson.tx.To().String() != ethPoolAddr {
-	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	//}
+	if txjson.tx.To().String() != ethPoolAddr {
+		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
+	}
 
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("verifyConvertEthTx receipt.Logs ")
@@ -442,15 +440,15 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	pool1 := CoinPools[eInfo.AssetType]
 	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
 	utxos := cState.NoCostUtxos[add.String()]
-	amount_pool := big.NewInt(0)
+	amountPool := big.NewInt(0)
 	if utxos != nil {
 		for k1, _ := range utxos.POut {
-			amount_pool = big.NewInt(0).Add(amount_pool, utxos.Amount[k1])
+			amountPool = big.NewInt(0).Add(amountPool, utxos.Amount[k1])
 		}
 	}
 
-	if Amount1.Cmp(amount_pool) > 0 {
-		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount1, amount_pool)
+	if Amount1.Cmp(amountPool) > 0 {
+		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount1, amountPool)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
@@ -477,6 +475,10 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 		return nil, err
 	}
 
+	if receipt == nil {
+		return nil, fmt.Errorf("verifyConvertHecoTx ExtTxHash not find")
+	}
+
 	if receipt.Status != 1 {
 		return nil, fmt.Errorf("verifyConvertHecoTx Status err")
 	}
@@ -487,8 +489,8 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 		return nil, err
 	}
 
-	ethtx := txjson.tx
-	Vb, R, S := ethtx.RawSignatureValues()
+	hecotx := txjson.tx
+	Vb, R, S := hecotx.RawSignatureValues()
 
 	var V byte
 	if isProtectedV(Vb) {
@@ -510,25 +512,27 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 
 	a := types.NewEIP155Signer(HecoChainID)
 
-	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	pk, err := crypto.Ecrecover(a.Hash(hecotx).Bytes(), sig)
 	if err != nil {
 		return nil, fmt.Errorf("verifyConvertHecoTx Ecrecover err")
 	}
 
 	// toaddress
-	//if txjson.tx.To().String() != ethPoolAddr {
-	//	return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	//}
+	if txjson.tx.To().String() != hecoPoolAddr {
+		return nil, fmt.Errorf("Heco To != %s", hecoPoolAddr)
+	}
 
 	if len(receipt.Logs) < 1 {
 		return nil, fmt.Errorf("verifyConvertHecoTx receipt.Logs ")
 	}
+
 	var txLog *types.Log
 	for _, log := range receipt.Logs {
 		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
 			txLog = log
 		}
 	}
+
 	if txLog == nil {
 		return nil, fmt.Errorf("verifyConvertHecoTx txLog == nil ")
 	}
@@ -540,6 +544,20 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 	Amount1 := big.NewInt(0).Div(Amount, big.NewInt(1000000000))
 	if Amount1.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount1, eInfo.Amount)
+	}
+
+	pool1 := CoinPools[eInfo.AssetType]
+	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
+	utxos := cState.NoCostUtxos[add.String()]
+	amountPool := big.NewInt(0)
+	if utxos != nil {
+		for k1, _ := range utxos.POut {
+			amountPool = big.NewInt(0).Add(amountPool, utxos.Amount[k1])
+		}
+	}
+
+	if Amount1.Cmp(amountPool) > 0 {
+		return nil, fmt.Errorf("verifyConvertHecoTx tx amount %d Is greater than pool %d", Amount1, amountPool)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
@@ -590,41 +608,31 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(cState *CommitteeState, eIn
 		return err
 	}
 
-	ethtx := txjson.tx
-	Vb, R, S := ethtx.RawSignatureValues()
-
-	var V byte
-	if isProtectedV(Vb) {
-		chainID := deriveChainId(Vb).Uint64()
-		V = byte(Vb.Uint64() - 35 - 2*chainID)
-	} else {
-		V = byte(Vb.Uint64() - 27)
-	}
-
-	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return fmt.Errorf("eth ValidateSignatureValues err")
-	}
-
-	// encode the signature in uncompressed format
-	r, s := R.Bytes(), S.Bytes()
-	sig := make([]byte, crypto.SignatureLength)
-	copy(sig[32-len(r):32], r)
-	copy(sig[64-len(s):64], s)
-	sig[64] = V
-
-	a := types.NewEIP155Signer(EthChainID)
-	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
-	if err != nil {
-		return fmt.Errorf("Ecrecover err")
-	}
-
 	// toaddress
-	//if txjson.tx.To().String() != ethPoolAddr {
-	//	return fmt.Errorf("ETh To != %s", ethPoolAddr)
-	//}
+	if txjson.tx.To().String() != ethPoolAddr {
+		return fmt.Errorf("ETh To != %s", ethPoolAddr)
+	}
 
 	if len(receipt.Logs) < 1 {
 		return fmt.Errorf("ETh receipt.Logs")
+	}
+
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9" {
+			txLog = log
+		}
+	}
+
+	if txLog == nil {
+		return fmt.Errorf("verifyConvertConfirmEthTx txLog == nil ")
+	}
+
+	address := txLog.Topics[1]
+	mid := txLog.Data[32:64]
+	amount := txLog.Data[64:]
+	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
 	}
 
 	var hinfo *ConvertItem
@@ -636,24 +644,28 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(cState *CommitteeState, eIn
 	}
 
 	if hinfo == nil {
-		return fmt.Errorf("hinfo is null")
+		return fmt.Errorf("verifyConvertConfirmEthTx hinfo is null")
 	}
 
-	txLog := receipt.Logs[1]
-	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:]
-	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) != 0 {
-		return fmt.Errorf("ETh amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
+	toaddresspuk, err := crypto.DecompressPubkey(hinfo.PubKey)
+	if err != nil || toaddresspuk == nil {
+		toaddresspuk, err = crypto.UnmarshalPubkey(hinfo.PubKey)
+		if err != nil || toaddresspuk == nil {
+			return err
+		}
 	}
 
-	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return fmt.Errorf("ETh ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
+	toaddress := common.Address{0}
+	toaddress.SetBytes(address.Bytes())
+	toaddress2 := crypto.PubkeyToAddress(*toaddresspuk)
+
+	if toaddress.String() != toaddress2.String() {
+		return fmt.Errorf("verifyConvertConfirmEthTx toaddress %d  toaddress2 %d", toaddress, toaddress2)
 	}
 
-	if bytes.Equal(pk, hinfo.PubKey) {
-		return fmt.Errorf("ETh pk %d not %d", pk, hinfo.PubKey)
+	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
+		return fmt.Errorf("verifyConvertConfirmEthTx amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
-
 	return nil
 }
 
@@ -687,39 +699,10 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eI
 		return err
 	}
 
-	hecotx := txjson.tx
-	Vb, R, S := hecotx.RawSignatureValues()
-
-	var V byte
-	chainID := HecoChainID
-	if isProtectedV(Vb) {
-		chainID = deriveChainId(Vb)
-		V = byte(Vb.Uint64() - 35 - 2*chainID.Uint64())
-	} else {
-		V = byte(Vb.Uint64() - 27)
-	}
-
-	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return fmt.Errorf("verifyConvertConfirmHecoTx ValidateSignatureValues err")
-	}
-
-	// encode the signature in uncompressed format
-	r, s := R.Bytes(), S.Bytes()
-	sig := make([]byte, crypto.SignatureLength)
-	copy(sig[32-len(r):32], r)
-	copy(sig[64-len(s):64], s)
-	sig[64] = V
-
-	EIP := types.NewEIP155Signer(chainID)
-	pk, err := crypto.Ecrecover(EIP.Hash(hecotx).Bytes(), sig)
-	if err != nil {
-		return fmt.Errorf("verifyConvertConfirmHecoTx Ecrecover err")
-	}
-
 	// toaddress
-	//if txjson.tx.To().String() != ethPoolAddr {
-	//	return fmt.Errorf("ETh To != %s", ethPoolAddr)
-	//}
+	if txjson.tx.To().String() != hecoPoolAddr {
+		return fmt.Errorf("ETh To != %s", hecoPoolAddr)
+	}
 
 	if len(receipt.Logs) < 1 {
 		return fmt.Errorf("verifyConvertConfirmHecoTx receipt.Logs")
@@ -737,11 +720,11 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eI
 	}
 
 	address := txLog.Topics[1]
-	//mid := txLog.Data[32:64]
+	mid := txLog.Data[32:64]
 	amount := txLog.Data[64:]
-	//if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
-	//	return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
-	//}
+	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+		return fmt.Errorf("HECO mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
+	}
 
 	var hinfo *ConvertItem
 	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
@@ -775,7 +758,6 @@ func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eI
 		return fmt.Errorf("verifyConvertConfirmHecoTx amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
-	fmt.Println(pk)
 	return nil
 }
 

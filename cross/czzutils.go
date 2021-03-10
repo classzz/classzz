@@ -8,7 +8,6 @@ import (
 	"github.com/classzz/classzz/rlp"
 	"github.com/classzz/czzutil"
 	"io"
-	"math"
 	"math/big"
 	"sort"
 )
@@ -582,12 +581,4 @@ func deriveChainId(v *big.Int) *big.Int {
 	}
 	v = new(big.Int).Sub(v, big.NewInt(35))
 	return v.Div(v, big.NewInt(2))
-}
-
-func FloatFloor(f float64, n float64) float64 {
-	n1 := math.Pow(10, n)
-	f1 := f * n1
-	f2 := math.Floor(f1)
-	f3 := f2 / n1
-	return f3
 }
