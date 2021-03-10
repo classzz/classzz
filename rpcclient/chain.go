@@ -489,6 +489,38 @@ func (c *Client) GetConvertItems(AssetType *uint8, ConvertType *uint8) ([]*btcjs
 
 // FutureGetBlockHashResult is a future promise to deliver the result of a
 // GetBlockHashAsync RPC invocation (or an applicable error).
+type FutureGetConvertConfirmItemsResult chan *response
+
+// Receive waits for the response promised by the future and returns the hash of
+// the block in the best block chain at the given height.
+func (r FutureGetConvertConfirmItemsResult) Receive() ([]*btcjson.ConvertItemsResult, error) {
+	res, err := receiveFuture(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the result as a string-encoded sha.
+	var btis []*btcjson.ConvertItemsResult
+	err = json.Unmarshal(res, &btis)
+	if err != nil {
+		return nil, err
+	}
+	return btis, nil
+}
+
+// GetBlockHash returns the hash of the block in the best block chain at the
+// given height.
+func (c *Client) GetConvertConfirmItems(AssetType *uint8, ConvertType *uint8) ([]*btcjson.ConvertItemsResult, error) {
+	return c.GetConvertConfirmItemsAsync(AssetType, ConvertType).Receive()
+}
+
+func (c *Client) GetConvertConfirmItemsAsync(AssetType *uint8, ConvertType *uint8) FutureGetConvertConfirmItemsResult {
+	cmd := btcjson.NewGetConvertConfirmItemsCmd(AssetType, ConvertType)
+	return c.sendCmd(cmd)
+}
+
+// FutureGetBlockHashResult is a future promise to deliver the result of a
+// GetBlockHashAsync RPC invocation (or an applicable error).
 type FutureGetBeaconBurnInfoResult chan *response
 
 // Receive waits for the response promised by the future and returns the hash of

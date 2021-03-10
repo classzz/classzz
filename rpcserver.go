@@ -138,70 +138,71 @@ type commandHandler func(*rpcServer, interface{}, <-chan struct{}) (interface{},
 // a dependency loop.
 var rpcHandlers map[string]commandHandler
 var rpcHandlersBeforeInit = map[string]commandHandler{
-	"addnode":               handleAddNode,
-	"createrawtransaction":  handleCreateRawTransaction,
-	"beaconregistration":    handleBeaconRegistration,
-	"addbeaconpledge":       handleAddBeaconPledge,
-	"mortgage":              handleMortgage,
-	"addmortgage":           handleAddMortgage,
-	"updatecoinbaseall":     handleUpdateCoinbaseAll,
-	"convert":               handleConvert,
-	"casting":               handleCasting,
-	"convertconfirm":        handleConvertConfirm,
-	"conversionaddress":     handleConversionAddress,
-	"debuglevel":            handleDebugLevel,
-	"decoderawtransaction":  handleDecodeRawTransaction,
-	"decodescript":          handleDecodeScript,
-	"estimatefee":           handleEstimateFee,
-	"generate":              handleGenerate,
-	"getaddednodeinfo":      handleGetAddedNodeInfo,
-	"getbestblock":          handleGetBestBlock,
-	"getbestblockhash":      handleGetBestBlockHash,
-	"getblock":              handleGetBlock,
-	"getblockchaininfo":     handleGetBlockChainInfo,
-	"getblockcount":         handleGetBlockCount,
-	"getblockhash":          handleGetBlockHash,
-	"getblockheader":        handleGetBlockHeader,
-	"getblocktemplate":      handleGetBlockTemplate,
-	"getcfilter":            handleGetCFilter,
-	"getcfilterheader":      handleGetCFilterHeader,
-	"getconnectioncount":    handleGetConnectionCount,
-	"getcurrentnet":         handleGetCurrentNet,
-	"getdifficulty":         handleGetDifficulty,
-	"getgenerate":           handleGetGenerate,
-	"gethashespersec":       handleGetHashesPerSec,
-	"getheaders":            handleGetHeaders,
-	"getinfo":               handleGetInfo,
-	"getstateinfo":          handleGetStateInfo,
-	"getconvertitems":       handleGetConvertItems,
-	"getwork":               handleGetWork,
-	"getworktemplate":       handleGetWorkTemplate,
-	"getmempoolinfo":        handleGetMempoolInfo,
-	"getmininginfo":         handleGetMiningInfo,
-	"getnettotals":          handleGetNetTotals,
-	"getnetworkhashps":      handleGetNetworkHashPS,
-	"getpeerinfo":           handleGetPeerInfo,
-	"getrawmempool":         handleGetRawMempool,
-	"getrawtransaction":     handleGetRawTransaction,
-	"gettxout":              handleGetTxOut,
-	"gettxoutproof":         handleGetTxOutProof,
-	"help":                  handleHelp,
-	"invalidateblock":       handleInvalidateBlock,
-	"node":                  handleNode,
-	"ping":                  handlePing,
-	"reconsiderblock":       handleReconsiderBlock,
-	"searchrawtransactions": handleSearchRawTransactions,
-	"sendrawtransaction":    handleSendRawTransaction,
-	"setgenerate":           handleSetGenerate,
-	"stop":                  handleStop,
-	"submitblock":           handleSubmitBlock,
-	"submitwork":            handleSubmitWork,
-	"uptime":                handleUptime,
-	"validateaddress":       handleValidateAddress,
-	"verifychain":           handleVerifyChain,
-	"verifymessage":         handleVerifyMessage,
-	"verifytxoutproof":      handleVerifyTxOutProof,
-	"version":               handleVersion,
+	"addnode":                handleAddNode,
+	"createrawtransaction":   handleCreateRawTransaction,
+	"beaconregistration":     handleBeaconRegistration,
+	"addbeaconpledge":        handleAddBeaconPledge,
+	"mortgage":               handleMortgage,
+	"addmortgage":            handleAddMortgage,
+	"updatecoinbaseall":      handleUpdateCoinbaseAll,
+	"convert":                handleConvert,
+	"casting":                handleCasting,
+	"convertconfirm":         handleConvertConfirm,
+	"conversionaddress":      handleConversionAddress,
+	"debuglevel":             handleDebugLevel,
+	"decoderawtransaction":   handleDecodeRawTransaction,
+	"decodescript":           handleDecodeScript,
+	"estimatefee":            handleEstimateFee,
+	"generate":               handleGenerate,
+	"getaddednodeinfo":       handleGetAddedNodeInfo,
+	"getbestblock":           handleGetBestBlock,
+	"getbestblockhash":       handleGetBestBlockHash,
+	"getblock":               handleGetBlock,
+	"getblockchaininfo":      handleGetBlockChainInfo,
+	"getblockcount":          handleGetBlockCount,
+	"getblockhash":           handleGetBlockHash,
+	"getblockheader":         handleGetBlockHeader,
+	"getblocktemplate":       handleGetBlockTemplate,
+	"getcfilter":             handleGetCFilter,
+	"getcfilterheader":       handleGetCFilterHeader,
+	"getconnectioncount":     handleGetConnectionCount,
+	"getcurrentnet":          handleGetCurrentNet,
+	"getdifficulty":          handleGetDifficulty,
+	"getgenerate":            handleGetGenerate,
+	"gethashespersec":        handleGetHashesPerSec,
+	"getheaders":             handleGetHeaders,
+	"getinfo":                handleGetInfo,
+	"getstateinfo":           handleGetStateInfo,
+	"getconvertitems":        handleGetConvertItems,
+	"getconvertconfirmitems": handleGetConvertConfirmItems,
+	"getwork":                handleGetWork,
+	"getworktemplate":        handleGetWorkTemplate,
+	"getmempoolinfo":         handleGetMempoolInfo,
+	"getmininginfo":          handleGetMiningInfo,
+	"getnettotals":           handleGetNetTotals,
+	"getnetworkhashps":       handleGetNetworkHashPS,
+	"getpeerinfo":            handleGetPeerInfo,
+	"getrawmempool":          handleGetRawMempool,
+	"getrawtransaction":      handleGetRawTransaction,
+	"gettxout":               handleGetTxOut,
+	"gettxoutproof":          handleGetTxOutProof,
+	"help":                   handleHelp,
+	"invalidateblock":        handleInvalidateBlock,
+	"node":                   handleNode,
+	"ping":                   handlePing,
+	"reconsiderblock":        handleReconsiderBlock,
+	"searchrawtransactions":  handleSearchRawTransactions,
+	"sendrawtransaction":     handleSendRawTransaction,
+	"setgenerate":            handleSetGenerate,
+	"stop":                   handleStop,
+	"submitblock":            handleSubmitBlock,
+	"submitwork":             handleSubmitWork,
+	"uptime":                 handleUptime,
+	"validateaddress":        handleValidateAddress,
+	"verifychain":            handleVerifyChain,
+	"verifymessage":          handleVerifyMessage,
+	"verifytxoutproof":       handleVerifyTxOutProof,
+	"version":                handleVersion,
 }
 
 // list of commands that we recognize, but for which classzz has no support because
@@ -3584,7 +3585,9 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				}
 			}
 		}
-		return result, nil
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
 	}
 
 	if c.AssetType != nil && c.ConvertType == nil {
@@ -3605,7 +3608,9 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				result = append(result, result2)
 			}
 		}
-		return result, nil
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
 	}
 
 	if c.AssetType == nil && c.ConvertType != nil {
@@ -3626,7 +3631,9 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 				result = append(result, result2)
 			}
 		}
-		return result, nil
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
 	}
 
 	v := estate.ConvertItems[*c.AssetType]
@@ -3646,7 +3653,108 @@ func handleGetConvertItems(s *rpcServer, cmd interface{}, closeChan <-chan struc
 		result = append(result, result2)
 	}
 
-	return result, nil
+	cSort := btcjson.ConvertItemsSort(result)
+	sort.Sort(cSort)
+	return cSort, nil
+}
+
+// handleAddressExchangeInfo implements the getinfo command. We only return the fields
+// that are not related to wallet functionality.
+func handleGetConvertConfirmItems(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	c := cmd.(*btcjson.GetConvertConfirmItemsCmd)
+	result := make([]*btcjson.ConvertItemsResult, 0, 0)
+
+	cstate := s.cfg.Chain.CurrentCstate()
+	if c.AssetType == nil && c.ConvertType == nil {
+		for k, v := range cstate.ConvertConfirmItems {
+			for k1, v1 := range v {
+				for _, v3 := range v1 {
+					result2 := &btcjson.ConvertItemsResult{
+						MID:              v3.ID,
+						AssetType:        k,
+						ConvertType:      k1,
+						PubKey:           v3.PubKey,
+						ExtTxHash:        v3.ExtTxHash,
+						ConfirmExtTxHash: v3.ConfirmExtTxHash,
+						Amount:           v3.Amount,
+						FeeAmount:        v3.FeeAmount,
+						ToToken:          v3.ToToken,
+					}
+					result = append(result, result2)
+				}
+			}
+		}
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
+	}
+
+	if c.AssetType != nil && c.ConvertType == nil {
+		v := cstate.ConvertConfirmItems[*c.AssetType]
+		for k1, v1 := range v {
+			for _, v3 := range v1 {
+				result2 := &btcjson.ConvertItemsResult{
+					MID:              v3.ID,
+					AssetType:        *c.AssetType,
+					ConvertType:      k1,
+					PubKey:           v3.PubKey,
+					ExtTxHash:        v3.ExtTxHash,
+					ConfirmExtTxHash: v3.ConfirmExtTxHash,
+					Amount:           v3.Amount,
+					FeeAmount:        v3.FeeAmount,
+					ToToken:          v3.ToToken,
+				}
+				result = append(result, result2)
+			}
+		}
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
+	}
+
+	if c.AssetType == nil && c.ConvertType != nil {
+		for k, v := range cstate.ConvertConfirmItems {
+			v1 := v[*c.ConvertType]
+			for _, v3 := range v1 {
+				result2 := &btcjson.ConvertItemsResult{
+					MID:              v3.ID,
+					AssetType:        k,
+					ConvertType:      *c.ConvertType,
+					PubKey:           v3.PubKey,
+					ExtTxHash:        v3.ExtTxHash,
+					ConfirmExtTxHash: v3.ConfirmExtTxHash,
+					Amount:           v3.Amount,
+					FeeAmount:        v3.FeeAmount,
+					ToToken:          v3.ToToken,
+				}
+				result = append(result, result2)
+			}
+		}
+		cSort := btcjson.ConvertItemsSort(result)
+		sort.Sort(cSort)
+		return cSort, nil
+	}
+
+	v := cstate.ConvertConfirmItems[*c.AssetType]
+	v1 := v[*c.ConvertType]
+	for _, v3 := range v1 {
+		result2 := &btcjson.ConvertItemsResult{
+			MID:              v3.ID,
+			AssetType:        *c.AssetType,
+			ConvertType:      *c.ConvertType,
+			PubKey:           v3.PubKey,
+			ExtTxHash:        v3.ExtTxHash,
+			ConfirmExtTxHash: v3.ConfirmExtTxHash,
+			Amount:           v3.Amount,
+			FeeAmount:        v3.FeeAmount,
+			ToToken:          v3.ToToken,
+		}
+		result = append(result, result2)
+	}
+
+	cSort := btcjson.ConvertItemsSort(result)
+	sort.Sort(cSort)
+	return cSort, nil
 }
 
 // handleAddressExchangeInfo implements the getinfo command. We only return the fields

@@ -500,6 +500,25 @@ type ConvertItemsResult struct {
 	ToToken          string   `json:"to_token"`
 }
 
+type ConvertItemsSort []*ConvertItemsResult
+
+func (list ConvertItemsSort) Len() int {
+	return len(list)
+}
+
+func (list ConvertItemsSort) Less(i, j int) bool {
+	if list[i].MID.Uint64() < list[j].MID.Uint64() {
+		return true
+	}
+	return false
+}
+
+func (list ConvertItemsSort) Swap(i, j int) {
+	var temp *ConvertItemsResult = list[i]
+	list[i] = list[j]
+	list[j] = temp
+}
+
 // TxRawResult models the data from the getrawtransaction command.
 type TxRawResult struct {
 	Hex           string `json:"hex,omitempty"`

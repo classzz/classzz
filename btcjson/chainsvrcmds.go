@@ -838,6 +838,15 @@ func NewGetConvertItemsCmd(assetType *uint8, convertType *uint8) *GetConvertItem
 	return &GetConvertItemsCmd{AssetType: assetType, ConvertType: convertType}
 }
 
+type GetConvertConfirmItemsCmd struct {
+	AssetType   *uint8 `json:"asset_type"`
+	ConvertType *uint8 `json:"convert_type"`
+}
+
+func NewGetConvertConfirmItemsCmd(assetType *uint8, convertType *uint8) *GetConvertConfirmItemsCmd {
+	return &GetConvertConfirmItemsCmd{AssetType: assetType, ConvertType: convertType}
+}
+
 // GetRawMempoolCmd defines the getmempool JSON-RPC command.
 type GetRawMempoolCmd struct {
 	Verbose *bool `jsonrpcdefault:"false"`
@@ -1239,6 +1248,7 @@ func init() {
 	MustRegisterCmd("getinfo", (*GetInfoCmd)(nil), flags)
 	MustRegisterCmd("getstateinfo", (*GetStateInfoCmd)(nil), flags)
 	MustRegisterCmd("getconvertitems", (*GetConvertItemsCmd)(nil), flags)
+	MustRegisterCmd("getconvertconfirmitems", (*GetConvertConfirmItemsCmd)(nil), flags)
 	MustRegisterCmd("getmempoolentry", (*GetMempoolEntryCmd)(nil), flags)
 	MustRegisterCmd("getmempoolinfo", (*GetMempoolInfoCmd)(nil), flags)
 	MustRegisterCmd("getmininginfo", (*GetMiningInfoCmd)(nil), flags)
