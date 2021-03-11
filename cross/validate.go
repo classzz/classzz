@@ -476,7 +476,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 	}
 
 	if receipt == nil {
-		return nil, fmt.Errorf("verifyConvertHecoTx ExtTxHash not find")
+		return nil, fmt.Errorf("verifyConvertHecoTx ExtTxHash %s not find", eInfo.ExtTxHash)
 	}
 
 	if receipt.Status != 1 {
