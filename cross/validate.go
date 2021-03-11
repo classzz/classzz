@@ -463,7 +463,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 
 	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return nil, fmt.Errorf("verifyConvertEthTx %d CoinPools not find ", eInfo.ConvertType)
+		return nil, fmt.Errorf("verifyConvertHecoTx %d CoinPools not find ", eInfo.ConvertType)
 	}
 
 	if ok := cState.ConvertExistExtTx(eInfo); ok {
