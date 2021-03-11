@@ -18,8 +18,8 @@ import (
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
-	ethPoolAddr      = "0x6C1c092Fb8634e0f1cEC754016f6AcF70461dba8"
-	hecoPoolAddr     = "0x7c035aEfcfFaA98d1EdeC9C77B96f1923fC8EfDD"
+	ethPoolAddr      = "0xabD6bFC53773603a034b726938b0dfCaC3e645Ab"
+	hecoPoolAddr     = "0x034d0162892893e688DC53f3194160f06EBf265E"
 	CoinPools        = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
 		ExpandedTxConvert_HCzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
