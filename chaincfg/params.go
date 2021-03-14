@@ -441,7 +441,8 @@ var TestNetParams = Params{
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
 	SubsidyReductionInterval: 1000000,
 	TargetTimePerBlock:       30, // 10 minutes
-	GenerateSupported:        false,
+	GenerateSupported:        true,
+	NoDifficultyAdjustment:   true,
 
 	EntangleHeight: 5,
 	BeaconHeight:   10,
