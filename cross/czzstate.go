@@ -622,7 +622,12 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 		}
 	}
 
-	items = append(items[:index], items[index+1:]...)
+	if len(items) > 1 {
+		items = append(items[:index], items[index+1:]...)
+	} else {
+		items = make(ConvertItemList, 0, 0)
+	}
+
 	cs.ConvertItems[info.AssetType][info.ConvertType] = items
 
 	convertItem := &ConvertItem{

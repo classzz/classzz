@@ -182,9 +182,6 @@ type Params struct {
 	EntangleHeight int32
 
 	BeaconHeight int32
-
-	//ExChangeHeight int32
-
 	ConverHeight int32
 
 	// Checkpoints ordered from oldest to newest.
