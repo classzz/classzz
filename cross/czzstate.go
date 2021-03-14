@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/wire"
@@ -623,7 +624,10 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 			index = i
 		}
 	}
-
+	aaa, _ := json.Marshal(items)
+	fmt.Println("items", string(aaa))
+	bbb, _ := json.Marshal(info)
+	fmt.Println("info", string(bbb))
 	if len(items) > 1 {
 		items = append(items[:index], items[index+1:]...)
 	} else {

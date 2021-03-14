@@ -10,6 +10,7 @@ import (
 	"github.com/classzz/czzutil/base58"
 	"github.com/ethereum/go-ethereum/crypto"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -271,4 +272,10 @@ func TestName(t *testing.T) {
 
 	fmt.Println(crypto.PubkeyToAddress(*pubk.ToECDSA()).String())
 
+}
+
+func TestNumber(t *testing.T) {
+
+	n1 := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(6), nil)
+	fmt.Println(n1)
 }
