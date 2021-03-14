@@ -26,6 +26,7 @@ var (
 	}
 	EthChainID  = big.NewInt(3)
 	HecoChainID = big.NewInt(256)
+	Big11       = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(11), nil)
 )
 
 type CommitteeVerify struct {
@@ -433,7 +434,7 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
 	fmt.Println("Amount", Amount)
-	Amount1 := big.NewInt(0).Div(Amount, big.NewInt(1000000000))
+	Amount1 := big.NewInt(0).Div(Amount, Big11)
 	fmt.Println("Amount1", Amount1, "eInfo.Amount", eInfo.Amount)
 	if Amount1.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount1, eInfo.Amount)
@@ -543,7 +544,7 @@ func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *Co
 	ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
-	Amount1 := big.NewInt(0).Div(Amount, big.NewInt(1000000000))
+	Amount1 := big.NewInt(0).Div(Amount, Big11)
 	if Amount1.Cmp(eInfo.Amount) != 0 {
 		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount1, eInfo.Amount)
 	}

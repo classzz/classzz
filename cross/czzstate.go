@@ -614,8 +614,10 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 
 	var hinfo *ConvertItem
 	var index int
+	fmt.Println("ConvertConfirm", info.ConvertType, info.AssetType, info.ID)
 	items := cs.ConvertItems[info.AssetType][info.ConvertType]
 	for i, v := range items {
+		fmt.Println("items id", v.ID)
 		if v.ID.Cmp(info.ID) == 0 {
 			hinfo = v
 			index = i
