@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
 	"github.com/classzz/classzz/rlp"
+	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
 	"io"
 	"math/big"
@@ -28,13 +29,18 @@ var (
 )
 
 var (
-	MinStakingAmount                  = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
-	MinAddStakingAmount               = new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8))
 	MaxWhiteListCount                 = 4
 	MAXBASEFEE                        = 100000
 	MAXFREEQUOTA                      = 100000 // about 30 days
 	LimitRedeemHeightForBeaconAddress = 5000
 	MaxCoinBase                       = 4
+
+	EthChainID        = big.NewInt(1)
+	EthRopstenChainID = big.NewInt(3)
+	HecoChainID       = big.NewInt(256)
+	HecoTestChainID   = big.NewInt(256)
+	BscChainID        = big.NewInt(256)
+	BscTestChainID    = big.NewInt(256)
 )
 
 const (
@@ -551,7 +557,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 		}
 	}
 	if found_t == 1 {
-		result := big.NewInt(0).Div(StakingAmount, MinStakingAmount)
+		result := big.NewInt(0).Div(StakingAmount, params.MinStakingAmount)
 		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
 		target = big.NewInt(0).Mul(target, result1)
 	}
@@ -581,4 +587,27 @@ func deriveChainId(v *big.Int) *big.Int {
 	}
 	v = new(big.Int).Sub(v, big.NewInt(35))
 	return v.Div(v, big.NewInt(2))
+}
+
+func getChainID(netType uint8, params *chaincfg.Params) *big.Int {
+
+	if netType == ExpandedTxConvert_ECzz {
+		if params.Net == wire.MainNet {
+			return EthChainID
+		} else {
+			return EthRopstenChainID
+		}
+	} else if netType == ExpandedTxConvert_HCzz {
+		if params.Net == wire.MainNet {
+			return HecoChainID
+		} else {
+			return HecoTestChainID
+		}
+	} else {
+		if params.Net == wire.MainNet {
+			return BscChainID
+		} else {
+			return BscTestChainID
+		}
+	}
 }

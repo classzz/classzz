@@ -3148,8 +3148,8 @@ func newServer(listenAddrs []string, db database.DB, chainParams *chaincfg.Param
 		Proxy:              cfg.Proxy,
 
 		EthRPC:  cfg.EthRPC,
-		TrxRPC:  cfg.TrxRPC,
 		HecoRPC: cfg.HecoRPC,
+		BscRPC:  cfg.BscRPC,
 	})
 	if err != nil {
 		return nil, err

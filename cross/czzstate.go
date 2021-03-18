@@ -505,48 +505,14 @@ func (cs *CommitteeState) Mortgage(address string, to []byte, pubKey []byte, amo
 	cs.PledgeInfos = append(cs.PledgeInfos, info)
 }
 
-func (cs *CommitteeState) MortgageVerify(address string, to []byte, pubKey []byte, amount *big.Int, cba []string) error {
-
-	if amount.Cmp(MinStakingAmount) < 0 {
-		return ErrLessThanMin
-	}
-
-	if info := cs.GetPledgeInfoByAddress(address); info != nil {
-		return ErrRepeatRegister
-	}
-
-	if info := cs.GetPledgeInfoByAddressTo(to); info != nil {
-		return ErrRepeatToAddress
-	}
-	return nil
-}
-
 func (cs *CommitteeState) AddMortgage(address string, amount *big.Int) {
 	info := cs.GetPledgeInfoByAddress(address)
 	info.StakingAmount = new(big.Int).Add(info.StakingAmount, amount)
 }
 
-func (cs *CommitteeState) AddMortgageVerify(address string, amount *big.Int) error {
-	if info := cs.GetPledgeInfoByAddress(address); info == nil {
-		return ErrRepeatRegister
-	}
-	return nil
-}
-
 func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) {
 	info := cs.GetPledgeInfoByAddress(address)
 	info.CoinBaseAddress = coinBases
-}
-
-func (cs *CommitteeState) UpdateCoinbaseAllVerify(address string, coinBases []string) error {
-	if info := cs.GetPledgeInfoByAddress(address); info == nil {
-		return ErrNoRegister
-	} else {
-		if len(coinBases) >= MaxCoinBase {
-			return errors.New("more than max coinbase")
-		}
-	}
-	return nil
 }
 
 func (cs *CommitteeState) Convert(info *ConvertTxInfo) {
@@ -596,7 +562,6 @@ func (cs *CommitteeState) Casting(info *CastingTxInfo) {
 		Amount: info.Amount,
 	}
 	cs.MaxItemID = convertItem.ID
-
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
 		item := make(map[uint8]ConvertItemList)
 		items := make(ConvertItemList, 0, 0)
@@ -903,23 +868,23 @@ func (es *EntangleState) RegisterBeaconAddress(addr string, to []byte, amount *b
 	return nil
 }
 
-func (es *EntangleState) RegisterBeaconAddressVerify(addr string, to []byte, amount *big.Int, fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
-	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
-		!ValidAssetType(assetType) {
-		return ErrInvalidParam
-	}
-	if amount.Cmp(MinStakingAmount) < 0 {
-		return ErrLessThanMin
-	}
-	if _, ok := es.EnInfos[addr]; ok {
-		return ErrRepeatRegister
-	}
-	if info := es.getBeaconAddressFromTo(to); info != nil {
-		return ErrRepeatToAddress
-	}
-
-	return nil
-}
+//func (es *EntangleState) RegisterBeaconAddressVerify(addr string, to []byte, amount *big.Int, fee, keeptime uint64, assetType uint32, wu []*WhiteUnit, cba []string) error {
+//	if !validFee(big.NewInt(int64(fee))) || !validKeepTime(big.NewInt(int64(keeptime))) ||
+//		!ValidAssetType(assetType) {
+//		return ErrInvalidParam
+//	}
+//	if amount.Cmp() < 0 {
+//		return ErrLessThanMin
+//	}
+//	if _, ok := es.EnInfos[addr]; ok {
+//		return ErrRepeatRegister
+//	}
+//	if info := es.getBeaconAddressFromTo(to); info != nil {
+//		return ErrRepeatToAddress
+//	}
+//
+//	return nil
+//}
 
 func (es *EntangleState) AppendWhiteList(addr string, wlist []*WhiteUnit) error {
 	if val, ok := es.EnInfos[addr]; ok {
@@ -1144,19 +1109,19 @@ func (es *EntangleState) getAllEntangleAmount(atype uint32) *big.Int {
 }
 
 //Minimum pledge amount = 1 million CZZ + (cumulative cross-chain buying CZZ - cumulative cross-chain selling CZZ) x exchange rate ratio
-func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
-	lh := es.getBeaconAddress(eid)
-	if lh != nil {
-		l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
-		if l.Sign() > 0 {
-			l = new(big.Int).Sub(l, MinStakingAmount)
-			if l.Sign() > 0 {
-				return l
-			}
-		}
-	}
-	return nil
-}
+//func (es *EntangleState) LimitStakingAmount(eid uint64, atype uint32) *big.Int {
+//	lh := es.getBeaconAddress(eid)
+//	if lh != nil {
+//		l := new(big.Int).Sub(lh.StakingAmount, lh.EntangleAmount)
+//		if l.Sign() > 0 {
+//			l = new(big.Int).Sub(l, MinStakingAmount)
+//			if l.Sign() > 0 {
+//				return l
+//			}
+//		}
+//	}
+//	return nil
+//}
 
 //////////////////////////////////////////////////////////////////////
 // UpdateQuotaOnBlock called in insertBlock for update user's quota state

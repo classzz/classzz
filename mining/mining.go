@@ -906,9 +906,10 @@ mempoolLoop:
 				if MortgageTx != nil {
 					continue
 				}
-				if err := cState.MortgageVerify(info.Address, info.ToAddress, info.PubKey, info.StakingAmount, info.CoinBaseAddress); err != nil {
+				_, err = g.chain.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState)
+				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"IsBeaconRegistrationTx RegisterBeaconAddress: %v", tx.Hash(), err)
+						"VerifyCastingTx err : %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
@@ -920,9 +921,9 @@ mempoolLoop:
 				if MortgageTx != nil {
 					continue
 				}
-				if err = cState.AddMortgageVerify(bp.Address, bp.StakingAmount); err != nil {
+				if _, err = g.chain.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+						"VerifyAddMortgageTx: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
@@ -934,9 +935,9 @@ mempoolLoop:
 				if MortgageTx != nil {
 					continue
 				}
-				if err = cState.UpdateCoinbaseAllVerify(bp.Address, bp.CoinBaseAddress); err != nil {
+				if _, err = g.chain.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"IsAddBeaconPledgeTx AppendAmountForBeaconAddress: %v", tx.Hash(), err)
+						"VerifyUpdateCoinbaseAllTx: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
@@ -949,13 +950,13 @@ mempoolLoop:
 				addr, err := czzutil.NewAddressPubKeyHash(pool, g.chainParams)
 				if err != nil || addr == nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyCastingTx NewAddressPubKeyHash err : %v", tx.Hash(), err)
+						"VerifyCastingTx NewAddressPubKeyHash err: %v", tx.Hash(), err)
 					continue
 				}
 				_, err = g.chain.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState)
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"VerifyCastingTx err : %v", tx.Hash(), err)
+						"VerifyCastingTx: %v", tx.Hash(), err)
 					continue
 				}
 			}
@@ -966,7 +967,7 @@ mempoolLoop:
 				objs, err := cross.ToAddressFromConvertsVerify(cState, cinfo, g.chain.GetCommitteeVerify())
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
-						"toAddressFromEntangle: %v", tx.Hash(), err)
+						"VerifyConvertTx: %v", tx.Hash(), err)
 					logSkippedDeps(tx, deps)
 					continue
 				}
@@ -1126,7 +1127,6 @@ mempoolLoop:
 		for _, ctx := range ConvertTx {
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
-				fmt.Println("txhash ", ctx.Tx.TxHash().String())
 				for _, info := range ctx.Infos {
 					cState.Convert(info)
 				}

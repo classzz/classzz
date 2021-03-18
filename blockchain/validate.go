@@ -438,32 +438,23 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	for _, tx := range block.Transactions() {
 
 		// Mortgage
-		if pinfo, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoMortgage {
+		if _, err := b.GetCommitteeVerify().VerifyMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoMortgage {
 			return err
-		} else if pinfo != nil {
-			if err := cState.MortgageVerify(pinfo.Address, pinfo.ToAddress, pinfo.PubKey, pinfo.StakingAmount, pinfo.CoinBaseAddress); err != nil {
-				return err
-			}
+		} else if MortgageTx == nil {
 			MortgageTx = tx.MsgTx()
 		}
 
 		// AddMortgage
-		if pinfo, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
+		if _, err := b.GetCommitteeVerify().VerifyAddMortgageTx(tx.MsgTx(), cState); err != nil && err != cross.NoAddMortgage {
 			return err
-		} else if pinfo != nil {
-			if err = cState.AddMortgageVerify(pinfo.Address, pinfo.StakingAmount); err != nil {
-				return err
-			}
+		} else if MortgageTx == nil {
 			MortgageTx = tx.MsgTx()
 		}
 
 		// UpdateCoinbaseAll
-		if pinfo, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
+		if _, err := b.GetCommitteeVerify().VerifyUpdateCoinbaseAllTx(tx.MsgTx(), cState); err != nil && err != cross.NoUpdateCoinbaseAll {
 			return err
-		} else if pinfo != nil {
-			if err = cState.UpdateCoinbaseAllVerify(pinfo.Address, pinfo.CoinBaseAddress); err != nil {
-				return err
-			}
+		} else if MortgageTx == nil {
 			MortgageTx = tx.MsgTx()
 		}
 

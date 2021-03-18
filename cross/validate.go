@@ -2,9 +2,11 @@ package cross
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
+	"github.com/classzz/classzz/log"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
@@ -17,22 +19,24 @@ import (
 )
 
 var (
-	ErrStakingAmount = errors.New("StakingAmount Less than minimum 1000000 czz")
+	ErrStakingAmount = errors.New("StakingAmount Less than minimun czz")
 	ethPoolAddr      = "0xabD6bFC53773603a034b726938b0dfCaC3e645Ab"
 	hecoPoolAddr     = "0x034d0162892893e688DC53f3194160f06EBf265E"
-	CoinPools        = map[uint8][]byte{
+	bscPoolAddr      = "0x03B4870f6Bb10DDc16f0B6827Aa033D4374678E2"
+
+	burnTopics = "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa"
+	mintTopics = "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9"
+	CoinPools  = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
 		ExpandedTxConvert_HCzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
 	}
-	EthChainID  = big.NewInt(3)
-	HecoChainID = big.NewInt(256)
-	Big10       = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10), nil)
+	Big10 = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10), nil)
 )
 
 type CommitteeVerify struct {
 	EthRPC  []*rpc.Client
-	TrxRPC  []string
 	HecoRPC []*rpc.Client
+	BscRPC  []*rpc.Client
 	Cache   *CacheCommitteeState
 	Params  *chaincfg.Params
 }
@@ -90,7 +94,7 @@ func (ev *CommitteeVerify) VerifyBeaconRegistrationTx(tx *wire.MsgTx, eState *En
 		return nil, errors.New(e)
 	}
 
-	if br.StakingAmount.Cmp(MinStakingAmount) < 0 {
+	if br.StakingAmount.Cmp(ev.Params.MinStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -176,7 +180,7 @@ func (ev *CommitteeVerify) VerifyAddBeaconPledgeTx(tx *wire.MsgTx, eState *Entan
 		return nil, errors.New(e)
 	}
 
-	if bp.StakingAmount.Cmp(MinStakingAmount) < 0 {
+	if bp.StakingAmount.Cmp(ev.Params.MinAddStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -234,7 +238,7 @@ func (ev *CommitteeVerify) VerifyMortgageTx(tx *wire.MsgTx, cState *CommitteeSta
 		return nil, errors.New(e)
 	}
 
-	if br.StakingAmount.Cmp(MinStakingAmount) < 0 {
+	if br.StakingAmount.Cmp(ev.Params.MinStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -297,7 +301,7 @@ func (ev *CommitteeVerify) VerifyAddMortgageTx(tx *wire.MsgTx, cState *Committee
 		return nil, errors.New(e)
 	}
 
-	if am.StakingAmount.Cmp(MinAddStakingAmount) < 0 {
+	if am.StakingAmount.Cmp(ev.Params.MinAddStakingAmount) < 0 {
 		e := fmt.Sprintf("StakingAmount err")
 		return nil, errors.New(e)
 	}
@@ -327,7 +331,7 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 
 func (ev *CommitteeVerify) VerifyConvertTx(cState *CommitteeState, info *ConvertTxInfo) (*TuplePubIndex, error) {
 	if pub, err := ev.verifyConvertTx(cState, info); err != nil {
-		return nil, fmt.Errorf("txid verify failed ExtTxHash [txid:%s] : %s ", info.ExtTxHash, err)
+		return nil, err
 	} else {
 		pair := &TuplePubIndex{
 			AssetType:   info.AssetType,
@@ -343,49 +347,115 @@ func (ev *CommitteeVerify) verifyConvertTx(cState *CommitteeState, eInfo *Conver
 
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
-		return ev.verifyConvertEthTx(cState, eInfo)
+		client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+		return ev.verifyConvertEthereumTypeTx("ETH", client, cState, eInfo)
 	case ExpandedTxConvert_HCzz:
-		return ev.verifyConvertHecoTx(cState, eInfo)
+		client := ev.HecoRPC[rand.Intn(len(ev.EthRPC))]
+		return ev.verifyConvertEthereumTypeTx("HECO", client, cState, eInfo)
+	case ExpandedTxConvert_BCzz:
+		client := ev.BscRPC[rand.Intn(len(ev.BscRPC))]
+		return ev.verifyConvertEthereumTypeTx("BSC", client, cState, eInfo)
 	}
-	return nil, fmt.Errorf("verifyConvertTx AssetType is %v", eInfo.AssetType)
+	return nil, fmt.Errorf("verifyConvertTx AssetType not %v", eInfo.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *rpc.Client, cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
 
-	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+	if eInfo.AssetType == eInfo.ConvertType {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) AssetType = ConvertType = [%d]", netName, eInfo.ConvertType)
+	}
 
 	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return nil, fmt.Errorf("verifyConvertEthTx %d CoinPools not find ", eInfo.ConvertType)
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) ConvertType is [%d] CoinPools not find", netName, eInfo.ConvertType)
 	}
 
 	if ok := cState.ConvertExistExtTx(eInfo); ok {
-		return nil, fmt.Errorf("txid has already convert: [txid:%s]", eInfo.ExtTxHash)
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) txid has already convert [txid:%s]", netName, eInfo.ExtTxHash)
 	}
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) getTransactionReceipt [txid:%s] err: %s", netName, eInfo.ExtTxHash, err)
 	}
 
 	if receipt == nil {
-		return nil, fmt.Errorf("verifyConvertEthTx ExtTxHash not find")
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) [txid:%s] not find", netName, eInfo.ExtTxHash)
 	}
 
 	if receipt.Status != 1 {
-		return nil, fmt.Errorf("verifyConvertEthTx Status err")
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) [txid:%s] Status [%d]", netName, eInfo.ExtTxHash, receipt.Status)
+	}
+
+	if len(receipt.Logs) < 1 {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s)  receipt Logs length is 0 ", netName)
+	}
+
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == burnTopics {
+			txLog = log
+			break
+		}
+	}
+
+	if txLog == nil {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) txLog is nil ", netName)
+	}
+
+	amount := txLog.Data[:32]
+	ntype := txLog.Data[32:64]
+	//toToken := txLog.Data[64:]
+	Amount := big.NewInt(0).SetBytes(amount)
+	log.Info("Amount", "Amount", Amount)
+	Amount1 := big.NewInt(0).Div(Amount, Big10)
+	log.Info("", "Amount1", Amount1, "eInfo.Amount", eInfo.Amount)
+	if Amount1.Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) amount [%d] not [%d]", netName, Amount1, eInfo.Amount)
+	}
+
+	pool1 := CoinPools[eInfo.AssetType]
+	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
+	utxos := cState.NoCostUtxos[add.String()]
+	amountPool := big.NewInt(0)
+	if utxos != nil {
+		for k1, _ := range utxos.POut {
+			amountPool = big.NewInt(0).Add(amountPool, utxos.Amount[k1])
+		}
+	}
+
+	if Amount1.Cmp(amountPool) > 0 {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) tx amount [%d] > pool [%d]", netName, Amount1, amountPool)
+	}
+
+	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s)  ntype [%d] not [%d]", netName, big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
 	}
 
 	var txjson *rpcTransaction
 	// Get the current block count.
 	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) getTransactionByHash [txid:%s] err: %s", netName, eInfo.ExtTxHash, err)
 	}
 
-	ethtx := txjson.tx
-	Vb, R, S := ethtx.RawSignatureValues()
+	if eInfo.AssetType == ExpandedTxConvert_ECzz {
+		if txjson.tx.To().String() != ethPoolAddr {
+			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) ETh [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
+		}
+	} else if eInfo.AssetType == ExpandedTxConvert_HCzz {
+		if txjson.tx.To().String() != hecoPoolAddr {
+			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
+		}
+	} else if eInfo.AssetType == ExpandedTxConvert_BCzz {
+		if txjson.tx.To().String() != bscPoolAddr {
+			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
+		}
+	}
 
+	extTx := txjson.tx
+	Vb, R, S := extTx.RawSignatureValues()
 	var V byte
-	chainID := EthChainID
+
+	var chainID *big.Int
 	if isProtectedV(Vb) {
 		chainID = deriveChainId(Vb)
 		V = byte(Vb.Uint64() - 35 - 2*chainID.Uint64())
@@ -393,8 +463,12 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 		V = byte(Vb.Uint64() - 27)
 	}
 
+	if chainID == nil {
+		chainID = getChainID(eInfo.AssetType, ev.Params)
+	}
+
 	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("verifyConvertEthTx ValidateSignatureValues err")
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) ValidateSignatureValues err", netName)
 	}
 	// encode the signature in uncompressed format
 	r, s := R.Bytes(), S.Bytes()
@@ -402,207 +476,107 @@ func (ev *CommitteeVerify) verifyConvertEthTx(cState *CommitteeState, eInfo *Con
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
-
 	a := types.NewEIP155Signer(chainID)
-
-	pk, err := crypto.Ecrecover(a.Hash(ethtx).Bytes(), sig)
+	pk, err := crypto.Ecrecover(a.Hash(extTx).Bytes(), sig)
 	if err != nil {
-		return nil, fmt.Errorf("verifyConvertEthTx Ecrecover err")
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) Ecrecover err: %s", netName, err)
 	}
-
-	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return nil, fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
-
-	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("verifyConvertEthTx receipt.Logs ")
-	}
-
-	var txLog *types.Log
-	for _, log := range receipt.Logs {
-		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
-			txLog = log
-		}
-	}
-	if txLog == nil {
-		return nil, fmt.Errorf("verifyConvertEthTx txLog is nil ")
-	}
-
-	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:64]
-	//toToken := txLog.Data[64:]
-	Amount := big.NewInt(0).SetBytes(amount)
-	fmt.Println("Amount", Amount)
-	Amount1 := big.NewInt(0).Div(Amount, Big10)
-	fmt.Println("Amount1", Amount1, "eInfo.Amount", eInfo.Amount)
-	if Amount1.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("verifyConvertEthTx amount %d not %d", Amount1, eInfo.Amount)
-	}
-
-	pool1 := CoinPools[eInfo.AssetType]
-	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
-	utxos := cState.NoCostUtxos[add.String()]
-	amountPool := big.NewInt(0)
-	if utxos != nil {
-		for k1, _ := range utxos.POut {
-			amountPool = big.NewInt(0).Add(amountPool, utxos.Amount[k1])
-		}
-	}
-
-	if Amount1.Cmp(amountPool) > 0 {
-		return nil, fmt.Errorf("verifyConvertEthTx tx amount %d Is greater than pool %d", Amount1, amountPool)
-	}
-
-	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return nil, fmt.Errorf("verifyConvertEthTx ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
-	}
-
-	return pk, nil
-}
-
-func (ev *CommitteeVerify) verifyConvertHecoTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
-
-	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
-
-	if _, ok := CoinPools[eInfo.ConvertType]; !ok {
-		return nil, fmt.Errorf("verifyConvertHecoTx %d CoinPools not find ", eInfo.ConvertType)
-	}
-
-	if ok := cState.ConvertExistExtTx(eInfo); ok {
-		return nil, fmt.Errorf("txid has already convert: [txid:%s]", eInfo.ExtTxHash)
-	}
-
-	var receipt *types.Receipt
-	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-		return nil, err
-	}
-
-	if receipt == nil {
-		return nil, fmt.Errorf("verifyConvertHecoTx ExtTxHash %s not find", eInfo.ExtTxHash)
-	}
-
-	if receipt.Status != 1 {
-		return nil, fmt.Errorf("verifyConvertHecoTx Status err")
-	}
-
-	var txjson *rpcTransaction
-	// Get the current block count.
-	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
-		return nil, err
-	}
-
-	hecotx := txjson.tx
-	Vb, R, S := hecotx.RawSignatureValues()
-
-	var V byte
-	if isProtectedV(Vb) {
-		chainID := deriveChainId(Vb).Uint64()
-		V = byte(Vb.Uint64() - 35 - 2*chainID)
-	} else {
-		V = byte(Vb.Uint64() - 27)
-	}
-
-	if !crypto.ValidateSignatureValues(V, R, S, false) {
-		return nil, fmt.Errorf("verifyConvertHecoTx ValidateSignatureValues err")
-	}
-	// encode the signature in uncompressed format
-	r, s := R.Bytes(), S.Bytes()
-	sig := make([]byte, crypto.SignatureLength)
-	copy(sig[32-len(r):32], r)
-	copy(sig[64-len(s):64], s)
-	sig[64] = V
-
-	a := types.NewEIP155Signer(HecoChainID)
-
-	pk, err := crypto.Ecrecover(a.Hash(hecotx).Bytes(), sig)
-	if err != nil {
-		return nil, fmt.Errorf("verifyConvertHecoTx Ecrecover err")
-	}
-
-	// toaddress
-	if txjson.tx.To().String() != hecoPoolAddr {
-		return nil, fmt.Errorf("Heco To != %s", hecoPoolAddr)
-	}
-
-	if len(receipt.Logs) < 1 {
-		return nil, fmt.Errorf("verifyConvertHecoTx receipt.Logs ")
-	}
-
-	var txLog *types.Log
-	for _, log := range receipt.Logs {
-		if log.Topics[0].String() == "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa" {
-			txLog = log
-		}
-	}
-
-	if txLog == nil {
-		return nil, fmt.Errorf("verifyConvertHecoTx txLog == nil ")
-	}
-
-	amount := txLog.Data[:32]
-	ntype := txLog.Data[32:64]
-	//toToken := txLog.Data[64:]
-	Amount := big.NewInt(0).SetBytes(amount)
-	Amount1 := big.NewInt(0).Div(Amount, Big10)
-	if Amount1.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("verifyConvertHecoTx amount %d not %d", Amount1, eInfo.Amount)
-	}
-
-	pool1 := CoinPools[eInfo.AssetType]
-	add, _ := czzutil.NewAddressPubKeyHash(pool1, ev.Params)
-	utxos := cState.NoCostUtxos[add.String()]
-	amountPool := big.NewInt(0)
-	if utxos != nil {
-		for k1, _ := range utxos.POut {
-			amountPool = big.NewInt(0).Add(amountPool, utxos.Amount[k1])
-		}
-	}
-
-	if Amount1.Cmp(amountPool) > 0 {
-		return nil, fmt.Errorf("verifyConvertHecoTx tx amount %d Is greater than pool %d", Amount1, amountPool)
-	}
-
-	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
-		return nil, fmt.Errorf("verifyConvertHecoTx ntype %d not %d", big.NewInt(0).SetBytes(ntype), eInfo.ConvertType)
-	}
-
 	return pk, nil
 }
 
 func (ev *CommitteeVerify) VerifyConvertConfirmTx(cState *CommitteeState, info *ConvertConfirmTxInfo) error {
 	switch info.ConvertType {
 	case ExpandedTxConvert_ECzz:
-		return ev.verifyConvertConfirmEthTx(cState, info)
+		client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+		return ev.verifyConvertConfirmEthereumTypeTx("ETH", client, cState, info)
 	case ExpandedTxConvert_HCzz:
-		return ev.verifyConvertConfirmHecoTx(cState, info)
+		client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
+		return ev.verifyConvertConfirmEthereumTypeTx("HECO", client, cState, info)
 	}
-	return fmt.Errorf("verifyConvertTx AssetType is %v", info.AssetType)
+	return fmt.Errorf("VerifyConvertConfirmTx AssetType not %v", info.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertConfirmEthTx(cState *CommitteeState, eInfo *ConvertConfirmTxInfo) error {
+func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, client *rpc.Client, cState *CommitteeState, eInfo *ConvertConfirmTxInfo) error {
 
-	client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
+	if eInfo.AssetType == eInfo.ConvertType {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) AssetType = ConvertType = [%d]", netName, eInfo.ConvertType)
+	}
 
 	if _, ok := CoinPools[eInfo.AssetType]; !ok {
-		return fmt.Errorf("%d CoinPools not find ", eInfo.ConvertType)
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) ConvertType is [%d] CoinPools not find", netName, eInfo.ConvertType)
 	}
 
 	if ok := cState.ConvertConfirmExistExtTx(eInfo); ok {
-		return fmt.Errorf("txid has already convertConfirm: [txid:%s]", eInfo.ExtTxHash)
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) txid has already convert [txid:%s]", netName, eInfo.ExtTxHash)
 	}
 
 	var receipt *types.Receipt
 	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-		return err
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) getTransactionReceipt [txid:%s] err: %s", netName, eInfo.ExtTxHash, err)
 	}
 
 	if receipt == nil {
-		return fmt.Errorf("eth ExtTxHash not find")
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) [txid:%s] not find", netName, eInfo.ExtTxHash)
 	}
 
 	if receipt.Status != 1 {
-		return fmt.Errorf("eth Status err")
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) [txid:%s] Status [%d]", netName, eInfo.ExtTxHash, receipt.Status)
+	}
+
+	if len(receipt.Logs) < 1 {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s)  receipt Logs length is 0 ", netName)
+	}
+
+	var txLog *types.Log
+	for _, log := range receipt.Logs {
+		if log.Topics[0].String() == mintTopics {
+			txLog = log
+			break
+		}
+	}
+
+	if txLog == nil {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) txLog is nil ", netName)
+	}
+
+	address := txLog.Topics[1]
+	mid := txLog.Data[32:64]
+	amount := txLog.Data[64:]
+	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) mid %d not %d", netName, big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
+	}
+
+	var hinfo *ConvertItem
+	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
+	for _, v := range items {
+		if v.ID.Cmp(eInfo.ID) == 0 {
+			hinfo = v
+			break
+		}
+	}
+
+	if hinfo == nil {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) ConvertItems [id:%d] is null", netName, eInfo.ID)
+	}
+
+	toaddresspuk, err := crypto.DecompressPubkey(hinfo.PubKey)
+	if err != nil || toaddresspuk == nil {
+		toaddresspuk, err = crypto.UnmarshalPubkey(hinfo.PubKey)
+		if err != nil || toaddresspuk == nil {
+			return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) toaddresspuk [puk:%s] is err: %s", netName, hex.EncodeToString(hinfo.PubKey), err)
+		}
+	}
+
+	toaddress := common.Address{0}
+	toaddress.SetBytes(address.Bytes())
+	toaddress2 := crypto.PubkeyToAddress(*toaddresspuk)
+
+	if toaddress.String() != toaddress2.String() {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) [toaddresspukaddress : %s] not [toaddress : %s]", netName, toaddress.String(), toaddress2.String())
+	}
+
+	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
 	var txjson *rpcTransaction
@@ -612,153 +586,18 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthTx(cState *CommitteeState, eIn
 	}
 
 	// toaddress
-	if txjson.tx.To().String() != ethPoolAddr {
-		return fmt.Errorf("ETh To != %s", ethPoolAddr)
-	}
-
-	if len(receipt.Logs) < 1 {
-		return fmt.Errorf("ETh receipt.Logs")
-	}
-
-	var txLog *types.Log
-	for _, log := range receipt.Logs {
-		if log.Topics[0].String() == "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9" {
-			txLog = log
+	if eInfo.AssetType == ExpandedTxConvert_ECzz {
+		if txjson.tx.To().String() != ethPoolAddr {
+			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) ETh [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
-	}
-
-	if txLog == nil {
-		return fmt.Errorf("verifyConvertConfirmEthTx txLog == nil ")
-	}
-
-	address := txLog.Topics[1]
-	mid := txLog.Data[32:64]
-	amount := txLog.Data[64:]
-	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
-		return fmt.Errorf("ETh mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
-	}
-
-	var hinfo *ConvertItem
-	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
-	for _, v := range items {
-		if v.ID.Cmp(eInfo.ID) == 0 {
-			hinfo = v
+	} else if eInfo.AssetType == ExpandedTxConvert_HCzz {
+		if txjson.tx.To().String() != hecoPoolAddr {
+			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
-	}
-
-	if hinfo == nil {
-		return fmt.Errorf("verifyConvertConfirmEthTx hinfo is null")
-	}
-
-	toaddresspuk, err := crypto.DecompressPubkey(hinfo.PubKey)
-	if err != nil || toaddresspuk == nil {
-		toaddresspuk, err = crypto.UnmarshalPubkey(hinfo.PubKey)
-		if err != nil || toaddresspuk == nil {
-			return err
+	} else if eInfo.AssetType == ExpandedTxConvert_BCzz {
+		if txjson.tx.To().String() != bscPoolAddr {
+			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
-	}
-
-	toaddress := common.Address{0}
-	toaddress.SetBytes(address.Bytes())
-	toaddress2 := crypto.PubkeyToAddress(*toaddresspuk)
-
-	if toaddress.String() != toaddress2.String() {
-		return fmt.Errorf("verifyConvertConfirmEthTx toaddress %d  toaddress2 %d", toaddress, toaddress2)
-	}
-
-	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
-		return fmt.Errorf("verifyConvertConfirmEthTx amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
-	}
-	return nil
-}
-
-func (ev *CommitteeVerify) verifyConvertConfirmHecoTx(cState *CommitteeState, eInfo *ConvertConfirmTxInfo) error {
-
-	client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
-	if _, ok := CoinPools[eInfo.AssetType]; !ok {
-		return fmt.Errorf("%d CoinPools not find ", eInfo.AssetType)
-	}
-
-	if ok := cState.ConvertConfirmExistExtTx(eInfo); ok {
-		return fmt.Errorf("txid has already convertConfirm: [txid:%s]", eInfo.ExtTxHash)
-	}
-
-	var receipt *types.Receipt
-	if err := client.Call(&receipt, "eth_getTransactionReceipt", eInfo.ExtTxHash); err != nil {
-		return err
-	}
-
-	if receipt == nil {
-		return fmt.Errorf("verifyConvertConfirmHecoTx ExtTxHash not find")
-	}
-
-	if receipt.Status != 1 {
-		return fmt.Errorf("verifyConvertConfirmHecoTx Status err")
-	}
-
-	var txjson *rpcTransaction
-	// Get the current block count.
-	if err := client.Call(&txjson, "eth_getTransactionByHash", eInfo.ExtTxHash); err != nil {
-		return err
-	}
-
-	// toaddress
-	if txjson.tx.To().String() != hecoPoolAddr {
-		return fmt.Errorf("ETh To != %s", hecoPoolAddr)
-	}
-
-	if len(receipt.Logs) < 1 {
-		return fmt.Errorf("verifyConvertConfirmHecoTx receipt.Logs")
-	}
-
-	var txLog *types.Log
-	for _, log := range receipt.Logs {
-		if log.Topics[0].String() == "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9" {
-			txLog = log
-		}
-	}
-
-	if txLog == nil {
-		return fmt.Errorf("verifyConvertConfirmHecoTx txLog == nil ")
-	}
-
-	address := txLog.Topics[1]
-	mid := txLog.Data[32:64]
-	amount := txLog.Data[64:]
-	if big.NewInt(0).SetBytes(mid).Uint64() != eInfo.ID.Uint64() {
-		return fmt.Errorf("HECO mid %d not %d", big.NewInt(0).SetBytes(mid), eInfo.ID.Uint64())
-	}
-
-	var hinfo *ConvertItem
-	items := cState.ConvertItems[eInfo.AssetType][eInfo.ConvertType]
-	for _, v := range items {
-		if v.ID.Cmp(eInfo.ID) == 0 {
-			hinfo = v
-		}
-	}
-
-	if hinfo == nil {
-		return fmt.Errorf("verifyConvertConfirmHecoTx hinfo is null")
-	}
-
-	toaddresspuk, err := crypto.DecompressPubkey(hinfo.PubKey)
-	if err != nil || toaddresspuk == nil {
-		toaddresspuk, err = crypto.UnmarshalPubkey(hinfo.PubKey)
-		if err != nil || toaddresspuk == nil {
-			return err
-		}
-	}
-
-	toaddress := common.Address{0}
-	toaddress.SetBytes(address.Bytes())
-	toaddress2 := crypto.PubkeyToAddress(*toaddresspuk)
-
-	if toaddress.String() != toaddress2.String() {
-		return fmt.Errorf("verifyConvertConfirmHecoTx toaddress %d  toaddress2 %d", toaddress, toaddress2)
-	}
-
-	if big.NewInt(0).SetBytes(amount).Cmp(hinfo.Amount) <= 0 {
-		return fmt.Errorf("verifyConvertConfirmHecoTx amount %d not %d", big.NewInt(0).SetBytes(amount), eInfo.Amount)
 	}
 
 	return nil

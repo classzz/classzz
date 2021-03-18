@@ -179,9 +179,14 @@ type Params struct {
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
+	MinStakingAmount *big.Int
+
+	MinAddStakingAmount *big.Int
+
 	EntangleHeight int32
 
 	BeaconHeight int32
+
 	ConverHeight int32
 
 	// Checkpoints ordered from oldest to newest.
@@ -242,6 +247,9 @@ var MainNetParams = Params{
 	SubsidyReductionInterval: 1000000,
 	TargetTimePerBlock:       30, // 30 seconds
 	GenerateSupported:        true,
+
+	MinStakingAmount:    new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8)),
+	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8)),
 
 	EntangleHeight: 120000,
 	BeaconHeight:   420000,
@@ -372,6 +380,9 @@ var RegressionNetParams = Params{
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
 
+	MinStakingAmount:    new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8)),
+	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8)),
+
 	EntangleHeight: 120000,
 	BeaconHeight:   2,
 	//ExChangeHeight: 500000,
@@ -443,6 +454,9 @@ var TestNetParams = Params{
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
 	NoDifficultyAdjustment:   true,
+
+	MinStakingAmount:    new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
+	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
 
 	EntangleHeight: 5,
 	BeaconHeight:   10,
@@ -521,6 +535,9 @@ var SimNetParams = Params{
 	NoDifficultyAdjustment:   false,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
 	GenerateSupported:        true,
+
+	MinStakingAmount:    new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
+	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
 
 	EntangleHeight: 10,
 	BeaconHeight:   12,

@@ -12,6 +12,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.2
 	github.com/ethereum/go-ethereum v1.9.25
+	github.com/go-stack/stack v1.8.0
 	github.com/golang/protobuf v1.4.3
 	github.com/improbable-eng/grpc-web v0.9.6-0.20190524083611-d8235f1cd629
 	github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89

@@ -20,6 +20,7 @@ const (
 	ExpandedTxConvert_Czz uint8 = iota
 	ExpandedTxConvert_ECzz
 	ExpandedTxConvert_HCzz
+	ExpandedTxConvert_BCzz
 )
 
 var (
@@ -35,12 +36,13 @@ var (
 	ExpandedTxEntangle_Doge = uint8(0xF0)
 	ExpandedTxEntangle_Ltc  = uint8(0xF1)
 
-	baseUnit    = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
-	baseUnit1   = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
-	dogeUnit    = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
-	dogeUnit1   = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
-	MinPunished = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	ZeroAddrsss = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	baseUnit      = new(big.Int).Exp(big.NewInt(10), big.NewInt(8), nil)
+	baseUnit1     = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)
+	dogeUnit      = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
+	dogeUnit1     = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
+	MinPunished   = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
+	ZeroAddrsss   = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	ConvertOutNum = uint32(5)
 )
 
 type EntangleItem struct {
@@ -1002,20 +1004,23 @@ type ConvertTxTemp struct {
 	Tx    *wire.MsgTx
 }
 
-func ToAddressFromConvertsVerify(cState *CommitteeState, cinfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
+func ToAddressFromConvertsVerify(cState *CommitteeState, cInfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
 
-	ctis := make([]*ConvertTxInfo, 0, 0)
-	for _, info := range cinfo {
+	cTis := make([]*ConvertTxInfo, 0, 0)
+	for i, info := range cInfo {
+		if i == ConvertOutNum {
+			break
+		}
 		tpi, err := ev.VerifyConvertTx(cState, info)
 		if err != nil {
 			return nil, err
 		}
 		info.PubKey = tpi.Pub
 		info.FeeAmount = big.NewInt(0).Div(info.Amount, big.NewInt(1000))
-		ctis = append(ctis, info)
+		cTis = append(cTis, info)
 	}
 
-	return ctis, nil
+	return cTis, nil
 }
 
 func ConvertConfirms(eState *CommitteeState, cinfo map[uint32]*ConvertConfirmTxInfo) {

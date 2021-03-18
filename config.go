@@ -191,9 +191,9 @@ type config struct {
 
 	EthRPC []string `long:"ethrpc" description:""`
 
-	TrxRPC []string `long:"trxrpc" description:""`
-
 	HecoRPC []string `long:"hecorpc" description:""`
+
+	BscRPC []string `long:"bscrpc" description:""`
 
 	lookup         func(string) ([]net.IP, error)
 	oniondial      func(string, string, time.Duration) (net.Conn, error)

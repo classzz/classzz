@@ -1,10 +1,6 @@
 package cross
 
 import (
-	// "github.com/classzz/classzz/rlp"
-	// "bytes"
-	// "encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
@@ -171,24 +167,24 @@ func TestToolFunc1(t *testing.T) {
 	// }
 }
 
-func TestAddrTrans(t *testing.T) {
-	pub, err := hex.DecodeString(pubKey)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	pp, err1 := RecoverPublicFromBytes(pub, ExpandedTxEntangle_Doge)
-	if err1 != nil {
-		fmt.Println(err1)
-		return
-	}
-	err2, addr := MakeAddress(*pp)
-	if err2 != nil {
-		fmt.Println(err2)
-		return
-	}
-	fmt.Println(addr.String())
-}
+//func TestAddrTrans(t *testing.T) {
+//	pub, err := hex.DecodeString(pubKey)
+//	if err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//	pp, err1 := RecoverPublicFromBytes(pub, ExpandedTxEntangle_Doge)
+//	if err1 != nil {
+//		fmt.Println(err1)
+//		return
+//	}
+//	err2, addr := MakeAddress(*pp)
+//	if err2 != nil {
+//		fmt.Println(err2)
+//		return
+//	}
+//	fmt.Println(addr.String())
+//}
 func TestFloat(t *testing.T) {
 	rate := big.NewFloat(-0.0008)
 	fmt.Println(rate.Signbit())
