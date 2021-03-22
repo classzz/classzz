@@ -41,7 +41,7 @@ var (
 	dogeUnit      = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit)
 	dogeUnit1     = new(big.Int).Mul(big.NewInt(int64(12500000)), baseUnit1)
 	MinPunished   = new(big.Int).Mul(big.NewInt(int64(20)), baseUnit)
-	ZeroAddrsss   = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	ZeroAddress   = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	ConvertOutNum = uint32(5)
 )
 
