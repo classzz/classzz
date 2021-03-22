@@ -492,6 +492,9 @@ func (ev *CommitteeVerify) VerifyConvertConfirmTx(cState *CommitteeState, info *
 	case ExpandedTxConvert_HCzz:
 		client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 		return ev.verifyConvertConfirmEthereumTypeTx("HECO", client, cState, info)
+	case ExpandedTxConvert_BCzz:
+		client := ev.BscRPC[rand.Intn(len(ev.BscRPC))]
+		return ev.verifyConvertConfirmEthereumTypeTx("BSC", client, cState, info)
 	}
 	return fmt.Errorf("VerifyConvertConfirmTx AssetType not %v", info.AssetType)
 }
