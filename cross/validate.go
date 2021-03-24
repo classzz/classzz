@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/classzz/classzz/chaincfg"
-	"github.com/classzz/classzz/log"
 	"github.com/classzz/classzz/txscript"
 	"github.com/classzz/classzz/wire"
 	"github.com/classzz/czzutil"
@@ -20,17 +19,17 @@ import (
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimun czz")
-	ethPoolAddr      = "0xabD6bFC53773603a034b726938b0dfCaC3e645Ab"
-	hecoPoolAddr     = "0x034d0162892893e688DC53f3194160f06EBf265E"
-	bscPoolAddr      = "0x03B4870f6Bb10DDc16f0B6827Aa033D4374678E2"
+	ethPoolAddr      = "0x6aE86268312A815831A5cfe35187d1f3D2B6dE76"
+	hecoPoolAddr     = "0x64Dd2D13dA5469a50D747B9CE35a5EcB4865d054"
+	bscPoolAddr      = "0xb39E84c6AD0574af30fb5f0185ad2d4f2DBa4262"
 
 	burnTopics = "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa"
 	mintTopics = "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9"
 	CoinPools  = map[uint8][]byte{
 		ExpandedTxConvert_ECzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 101},
 		ExpandedTxConvert_HCzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102},
+		ExpandedTxConvert_BCzz: {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 103},
 	}
-	Big10 = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(10), nil)
 )
 
 type CommitteeVerify struct {
@@ -406,11 +405,8 @@ func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *r
 	ntype := txLog.Data[32:64]
 	//toToken := txLog.Data[64:]
 	Amount := big.NewInt(0).SetBytes(amount)
-	log.Info("Amount", "Amount", Amount)
-	Amount1 := big.NewInt(0).Div(Amount, Big10)
-	log.Info("", "Amount1", Amount1, "eInfo.Amount", eInfo.Amount)
-	if Amount1.Cmp(eInfo.Amount) != 0 {
-		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) amount [%d] not [%d]", netName, Amount1, eInfo.Amount)
+	if Amount.Cmp(eInfo.Amount) != 0 {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) amount [%d] not [%d]", netName, Amount, eInfo.Amount)
 	}
 
 	pool1 := CoinPools[eInfo.AssetType]
@@ -423,8 +419,8 @@ func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *r
 		}
 	}
 
-	if Amount1.Cmp(amountPool) > 0 {
-		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) tx amount [%d] > pool [%d]", netName, Amount1, amountPool)
+	if Amount.Cmp(amountPool) > 0 {
+		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) tx amount [%d] > pool [%d]", netName, Amount, amountPool)
 	}
 
 	if big.NewInt(0).SetBytes(ntype).Uint64() != uint64(eInfo.ConvertType) {
