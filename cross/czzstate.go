@@ -554,12 +554,13 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) {
 	}
 }
 
-func (cs *CommitteeState) Casting(info *CastingTxInfo) {
+func (cs *CommitteeState) Casting(info *CastingTxInfo, txhash string) {
 
 	convertItem := &ConvertItem{
-		ID:     big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
-		PubKey: info.PubKey,
-		Amount: info.Amount,
+		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		PubKey:    info.PubKey,
+		Amount:    info.Amount,
+		ExtTxHash: txhash,
 	}
 	cs.MaxItemID = convertItem.ID
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {

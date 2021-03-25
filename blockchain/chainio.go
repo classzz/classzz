@@ -612,7 +612,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 
 	for _, tx := range CastingTx {
 		if cinfo, _ := cross.IsCastingTx(tx); cinfo != nil {
-			cState.Casting(cinfo)
+			cState.Casting(cinfo, tx.TxHash().String())
 			pool := cross.CoinPools[cinfo.ConvertType]
 			addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{

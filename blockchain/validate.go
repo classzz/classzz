@@ -531,7 +531,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 	for _, tx := range CastingTx {
 		if cinfo, _ := cross.IsCastingTx(tx); cinfo != nil {
-			cState.Casting(cinfo)
+			cState.Casting(cinfo, tx.TxHash().String())
 			pool := cross.CoinPools[cinfo.ConvertType]
 			addr, _ := czzutil.NewAddressPubKeyHash(pool, b.chainParams)
 			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
