@@ -547,7 +547,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 	for _, ctx := range ConvertTx {
 		if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
 			for _, info := range ctx.Infos {
-				cState.Convert(info)
+				cState.Convert(info, ctx.Tx.TxHash().String())
 			}
 		}
 	}

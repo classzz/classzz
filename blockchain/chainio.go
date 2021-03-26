@@ -630,7 +630,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 			for _, info := range ctx.Infos {
 				fmt.Println("txhash ", ctx.Tx.TxHash().String())
 				fmt.Println("CommitteeState Convert ", info.ExtTxHash)
-				cState.Convert(info)
+				cState.Convert(info, ctx.Tx.TxHash().String())
 			}
 		}
 	}

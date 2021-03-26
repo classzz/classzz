@@ -126,6 +126,7 @@ func (pi *PledgeInfo) EncodeRLP(w io.Writer) error {
 
 type ConvertItem struct {
 	ID               *big.Int `json:"id"`
+	TxHash           string   `json:"tx_hash"`
 	ExtTxHash        string   `json:"ext_tx_hash"`
 	ConfirmExtTxHash string   `json:"confirm_ext_tx_hash"`
 	ToToken          string   `json:"to_token"`
@@ -515,10 +516,11 @@ func (cs *CommitteeState) UpdateCoinbaseAll(address string, coinBases []string) 
 	info.CoinBaseAddress = coinBases
 }
 
-func (cs *CommitteeState) Convert(info *ConvertTxInfo) {
+func (cs *CommitteeState) Convert(info *ConvertTxInfo, txHash string) {
 
 	convertItem := &ConvertItem{
 		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		TxHash:    txHash,
 		ExtTxHash: info.ExtTxHash,
 		PubKey:    info.PubKey,
 		Amount:    info.Amount,
@@ -554,13 +556,13 @@ func (cs *CommitteeState) Convert(info *ConvertTxInfo) {
 	}
 }
 
-func (cs *CommitteeState) Casting(info *CastingTxInfo, txhash string) {
+func (cs *CommitteeState) Casting(info *CastingTxInfo, txHash string) {
 
 	convertItem := &ConvertItem{
-		ID:        big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
-		PubKey:    info.PubKey,
-		Amount:    info.Amount,
-		ExtTxHash: txhash,
+		ID:     big.NewInt(0).Add(cs.MaxItemID, big.NewInt(1)),
+		PubKey: info.PubKey,
+		Amount: info.Amount,
+		TxHash: txHash,
 	}
 	cs.MaxItemID = convertItem.ID
 	if _, ok := cs.ConvertItems[ExpandedTxConvert_Czz]; !ok {
@@ -580,10 +582,8 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 
 	var hinfo *ConvertItem
 	var index int
-	fmt.Println("ConvertConfirm", info.ConvertType, info.AssetType, info.ID)
 	items := cs.ConvertItems[info.AssetType][info.ConvertType]
 	for i, v := range items {
-		fmt.Println("items id", v.ID)
 		if v.ID.Cmp(info.ID) == 0 {
 			hinfo = v
 			index = i
@@ -599,6 +599,7 @@ func (cs *CommitteeState) ConvertConfirm(info *ConvertConfirmTxInfo) {
 
 	convertItem := &ConvertItem{
 		ID:               hinfo.ID,
+		TxHash:           hinfo.TxHash,
 		ExtTxHash:        hinfo.ExtTxHash,
 		ConfirmExtTxHash: info.ExtTxHash,
 		PubKey:           hinfo.PubKey,

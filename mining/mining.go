@@ -1128,7 +1128,7 @@ mempoolLoop:
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(ctx.Tx); cinfo != nil {
 				for _, info := range ctx.Infos {
-					cState.Convert(info)
+					cState.Convert(info, ctx.Tx.TxHash().String())
 				}
 				convertItems = append(convertItems, ctx.Infos...)
 			}
