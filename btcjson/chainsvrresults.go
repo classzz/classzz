@@ -493,6 +493,7 @@ type ConvertItemsResult struct {
 	AssetType        uint8    `json:"asset_type"`
 	ConvertType      uint8    `json:"convert_type"`
 	PubKey           []byte   `json:"pub_key"`
+	TxHash           string   `json:"tx_hash"`
 	ExtTxHash        string   `json:"ext_tx_hash"`
 	ConfirmExtTxHash string   `json:"confirm_ext_tx_hash"`
 	Amount           *big.Int `json:"amount"`
