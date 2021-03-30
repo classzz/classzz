@@ -2073,7 +2073,9 @@ func (s *server) handleDonePeerMsg(state *peerState, sp *serverPeer) {
 			s.connManager.Disconnect(sp.connReq.ID())
 		}
 
-		delete(list, sp.ID())
+		if !sp.persistent {
+			delete(list, sp.ID())
+		}
 
 		host, _, err := net.SplitHostPort(sp.Addr())
 		if err == nil && !sp.persistent {
