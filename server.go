@@ -12,8 +12,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/classzz/classzz/cross"
-	"github.com/classzz/classzz/czzrpc"
 	"math"
 	"net"
 	"runtime"
@@ -23,6 +21,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/classzz/classzz/cross"
+	"github.com/classzz/classzz/czzrpc"
 
 	"github.com/classzz/czzutil/gcs/builder"
 
@@ -2075,14 +2076,14 @@ func (s *server) handleDonePeerMsg(state *peerState, sp *serverPeer) {
 
 		if !sp.persistent {
 			delete(list, sp.ID())
+			host, _, err := net.SplitHostPort(sp.Addr())
+			if err == nil && !sp.persistent {
+				state.connectionCount[host]--
+			}
+
+			srvrLog.Debugf("Removed peer %s", sp)
 		}
 
-		host, _, err := net.SplitHostPort(sp.Addr())
-		if err == nil && !sp.persistent {
-			state.connectionCount[host]--
-		}
-
-		srvrLog.Debugf("Removed peer %s", sp)
 		return
 	}
 
