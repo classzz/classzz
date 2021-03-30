@@ -384,6 +384,16 @@ func (v *Vin) MarshalJSON() ([]byte, error) {
 	return json.Marshal(txStruct)
 }
 
+// GetNodeAddressesResult models the data returned from the getnodeaddresses
+// command.
+type GetNodeAddressesResult struct {
+	// Timestamp in seconds since epoch (Jan 1 1970 GMT) keeping track of when the node was last seen
+	Time     int64  `json:"time"`
+	Services uint64 `json:"services"` // The services offered
+	Address  string `json:"address"`  // The address of the node
+	Port     uint16 `json:"port"`     // The port of the node
+}
+
 // PrevOut represents previous output for an input Vin.
 type PrevOut struct {
 	Addresses []string `json:"addresses,omitempty"`
