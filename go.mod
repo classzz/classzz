@@ -8,7 +8,7 @@ require (
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792
 	github.com/btcsuite/winsvc v1.0.0
 	github.com/classzz/czzlog v0.0.0-20190701134521-659346cb927a
-	github.com/classzz/czzutil v0.0.0-20210304131042-488cf2183658
+	github.com/classzz/czzutil v0.0.0-20210331065242-323b27c6239d
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dchest/siphash v1.2.2
 	github.com/ethereum/go-ethereum v1.9.25

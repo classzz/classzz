@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/chaincfg"
 	"io"
 	"io/ioutil"
 	"math"
@@ -28,6 +27,7 @@ import (
 	"github.com/btcsuite/go-socks/socks"
 	"github.com/btcsuite/websocket"
 	"github.com/classzz/classzz/btcjson"
+	"github.com/classzz/classzz/chaincfg"
 )
 
 var (
@@ -1305,8 +1305,8 @@ func New(config *ConnConfig, ntfnHandlers *NotificationHandlers) (*Client, error
 		fallthrough
 	case chaincfg.MainNetParams.Name:
 		client.chainParams = &chaincfg.MainNetParams
-	case chaincfg.TestNet3Params.Name:
-		client.chainParams = &chaincfg.TestNet3Params
+	case chaincfg.TestNetParams.Name:
+		client.chainParams = &chaincfg.TestNetParams
 	case chaincfg.RegressionNetParams.Name:
 		client.chainParams = &chaincfg.RegressionNetParams
 	case chaincfg.SimNetParams.Name:
