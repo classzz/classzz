@@ -2265,14 +2265,14 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	c := cmd.(*btcjson.GetBlockCmd)
 
 	// Load the raw block bytes from the database.
-	hash, err := chainhash.NewHashFromStr(c.Hash)
-	if err != nil {
-		return nil, rpcDecodeHexError(c.Hash)
-	}
+	//hash, err := chainhash.NewHashFromStr(c.Hash)
+	//if err != nil {
+	//	return nil, rpcDecodeHexError(c.Hash)
+	//}
 	var blkBytes []byte
-	err = s.cfg.DB.View(func(dbTx database.Tx) error {
+	err := s.cfg.DB.View(func(dbTx database.Tx) error {
 		var err error
-		blkBytes, err = dbTx.FetchBlock(hash)
+		blkBytes, err = dbTx.FetchBlock(c.Hash)
 		return err
 	})
 	if err != nil {
@@ -2298,7 +2298,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 	}
 
 	// Get the block height from chain.
-	blockHeight, err := s.cfg.Chain.BlockHeightByHashAll(hash)
+	blockHeight, err := s.cfg.Chain.BlockHeightByHashAll(c.Hash)
 	if err != nil {
 		context := "Failed to obtain block height"
 		return nil, internalRPCError(err.Error(), context)
@@ -2323,7 +2323,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		blockHeader = &blk.MsgBlock().Header
 	)
 	baseBlockReply := &btcjson.GetBlockBaseVerboseResult{
-		Hash:          c.Hash,
+		Hash:          c.Hash.String(),
 		Version:       blockHeader.Version,
 		VersionHex:    fmt.Sprintf("%08x", blockHeader.Version),
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
@@ -2358,7 +2358,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		rawTxns := make([]btcjson.TxRawResult, len(txns))
 		for i, tx := range txns {
 			rawTxn, err := createTxRawResult(params, tx.MsgTx(),
-				tx.Hash().String(), blockHeader, hash.String(),
+				tx.Hash().String(), blockHeader, c.Hash.String(),
 				blockHeight, best.Height)
 			if err != nil {
 				return nil, err

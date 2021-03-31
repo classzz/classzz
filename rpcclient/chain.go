@@ -91,7 +91,7 @@ func (r FutureGetBlockResult) Receive() (*wire.MsgBlock, error) {
 // returned instance.
 //
 // See GetBlock for the blocking version and more details.
-func (c *Client) GetBlockAsync(blockHash string) FutureGetBlockResult {
+func (c *Client) GetBlockAsync(blockHash *chainhash.Hash) FutureGetBlockResult {
 
 	cmd := btcjson.NewGetBlockCmd(blockHash, btcjson.Uint32(0))
 	return c.sendCmd(cmd)
@@ -101,7 +101,7 @@ func (c *Client) GetBlockAsync(blockHash string) FutureGetBlockResult {
 //
 // See GetBlockVerbose to retrieve a data structure with information about the
 // block instead.
-func (c *Client) GetBlock(blockHash string) (*wire.MsgBlock, error) {
+func (c *Client) GetBlock(blockHash *chainhash.Hash) (*wire.MsgBlock, error) {
 	return c.GetBlockAsync(blockHash).Receive()
 }
 
@@ -173,12 +173,12 @@ func (r FutureGetBlockVerboseResult) Receive() (*btcjson.GetBlockVerboseResult, 
 //
 // See GetBlockVerbose for the blocking version and more details.
 func (c *Client) GetBlockVerboseAsync(blockHash *chainhash.Hash) FutureGetBlockVerboseResult {
-	hash := ""
-	if blockHash != nil {
-		hash = blockHash.String()
-	}
+	//hash := ""
+	//if blockHash != nil {
+	//	hash = blockHash.String()
+	//}
 
-	cmd := btcjson.NewGetBlockCmd(hash, btcjson.Uint32(1))
+	cmd := btcjson.NewGetBlockCmd(blockHash, btcjson.Uint32(1))
 	return c.sendCmd(cmd)
 }
 
@@ -219,12 +219,12 @@ func (r FutureGetBlockVerboseTxResult) Receive() (*btcjson.GetBlockVerboseTxResu
 // See GetBlockVerboseTx or the blocking version and more details.
 func (c *Client) GetBlockVerboseTxAsync(blockHash *chainhash.Hash) FutureGetBlockVerboseTxResult {
 
-	hash := ""
-	if blockHash != nil {
-		hash = blockHash.String()
-	}
+	//hash := ""
+	//if blockHash != nil {
+	//	hash = blockHash.String()
+	//}
 
-	cmd := btcjson.NewGetBlockCmd(hash, btcjson.Uint32(2))
+	cmd := btcjson.NewGetBlockCmd(blockHash, btcjson.Uint32(2))
 
 	return c.sendCmd(cmd)
 }
