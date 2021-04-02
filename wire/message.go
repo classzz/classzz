@@ -22,27 +22,14 @@ const MessageHeaderSize = 24
 // header.  Shorter commands must be zero padded.
 const CommandSize = 12
 
-// ebs is the excessive block size, used to determine reasonable maximum message sizes.
-// 32MB is the current default value
-var ebs uint32 = 32000000
-
-// SetLimits adjusts various message limits based on max block size configuration.
-func SetLimits(excessiveBlockSize uint32) {
-	ebs = excessiveBlockSize
-}
-
-// MaxMessagePayload returns is the maximum bytes a message can be regardless of other
+// MaxMessagePayload is the maximum bytes a message can be regardless of other
 // individual limits imposed by messages themselves.
-func maxMessagePayload() uint32 {
-	return ((ebs / 1000000) * 1024 * 1024) * 2
-}
+const MaxMessagePayload = (1024 * 1024 * 32) // 32MB
 
 // Commands used in bitcoin message headers which describe the type of message.
 const (
 	CmdVersion      = "version"
-	CmdXVersion     = "xversion"
 	CmdVerAck       = "verack"
-	CmdXVerAck      = "xverack"
 	CmdGetAddr      = "getaddr"
 	CmdAddr         = "addr"
 	CmdGetBlocks    = "getblocks"
@@ -55,6 +42,7 @@ const (
 	CmdHeaders      = "headers"
 	CmdPing         = "ping"
 	CmdPong         = "pong"
+	CmdAlert        = "alert"
 	CmdMemPool      = "mempool"
 	CmdFilterAdd    = "filteradd"
 	CmdFilterClear  = "filterclear"
@@ -66,14 +54,10 @@ const (
 	CmdGetCFilters  = "getcfilters"
 	CmdGetCFHeaders = "getcfheaders"
 	CmdGetCFCheckpt = "getcfcheckpt"
-	CmdGetCFMempool = "getcfmempool"
 	CmdCFilter      = "cfilter"
 	CmdCFHeaders    = "cfheaders"
 	CmdCFCheckpt    = "cfcheckpt"
-	CmdSendCmpct    = "sendcmpct"
-	CmdCmpctBlock   = "cmpctblock"
-	CmdGetBlockTxns = "getblocktxn"
-	CmdBlockTxns    = "blocktxn"
+	CmdSendAddrV2   = "sendaddrv2"
 )
 
 // MessageEncoding represents the wire message encoding format to be used.
@@ -84,6 +68,9 @@ const (
 	// for the Bitcoin wire protocol.
 	BaseEncoding MessageEncoding = 1 << iota
 
+	// WitnessEncoding encodes all messages other than transaction messages
+	// using the default Bitcoin wire protocol specification. For transaction
+	// messages, the new encoding format detailed in BIP0144 will be used.
 	WitnessEncoding
 )
 
@@ -110,14 +97,11 @@ func makeEmptyMessage(command string) (Message, error) {
 	case CmdVersion:
 		msg = &MsgVersion{}
 
-	case CmdXVersion:
-		msg = &MsgXVersion{}
-
 	case CmdVerAck:
 		msg = &MsgVerAck{}
 
-	case CmdXVerAck:
-		msg = &MsgXVerAck{}
+	case CmdSendAddrV2:
+		msg = &MsgSendAddrV2{}
 
 	case CmdGetAddr:
 		msg = &MsgGetAddr{}
@@ -154,6 +138,9 @@ func makeEmptyMessage(command string) (Message, error) {
 
 	case CmdHeaders:
 		msg = &MsgHeaders{}
+
+	case CmdAlert:
+		msg = &MsgAlert{}
 
 	case CmdMemPool:
 		msg = &MsgMemPool{}
@@ -197,21 +184,6 @@ func makeEmptyMessage(command string) (Message, error) {
 	case CmdCFCheckpt:
 		msg = &MsgCFCheckpt{}
 
-	case CmdGetCFMempool:
-		msg = &MsgGetCFMempool{}
-
-	case CmdSendCmpct:
-		msg = &MsgSendCmpct{}
-
-	case CmdCmpctBlock:
-		msg = &MsgCmpctBlock{}
-
-	case CmdGetBlockTxns:
-		msg = &MsgGetBlockTxns{}
-
-	case CmdBlockTxns:
-		msg = &MsgBlockTxns{}
-
 	default:
 		return nil, fmt.Errorf("unhandled command [%s]", command)
 	}
@@ -245,7 +217,7 @@ func readMessageHeader(r io.Reader) (int, *messageHeader, error) {
 	readElements(hr, &hdr.magic, &command, &hdr.length, &hdr.checksum)
 
 	// Strip trailing zeros from command string.
-	hdr.command = string(bytes.TrimRight(command[:], string(0)))
+	hdr.command = string(bytes.TrimRight(command[:], "\x00"))
 
 	return n, &hdr, nil
 }
@@ -317,10 +289,10 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, pver uint32,
 	lenp := len(payload)
 
 	// Enforce maximum overall message payload.
-	if lenp > int(maxMessagePayload()) {
+	if lenp > MaxMessagePayload {
 		str := fmt.Sprintf("message payload is too large - encoded "+
 			"%d bytes, but maximum message payload is %d bytes",
-			lenp, maxMessagePayload())
+			lenp, MaxMessagePayload)
 		return totalBytes, messageError("WriteMessage", str)
 	}
 
@@ -353,9 +325,13 @@ func WriteMessageWithEncodingN(w io.Writer, msg Message, pver uint32,
 		return totalBytes, err
 	}
 
-	// Write payload.
-	n, err = w.Write(payload)
-	totalBytes += n
+	// Only write the payload if there is one, e.g., verack messages don't
+	// have one.
+	if len(payload) > 0 {
+		n, err = w.Write(payload)
+		totalBytes += n
+	}
+
 	return totalBytes, err
 }
 
@@ -376,10 +352,10 @@ func ReadMessageWithEncodingN(r io.Reader, pver uint32, czznet BitcoinNet,
 	}
 
 	// Enforce maximum message payload.
-	if hdr.length > maxMessagePayload() {
+	if hdr.length > MaxMessagePayload {
 		str := fmt.Sprintf("message payload is too large - header "+
 			"indicates %d bytes, but max message payload is %d "+
-			"bytes.", hdr.length, maxMessagePayload())
+			"bytes.", hdr.length, MaxMessagePayload)
 		return totalBytes, nil, nil, messageError("ReadMessage", str)
 
 	}
@@ -429,7 +405,7 @@ func ReadMessageWithEncodingN(r io.Reader, pver uint32, czznet BitcoinNet,
 
 	// Test checksum.
 	checksum := chainhash.DoubleHashB(payload)[0:4]
-	if !bytes.Equal(checksum[:], hdr.checksum[:]) {
+	if !bytes.Equal(checksum, hdr.checksum[:]) {
 		str := fmt.Sprintf("payload checksum failed - header "+
 			"indicates %v, but actual checksum is %v.",
 			hdr.checksum, checksum)

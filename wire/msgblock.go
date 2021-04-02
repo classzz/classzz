@@ -22,16 +22,13 @@ const defaultTransactionAlloc = 2048
 // MaxBlocksPerMsg is the maximum number of blocks allowed per message.
 const MaxBlocksPerMsg = 500
 
-// MaxBlockPayload returns the maximum bytes a block message can be in bytes.
-func MaxBlockPayload() uint32 {
-	return ebs
-}
+// MaxBlockPayload is the maximum bytes a block message can be in bytes.
+// After Segregated Witness, the max block payload has been raised to 4MB.
+const MaxBlockPayload = 32000000
 
 // maxTxPerBlock returns the maximum number of transactions that could
 // possibly fit into a block.
-func maxTxPerBlock() uint32 {
-	return (MaxBlockPayload() / minTxPayload) + 1
-}
+const maxTxPerBlock = (MaxBlockPayload / minTxPayload) + 1
 
 // TxLoc holds locator data for the offset and length of where a transaction is
 // located within a MsgBlock data buffer.
@@ -136,9 +133,9 @@ func (msg *MsgBlock) DeserializeTxLoc(r *bytes.Buffer) ([]TxLoc, error) {
 	// Prevent more transactions than could possibly fit into a block.
 	// It would be possible to cause memory exhaustion and panics without
 	// a sane upper bound on this count.
-	if txCount > uint64(maxTxPerBlock()) {
+	if txCount > maxTxPerBlock {
 		str := fmt.Sprintf("too many transactions to fit into a block "+
-			"[count %d, max %d]", txCount, maxTxPerBlock())
+			"[count %d, max %d]", txCount, maxTxPerBlock)
 		return nil, messageError("MsgBlock.DeserializeTxLoc", str)
 	}
 
