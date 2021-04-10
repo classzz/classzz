@@ -575,7 +575,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 	}
 
 	amount2 := big.NewInt(0).Sub(hinfo.Amount, hinfo.FeeAmount)
-	if big.NewInt(0).SetBytes(amount).Cmp(amount2) <= 0 {
+	if big.NewInt(0).SetBytes(amount).Cmp(amount2) != 0 {
 		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) amount %d not %d", netName, big.NewInt(0).SetBytes(amount), amount2)
 	}
 
