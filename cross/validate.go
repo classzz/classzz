@@ -586,17 +586,17 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 	}
 
 	// toaddress
-	if eInfo.AssetType == ExpandedTxConvert_ECzz {
+	if eInfo.ConvertType == ExpandedTxConvert_ECzz {
 		if txjson.tx.To().String() != ethPoolAddr {
 			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) ETh [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
-	} else if eInfo.AssetType == ExpandedTxConvert_HCzz {
+	} else if eInfo.ConvertType == ExpandedTxConvert_HCzz {
 		if txjson.tx.To().String() != hecoPoolAddr {
-			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
+			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), hecoPoolAddr)
 		}
-	} else if eInfo.AssetType == ExpandedTxConvert_BCzz {
+	} else if eInfo.ConvertType == ExpandedTxConvert_BCzz {
 		if txjson.tx.To().String() != bscPoolAddr {
-			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
+			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), bscPoolAddr)
 		}
 	}
 
