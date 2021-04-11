@@ -502,7 +502,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 	}
 
 	if _, ok := CoinPools[eInfo.AssetType]; !ok && eInfo.AssetType != 0 {
-		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) ConvertType is [%d] CoinPools not find", netName, eInfo.AssetType)
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) AssetType is [%d] CoinPools not find", netName, eInfo.AssetType)
 	}
 
 	if ok := cState.ConvertConfirmExistExtTx(eInfo); ok {
