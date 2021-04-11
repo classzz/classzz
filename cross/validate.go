@@ -19,9 +19,9 @@ import (
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimun czz")
-	ethPoolAddr      = "0x6d53d74FdbbEF28418DD29637652A54409868BeC"
-	hecoPoolAddr     = "0xbB1b884592776aB524C5C63087af735427B11EB3"
-	bscPoolAddr      = "0x169706a6e1a2dab659AAda358834070D02262f14"
+	ethPoolAddr      = "0x04e683b0ba2531c80ECf996DE7Ce34c10d190976"
+	hecoPoolAddr     = "0xD1DD6AC27E805c8DE76e30dec1142d023F4e45A6"
+	bscPoolAddr      = "0x7c1DD2600F4A72f5D05b73444397795522e1B685"
 
 	burnTopics = "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa"
 	mintTopics = "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9"
