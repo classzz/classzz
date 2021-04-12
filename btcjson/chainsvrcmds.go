@@ -10,7 +10,6 @@ package btcjson
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/classzz/classzz/chaincfg/chainhash"
 	"github.com/classzz/classzz/wire"
 	"math/big"
 )
@@ -387,7 +386,7 @@ func NewGetBestBlockHashCmd() *GetBestBlockHashCmd {
 
 // GetBlockCmd defines the getblock JSON-RPC command.
 type GetBlockCmd struct {
-	Hash      *chainhash.Hash
+	Hash      string
 	Verbosity *uint32 `jsonrpcdefault:"1"`
 }
 
@@ -396,7 +395,7 @@ type GetBlockCmd struct {
 //
 // The parameters which are pointers indicate they are optional.  Passing nil
 // for optional parameters will use the default value.
-func NewGetBlockCmd(hash *chainhash.Hash, verbosity *uint32) *GetBlockCmd {
+func NewGetBlockCmd(hash string, verbosity *uint32) *GetBlockCmd {
 	return &GetBlockCmd{
 		Hash:      hash,
 		Verbosity: verbosity,
