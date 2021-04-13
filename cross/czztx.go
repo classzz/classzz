@@ -2,6 +2,7 @@ package cross
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -755,16 +756,6 @@ func GetMaxHeight(items map[uint32]*ConvertTxInfo) uint64 {
 }
 
 func MakeCoinbaseTxUtxo(params *chaincfg.Params, tx *wire.MsgTx, cState *CommitteeState, clean bool) error {
-	if clean {
-		for _, v := range CoinPools {
-			add, _ := czzutil.NewAddressPubKeyHash(v, params)
-			cState.NoCostUtxos[add.String()] = &PoolAddrItem{
-				POut:   make([]wire.OutPoint, 0),
-				Script: make([][]byte, 0),
-				Amount: make([]*big.Int, 0),
-			}
-		}
-	}
 
 	for k, v := range tx.TxOut {
 		_, pub, _ := txscript.ExtractPkScriptPub(v.PkScript)
@@ -775,13 +766,19 @@ func MakeCoinbaseTxUtxo(params *chaincfg.Params, tx *wire.MsgTx, cState *Committ
 				return fmt.Errorf("MakeCoinbaseTxUtxo err %s addr %s", err, addr)
 			}
 
-			cState.PutNoCostUtxos(addr.String(), wire.OutPoint{
+			items := &PoolAddrItem{
+				POut:   make([]wire.OutPoint, 0),
+				Script: make([][]byte, 0),
+				Amount: make([]*big.Int, 0),
+			}
+
+			items.POut = append(items.POut, wire.OutPoint{
 				Hash:  tx.TxHash(),
 				Index: uint32(k),
-			},
-				v.PkScript,
-				v.Value,
-			)
+			})
+			items.Script = append(items.Script, v.PkScript)
+			items.Amount = append(items.Amount, big.NewInt(v.Value))
+			cState.NoCostUtxos[addr.String()] = items
 		}
 	}
 	return nil
@@ -825,6 +822,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 		poolC[v.ConvertType] = big.NewInt(0)
 	}
 
+	FeeAmountSum := big.NewInt(0)
 	for _, v := range items {
 		if v.ConvertType == ExpandedTxConvert_Czz {
 			continue
@@ -833,13 +831,19 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 		poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], v.Amount)
 		poolC[v.ConvertType] = big.NewInt(0).Add(poolC[v.ConvertType], amount)
 
+		FeeAmountSum = big.NewInt(0).Add(FeeAmountSum, v.FeeAmount)
+	}
+
+	if FeeAmountSum.Int64() != 0 {
 		CoinPool0 := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 		pkScript, err := txscript.PayToPubKeyHashScript(CoinPool0)
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("poolCFee", hex.EncodeToString(pkScript), FeeAmountSum.Int64())
 		tx.AddTxOut(&wire.TxOut{
-			Value:    v.FeeAmount.Int64(),
+			Value:    FeeAmountSum.Int64(),
 			PkScript: pkScript,
 		})
 	}
@@ -864,6 +868,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 
 		amount = big.NewInt(0).Add(amount, v)
 		pkScript, _ := txscript.PayToPubKeyHashScript(add.ScriptAddress())
+		fmt.Println("poolC", add.String(), amount)
 		tx.AddTxOut(&wire.TxOut{
 			Value:    amount.Int64(),
 			PkScript: pkScript,
