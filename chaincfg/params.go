@@ -254,7 +254,7 @@ var MainNetParams = Params{
 	EntangleHeight: 120000,
 	BeaconHeight:   420000,
 
-	ConverHeight: 100000000,
+	ConverHeight: 1150000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
