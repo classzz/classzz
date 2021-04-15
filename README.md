@@ -60,11 +60,31 @@ gofmt -s -w bindata.go
 
 ## Getting Started
 
+create conf: classzz.conf
+```
+; The address where the data was created
+datadir=data
+
+; RPC's white list policy (everyone can connect here)
+rpclisten=0.0.0.0
+whitelist=0.0.0.0
+
+;User name and password of RPC
+rpcuser=root
+rpcpass=root
+addrindex=1
+txindex=1
+
+; Links to three networks
+ethrpc = https://cloudflare-eth.com/
+hecorpc = https://http-mainnet.hecochain.com
+bscrpc = https://bsc-dataseed1.binance.org/
+```
 
 To start classzz with default options just run:
 
 ```bash
-./czzd
+./czzd --configfile="classzz.conf"
 ```
 
 You'll find a large number of runtime options with the help flag. All of them can also be set in a config file.
