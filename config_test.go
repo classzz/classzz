@@ -102,7 +102,8 @@ func TestGenesisAdderss(t *testing.T) {
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
-	fmt.Println("pubk:", hex.EncodeToString((*czzec.PublicKey)(&key.PublicKey).SerializeUncompressed()))
+	pk2 := (*czzec.PublicKey)(&key.PublicKey).SerializeUncompressed()
+	fmt.Println("pubk:", hex.EncodeToString(pk2))
 	fmt.Println("pub:", hex.EncodeToString(pk))
 	fmt.Println("pubhex:", hex.EncodeToString(key.PublicKey.Y.Bytes()))
 	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
@@ -113,8 +114,8 @@ func TestGenesisAdderss(t *testing.T) {
 	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
 	fmt.Println("address:", address.String())
 
-	add := crypto.Keccak256Hash(pk)
-	fmt.Println("ETH address:", add.String())
+	pubk, _ := czzec.ParsePubKey(pk, czzec.S256())
+	fmt.Println("ETH address:", crypto.PubkeyToAddress(*pubk.ToECDSA()).String())
 
 }
 
