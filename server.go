@@ -489,11 +489,11 @@ func (sp *serverPeer) OnVersion(_ *peer.Peer, msg *wire.MsgVersion) *wire.MsgRej
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
-	//if !strings.Contains(msg.UserAgent, "classzz:3.2.0") {
-	//	srvrLog.Debugf("Rejecting peer %s for running < v3.2.0", sp.Peer)
-	//	reason := fmt.Sprint("Not >= v3.2.0 node")
-	//	return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
-	//}
+	if !strings.Contains(msg.UserAgent, "classzz:3.5.0") {
+		srvrLog.Debugf("Rejecting peer %s for running < v3.5.0", sp.Peer)
+		reason := fmt.Sprint("Not >= v3.5.0 node")
+		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
+	}
 
 	// Reject outbound peers that are not full nodes.
 	wantServices := wire.SFNodeNetwork
@@ -2074,15 +2074,14 @@ func (s *server) handleDonePeerMsg(state *peerState, sp *serverPeer) {
 			s.connManager.Disconnect(sp.connReq.ID())
 		}
 
-		if !sp.persistent {
-			delete(list, sp.ID())
-			host, _, err := net.SplitHostPort(sp.Addr())
-			if err == nil && !sp.persistent {
-				state.connectionCount[host]--
-			}
+		delete(list, sp.ID())
 
-			srvrLog.Debugf("Removed peer %s", sp)
+		host, _, err := net.SplitHostPort(sp.Addr())
+		if err == nil && !sp.persistent {
+			state.connectionCount[host]--
 		}
+
+		srvrLog.Debugf("Removed peer %s", sp)
 
 		return
 	}

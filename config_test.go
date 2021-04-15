@@ -102,7 +102,9 @@ func TestGenesisAdderss(t *testing.T) {
 	fmt.Println("wif:", wif.String())
 	fmt.Println("priv:", hex.EncodeToString(key.Serialize()))
 	pk := (*czzec.PublicKey)(&key.PublicKey).SerializeCompressed()
+	fmt.Println("pubk:", hex.EncodeToString((*czzec.PublicKey)(&key.PublicKey).SerializeUncompressed()))
 	fmt.Println("pub:", hex.EncodeToString(pk))
+	fmt.Println("pubhex:", hex.EncodeToString(key.PublicKey.Y.Bytes()))
 	address, err := czzutil.NewAddressPubKeyHash(czzutil.Hash160(pk), &chaincfg.MainNetParams)
 
 	if err != nil {
@@ -110,6 +112,10 @@ func TestGenesisAdderss(t *testing.T) {
 	}
 	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
 	fmt.Println("address:", address.String())
+
+	add := crypto.Keccak256Hash(pk)
+	fmt.Println("ETH address:", add.String())
+
 }
 
 func TestGenesisRegTestAdderss(t *testing.T) {
@@ -191,6 +197,8 @@ func TestConvertAddr(t *testing.T) {
 	fmt.Println("addressScript:", hex.EncodeToString(address.ScriptAddress()))
 	fmt.Println("address:", address.String())
 
+	add := crypto.Keccak256Hash(pk)
+	fmt.Println("ETH address:", add.String())
 }
 
 func TestWIFConvertAddr(t *testing.T) {

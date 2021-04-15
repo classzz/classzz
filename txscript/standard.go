@@ -63,6 +63,8 @@ const (
 	AddMortgageTy
 	UpdateCoinbaseAllTy
 	ConvertTy
+	CastingTy
+	ConvertConfirmTy
 )
 
 // scriptClassToName houses the human-readable strings which describe each
@@ -81,6 +83,8 @@ var scriptClassToName = []string{
 	AddMortgageTy:        "addmortgage",
 	UpdateCoinbaseAllTy:  "updatecoinbaseall",
 	ConvertTy:            "convert",
+	CastingTy:            "casting",
+	ConvertConfirmTy:     "convertconfirm",
 }
 
 // String implements the Stringer interface by returning the name of
@@ -288,6 +292,18 @@ func typeOfScript(pops []parsedOpcode) ScriptClass {
 		return BeaconRegistrationTy
 	} else if isBeaconTy(pops) {
 		return BeaconTy
+	} else if isMortgageTy(pops) {
+		return MortgageTy
+	} else if isAddMortgageTy(pops) {
+		return AddMortgageTy
+	} else if isUpdateCoinbaseAllTy(pops) {
+		return UpdateCoinbaseAllTy
+	} else if isConvertTy(pops) {
+		return ConvertTy
+	} else if isConvertConfirmTy(pops) {
+		return ConvertConfirmTy
+	} else if isCastingTy(pops) {
+		return CastingTy
 	}
 
 	return NonStandardTy
@@ -398,7 +414,17 @@ func expectedInputs(pops []parsedOpcode, class ScriptClass) int {
 		fallthrough
 	case BeaconRegistrationTy:
 		fallthrough
-	case NullDataTy:
+	case MortgageTy:
+		fallthrough
+	case AddMortgageTy:
+		fallthrough
+	case UpdateCoinbaseAllTy:
+		fallthrough
+	case ConvertTy:
+		fallthrough
+	case CastingTy:
+		fallthrough
+	case ConvertConfirmTy:
 		fallthrough
 	default:
 		return -1
@@ -605,7 +631,7 @@ func BeaconRegistrationScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN195).AddData(data).Script()
 }
 
-// AddBeaconPledge impl in
+// AddBeaconPledgeScript impl in
 func AddBeaconPledgeScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
@@ -615,7 +641,7 @@ func AddBeaconPledgeScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN197).AddOp(OP_1).AddData(data).Script()
 }
 
-// ConvertScript impl in
+// MortgageScript impl in
 func MortgageScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
@@ -625,7 +651,7 @@ func MortgageScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_1).AddData(data).Script()
 }
 
-// ConvertScript impl in
+// AddMortgageScript impl in
 func AddMortgageScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+
@@ -665,7 +691,7 @@ func CastingScript(data []byte) ([]byte, error) {
 	return NewScriptBuilder().AddOp(OP_RETURN).AddOp(OP_UNKNOWN198).AddOp(OP_5).AddData(data).Script()
 }
 
-// ConvertScript impl in
+// ConvertConfirmScript impl in
 func ConvertConfirmScript(data []byte) ([]byte, error) {
 	if len(data) > MaxDataCarrierSize {
 		str := fmt.Sprintf("data size %d is larger than max "+

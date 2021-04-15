@@ -678,6 +678,21 @@ func (cs *CommitteeState) ConvertExistExtTx(info *ConvertTxInfo) bool {
 		}
 	}
 
+	items2 := cs.ConvertConfirmItems[info.AssetType]
+	if items2 == nil {
+		return false
+	}
+	items3 := items2[info.ConvertType]
+	if items3 == nil {
+		return false
+	}
+
+	for _, v := range items3 {
+		if v.ExtTxHash == info.ExtTxHash {
+			return true
+		}
+	}
+
 	return false
 }
 
