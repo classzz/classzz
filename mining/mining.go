@@ -1207,25 +1207,22 @@ mempoolLoop:
 
 	var cState3 *cross.EntangleState
 	if g.chainParams.BeaconHeight <= nextBlockHeight-1 && g.chainParams.MauiHeight > nextBlockHeight-1 {
-		eState4 := g.chain.CurrentEstate()
-
+		cState3 = g.chain.CurrentEstate()
+	} else if g.chainParams.MauiHeight <= nextBlockHeight-1 {
+		cState4 := g.chain.CurrentCstate()
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
-		for k, v := range eState4.EnInfos {
+		for _, v := range cState4.PledgeInfos {
 			bai2 := &cross.BeaconAddressInfo{
-				ExchangeID:      v.ExchangeID,
+				ExchangeID:      v.ID.Uint64(),
 				StakingAmount:   v.StakingAmount,
-				EntangleAmount:  v.EntangleAmount,
 				CoinBaseAddress: v.CoinBaseAddress,
 			}
-			bai2s[k] = bai2
+			bai2s[v.Address] = bai2
 		}
 
 		cState3 = &cross.EntangleState{
 			EnInfos: bai2s,
 		}
-
-	} else if g.chainParams.MauiHeight <= nextBlockHeight-1 {
-		cState3 = g.chain.CurrentEstate()
 	}
 
 	return &BlockTemplate{

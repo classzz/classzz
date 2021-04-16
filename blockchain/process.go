@@ -205,7 +205,7 @@ func (b *BlockChain) ProcessBlock(block *czzutil.Block, flags BehaviorFlags) (bo
 				StakingAmount:   v.StakingAmount,
 				CoinBaseAddress: v.CoinBaseAddress,
 			}
-			bai2s[bai2.Address] = bai2
+			bai2s[v.Address] = bai2
 		}
 
 		eState = &cross.EntangleState{
