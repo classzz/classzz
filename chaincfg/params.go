@@ -264,7 +264,9 @@ var MainNetParams = Params{
 		{Height: 85000, Hash: newHashFromStr("bdf3bc34deb6a19df11f626cc18c5230777124cb2a83c0c3bca90dd2b523a417")},
 		{Height: 91000, Hash: newHashFromStr("676e45ca46d01099763a4b693d7aa63068e3280a9c6f576dd0fade5d01cc1439")},
 		{Height: 101000, Hash: newHashFromStr("aed106b6ea933822fe66e1be6e369c976163c9b4173c63f56c717bc08fe9690d")},
+		{Height: 111000, Hash: newHashFromStr("7cbe96c5cf14b4b93c821818e125e3641a66595f8273dcd9d0be5dd869199830")},
 		{Height: 120100, Hash: newHashFromStr("ad185c5b8cb742bc113791b171c63fbd9ded1a1e33ad1aeed137a7f31b44fc70")},
+		{Height: 130100, Hash: newHashFromStr("93c56934914f151979d88309485f3423ae8a5bc1c08a90daeca7aab04970db4a")},
 		{Height: 150000, Hash: newHashFromStr("621732d353237090755fd0ae2bcd1dbc62ff3e16730799f8da7e57ee7f1e7f6b")},
 		{Height: 170000, Hash: newHashFromStr("b322b92797469e366849947a6daabce890f74c8be58af5096f79efe629bd2b4c")},
 		{Height: 190000, Hash: newHashFromStr("bbccbab407a2755d3bac95c1dd02d4a25641e7fe40cc3e866f485125e5733b15")},
@@ -310,6 +312,10 @@ var MainNetParams = Params{
 		{Height: 1026000, Hash: newHashFromStr("9ba6788069a69c642058aa70a59b216b40b7dc0713a24ff34a68912403849110")},
 		{Height: 1046000, Hash: newHashFromStr("8cac05b7495c9efef5c49562260bdc36a25b48702a21fba18f68e7404be33b53")},
 		{Height: 1066000, Hash: newHashFromStr("914e9f34f2e187b54940419e74c60142ec69c703a8b3052e71bc3c1d6c63e9fd")},
+		{Height: 1080000, Hash: newHashFromStr("047e62d16fb3b2ab6e1b1dd6219521456190d75db57fc393b987643acd202b17")},
+		{Height: 1100000, Hash: newHashFromStr("1b4ebb7c212554eee407a0799f23967a98681979812c21079fc2312c03abdff5")},
+		{Height: 1120000, Hash: newHashFromStr("83713016827075b25612e1139b98277f35bacec1f934abb119710ba35df532cc")},
+		{Height: 1140000, Hash: newHashFromStr("a1039cfcbdbcdefe7266bd9e7bbc8af9e126c5f0d508e63cc57802d7fe5dcca8")},
 	},
 
 	// Consensus rule change deployments.
