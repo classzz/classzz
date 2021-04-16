@@ -489,7 +489,7 @@ func (sp *serverPeer) OnVersion(_ *peer.Peer, msg *wire.MsgVersion) *wire.MsgRej
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
 	}
 
-	if !strings.Contains(msg.UserAgent, "classzz:3.5.0") {
+	if !strings.Contains(msg.UserAgent, "classzz:3.5") {
 		srvrLog.Debugf("Rejecting peer %s for running < v3.5.0", sp.Peer)
 		reason := fmt.Sprint("Not >= v3.5.0 node")
 		return wire.NewMsgReject(msg.Command(), wire.RejectNonstandard, reason)
