@@ -1232,14 +1232,14 @@ func (b *BlockChain) connectBestChain(node *blockNode, block *czzutil.Block, fla
 
 	err := b.db.Update(func(dbTx database.Tx) error {
 
-		if b.chainParams.ConverHeight <= block.Height() {
+		if b.chainParams.MauiHeight <= block.Height() {
 			err := dbStateTx(b, dbTx, block)
 			if err != nil {
 				return err
 			}
 		}
 
-		if b.chainParams.BeaconHeight <= block.Height() && b.chainParams.ConverHeight > block.Height() {
+		if b.chainParams.BeaconHeight <= block.Height() && b.chainParams.MauiHeight > block.Height() {
 			err := dbBeaconTx(b.chainParams, dbTx, block)
 			if err != nil {
 				return err

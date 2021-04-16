@@ -521,7 +521,7 @@ func dbStateTx(b *BlockChain, dbTx database.Tx, block *czzutil.Block) error {
 	pHeight := block.Height() - 1
 	pHash := block.MsgBlock().Header.PrevBlock
 	cState := dbFetchCommitteeState(dbTx, pHeight, pHash)
-	if block.Height() == b.chainParams.ConverHeight {
+	if block.Height() == b.chainParams.MauiHeight {
 		eState := dbFetchEntangleState(dbTx, pHeight, pHash)
 		cState = cross.NewCommitteeState()
 		for _, v := range eState.EnInfos {

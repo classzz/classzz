@@ -112,11 +112,11 @@ func IsCoinBaseTx(msgTx *wire.MsgTx) bool {
 	//	return false
 	//}
 
-	//if height >= NetParams.ConverHeight {
+	//if height >= NetParams.MauiHeight {
 	//	if len(msgTx.TxIn) < 3 {
 	//		return false
 	//	}
-	//} else if height >= NetParams.EntangleHeight && height < NetParams.ConverHeight {
+	//} else if height >= NetParams.EntangleHeight && height < NetParams.MauiHeight {
 	//	if len(msgTx.TxIn) != 3 {
 	//		return false
 	//	}
@@ -415,7 +415,7 @@ func (b *BlockChain) CheckBeacon(block *czzutil.Block, prevHeight int32) error {
 func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) error {
 	hash := block.MsgBlock().Header.PrevBlock
 	cState := b.GetCstateByHashAndHeight(hash, prevHeight)
-	if b.chainParams.ConverHeight == prevHeight+1 {
+	if b.chainParams.MauiHeight == prevHeight+1 {
 		eState := b.CurrentEstate()
 		cState = cross.NewCommitteeState()
 		for _, v := range eState.EnInfos {
@@ -938,7 +938,7 @@ func (b *BlockChain) CheckBlockHeaderContext(header *wire.BlockHeader, addr czzu
 
 	//eState := b.CurrentEstate()
 	var eState3 *cross.EntangleState
-	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ConverHeight > tip.height {
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.MauiHeight > tip.height {
 		eState4 := b.CurrentEstate()
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
 		for k, v := range eState4.EnInfos {
@@ -1592,7 +1592,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 	prevHeader, _ := b.HeaderByHash(&block.MsgBlock().Header.PrevBlock)
 
 	var eState3 *cross.EntangleState
-	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.ConverHeight > tip.height {
+	if b.chainParams.BeaconHeight <= tip.height && b.chainParams.MauiHeight > tip.height {
 		eState4 := b.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
@@ -1610,7 +1610,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *czzutil.Block) error {
 			EnInfos: bai2s,
 		}
 
-	} else if b.chainParams.ConverHeight <= tip.height {
+	} else if b.chainParams.MauiHeight <= tip.height {
 		eState3 = b.CurrentEstate()
 	}
 

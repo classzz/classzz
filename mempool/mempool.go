@@ -840,13 +840,13 @@ func (mp *TxPool) maybeAcceptTransaction(tx *czzutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, err
 	}
 
-	if mp.cfg.ChainParams.BeaconHeight < nextBlockHeight && mp.cfg.ChainParams.ConverHeight > nextBlockHeight {
+	if mp.cfg.ChainParams.BeaconHeight < nextBlockHeight && mp.cfg.ChainParams.MauiHeight > nextBlockHeight {
 		if err = mp.validateStateTx(tx, nextBlockHeight); err != nil {
 			return nil, nil, errors.New("validateBeaconTransaction err: " + err.Error())
 		}
 	}
 
-	if mp.cfg.ChainParams.ConverHeight < nextBlockHeight {
+	if mp.cfg.ChainParams.MauiHeight < nextBlockHeight {
 		if err := mp.validateStateCrossTx(tx, nextBlockHeight); err != nil {
 			return nil, nil, err
 		}

@@ -187,7 +187,7 @@ type Params struct {
 
 	BeaconHeight int32
 
-	ConverHeight int32
+	MauiHeight int32
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints []Checkpoint
@@ -254,7 +254,7 @@ var MainNetParams = Params{
 	EntangleHeight: 120000,
 	BeaconHeight:   420000,
 
-	ConverHeight: 1150000,
+	MauiHeight: 1150000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
 		{Height: 11111, Hash: newHashFromStr("1faf0d2246f07608c6a97a6ca698055a89d07f84c52db4455addad0cc86175aa")},
@@ -390,8 +390,8 @@ var RegressionNetParams = Params{
 	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8)),
 
 	EntangleHeight: 120000,
-	BeaconHeight:   2,
-	//ExChangeHeight: 500000,
+	BeaconHeight:   200000,
+	MauiHeight:     500000,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 
@@ -466,7 +466,7 @@ var TestNetParams = Params{
 
 	EntangleHeight: 5,
 	BeaconHeight:   10,
-	ConverHeight:   50,
+	MauiHeight:     50,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{},
 
@@ -548,7 +548,7 @@ var SimNetParams = Params{
 	EntangleHeight: 10,
 	BeaconHeight:   12,
 	//ExChangeHeight: 20,
-	ConverHeight: 25,
+	MauiHeight: 25,
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: nil,
 

@@ -356,7 +356,7 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		PkScript: pkScript2,
 	})
 	// the amount of already entangled,placeholder
-	if nextBlockHeight >= params.EntangleHeight && nextBlockHeight < params.ConverHeight {
+	if nextBlockHeight >= params.EntangleHeight && nextBlockHeight < params.MauiHeight {
 		keepInfo := cross.KeepedAmount{Items: []cross.KeepedItem{}}
 		keepInfo.Add(cross.KeepedItem{
 			AssetType: cross.ExpandedTxEntangle_Doge,
@@ -618,7 +618,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	rewards := make([]*cross.PunishedRewardItem, 0, 0)
 	mergeItems := make(map[uint64][]*cross.BeaconMergeItem)
 	var lastScriptInfo []byte
-	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.MauiHeight > nextBlockHeight {
 		var err error
 		lastScriptInfo, err = g.getlastScriptInfo(&cHash, cheight)
 		if err != nil {
@@ -627,11 +627,11 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 	}
 
 	var cState *cross.CommitteeState
-	if g.chainParams.ConverHeight < nextBlockHeight {
+	if g.chainParams.MauiHeight < nextBlockHeight {
 		cState = g.chain.CurrentCstate()
 	}
 
-	if g.chainParams.ConverHeight == nextBlockHeight {
+	if g.chainParams.MauiHeight == nextBlockHeight {
 		eState := g.chain.CurrentEstate()
 		cState = cross.NewCommitteeState()
 		for _, v := range eState.EnInfos {
@@ -648,7 +648,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress czzutil.Address) (*Bloc
 
 	fork := false
 	var eState *cross.EntangleState
-	if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+	if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.MauiHeight > nextBlockHeight {
 		eState = g.chain.CurrentEstate()
 		fork = true
 	}
@@ -881,7 +881,7 @@ mempoolLoop:
 			continue
 		}
 
-		if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+		if g.chainParams.BeaconHeight < nextBlockHeight && g.chainParams.MauiHeight > nextBlockHeight {
 
 			// BeaconRegistrationTx
 			if br, _ := cross.IsBeaconRegistrationTx(tx.MsgTx(), g.chainParams); br != nil {
@@ -899,7 +899,7 @@ mempoolLoop:
 		}
 
 		////////////////////////////////////
-		if nextBlockHeight >= g.chainParams.ConverHeight {
+		if nextBlockHeight >= g.chainParams.MauiHeight {
 
 			// Mortgage
 			if info, _ := cross.IsMortgageTx(tx.MsgTx(), g.chainParams); info != nil {
@@ -1058,7 +1058,7 @@ mempoolLoop:
 	sort.Sort(TxSorter(blockTxns))
 
 	for _, tx := range blockTxns {
-		if nextBlockHeight >= g.chainParams.ConverHeight {
+		if nextBlockHeight >= g.chainParams.MauiHeight {
 
 			// IsCastingTx
 			if cinfo, _ := cross.IsCastingTx(tx.MsgTx()); cinfo != nil {
@@ -1077,7 +1077,7 @@ mempoolLoop:
 		}
 	}
 
-	if nextBlockHeight >= g.chainParams.ConverHeight {
+	if nextBlockHeight >= g.chainParams.MauiHeight {
 		if MortgageTx != nil {
 			// Mortgage
 			if info, _ := cross.IsMortgageTx(MortgageTx, g.chainParams); info != nil {
@@ -1143,7 +1143,7 @@ mempoolLoop:
 	}
 
 	// make entangle tx if it exist
-	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight {
+	if g.chainParams.EntangleHeight <= nextBlockHeight && g.chainParams.MauiHeight > nextBlockHeight {
 		eItems := make([]*cross.EntangleItem, 0)
 		if err = cross.MakeMergerCoinbaseTx2(coinbaseTx.MsgTx(), poolItem, eItems, lastScriptInfo, fork); err != nil {
 			return nil, nil, err
@@ -1151,7 +1151,7 @@ mempoolLoop:
 	}
 
 	// make entangle tx if it exist
-	if g.chainParams.ConverHeight <= nextBlockHeight {
+	if g.chainParams.MauiHeight <= nextBlockHeight {
 		if err := cross.MakeMergerCoinbaseTx(g.chainParams, coinbaseTx.MsgTx(), cState, poolItem, convertItems, rewards, mergeItems); err != nil {
 			return nil, nil, err
 		}
@@ -1163,12 +1163,12 @@ mempoolLoop:
 	CIDRoot := chainhash.Hash{}
 
 	// eState
-	if g.chainParams.BeaconHeight <= nextBlockHeight && g.chainParams.ConverHeight > nextBlockHeight && eState != nil {
+	if g.chainParams.BeaconHeight <= nextBlockHeight && g.chainParams.MauiHeight > nextBlockHeight && eState != nil {
 		CIDRoot = eState.Hash()
 	}
 
 	// cState
-	if g.chainParams.ConverHeight <= nextBlockHeight && cState != nil {
+	if g.chainParams.MauiHeight <= nextBlockHeight && cState != nil {
 		CIDRoot = cState.Hash()
 	}
 
@@ -1206,7 +1206,7 @@ mempoolLoop:
 		blockSize, blockchain.CompactToBig(msgBlock.Header.Bits))
 
 	var cState3 *cross.EntangleState
-	if g.chainParams.BeaconHeight <= nextBlockHeight-1 && g.chainParams.ConverHeight > nextBlockHeight-1 {
+	if g.chainParams.BeaconHeight <= nextBlockHeight-1 && g.chainParams.MauiHeight > nextBlockHeight-1 {
 		eState4 := g.chain.CurrentEstate()
 
 		bai2s := make(map[string]*cross.BeaconAddressInfo)
@@ -1224,7 +1224,7 @@ mempoolLoop:
 			EnInfos: bai2s,
 		}
 
-	} else if g.chainParams.ConverHeight <= nextBlockHeight-1 {
+	} else if g.chainParams.MauiHeight <= nextBlockHeight-1 {
 		cState3 = g.chain.CurrentEstate()
 	}
 
