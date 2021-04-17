@@ -310,6 +310,14 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 	numNullDataOutputs := 0
 	numEntangleTyOutputs := 0
 	numBeaconRegistrationOutputs := 0
+	numBeaconOutputs := 0
+	numMortgageOutputs := 0
+	numAddMortgageOutputs := 0
+	numUpdateCoinbaseAllOutputs := 0
+	numConvertOutputs := 0
+	numCastingOutputs := 0
+	numConvertConfirmOutputs := 0
+
 	for i, txOut := range msgTx.TxOut {
 		scriptClass := txscript.GetScriptClass(txOut.PkScript)
 		err := checkPkScriptStandard(txOut.PkScript, scriptClass)
@@ -333,7 +341,21 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 		} else if scriptClass == txscript.EntangleTy {
 			numEntangleTyOutputs++
 		} else if scriptClass == txscript.BeaconRegistrationTy {
-			numEntangleTyOutputs++
+			numBeaconRegistrationOutputs++
+		} else if scriptClass == txscript.BeaconTy {
+			numBeaconOutputs++
+		} else if scriptClass == txscript.MortgageTy {
+			numMortgageOutputs++
+		} else if scriptClass == txscript.AddMortgageTy {
+			numAddMortgageOutputs++
+		} else if scriptClass == txscript.UpdateCoinbaseAllTy {
+			numUpdateCoinbaseAllOutputs++
+		} else if scriptClass == txscript.ConvertTy {
+			numConvertOutputs++
+		} else if scriptClass == txscript.CastingTy {
+			numCastingOutputs++
+		} else if scriptClass == txscript.ConvertConfirmTy {
+			numConvertConfirmOutputs++
 		} else if isDust(txOut, minRelayTxFee) {
 			str := fmt.Sprintf("transaction output %d: payment "+
 				"of %d is dust", i, txOut.Value)
@@ -355,6 +377,41 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 
 	if numBeaconRegistrationOutputs > 1 {
 		str := "more than one transaction output in a BeaconRegistrationTy script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numBeaconOutputs > 1 {
+		str := "more than one transaction output in a numBeaconOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numMortgageOutputs > 1 {
+		str := "more than one transaction output in a numMortgageOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numAddMortgageOutputs > 1 {
+		str := "more than one transaction output in a numAddMortgageOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numUpdateCoinbaseAllOutputs > 1 {
+		str := "more than one transaction output in a numUpdateCoinbaseAllOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numConvertOutputs > 1 {
+		str := "more than one transaction output in a numConvertOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numCastingOutputs > 1 {
+		str := "more than one transaction output in a numCastingOutputs script"
+		return txRuleError(wire.RejectNonstandard, str)
+	}
+
+	if numConvertConfirmOutputs > 1 {
+		str := "more than one transaction output in a numConvertConfirmOutputs script"
 		return txRuleError(wire.RejectNonstandard, str)
 	}
 
