@@ -15,13 +15,14 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
 	"math/rand"
+	"strings"
 )
 
 var (
 	ErrStakingAmount = errors.New("StakingAmount Less than minimun czz")
-	ethPoolAddr      = "0x9AC88c5136240312f8817dBB99497aCe62b03F12"
-	hecoPoolAddr     = "0x711D839CD1E6E81B971F5b6bBB4a6BD7C4B60Ac6"
-	bscPoolAddr      = "0x007c98F9f2c70746a64572E67FBCc41a2b8bba18"
+	ethPoolAddr      = "0x9AC88c5136240312f8817dBB99497aCe62b03F12|0xB2451147c6154659c350EaC39ED37599bff4d32e"
+	hecoPoolAddr     = "0x711D839CD1E6E81B971F5b6bBB4a6BD7C4B60Ac6|0xdc3013FcF6A748c6b468de21b8A1680dbcb979ca"
+	bscPoolAddr      = "0x007c98F9f2c70746a64572E67FBCc41a2b8bba18|0x711D839CD1E6E81B971F5b6bBB4a6BD7C4B60Ac6"
 
 	burnTopics = "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa"
 	mintTopics = "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9"
@@ -434,15 +435,15 @@ func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *r
 	}
 
 	if eInfo.AssetType == ExpandedTxConvert_ECzz {
-		if txjson.tx.To().String() != ethPoolAddr {
+		if !strings.Contains(ethPoolAddr, txjson.tx.To().String()) {
 			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) ETh [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
 	} else if eInfo.AssetType == ExpandedTxConvert_HCzz {
-		if txjson.tx.To().String() != hecoPoolAddr {
+		if !strings.Contains(hecoPoolAddr, txjson.tx.To().String()) {
 			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
 	} else if eInfo.AssetType == ExpandedTxConvert_BCzz {
-		if txjson.tx.To().String() != bscPoolAddr {
+		if !strings.Contains(bscPoolAddr, txjson.tx.To().String()) {
 			return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
 	}
@@ -587,15 +588,15 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 
 	// toaddress
 	if eInfo.ConvertType == ExpandedTxConvert_ECzz {
-		if txjson.tx.To().String() != ethPoolAddr {
+		if !strings.Contains(ethPoolAddr, txjson.tx.To().String()) {
 			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) ETh [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), ethPoolAddr)
 		}
 	} else if eInfo.ConvertType == ExpandedTxConvert_HCzz {
-		if txjson.tx.To().String() != hecoPoolAddr {
+		if !strings.Contains(hecoPoolAddr, txjson.tx.To().String()) {
 			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Heco [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), hecoPoolAddr)
 		}
 	} else if eInfo.ConvertType == ExpandedTxConvert_BCzz {
-		if txjson.tx.To().String() != bscPoolAddr {
+		if !strings.Contains(bscPoolAddr, txjson.tx.To().String()) {
 			return fmt.Errorf("verifyConvertEthereumTypeTx (%s) Bsc [ToAddress: %s] != [%s]", netName, txjson.tx.To().String(), bscPoolAddr)
 		}
 	}
