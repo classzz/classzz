@@ -308,9 +308,6 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 	// None of the output public key scripts can be a non-standard script or
 	// be "dust" (except when the script is a null data script).
 	numNullDataOutputs := 0
-	numEntangleTyOutputs := 0
-	numBeaconRegistrationOutputs := 0
-	numBeaconOutputs := 0
 	numMortgageOutputs := 0
 	numAddMortgageOutputs := 0
 	numUpdateCoinbaseAllOutputs := 0
@@ -338,12 +335,6 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 		// "dust".
 		if scriptClass == txscript.NullDataTy {
 			numNullDataOutputs++
-		} else if scriptClass == txscript.EntangleTy {
-			numEntangleTyOutputs++
-		} else if scriptClass == txscript.BeaconRegistrationTy {
-			numBeaconRegistrationOutputs++
-		} else if scriptClass == txscript.BeaconTy {
-			numBeaconOutputs++
 		} else if scriptClass == txscript.MortgageTy {
 			numMortgageOutputs++
 		} else if scriptClass == txscript.AddMortgageTy {
@@ -367,21 +358,6 @@ func checkTransactionStandard(tx *czzutil.Tx, height int32,
 	// only carries data.
 	if numNullDataOutputs > 1 {
 		str := "more than one transaction output in a nulldata script"
-		return txRuleError(wire.RejectNonstandard, str)
-	}
-
-	if numEntangleTyOutputs > 1 {
-		str := "more than one transaction output in a EntangleTy script"
-		return txRuleError(wire.RejectNonstandard, str)
-	}
-
-	if numBeaconRegistrationOutputs > 1 {
-		str := "more than one transaction output in a BeaconRegistrationTy script"
-		return txRuleError(wire.RejectNonstandard, str)
-	}
-
-	if numBeaconOutputs > 1 {
-		str := "more than one transaction output in a numBeaconOutputs script"
 		return txRuleError(wire.RejectNonstandard, str)
 	}
 

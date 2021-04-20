@@ -929,6 +929,13 @@ func ExtractPkScriptAddrs(pkScript []byte, chainParams *chaincfg.Params) (Script
 	case NonStandardTy:
 		// Don't attempt to extract addresses or required signatures for
 		// nonstandard transactions.
+	case MortgageTy:
+	case AddMortgageTy:
+	case UpdateCoinbaseAllTy:
+	case ConvertTy:
+	case CastingTy:
+	case ConvertConfirmTy:
+
 	}
 
 	return scriptClass, addrs, requiredSigs, nil
