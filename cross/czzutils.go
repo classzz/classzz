@@ -558,7 +558,7 @@ func ComputeDiff(params *chaincfg.Params, target *big.Int, address czzutil.Addre
 	}
 	if found_t == 1 {
 		result := big.NewInt(0).Div(StakingAmount, params.MinStakingAmount)
-		result1 := big.NewInt(0).Mul(result, big.NewInt(10))
+		result1 := big.NewInt(0).Exp(result, big.NewInt(3), nil)
 		target = big.NewInt(0).Mul(target, result1)
 	}
 	if target.Cmp(params.PowLimit) > 0 {

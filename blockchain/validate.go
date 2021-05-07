@@ -238,6 +238,9 @@ func IsFinalizedTransaction(tx *czzutil.Tx, blockHeight int32, blockTime time.Ti
 // approximately every 4 years.
 func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 
+	if height >= 1500000 {
+		return 0
+	}
 	if chainParams.SubsidyReductionInterval == 0 {
 		return baseSubsidy
 	}
