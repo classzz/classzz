@@ -37,10 +37,10 @@ var (
 
 	EthChainID        = big.NewInt(1)
 	EthRopstenChainID = big.NewInt(3)
-	HecoChainID       = big.NewInt(256)
+	HecoChainID       = big.NewInt(128)
 	HecoTestChainID   = big.NewInt(256)
-	BscChainID        = big.NewInt(256)
-	BscTestChainID    = big.NewInt(256)
+	BscChainID        = big.NewInt(56)
+	BscTestChainID    = big.NewInt(97)
 )
 
 const (
