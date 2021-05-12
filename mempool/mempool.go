@@ -1090,7 +1090,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	// IsConvertTx
 	if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
 		for _, v := range cinfo {
-			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(cState, v); err != nil {
+			if _, err := mp.cfg.CommitteeVerify.VerifyConvertTx(tx.MsgTx(), cState, v); err != nil {
 				return err
 			}
 		}

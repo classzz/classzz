@@ -964,7 +964,7 @@ mempoolLoop:
 			// IsConvertTx
 			if cinfo, _ := cross.IsConvertTx(tx.MsgTx()); cinfo != nil {
 				fmt.Println("txhash ", tx.Hash().String())
-				objs, err := cross.ToAddressFromConvertsVerify(cState, cinfo, g.chain.GetCommitteeVerify())
+				objs, err := cross.ToAddressFromConvertsVerify(tx.MsgTx(), cState, cinfo, g.chain.GetCommitteeVerify())
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"VerifyConvertTx: %v", tx.Hash(), err)

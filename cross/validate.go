@@ -329,8 +329,8 @@ func (ev *CommitteeVerify) VerifyUpdateCoinbaseAllTx(tx *wire.MsgTx, cState *Com
 	return uc, nil
 }
 
-func (ev *CommitteeVerify) VerifyConvertTx(cState *CommitteeState, info *ConvertTxInfo) (*TuplePubIndex, error) {
-	if pub, err := ev.verifyConvertTx(cState, info); err != nil {
+func (ev *CommitteeVerify) VerifyConvertTx(tx *wire.MsgTx, cState *CommitteeState, info *ConvertTxInfo) (*TuplePubIndex, error) {
+	if pub, err := ev.verifyConvertTx(tx, cState, info); err != nil {
 		return nil, err
 	} else {
 		pair := &TuplePubIndex{
@@ -343,23 +343,23 @@ func (ev *CommitteeVerify) VerifyConvertTx(cState *CommitteeState, info *Convert
 	}
 }
 
-func (ev *CommitteeVerify) verifyConvertTx(cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertTx(tx *wire.MsgTx, cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
 
 	switch eInfo.AssetType {
 	case ExpandedTxConvert_ECzz:
 		client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
-		return ev.verifyConvertEthereumTypeTx("ETH", client, cState, eInfo)
+		return ev.verifyConvertEthereumTypeTx("ETH", client, cState, eInfo, tx)
 	case ExpandedTxConvert_HCzz:
 		client := ev.HecoRPC[rand.Intn(len(ev.EthRPC))]
-		return ev.verifyConvertEthereumTypeTx("HECO", client, cState, eInfo)
+		return ev.verifyConvertEthereumTypeTx("HECO", client, cState, eInfo, tx)
 	case ExpandedTxConvert_BCzz:
 		client := ev.BscRPC[rand.Intn(len(ev.BscRPC))]
-		return ev.verifyConvertEthereumTypeTx("BSC", client, cState, eInfo)
+		return ev.verifyConvertEthereumTypeTx("BSC", client, cState, eInfo, tx)
 	}
 	return nil, fmt.Errorf("verifyConvertTx AssetType not %v", eInfo.AssetType)
 }
 
-func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *rpc.Client, cState *CommitteeState, eInfo *ConvertTxInfo) ([]byte, error) {
+func (ev *CommitteeVerify) verifyConvertEthereumTypeTx(netName string, client *rpc.Client, cState *CommitteeState, eInfo *ConvertTxInfo, tx *wire.MsgTx) ([]byte, error) {
 
 	if eInfo.AssetType == eInfo.ConvertType {
 		return nil, fmt.Errorf("verifyConvertEthereumTypeTx (%s) AssetType = ConvertType = [%d]", netName, eInfo.ConvertType)
@@ -620,6 +620,10 @@ func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeStat
 		return nil, fmt.Errorf("Casting PkScript err %s ", tx.TxOut[1].PkScript)
 	}
 
+	if tx.TxOut[1].Value != ct.Amount.Int64() {
+		return nil, fmt.Errorf("Casting Amount err %s ", ct.Amount.Int64())
+	}
+
 	var pk []byte
 	var err error
 	if tx.TxIn[0].Witness == nil {
@@ -637,5 +641,6 @@ func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeStat
 	}
 
 	ct.PubKey = pk
+	ct.Amount = big.NewInt(tx.TxOut[1].Value)
 	return ct, nil
 }

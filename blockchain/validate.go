@@ -474,7 +474,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 
 		// IsConvertTx
 		if cinfo, err := cross.IsConvertTx(tx.MsgTx()); cinfo != nil && err != cross.NoConvert {
-			objs, err := cross.ToAddressFromConvertsVerify(cState, cinfo, b.GetCommitteeVerify())
+			objs, err := cross.ToAddressFromConvertsVerify(tx.MsgTx(), cState, cinfo, b.GetCommitteeVerify())
 			if err != nil {
 				return err
 			}

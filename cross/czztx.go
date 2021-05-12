@@ -1009,14 +1009,14 @@ type ConvertTxTemp struct {
 	Tx    *wire.MsgTx
 }
 
-func ToAddressFromConvertsVerify(cState *CommitteeState, cInfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
+func ToAddressFromConvertsVerify(tx *wire.MsgTx, cState *CommitteeState, cInfo map[uint32]*ConvertTxInfo, ev *CommitteeVerify) ([]*ConvertTxInfo, error) {
 
 	cTis := make([]*ConvertTxInfo, 0, 0)
 	for i, info := range cInfo {
 		if i == ConvertOutNum {
 			break
 		}
-		tpi, err := ev.VerifyConvertTx(cState, info)
+		tpi, err := ev.VerifyConvertTx(tx, cState, info)
 		if err != nil {
 			return nil, err
 		}
