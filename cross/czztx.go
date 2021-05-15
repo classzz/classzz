@@ -815,6 +815,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 				Value:    v.Amount.Int64(),
 				PkScript: pkScript,
 			})
+			poolC[v.AssetType] = big.NewInt(0)
 			continue
 		}
 
@@ -825,6 +826,7 @@ func MakeMergerCoinbaseTx(params *chaincfg.Params, tx *wire.MsgTx, cState *Commi
 	FeeAmountSum := big.NewInt(0)
 	for _, v := range items {
 		if v.ConvertType == ExpandedTxConvert_Czz {
+			poolC[v.AssetType] = big.NewInt(0).Sub(poolC[v.AssetType], v.Amount)
 			continue
 		}
 		amount := big.NewInt(0).Sub(v.Amount, v.FeeAmount)
