@@ -1097,7 +1097,7 @@ func (mp *TxPool) validateStateCrossTx(tx *czzutil.Tx, prevHeight int32) error {
 	}
 
 	// Casting
-	if _, err := mp.cfg.CommitteeVerify.VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
+	if _, err := mp.cfg.CommitteeVerify.VerifyCastingTx(tx.MsgTx(), cState, prevHeight); err != nil && err != cross.NoCasting {
 		return err
 	}
 

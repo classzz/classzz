@@ -19,10 +19,9 @@ import (
 )
 
 var (
-	ErrStakingAmount = errors.New("StakingAmount Less than minimun czz")
-	ethPoolAddr      = "0x9ac88c5136240312f8817dbb99497ace62b03f12|0xB2451147c6154659c350EaC39ED37599bff4d32e|0xF0f50ce5054289a178fb45Ab2E373899580d12bf"
-	hecoPoolAddr     = "0x711d839cd1e6e81b971f5b6bbb4a6bd7c4b60ac6|0xdc3013FcF6A748c6b468de21b8A1680dbcb979ca|0x93E00a89F5CBF9c66a50aF7206c9c6f54601EC15|0x30d0e3F30D527373a27A2177fAcb4bdCc046DC1C"
-	bscPoolAddr      = "0x007c98F9f2c70746a64572E67FBCc41a2b8bba18|0x711D839CD1E6E81B971F5b6bBB4a6BD7C4B60Ac6|0xdf10e0Caa2BBe67f7a1E91A3e6660cC1e34e81B9|0xa5D17B93f4156afd96be9f5B40888ffb47fA4bc1"
+	ethPoolAddr  = "0x9ac88c5136240312f8817dbb99497ace62b03f12|0xB2451147c6154659c350EaC39ED37599bff4d32e|0xF0f50ce5054289a178fb45Ab2E373899580d12bf"
+	hecoPoolAddr = "0x711d839cd1e6e81b971f5b6bbb4a6bd7c4b60ac6|0xdc3013FcF6A748c6b468de21b8A1680dbcb979ca|0x93E00a89F5CBF9c66a50aF7206c9c6f54601EC15|0x30d0e3F30D527373a27A2177fAcb4bdCc046DC1C"
+	bscPoolAddr  = "0x007c98F9f2c70746a64572E67FBCc41a2b8bba18|0x711D839CD1E6E81B971F5b6bBB4a6BD7C4B60Ac6|0xdf10e0Caa2BBe67f7a1E91A3e6660cC1e34e81B9|0xa5D17B93f4156afd96be9f5B40888ffb47fA4bc1"
 
 	burnTopics = "0x86f32d6c7a935bd338ee00610630fcfb6f043a6ad755db62064ce2ad92c45caa"
 	mintTopics = "0x8fb5c7bffbb272c541556c455c74269997b816df24f56dd255c2391d92d4f1e9"
@@ -350,7 +349,7 @@ func (ev *CommitteeVerify) verifyConvertTx(tx *wire.MsgTx, cState *CommitteeStat
 		client := ev.EthRPC[rand.Intn(len(ev.EthRPC))]
 		return ev.verifyConvertEthereumTypeTx("ETH", client, cState, eInfo, tx)
 	case ExpandedTxConvert_HCzz:
-		client := ev.HecoRPC[rand.Intn(len(ev.EthRPC))]
+		client := ev.HecoRPC[rand.Intn(len(ev.HecoRPC))]
 		return ev.verifyConvertEthereumTypeTx("HECO", client, cState, eInfo, tx)
 	case ExpandedTxConvert_BCzz:
 		client := ev.BscRPC[rand.Intn(len(ev.BscRPC))]
@@ -604,7 +603,7 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 	return nil
 }
 
-func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeState) (*CastingTxInfo, error) {
+func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeState, height int32) (*CastingTxInfo, error) {
 
 	ct, _ := IsCastingTx(tx)
 	if ct == nil {
@@ -620,8 +619,8 @@ func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeStat
 		return nil, fmt.Errorf("Casting PkScript err %s ", tx.TxOut[1].PkScript)
 	}
 
-	if tx.TxOut[1].Value != ct.Amount.Int64() {
-		return nil, fmt.Errorf("Casting Amount err %s ", ct.Amount.Int64())
+	if tx.TxOut[1].Value != ct.Amount.Int64() && height > 1203000 {
+		return nil, fmt.Errorf("Casting Amount err %d ", ct.Amount.Int64())
 	}
 
 	var pk []byte
@@ -641,6 +640,5 @@ func (ev *CommitteeVerify) VerifyCastingTx(tx *wire.MsgTx, cState *CommitteeStat
 	}
 
 	ct.PubKey = pk
-	ct.Amount = big.NewInt(tx.TxOut[1].Value)
 	return ct, nil
 }

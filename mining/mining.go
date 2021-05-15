@@ -953,7 +953,7 @@ mempoolLoop:
 						"VerifyCastingTx NewAddressPubKeyHash err: %v", tx.Hash(), err)
 					continue
 				}
-				_, err = g.chain.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState)
+				_, err = g.chain.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState, nextBlockHeight)
 				if err != nil {
 					log.Tracef("Skipping tx %s due to error in "+
 						"VerifyCastingTx: %v", tx.Hash(), err)

@@ -462,7 +462,7 @@ func (b *BlockChain) CheckBlockCrossTx(block *czzutil.Block, prevHeight int32) e
 		}
 
 		// Casting
-		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState); err != nil && err != cross.NoCasting {
+		if cinfo, err := b.GetCommitteeVerify().VerifyCastingTx(tx.MsgTx(), cState, prevHeight+1); err != nil && err != cross.NoCasting {
 			return err
 		} else if cinfo != nil {
 			pool := cross.CoinPools[cinfo.ConvertType]
