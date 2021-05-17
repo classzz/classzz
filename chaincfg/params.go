@@ -459,7 +459,7 @@ var TestNetParams = Params{
 	SubsidyReductionInterval: 1000000,
 	TargetTimePerBlock:       30, // 10 minutes
 	GenerateSupported:        true,
-	NoDifficultyAdjustment:   false,
+	NoDifficultyAdjustment:   true,
 
 	MinStakingAmount:    new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
 	MinAddStakingAmount: new(big.Int).Mul(big.NewInt(100), big.NewInt(1e8)),
