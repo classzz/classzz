@@ -585,6 +585,10 @@ func (ev *CommitteeVerify) verifyConvertConfirmEthereumTypeTx(netName string, cl
 		return err
 	}
 
+	if txjson == nil {
+		return fmt.Errorf("verifyConvertConfirmEthereumTypeTx (%s) txjson is nil [txid:%s]", netName, eInfo.ExtTxHash)
+	}
+
 	// toaddress
 	if eInfo.ConvertType == ExpandedTxConvert_ECzz {
 		if !strings.Contains(ethPoolAddr, txjson.tx.To().String()) {
